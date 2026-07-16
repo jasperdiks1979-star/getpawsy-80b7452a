@@ -1,60 +1,77 @@
-## 3-Pin Cost-Controlled Dog Wave — Execution Plan
+# Analytics Traffic Classification Rebuild (Phased)
 
-Reuse the validated canonical `pinterest-wave-runner` path proven by canary `5c3b19c6-fae4-4582-a742-dd8de8e6ef90`. No code changes unless a runtime error blocks execution. Photo-lock only, zero paid image calls, ≤0.30 credit total.
+The forensic audit proved the current dashboard treats crawlers, Lovable previews and verifiers as US/desktop/direct humans. Fixing all 16 sections of your brief in one turn is not safe — it spans schema, views, ~15 edge functions, the tracker script, retention policy, dashboard UI, tests and a 30-day historical reclass. Doing it as one shipped diff would almost certainly break canonical ingest or the dashboard.
 
-### Phase 1 — Run bootstrap
-1. Mint fresh production `run_id` (UUID v4).
-2. Insert `pinterest_run_config` row with: `requested_pin_count=3`, `product_category=dog`, `max_credit_spend=0.30`, `max_credit_spend_per_pin=0.10`, `max_paid_image_calls_per_pin=0`, `max_paid_qa_calls_per_image_hash=1`, `max_total_paid_calls=10`, `allow_pro_image=false`, `manual_resume=true`, `dry_run=false`, `hero_priority_slugs=[]`, `status='awaiting_manual_resume'`.
-3. Arm `pinterest_runtime_settings.wave_isolation_active_run_id = <run_id>`.
+Below is the phased plan. Each phase is independently deployable and reversible. **Nothing ships until you approve.**
 
-### Phase 2 — Zero-cost prefilter (dog catalog)
-SQL against `products` with: `primary_species IN ('dog')`, `is_active=true`, `stock_quantity>0`, `us_eligible=true`, `pinterest_eligible=true`. Exclude:
-- previously posted or queued/processing (`pinterest_pin_queue` join)
-- the 4 already-terminal products (aluminum carrier, dog bath brush, fish treat dispenser, agility ramp) + any row in `pinterest_terminal_rejections`
-- policy-unsafe patterns via `isPolicyUnsafe` (shock/prong/e-fence)
-- mixed cat/dog if dog-only alternative exists
-- duplicate slugs / duplicate hero image hashes
+## Phase 1 — Kill the US fallback and the "direct" default (schema + views only)
 
-Then PDP HTTP 200 check on `getpawsy.pet/products/{slug}` — H1, price, Add to Cart, no Shopify redirect. Hero image decode ≥1000px longest side, no watermark/supplier-text/collage (cached checks only).
+Goal: stop the lie at the read layer. Zero write-path changes, zero data mutation.
 
-Rank survivors by `us_audience_score` DESC; take top ~15 as ordered evaluation list.
+- New SQL function `public.normalize_country(text)` → returns `Unknown` for `NULL`/`''`/`'??'`; passes through real ISO/name values; maps `US/USA/United States` → `United States`, `NL` → `Netherlands`, etc.
+- New SQL function `public.classify_channel_v2(referrer, utm_source, user_agent, query, headers jsonb, has_js_evidence bool)` implementing the 12-step ordered classifier from §2.
+- Rewrite the 12 canonical views (`canonical_sessions_traffic_class`, `canonical_sources`, `canonical_kpis_hourly`, `canonical_funnel`, `canonical_traffic_class_funnel_24h`, `canonical_products`, `canonical_orders`, `canonical_revenue`, `canonical_attribution`, `canonical_heatmap`, `analytics_funnel_dropoff_v`, `canonical_sessions_traffic_class_summary_7d`) to:
+  - call `normalize_country()` — never coerce NULL to US
+  - call `classify_channel_v2()` — never fall back to `direct` when signals are missing (use `unknown`)
+  - expose new columns: `traffic_class`, `is_internal`, `exclude_from_commercial`, `classification_reason`, `classifier_version = 'v2'`
+- `analytics-canonical` edge function: remove the `geo='US'` implicit filter comments (already noted), add `traffic_class` filter param, default commercial responses to `HUMAN_CONFIRMED + HUMAN_PROBABLE`.
 
-### Phase 3 — Sequential source preflight
-For each candidate in order (stop when 3 pass OR paid-call cap OR budget cap):
-1. Check `pinterest_qa_score_cache` by image hash + scoring_version.
-2. On miss: one `google/gemini-2.5-flash` vision call via `_shared/pinterest-source-preflight.runSourcePreflight` (goes through `runScoredWithCache` and `assertBudget`).
-3. Enforce hard thresholds unchanged: occupancy ≥0.40, identity ≥0.98, PDP sim ≥0.97, species ≥0.95, variant/color PASS, watermark/supplier_text/collage = 0, decode PASS.
-4. Record each candidate result (cache hit or paid) in ledger + evaluation log for the final report.
+Regression tests (Deno + Vitest): the 15 test cases from §14, plus the 5 country cases from §1.
 
-### Phase 4 — Mix selection
-From the 3+ passing candidates prefer variety (comfort/home, feeding/travel/practical, toy/walking/enrichment) but **quality wins over diversity** — take the 3 highest-quality passers.
+## Phase 2 — Signed internal-automation headers (write path, code-controlled traffic)
 
-### Phase 5 — Queue insertion (deterministic composite)
-For each of the 3 chosen products, call `pinterest-wave-runner` (`manual_resume=true`) with the pre-selected slugs so it inserts rows with:
-- `run_id=<run_id>`, `strategy='composite_photo_lock'`, `photo_lock=true`, `product_regeneration=false`, 1200×1800 2:3
-- Copy: 6-word headline, 9-word benefit, CTA from {View Product, See Details, Explore More}
-- No price/discount/urgency/reviews/badges/claims
-- SEO: title 45–75 chars, description 300–500 chars, 8–15 dog keywords, factual alt
-- Destination: `https://getpawsy.pet/products/{slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=dog_cost_controlled_wave_2026_07&utm_content={run_id}_{index}`
+- New shared helper `supabase/functions/_shared/internal-fetch.ts` that wraps `fetch` with `X-GetPawsy-Automation: <worker>` + `X-GetPawsy-Internal: true` + HMAC signature (`INTERNAL_TRAFFIC_SIGNING_SECRET`).
+- Update the ~7 internal callers that hit our own storefront: `pinterest-verify-worker`, `pinterest-cron-worker` (verify leg), `pinterest-track`, `canonical-health-check`, `analytics-health-probe`, `monitoring-tracking-heartbeat`, `pinterest-flow-monitor`.
+- Update `canonical-ingest` and the storefront edge/middleware that produces `canonical_events` to:
+  - verify the signature → set `is_internal=true`, `traffic_class='internal_automation'`, `automation_source=<worker>`, `exclude_from_commercial=true`
+  - never write these rows into the human-facing views
 
-Board routing per map (Luxury Pet Beds / Dog Walking Essentials / Dog Travel Accessories / Pet Parent Hacks fallback). Do NOT force agility→Travel; use most relevant owned board.
+New secret required: `INTERNAL_TRAFFIC_SIGNING_SECRET` (I'll request it via `add_secret` at the start of Phase 2).
 
-### Phase 6 — Gate stack (unchanged)
-Each queued row must pass in this order before publish: QA PASS, native PASS, PRE overall ≥95 (visibility/expectation/click intent/landing/shopping all ≥95), integrity guard, destination integrity, species/variant/visual identity. Zero retries, zero threshold reductions.
+## Phase 3 — Client telemetry expansion (privacy-conscious)
 
-### Phase 7 — Publication + verification
-Publish via `pinterest-cron-worker` (isolation-aware). Per pin: POST `/v5/pins` with resolved `board_id`, store `pinterest_pin_id`+`posted_at`, then read-only GET to verify public state, image, title, destination, actual board. If actual board ≠ intended but pin is correct → `POSTED_WITH_BOARD_WARNING` (do not delete). Persist DB status to match live state.
+Update the storefront tracker (in `src/lib/analytics/*` and the ingest endpoint):
 
-### Phase 8 — Terminal
-Clear `pinterest_runtime_settings.wave_isolation_active_run_id`. Preserve ledger/cache. Do not resume other work.
+- Add: `viewport_w/h`, `screen_w/h`, `timezone`, `platform`, `browser_major`, `sec_purpose`, `document_visibility`, `navigation_type`, `has_scroll`, `has_pointer`, `has_keyboard`, `visible_ms`, `js_executed=true` beacon.
+- Server side: hash IP (`sha256(ip + daily_salt)`), resolve ASN via existing geo table if present else NULL, drop raw IP after ingest.
+- Schema: `ALTER TABLE canonical_events` + `canonical_sessions` to add nullable columns above + `classifier_version`, `traffic_class`, `is_internal`, `exclude_from_commercial`, `classification_reason`, `automation_source`, `bot_name`, `bot_family`, `bot_confidence`, `ip_hash`, `asn`.
+- Retention: `ip_hash` kept 30d, raw UA kept 90d, then daily job scrubs.
 
-### Phase 9 — Report
-Emit the full candidate-by-candidate table + final-pin table + aggregates exactly as specified (candidates checked, paid vision calls, image-gen calls=0, cache hits, published, board warnings, terminal rejects, total spend, cost/pin, legacy rows=0, duplicates=0, Shopify links=0, isolation cleared).
+## Phase 4 — Bot + frozen-UA detection
 
-### Stop conditions
-- 3 pins reach terminal state → PASS
-- Budget/paid-call cap hit before 3 → PARTIAL with remaining budget
-- Isolation/ledger/publication enforcement fails → FAIL
-- No code changes unless runtime error blocks execution; if one occurs, apply the minimum patch and continue (same pattern as canary run).
+- Server-side classifier upgraded to detect:
+  - Googlebot, Bingbot, Pinterestbot, AhrefsBot, SemrushBot, DuckDuckBot, UptimeRobot, Pingdom, StatusCake, headless-Chrome, Puppeteer, Playwright (`HeadlessChrome`, `sec-ch-ua` mismatches).
+  - Reverse-DNS verification for Googlebot/Bingbot/Pinterestbot when we have IP.
+  - **Frozen-UA anomaly**: rolling 24h window; if `count(UA) > 50 AND distinct_visitor_ids > 20 AND all sessions <1s with no interaction` → `BOT_PROBABLE, reason='frozen_ua_pattern'`. Runs in the ingest function against a small in-memory cache + a daily materialized aggregate.
+- Non-page routes: hard exclude `/api/*`, `/api/img/*`, `/healthz*`, `/*.map`, `/robots.txt`, `/sitemap*.xml`, `/favicon.*` from `CANONICAL_PAGE_VIEW` at the tracker level and re-assert at ingest.
 
-Approve to execute.
+## Phase 5 — Historical reclassification (immutable raw preserved)
+
+- New table `canonical_session_classifications_v2` (session_id, traffic_class, is_internal, confidence, reason, classifier_version, reclassified_at). Raw `canonical_events` untouched.
+- Backfill job: iterate last 30d of sessions using stored telemetry from Phase 3 columns; where telemetry is missing → `UNKNOWN` (never `HUMAN`, never `US`, never `direct`).
+- Views join to v2 classifications and prefer them over row-level v1 columns.
+
+## Phase 6 — Dashboard split
+
+- `src/pages/admin/Analytics*` (and the Visitor World Map V2 already governed by mem): three visually separated blocks per §13:
+  1. **Commercial** — HUMAN_CONFIRMED only by default, toggle to include HUMAN_PROBABLE.
+  2. **Traffic quality** — stacked bar: human / internal / bots / verifiers / unknown.
+  3. **Technical observability** — raw crawler / verifier / preview / uptime counts.
+- Conversion-rate denominator switched to human sessions only. Country pie chart uses `normalize_country()`.
+
+## Phase 7 — Controlled verification matrix
+
+Run 8 synthetic requests (Bingbot UA, Lovable preview URL, signed automation, `/api/img`, real headless with all telemetry, etc.) and assert each lands in the expected `traffic_class`. Zero fake Pinterest clicks or public engagement.
+
+## Technical details
+
+- Migrations: schema-only, additive (new columns nullable, new tables, new functions, new views recreated with `CREATE OR REPLACE`). No destructive changes; the `analytics_traffic_classification` and `canonical_sessions_traffic_class` v1 outputs stay readable for one release cycle.
+- Feature flag `ANALYTICS_CLASSIFIER_V2_ENABLED` on the ingest function so Phase 2–4 can dark-launch.
+- Tests: `supabase/functions/_shared/traffic-classifier-v2.test.ts` (Deno) + `src/lib/analytics/__tests__/classifierV2.test.ts` (Vitest) covering all 15 §14 cases.
+- Rollback per phase: `DROP FUNCTION classify_channel_v2`, revert view definitions from git — no data loss because raw `canonical_events` is never mutated.
+
+## Recommended execution order
+
+Phase 1 → Phase 3 (write-path telemetry needs to exist before Phase 4 can lean on it) → Phase 4 → Phase 2 → Phase 5 → Phase 6 → Phase 7.
+
+Reply **"go phase 1"** to start (schema/view fixes + tests only, zero write-path or dashboard risk), or **"go all phases sequentially"** to authorize the whole sequence (I'll pause between phases for review), or name any subset.
