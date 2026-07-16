@@ -26,6 +26,14 @@
 /pinterest-feed.xml https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 302
 /pinterest-feed     https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/pinterest-feed?format=xml 302
 
+# ── Google Merchant Center feed (Task C: full live catalog) ──
+# Public read-only URLs served by the merchant-feed-full edge function.
+# Content-Type: text/tab-separated-values (TSV) or text/csv (CSV).
+/feeds/google-merchant.tsv     https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-feed-full?file=tsv 302
+/feeds/google-merchant.csv     https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-feed-full?file=csv 302
+/feeds/google-merchant-audit.csv   https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-feed-full?file=audit 302
+/feeds/google-merchant-summary.md  https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/merchant-feed-full?file=summary 302
+
 # ── Legacy collection singular → plural ──
 /collection/:slug /collections/:slug 301
 
