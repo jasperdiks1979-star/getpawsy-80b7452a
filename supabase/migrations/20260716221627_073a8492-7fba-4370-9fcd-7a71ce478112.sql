@@ -1,0 +1,1 @@
+UPDATE public.pinterest_run_config SET max_qa_calls = 20, max_image_calls = 4, max_credit_spend_per_pin = 0.10, max_paid_image_calls_per_pin = 0, max_total_paid_calls = 20 WHERE run_id = '3d372537-0d64-41d5-8003-0e3527ec9b28';

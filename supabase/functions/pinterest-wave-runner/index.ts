@@ -208,10 +208,10 @@ async function buildPublishPayload(
   const now = new Date().toISOString();
   const utm = `utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`;
   const title = truncate(product.name, 100);
-  const description = truncate(
-    product.description?.replace(/\s+/g, " ") || `${product.name} — trusted by US pet parents.`,
-    495,
-  );
+  // Never pass raw supplier PDP copy through — it frequently contains phrases banned by
+  // enforce_pin_copy_rules (e.g. "tired of"). Build a safe factual description from name.
+  const safeBase = `${product.name} — designed for happy dogs. Loved by US pet parents. Built for daily use with your best friend. See details on getpawsy.pet.`;
+  const description = truncate(safeBase.replace(/\s+/g, " "), 495);
   const idempotency_key = `canary:${cfg.run_id}:${product.id}`;
   return {
     product_id: product.id,
