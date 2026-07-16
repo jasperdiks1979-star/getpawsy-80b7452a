@@ -240,6 +240,7 @@ async function buildPublishPayload(
     hero_priority: heroPriority,
     idempotency_key,
     source_type: "product_ai", // must be in {lifestyle_ai,product_ai,cinematic_ai}; tracking trigger silently drops other sources
+    pin_variant: `canary_photo_lock_${cfg.run_id.slice(0, 8)}`, // NOT NULL column
     retries: 0,
     meta: {
       creative_source: "creative_director_v2", // satisfies cron AI-only gate
