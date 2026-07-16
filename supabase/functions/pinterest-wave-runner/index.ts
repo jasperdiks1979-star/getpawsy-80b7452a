@@ -12,7 +12,11 @@
 //         allow_pro_image?, manual_resume?, hero_priority_slugs?, dry_run? }
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 import {
   assertBudget,
   assertNotPaused,
