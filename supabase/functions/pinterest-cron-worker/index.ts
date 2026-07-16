@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { validatePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
-import { pickBestBoard, probeUrlQuality } from "../_shared/pinterest-board-intelligence.ts";
+import { probeUrlQuality } from "../_shared/pinterest-board-intelligence.ts";
 import { verifyPinFull } from "../_shared/pinterest-verify.ts";
 import { runPinQa } from "../_shared/pinterest-qa.ts";
 import { computeUsAudienceScore } from "../_shared/pinterest-copy.ts";
