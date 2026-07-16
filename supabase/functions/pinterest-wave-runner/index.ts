@@ -232,7 +232,7 @@ async function buildPublishPayload(
     priority: 5,
     scheduled_at: now,
     approved_at: now, // canary is pre-approved by operator invocation
-    approved_by: "canary_wave_runner",
+    approved_by: null, // approved_by is a uuid FK; operator-driven canary leaves it null
     us_audience_score: 95,
     content_type: "photo_lock_composite",
     image_hash: pre.image_hash,
