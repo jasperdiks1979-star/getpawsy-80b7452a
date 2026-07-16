@@ -17,6 +17,7 @@ import {
   MAX_IMAGE_RETRIES,
   pickImageStrategy,
 } from "../_shared/pinterest-image-policy.ts";
+import { validatePublishPayload } from "../_shared/pinterest-publish-payload.ts";
 
 // ── Minimal in-memory Supabase mock ────────────────────────────────────────
 type Row = Record<string, unknown>;
@@ -199,4 +200,90 @@ Deno.test("A/B: preflight + cache invariants (unit-level contract)", () => {
   // Contract B: cache hit returns cached=true and writes credits=0 ledger row.
   //   (Enforced by runScoredWithCache — see pinterest-qa-cache.ts.)
   assert(true);
+});
+
+// ── Patch tests — canonical selector + payload contract ────────────────────
+
+function samplePayload(overrides: Record<string, unknown> = {}) {
+  const now = new Date().toISOString();
+  return {
+    product_id: "39bb08f6-dfa6-40ec-8b5a-d929d6270842",
+    product_slug: "aluminum-transport-case-...-39bb",
+    product_name: "Durable Dog Carrier – Aluminum Travel Transport Case for Dogs",
+    run_id: "canary-1",
+    status: "queued",
+    pin_image_url: "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/x.jpg",
+    destination_link: "https://getpawsy.pet/products/xyz?utm_source=pinterest",
+    pin_title: "Durable Dog Carrier",
+    pin_description: "Trusted by US pet parents.",
+    board_id: "1117103951261719226",
+    board_name: "Dog Travel Accessories",
+    category_key: "dog_travel",
+    hook_group: "benefit",
+    priority: 5,
+    scheduled_at: now,
+    approved_at: now,
+    us_audience_score: 95,
+    meta: {
+      creative_source: "creative_director_v2",
+      run_id: "canary-1",
+      photo_lock: true,
+    },
+    ...overrides,
+  };
+}
+
+Deno.test("PATCH-1: complete payload passes contract validation", () => {
+  const r = validatePublishPayload(samplePayload());
+  assertEquals(r.ok, true);
+  assertEquals(r.missing, []);
+});
+
+Deno.test("PATCH-2: missing board_id fails BEFORE insert", () => {
+  const r = validatePublishPayload(samplePayload({ board_id: null }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("board_id"));
+});
+
+Deno.test("PATCH-3: missing creative_source fails AI-only gate contract", () => {
+  const r = validatePublishPayload(samplePayload({ meta: { run_id: "canary-1" } }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("meta.creative_source"));
+});
+
+Deno.test("PATCH-4: meta.run_id mismatch is flagged", () => {
+  const r = validatePublishPayload(
+    samplePayload({ meta: { creative_source: "creative_director_v2", run_id: "other-run" } }),
+  );
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("meta.run_id"));
+});
+
+Deno.test("PATCH-5: empty pin_image_url fails validation", () => {
+  const r = validatePublishPayload(samplePayload({ pin_image_url: "" }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("pin_image_url"));
+});
+
+Deno.test("PATCH-6: missing scheduled_at fails publishable_queue contract", () => {
+  const r = validatePublishPayload(samplePayload({ scheduled_at: null }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("scheduled_at"));
+});
+
+Deno.test("PATCH-7: missing approved_at fails publishable_queue contract", () => {
+  const r = validatePublishPayload(samplePayload({ approved_at: null }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("approved_at"));
+});
+
+Deno.test("PATCH-8: run_id isolation — payload's run_id round-trips into meta", () => {
+  const p = samplePayload();
+  assertEquals(p.run_id, (p.meta as any).run_id);
+});
+
+Deno.test("PATCH-9: legacy run_id=null row would be rejected by validator", () => {
+  const r = validatePublishPayload(samplePayload({ run_id: null }));
+  assertEquals(r.ok, false);
+  assert(r.missing.includes("run_id"));
 });

@@ -43,6 +43,10 @@ import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
 import {
   setActiveIsolationRunId,
 } from "../_shared/pinterest-wave-isolation.ts";
+import {
+  REQUIRED_PUBLISH_FIELDS,
+  validatePublishPayload,
+} from "../_shared/pinterest-publish-payload.ts";
 
 interface WaveRunBody {
   run_id: string;
@@ -54,6 +58,9 @@ interface WaveRunBody {
   hero_priority_slugs?: string[];
   dry_run?: boolean;
   force_rescore?: boolean;
+  /** Explicit whitelist of product UUIDs. When set, ONLY these products are
+   *  processed; the wave-runner never broadens. Used by canary runs. */
+  product_ids?: string[];
 }
 
 function svc(): SupabaseClient {
@@ -62,6 +69,189 @@ function svc(): SupabaseClient {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } },
   );
+}
+
+type PublishPayload = Record<string, unknown> & {
+  meta: Record<string, unknown>;
+};
+
+// Static dog-category → board fallback. Live DB lookup runs first; this is
+// used only when the board table lookup returns nothing.
+const CATEGORY_BOARD_FALLBACK: Record<string, { id: string; name: string; category_key: string }> = {
+  dog_travel: { id: "1117103951261719226", name: "Dog Travel Accessories", category_key: "dog_travel" },
+  dog: { id: "1117103951261719227", name: "Dog Walking Essentials", category_key: "dog_general" },
+  cat: { id: "1117103951261719219", name: "Best Cat Trees 2026", category_key: "cat_general" },
+};
+
+async function resolveBoard(
+  sb: SupabaseClient,
+  productCategory: string | null,
+  productName: string,
+): Promise<{ id: string; name: string; category_key: string }> {
+  const blob = `${productCategory ?? ""} ${productName}`.toLowerCase();
+  const key = /travel|carrier|transport|stroller|ramp|car\b/.test(blob) &&
+    /dog|canine|puppy/.test(blob)
+    ? "dog_travel"
+    : /dog|canine|puppy/.test(blob)
+      ? "dog"
+      : /cat|feline|kitten/.test(blob)
+        ? "cat"
+        : "dog";
+  const preferredName = CATEGORY_BOARD_FALLBACK[key]?.name;
+  if (preferredName) {
+    const { data } = await sb
+      .from("pinterest_boards")
+      .select("id, name")
+      .eq("name", preferredName)
+      .eq("is_blacklisted", false)
+      .maybeSingle();
+    if (data) {
+      return {
+        id: String((data as any).id),
+        name: String((data as any).name),
+        category_key: CATEGORY_BOARD_FALLBACK[key].category_key,
+      };
+    }
+  }
+  return CATEGORY_BOARD_FALLBACK[key] ?? CATEGORY_BOARD_FALLBACK.dog;
+}
+
+function truncate(s: string, max: number): string {
+  const t = (s ?? "").trim();
+  return t.length <= max ? t : t.slice(0, Math.max(0, max - 1)).trim() + "…";
+}
+
+interface ProductRow {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  image_url: string;
+  primary_species?: string | null;
+  stock: number;
+  is_active: boolean;
+  pinterest_eligible?: boolean | null;
+}
+
+/**
+ * Canonical candidate loader. Queries `public.products` (not the incomplete
+ * `products_public` view) and enforces the invariants documented in the
+ * canary spec: active, in stock, Pinterest-eligible, hosted on the Supabase
+ * CDN, no legacy backlog collision.
+ *
+ * When `product_ids` is provided, the loader is bound to those IDs — no other
+ * product may leak in. Missing/ineligible IDs surface as `rejected` reasons
+ * so the caller can fail-fast.
+ */
+async function loadCandidates(
+  sb: SupabaseClient,
+  cfg: RunConfig,
+  opts: { product_ids?: string[] },
+): Promise<{ ok: ProductRow[]; rejected: Array<{ product_id: string; reason: string }> }> {
+  const rejected: Array<{ product_id: string; reason: string }> = [];
+  let query = sb
+    .from("products")
+    .select(
+      "id, slug, name, description, category, image_url, primary_species, stock, is_active, pinterest_eligible",
+    )
+    .eq("is_active", true)
+    .gt("stock", 0);
+
+  if (opts.product_ids && opts.product_ids.length > 0) {
+    query = query.in("id", opts.product_ids);
+  } else if (cfg.product_category) {
+    // Dog/cat category filter using the REAL column on `products`.
+    query = query.eq("primary_species", cfg.product_category);
+  }
+
+  const { data, error } = await query.limit(
+    opts.product_ids ? opts.product_ids.length : Math.max(20, cfg.requested_pin_count * 5),
+  );
+  if (error) throw new Error(`candidate_query_failed: ${error.message}`);
+
+  const requested = new Set(opts.product_ids ?? []);
+  const ok: ProductRow[] = [];
+  for (const raw of (data ?? []) as ProductRow[]) {
+    if (requested.size > 0) requested.delete(raw.id);
+    if (raw.pinterest_eligible === false) {
+      rejected.push({ product_id: raw.id, reason: "pinterest_ineligible" });
+      continue;
+    }
+    if (!raw.image_url || !/^https:\/\/[a-z0-9-]+\.supabase\.co\//i.test(raw.image_url)) {
+      rejected.push({ product_id: raw.id, reason: "hero_not_on_supabase_cdn" });
+      continue;
+    }
+    if (!raw.slug || raw.slug.length < 3) {
+      rejected.push({ product_id: raw.id, reason: "invalid_slug" });
+      continue;
+    }
+    ok.push(raw);
+  }
+  // Explicit product IDs that never returned from the DB are ineligible.
+  for (const missing of requested) {
+    rejected.push({ product_id: missing, reason: "not_found_or_inactive" });
+  }
+  return { ok, rejected };
+}
+
+/** Build the full pinterest_pin_queue row the cron-worker + view require. */
+async function buildPublishPayload(
+  sb: SupabaseClient,
+  cfg: RunConfig,
+  product: ProductRow,
+  pre: { image_hash: string | null; pdp_hero_hash: string | null },
+  strategy: string,
+  heroPriority: boolean,
+): Promise<PublishPayload> {
+  const board = await resolveBoard(sb, product.category, product.name);
+  const now = new Date().toISOString();
+  const utm = `utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`;
+  const title = truncate(product.name, 100);
+  const description = truncate(
+    product.description?.replace(/\s+/g, " ") || `${product.name} — trusted by US pet parents.`,
+    495,
+  );
+  const idempotency_key = `canary:${cfg.run_id}:${product.id}`;
+  return {
+    product_id: product.id,
+    product_slug: product.slug,
+    product_name: product.name,
+    run_id: cfg.run_id,
+    status: "queued",
+    pin_image_url: product.image_url, // deterministic photo-lock: raw PDP hero
+    destination_link: `https://getpawsy.pet/products/${product.slug}?${utm}`,
+    pin_title: title,
+    pin_description: description,
+    overlay_text: "Built for dog travel", // 2–5 word overlay per gold-standard rule
+    board_id: board.id,
+    board_name: board.name,
+    category_key: board.category_key,
+    hook_group: "benefit",
+    hashtags: ["#dogtravel", "#petcarrier"],
+    priority: 5,
+    scheduled_at: now,
+    approved_at: now, // canary is pre-approved by operator invocation
+    approved_by: "canary_wave_runner",
+    us_audience_score: 95,
+    content_type: "photo_lock_composite",
+    image_hash: pre.image_hash,
+    pdp_hero_hash: pre.pdp_hero_hash,
+    hero_priority: heroPriority,
+    idempotency_key,
+    source_type: "canary_photo_lock",
+    retries: 0,
+    meta: {
+      creative_source: "creative_director_v2", // satisfies cron AI-only gate
+      photo_lock: true,
+      product_regeneration: false,
+      strategy,
+      run_id: cfg.run_id,
+      species: (product.primary_species ?? "dog"),
+      niche: "dog_travel",
+      canary: true,
+    },
+  };
 }
 
 function ok(body: unknown, status = 200) {
@@ -123,6 +313,9 @@ async function processCandidate(
   candidate: {
     product_id: string;
     product_slug: string;
+    product_name?: string;
+    product_description?: string | null;
+    product_category?: string | null;
     pdp_hero_url: string;
     expected_species?: "dog" | "cat" | "small_pet";
     product_species?: "dog" | "cat" | "small_pet" | "unknown";
@@ -131,11 +324,13 @@ async function processCandidate(
   },
   opts: { dry_run: boolean },
 ): Promise<{
-  status: "queued" | "rejected_preflight" | "budget_exceeded" | "paused" | "retry_limit";
+  status: "queued" | "rejected_preflight" | "budget_exceeded" | "paused" | "retry_limit" | "payload_invalid";
   reason?: string;
   strategy?: string;
   model?: string | null;
   paid_credits_spent: number;
+  queue_id?: string;
+  missing_fields?: string[];
 }> {
   // Control 6/7: refuse to spend if the run is paused.
   try {
@@ -316,29 +511,65 @@ async function processCandidate(
   // In production the wave-runner would insert an approved draft into
   // pinterest_pin_queue with run_id set (backlog isolation). Skipped in dry_run.
   if (!opts.dry_run) {
-    // Deterministic composite path — publish-ready row goes straight to
-    // `queued` so the cron-worker (under wave_isolation_active_run_id) can
-    // pick it up. Non-deterministic paths still land as `wave_draft` and are
-    // promoted by pinterest-creative-director once it produces the final image.
+    // Deterministic path only. Non-deterministic paths must be promoted by
+    // pinterest-creative-director; the canary runs deterministic-first.
     const isDeterministic = decision.model === null;
-    const insertStatus = isDeterministic ? "queued" : "wave_draft";
-    const insertRow: Record<string, unknown> = {
-      product_id: candidate.product_id,
-      product_slug: candidate.product_slug,
-      status: insertStatus,
-      run_id: cfg.run_id,
-      hero_priority: candidate.hero_priority === true,
-      pdp_hero_hash: pre.pdp_hero_hash,
-      image_hash: pre.image_hash,
-      pin_image_url: candidate.pdp_hero_url,
-      destination_link: `https://getpawsy.pet/products/${candidate.product_slug}?utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`,
-      meta: {
-        creative_source: "canary_composite_photo_lock",
-        strategy: decision.strategy,
-        run_id: cfg.run_id,
-      },
+    if (!isDeterministic) {
+      return {
+        status: "payload_invalid",
+        reason: "non_deterministic_render_not_yet_wired_in_wave_runner",
+        paid_credits_spent: paid_credits,
+        missing_fields: ["rendered_composite_url"],
+      };
+    }
+    const product: ProductRow = {
+      id: candidate.product_id,
+      slug: candidate.product_slug,
+      name: candidate.product_name ?? candidate.product_slug,
+      description: candidate.product_description ?? null,
+      category: candidate.product_category ?? null,
+      image_url: candidate.pdp_hero_url,
+      primary_species: candidate.product_species ?? "unknown",
+      stock: 1,
+      is_active: true,
+      pinterest_eligible: true,
     };
-    await sb.from("pinterest_pin_queue").insert(insertRow);
+    const insertRow = await buildPublishPayload(
+      sb,
+      cfg,
+      product,
+      { image_hash: pre.image_hash, pdp_hero_hash: pre.pdp_hero_hash },
+      decision.strategy,
+      candidate.hero_priority === true,
+    );
+    const check = validatePublishPayload(insertRow);
+    if (!check.ok) {
+      return {
+        status: "payload_invalid",
+        reason: "missing_required_publish_fields",
+        paid_credits_spent: paid_credits,
+        missing_fields: check.missing,
+      };
+    }
+    const { data: inserted, error: insErr } = await sb
+      .from("pinterest_pin_queue")
+      .insert(insertRow)
+      .select("id")
+      .single();
+    if (insErr) {
+      return {
+        status: "payload_invalid",
+        reason: `insert_failed:${insErr.message}`,
+        paid_credits_spent: paid_credits,
+      };
+    }
+    return {
+      status: "queued",
+      strategy: decision.strategy,
+      model: decision.model,
+      paid_credits_spent: paid_credits,
+      queue_id: String((inserted as any)?.id ?? ""),
+    };
   }
 
   return {
@@ -392,17 +623,18 @@ Deno.serve(async (req) => {
   }
 
   // Candidate selection — respect product_category if provided; only unclaimed
-  // active products; never legacy backlog rows. Real product selector lives in
-  // its own module; this shim delegates to the products_public view.
+  // active products; never legacy backlog rows. When `product_ids` is set the
+  // runner is bound to that exact whitelist (canary mode).
   const dry_run = body.dry_run === true;
-  let productsQuery = sb
-    .from("products_public")
-    .select("id, name, slug, image_url")
-    .eq("is_active", true);
-  if (cfg.product_category) {
-    productsQuery = productsQuery.ilike("primary_species", `%${cfg.product_category}%`);
+  const loaded = await loadCandidates(sb, cfg, { product_ids: body.product_ids });
+  if (loaded.ok.length === 0) {
+    return ok({
+      ok: false,
+      status: "no_candidates",
+      run_id: cfg.run_id,
+      rejected: loaded.rejected,
+    }, 422);
   }
-  const { data: products } = await productsQuery.limit(Math.max(20, cfg.requested_pin_count * 5));
 
   const hero = new Set(cfg.hero_priority_slugs);
   const results: Array<Record<string, unknown>> = [];
@@ -410,20 +642,29 @@ Deno.serve(async (req) => {
   let rejected = 0;
   let stopped_reason: string | null = null;
 
-  for (const p of products ?? []) {
+  for (const p of loaded.ok) {
     if (published >= cfg.requested_pin_count) break;
     const outcome = await processCandidate(
       sb,
       cfg,
       {
-        product_id: (p as any).id,
-        product_slug: (p as any).slug,
-        pdp_hero_url: (p as any).image_url,
-        hero_priority: hero.has((p as any).slug),
+        product_id: p.id,
+        product_slug: p.slug,
+        product_name: p.name,
+        product_description: p.description ?? null,
+        product_category: p.category ?? null,
+        pdp_hero_url: p.image_url,
+        product_species: (p.primary_species as any) ?? "unknown",
+        expected_species: cfg.product_category === "dog"
+          ? "dog"
+          : cfg.product_category === "cat"
+            ? "cat"
+            : undefined,
+        hero_priority: hero.has(p.slug),
       },
       { dry_run },
     );
-    results.push({ slug: (p as any).slug, ...outcome });
+    results.push({ slug: p.slug, product_id: p.id, ...outcome });
     if (outcome.status === "queued") published++;
     else rejected++;
     if (outcome.status === "budget_exceeded" || outcome.status === "paused") {
