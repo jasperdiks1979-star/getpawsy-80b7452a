@@ -18,7 +18,7 @@ const TRUST_POINTS = {
   ],
   pdp: [
     { icon: Award, label: 'Quality selected', desc: 'Hand-vetted for materials, durability, and real-world performance.' },
-    { icon: Users, label: 'Popular among pet owners', desc: 'Recommended based on everyday pet care needs and owner feedback.' },
+    { icon: Users, label: 'Made for everyday pet care', desc: 'Selected to fit common pet care needs based on product research and owner feedback.' },
     { icon: Shield, label: 'Secure & supported', desc: '30-day returns, secure checkout, and responsive US customer support.' },
   ],
 };
