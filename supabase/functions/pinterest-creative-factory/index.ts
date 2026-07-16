@@ -1522,6 +1522,16 @@ Deno.serve(async (req) => {
   const sb = admin();
   const body = await req.json().catch(() => ({}));
   const action = String(body.action ?? "status");
+  // Wave isolation: refuse legacy paid actions while a canary is running.
+  if (action !== "status") {
+    try {
+      const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+      const guard = await assertIsolationAllows(sb, body?.run_id ?? null, corsHeaders);
+      if (guard) return guard;
+    } catch (e) {
+      console.warn("[creative-factory] wave-isolation check failed (non-fatal):", e);
+    }
+  }
   try {
     if (action === "status") {
       return json({
