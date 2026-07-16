@@ -17,7 +17,7 @@ import {
   MAX_IMAGE_RETRIES,
   pickImageStrategy,
 } from "../_shared/pinterest-image-policy.ts";
-import { validatePublishPayload } from "./index.ts";
+import { validatePublishPayload } from "../_shared/pinterest-publish-payload.ts";
 
 // ── Minimal in-memory Supabase mock ────────────────────────────────────────
 type Row = Record<string, unknown>;
