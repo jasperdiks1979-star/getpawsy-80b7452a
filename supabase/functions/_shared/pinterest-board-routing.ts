@@ -29,9 +29,16 @@ export function resolveDogBoardKey(category: string | null | undefined, name: st
   // 1. Car-context travel gear FIRST (most specific).
   //    Requires an explicit vehicle/travel token — a bare "ramp" is NOT enough.
   const isCarContext = /\b(car|vehicle|suv|truck|auto|booster|back\s*seat|backseat|road\s*trip)\b/.test(blob);
-  const isTravelItem = /\b(carrier|transport|stroller|travel\s*bottle|travel\s*bowl|seat\s*belt|crash[-\s]*tested)\b/.test(blob);
+  const isTravelItem = /\b(carrier|transport|stroller|seat\s*belt|crash[-\s]*tested)\b/.test(blob)
+    || /\btravel\b.*\b(bottle|bowl|cup|mug|kit|bag)\b/.test(blob);
   if (isTravelItem || (isCarContext && /\b(ramp|stairs|steps|seat)\b/.test(blob))) {
     return "travel";
+  }
+
+  // 1b. Home-access ramps/stairs must NOT match the beds regex (which catches
+  //     "for bed"). Route them to fallback before the beds check runs.
+  if (/\b(ramp|stairs|steps|agility)\b/.test(blob)) {
+    return "fallback";
   }
 
   // 2. Walking gear.
@@ -39,7 +46,7 @@ export function resolveDogBoardKey(category: string | null | undefined, name: st
     return "walking";
   }
 
-  // 3. Beds & sofas.
+  // 3. Beds & sofas (only when no ramp/stairs context — handled above).
   if (/\b(bed|sofa|couch|mattress|orthopedic|bolster|donut|cushion|lounger)\b/.test(blob)) {
     return "beds";
   }
