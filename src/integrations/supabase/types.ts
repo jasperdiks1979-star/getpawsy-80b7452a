@@ -57840,6 +57840,7 @@ export type Database = {
           external_url: string | null
           final_resolved_url: string | null
           hashtags: string[] | null
+          hero_priority: boolean
           hook_group: string | null
           http_status: number | null
           id: string
@@ -57860,6 +57861,7 @@ export type Database = {
           next_recovery_eligible_at: string | null
           overlay_text: string | null
           pcie2_creative_id: string | null
+          pdp_hero_hash: string | null
           pin_description: string
           pin_external_id: string | null
           pin_image_phash: string | null
@@ -57892,6 +57894,7 @@ export type Database = {
           repaired_at: string | null
           replacement_for_pin_id: string | null
           retries: number
+          run_id: string | null
           scheduled_at: string | null
           source_type: string | null
           status: string
@@ -57922,6 +57925,7 @@ export type Database = {
           external_url?: string | null
           final_resolved_url?: string | null
           hashtags?: string[] | null
+          hero_priority?: boolean
           hook_group?: string | null
           http_status?: number | null
           id?: string
@@ -57942,6 +57946,7 @@ export type Database = {
           next_recovery_eligible_at?: string | null
           overlay_text?: string | null
           pcie2_creative_id?: string | null
+          pdp_hero_hash?: string | null
           pin_description: string
           pin_external_id?: string | null
           pin_image_phash?: string | null
@@ -57974,6 +57979,7 @@ export type Database = {
           repaired_at?: string | null
           replacement_for_pin_id?: string | null
           retries?: number
+          run_id?: string | null
           scheduled_at?: string | null
           source_type?: string | null
           status?: string
@@ -58004,6 +58010,7 @@ export type Database = {
           external_url?: string | null
           final_resolved_url?: string | null
           hashtags?: string[] | null
+          hero_priority?: boolean
           hook_group?: string | null
           http_status?: number | null
           id?: string
@@ -58024,6 +58031,7 @@ export type Database = {
           next_recovery_eligible_at?: string | null
           overlay_text?: string | null
           pcie2_creative_id?: string | null
+          pdp_hero_hash?: string | null
           pin_description?: string
           pin_external_id?: string | null
           pin_image_phash?: string | null
@@ -58056,6 +58064,7 @@ export type Database = {
           repaired_at?: string | null
           replacement_for_pin_id?: string | null
           retries?: number
+          run_id?: string | null
           scheduled_at?: string | null
           source_type?: string | null
           status?: string
@@ -59118,6 +59127,51 @@ export type Database = {
           },
         ]
       }
+      pinterest_qa_score_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          credits_saved: number
+          hits: number
+          image_hash: string
+          last_hit_at: string | null
+          passed: boolean
+          pdp_hero_hash: string | null
+          product_id: string | null
+          result: Json
+          scorer: string
+          scoring_version: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          credits_saved?: number
+          hits?: number
+          image_hash: string
+          last_hit_at?: string | null
+          passed?: boolean
+          pdp_hero_hash?: string | null
+          product_id?: string | null
+          result: Json
+          scorer: string
+          scoring_version: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          credits_saved?: number
+          hits?: number
+          image_hash?: string
+          last_hit_at?: string | null
+          passed?: boolean
+          pdp_hero_hash?: string | null
+          product_id?: string | null
+          result?: Json
+          scorer?: string
+          scoring_version?: string
+        }
+        Relationships: []
+      }
       pinterest_reality_recovery_events: {
         Row: {
           action: string
@@ -59687,11 +59741,15 @@ export type Database = {
       }
       pinterest_render_attempts: {
         Row: {
+          abort_reason: string | null
           attempt_no: number
           brief: Json | null
+          cost_credits: number | null
           created_at: string
           hook_category: string | null
           id: string
+          image_hash: string | null
+          image_model: string | null
           niche_key: string | null
           pattern_id: string | null
           pin_mode: string | null
@@ -59699,6 +59757,8 @@ export type Database = {
           product_slug: string | null
           reasons: string[]
           rejected: boolean
+          retry_number: number
+          run_id: string | null
           score_lifestyle: number | null
           score_non_dropshipping: number | null
           score_pinterest_fit: number | null
@@ -59706,11 +59766,15 @@ export type Database = {
           total_score: number | null
         }
         Insert: {
+          abort_reason?: string | null
           attempt_no?: number
           brief?: Json | null
+          cost_credits?: number | null
           created_at?: string
           hook_category?: string | null
           id?: string
+          image_hash?: string | null
+          image_model?: string | null
           niche_key?: string | null
           pattern_id?: string | null
           pin_mode?: string | null
@@ -59718,6 +59782,8 @@ export type Database = {
           product_slug?: string | null
           reasons?: string[]
           rejected?: boolean
+          retry_number?: number
+          run_id?: string | null
           score_lifestyle?: number | null
           score_non_dropshipping?: number | null
           score_pinterest_fit?: number | null
@@ -59725,11 +59791,15 @@ export type Database = {
           total_score?: number | null
         }
         Update: {
+          abort_reason?: string | null
           attempt_no?: number
           brief?: Json | null
+          cost_credits?: number | null
           created_at?: string
           hook_category?: string | null
           id?: string
+          image_hash?: string | null
+          image_model?: string | null
           niche_key?: string | null
           pattern_id?: string | null
           pin_mode?: string | null
@@ -59737,6 +59807,8 @@ export type Database = {
           product_slug?: string | null
           reasons?: string[]
           rejected?: boolean
+          retry_number?: number
+          run_id?: string | null
           score_lifestyle?: number | null
           score_non_dropshipping?: number | null
           score_pinterest_fit?: number | null
@@ -60503,6 +60575,146 @@ export type Database = {
           saves?: number
         }
         Relationships: []
+      }
+      pinterest_run_config: {
+        Row: {
+          allow_pro_image: boolean
+          created_at: string
+          created_by: string | null
+          force_rescore: boolean
+          hero_priority_slugs: string[] | null
+          manual_resume: boolean
+          manual_resume_required: boolean
+          max_credit_spend: number
+          max_image_calls: number
+          max_qa_calls: number
+          paused_reason: string | null
+          product_category: string | null
+          requested_pin_count: number
+          run_id: string
+          status: string
+          updated_at: string
+          wave_slug: string | null
+        }
+        Insert: {
+          allow_pro_image?: boolean
+          created_at?: string
+          created_by?: string | null
+          force_rescore?: boolean
+          hero_priority_slugs?: string[] | null
+          manual_resume?: boolean
+          manual_resume_required?: boolean
+          max_credit_spend?: number
+          max_image_calls?: number
+          max_qa_calls?: number
+          paused_reason?: string | null
+          product_category?: string | null
+          requested_pin_count?: number
+          run_id?: string
+          status?: string
+          updated_at?: string
+          wave_slug?: string | null
+        }
+        Update: {
+          allow_pro_image?: boolean
+          created_at?: string
+          created_by?: string | null
+          force_rescore?: boolean
+          hero_priority_slugs?: string[] | null
+          manual_resume?: boolean
+          manual_resume_required?: boolean
+          max_credit_spend?: number
+          max_image_calls?: number
+          max_qa_calls?: number
+          paused_reason?: string | null
+          product_category?: string | null
+          requested_pin_count?: number
+          run_id?: string
+          status?: string
+          updated_at?: string
+          wave_slug?: string | null
+        }
+        Relationships: []
+      }
+      pinterest_run_cost_ledger: {
+        Row: {
+          cached_hit: boolean
+          credits: number
+          error_reason: string | null
+          id: string
+          image_count: number | null
+          image_hash: string | null
+          input_tokens: number | null
+          meta: Json | null
+          model: string
+          operation: string
+          output_tokens: number | null
+          pdp_hero_hash: string | null
+          product_id: string | null
+          provider: string
+          provider_cost_usd: number | null
+          queue_id: string | null
+          retry_number: number
+          run_id: string | null
+          scoring_version: string | null
+          success: boolean
+          ts: string
+        }
+        Insert: {
+          cached_hit?: boolean
+          credits?: number
+          error_reason?: string | null
+          id?: string
+          image_count?: number | null
+          image_hash?: string | null
+          input_tokens?: number | null
+          meta?: Json | null
+          model: string
+          operation: string
+          output_tokens?: number | null
+          pdp_hero_hash?: string | null
+          product_id?: string | null
+          provider: string
+          provider_cost_usd?: number | null
+          queue_id?: string | null
+          retry_number?: number
+          run_id?: string | null
+          scoring_version?: string | null
+          success?: boolean
+          ts?: string
+        }
+        Update: {
+          cached_hit?: boolean
+          credits?: number
+          error_reason?: string | null
+          id?: string
+          image_count?: number | null
+          image_hash?: string | null
+          input_tokens?: number | null
+          meta?: Json | null
+          model?: string
+          operation?: string
+          output_tokens?: number | null
+          pdp_hero_hash?: string | null
+          product_id?: string | null
+          provider?: string
+          provider_cost_usd?: number | null
+          queue_id?: string | null
+          retry_number?: number
+          run_id?: string | null
+          scoring_version?: string | null
+          success?: boolean
+          ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_run_cost_ledger_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_run_config"
+            referencedColumns: ["run_id"]
+          },
+        ]
       }
       pinterest_runtime_settings: {
         Row: {
