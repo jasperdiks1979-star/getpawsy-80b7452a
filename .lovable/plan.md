@@ -1,122 +1,126 @@
-## Pinterest Hard Cost Controls — Implementation Plan
 
-Scope covers all 12 controls. No paid AI calls, no pin renders, no publications during implementation. Dry-run tests only.
+# Pinterest Cost-Control Closeout + 1-Pin Canary
 
----
+Scope is deliberately narrow: close the four unresolved gaps in the v1 controls, then execute exactly ONE canary pin end-to-end. No 10-pin wave. No legacy backlog. Hard cap = 1.0 credit run / 1.0 credit per pin / 1 paid image call / 3 total paid calls.
 
-### 1. Database migrations (single migration file)
+## A. End-to-end ownership trace (documented, no code)
 
-**New table `pinterest_run_config`** — per-wave budget contract.
-Columns: `run_id uuid PK`, `wave_slug text`, `requested_pin_count int`, `product_category text`, `max_credit_spend numeric default 10`, `max_image_calls int`, `max_qa_calls int`, `allow_pro_image bool default false`, `manual_resume_required bool default true`, `manual_resume bool default false`, `status text default 'active'` (`active|paused|completed|aborted`), `paused_reason text`, `created_at`, `updated_at`. RLS on, admin-read, service-role write. GRANT block.
+Written up in `.lovable/mem/marketing/pinterest-cost-controls-v1.md` as an appended section. Owner per stage in the new canonical path:
 
-**New table `pinterest_run_cost_ledger`** — every billable event.
-Columns: `id uuid PK`, `run_id uuid FK`, `queue_id uuid null`, `product_id uuid null`, `ts timestamptz default now()`, `provider text`, `model text`, `operation text` (`image_gen|image_edit|qa|pre|integrity|native|composite`), `retry_number int default 0`, `input_tokens int`, `output_tokens int`, `image_count int`, `provider_cost_usd numeric`, `credits numeric`, `success bool`, `error_reason text`, `image_hash text`, `pdp_hero_hash text`, `scoring_version text`, `cached_hit bool default false`. Index on `(run_id, ts)`, `(queue_id)`, `(image_hash, pdp_hero_hash, scoring_version)`. RLS + GRANT.
+```text
+Stage                     Owner                          Row status before → after     Paid? Guard+Ledger
+─────────────────────────────────────────────────────────────────────────────────────────────────────────
+candidate selection       pinterest-wave-runner          (none) → (none)               no    n/a
+source preflight          _shared/pinterest-source-...   (none) → (none)               no    ledger row (0cr)
+queue insertion           pinterest-wave-runner          (none) → wave_draft(run_id)   no    n/a
+image strategy pick       _shared/pinterest-image-...    wave_draft → wave_draft       no    n/a (decision only)
+image gen / composite     pinterest-creative-director    wave_draft → draft            YES*  MANDATORY
+QA                        _shared/pinterest-qa-cache     draft → draft                 YES*  MANDATORY (+cache)
+PRE                       pinterest-creative-director    draft → draft|rejected        YES*  MANDATORY (+cache)
+integrity guard           _shared/pinterest-integrity-.. draft → draft|rejected        no    n/a
+promote to queued         pinterest-wave-runner (new)    draft → queued(run_id)        no    n/a
+board routing             pinterest-cron-worker          queued → queued               no    n/a
+Pinterest POST            pinterest-cron-worker          queued → publishing → posted  no    n/a
+live GET verify           pinterest-verify-worker        posted → posted (verified_at) no    n/a
+DB reconciliation         pinterest-verify-worker        sets verified_url, board_id   no    n/a
+terminal status           cron/verify                    posted|rejected|failed        no    n/a
+```
+*YES = passes through `assertBudget` + `recordLedger` in `pinterest-cost-guard.ts`.
 
-**New table `pinterest_qa_score_cache`** — memoised QA/PRE/vision/integrity results.
-Columns: `cache_key text PK` (= sha256(`image_hash|pdp_hero_hash|product_id|scorer|scoring_version`)), `scorer text`, `scoring_version text`, `image_hash text`, `pdp_hero_hash text`, `product_id uuid`, `result jsonb`, `passed bool`, `credits_saved numeric default 0`, `created_at`. Index on scorer+version. RLS + GRANT.
+## B. Gap fixes (minimum-diff)
 
-**Extend `pinterest_pin_queue`**:
-- `run_id uuid null` (backlog isolation key)
-- `hero_priority bool default false`
-- `image_hash text null`
-- `pdp_hero_hash text null`
+### B1. `pinterest-cron-worker` claim-query patch
+Today it claims `status IN ('queued','approved','draft')` with no `run_id` filter. Change: extend the SELECT to include `run_id`, and add an explicit skip for `wave_draft`. When a `pinterest_run_config` row exists in `status='active'` with `run_id=X`, restrict the claim to rows where `run_id=X OR run_id IS NULL` behind a new runtime setting `wave_isolation_active_run_id`. Default OFF preserves legacy behavior. Wave-runner sets/clears the setting.
 
-**Extend `pinterest_render_attempts`**:
-- `retry_number int default 0`
-- `image_model text`
-- `image_hash text`
-- `cost_credits numeric`
-- `abort_reason text` (`cap_projection_exceed|preflight_fail|manual_resume_required|retry_limit`)
+### B2. `wave_draft` → `queued` promotion
+`pinterest-wave-runner` currently leaves rows as `wave_draft`, which no publisher picks up. Add a step at the end of `processCandidate` (after integrity guard passes) that flips the row to `status='queued'` and stamps `run_id`. Cron-worker's existing `in("status", ["queued","approved","draft"])` will then pick it up under the isolation flag from B1.
 
----
+### B3. `pinterest-creative-director` paid path retrofit
+Wrap EVERY `aiGatewayFetch` / model call in creative-director with `assertNotPaused` + `assertBudget` + `recordLedger`. Replace hard-coded `google/gemini-3-pro-image` default with `pickImageStrategy(cfg, hint)` from `pinterest-image-policy.ts`. Fail-closed when the row has no `run_id` and no `pinterest_run_config` exists (legacy path becomes read-only: it may still run deterministic composite paths, but paid calls throw `MissingRunContractError`). This kills the "unmetered legacy paid call" risk.
 
-### 2. New shared modules (`supabase/functions/_shared/`)
+### B4. Other paid Pinterest functions
+Audit list, wire through cost-guard or hard-disable during canary:
+- `pinterest-creative-factory` — insert `assertNotPaused` at entry; refuse when `wave_isolation_active_run_id` is set and body has no matching run_id.
+- `pinterest-warmup-regenerate`, `pinterest-regen-autopilot`, `pinterest-recovery-worker`, `pinterest-noai-refill` — same guard.
+- QA/PRE scorers — route through `runScoredWithCache`.
+No changes to non-paid publish/verify functions.
 
-**`pinterest-cost-guard.ts`** — the single enforcement point every paid call goes through.
-- `loadRunConfig(supabase, run_id)`
-- `currentRunSpend(supabase, run_id)` — sums `pinterest_run_cost_ledger.credits`
-- `assertBudget(run_id, projected_credits, op)` → throws `BudgetExceeded` before the call
-- `recordLedger(entry)` — always called (success or failure) with the pre-computed cost
-- `assertNotPaused(run_id)` → throws `RunPaused` if `status='paused'` and `manual_resume=false`
-- `pauseRun(run_id, reason)` sets `status='paused'`
+## C. Hard financial limits
 
-**`pinterest-image-policy.ts`** — Control 1 + 2.
-- `pickImageStrategy({ candidate, config })` returns one of `composite_photo_lock | composite_bg_extend | flash_image_edit | pro_image` in that order. Pro image requires `config.allow_pro_image && candidate.hero_priority && projected_within_budget`; otherwise fail-closed to `flash_image_edit`. Deterministic composite is chosen whenever the PDP hero passes preflight and no scene edit is required by the brief.
-- `MODEL_ID_MAP` = `{ flash_image_edit: 'google/gemini-2.5-flash-image', pro_image: 'google/gemini-3-pro-image' }`.
-- Constants `MAX_IMAGE_RETRIES = 1`, `MAX_QA_RETRIES = 1` exported here.
+Migration adds columns to `pinterest_run_config`:
+- `max_credit_spend_per_pin numeric(10,4) DEFAULT 1.0`
+- `max_paid_image_calls_per_pin int DEFAULT 1`
+- `max_paid_qa_calls_per_image_hash int DEFAULT 1`
+- `max_total_paid_calls int DEFAULT 3`
 
-**`pinterest-qa-cache.ts`** — Control 4.
-- `sha256Hex(bytes)`
-- `buildCacheKey({image_hash, pdp_hero_hash, product_id, scorer, scoring_version})`
-- `getCached(supabase, key)` / `putCached(supabase, key, result)`
-- `runScoredWithCache(...)` wraps any scorer call; on hit, writes a ledger row with `cached_hit=true, credits=0` and returns cached result.
-- Bypass only when `force_rescore=true` is set in run config.
+`assertBudget` extended to check per-pin spend (sum ledger where `queue_id = X`) and per-hash QA count (sum ledger where `image_hash = X AND operation='qa'`). Same fail-closed pattern.
 
-**`pinterest-source-preflight.ts`** — Control 5.
-- `runSourcePreflight(candidate)` → runs deterministic checks first (decode, occupancy ≥40%, watermark/text OCR, collage detector heuristic, species classifier via cached model, PDP similarity via perceptual hash, identity confidence ≥0.98 via cached vision result). All are cached via `pinterest-qa-cache`. Returns `{pass:boolean, failed:[]}`. If fail → candidate rejected with zero paid calls.
+### Unit reconciliation (report only, no conversion assumed)
+- Ledger `credits` = internal Lovable AI credits (dimensionless).
+- Provider cost = USD when the gateway response exposes `x-cost-usd`; else NULL.
+- Lovable workspace balance = credits (same unit as ledger).
+- Conversion: `USD_PER_CREDIT=0.1` and `EUR_PER_USD=0.93` already declared in `src/lib/aiPricing.ts` — treated as ESTIMATE, not billing truth.
+- Canary cap `max_credit_spend=1.0` is 1.0 credit ≈ $0.10 est. ≈ €0.09 est. Report will state both units and mark the euro figure ESTIMATE.
 
-**`pinterest-credit-guard.ts`** (extend existing) — Control 7.
-- Change `probePausedState` cron cadence to 15 min (already close; enforce min interval in-code).
-- New `requireManualResumeAfterRed(run_id)`: on any red event during a run, set run `status='paused', paused_reason='credit_state_red', manual_resume=false`. Auto-resume from green flip does NOT flip `manual_resume`.
-- `pinterest-credit-probe` cron: keep 10-min tick but skip probe when there's no active non-paused run (avoid needless probes).
+## D. Canary candidate selection
 
----
+Query (in migration file as a one-off SELECT for documentation; actual run in wave-runner):
+```sql
+SELECT id, slug, image_url FROM products
+WHERE is_active=true AND primary_species='dog'
+  AND slug NOT IN (SELECT DISTINCT product_slug FROM pinterest_pin_queue WHERE product_slug IS NOT NULL)
+  AND slug NOT IN (SELECT slug FROM discontinued_products)
+LIMIT 20;
+```
+Then run `runSourcePreflight` on each; take the FIRST that passes. Prefer `strategy='composite_photo_lock'` from `pickImageStrategy` so zero paid image calls are needed.
 
-### 3. Edge function changes
+## E. Canary execution
 
-**`pinterest-creative-director/index.ts`** (patch):
-- At entry: read `run_id` from body, `assertNotPaused`, load config.
-- Replace hard-coded `google/gemini-3-pro-image` with `pickImageStrategy(...)`.
-- Wrap image render in `assertBudget(projected)` → call → `recordLedger`.
-- Wrap QA/scorer call in `runScoredWithCache`.
-- Enforce `MAX_IMAGE_RETRIES=1`, `MAX_QA_RETRIES=1` (previous `MAX_RETRIES=2` is removed).
-- Every render attempt writes to `pinterest_render_attempts` with `retry_number`, `image_model`, `image_hash`, `cost_credits`, `abort_reason` when aborted.
+Single `POST /functions/v1/pinterest-wave-runner` with:
+```json
+{
+  "run_id": "canary-<utc-timestamp>",
+  "requested_pin_count": 1,
+  "product_category": "dog",
+  "max_credit_spend": 1.0,
+  "allow_pro_image": false,
+  "manual_resume": true,
+  "dry_run": false
+}
+```
+Wave-runner picks 1 candidate → preflight → composite → QA(cached) → integrity guard → promote to `queued` with `run_id`. Then invoke `pinterest-cron-worker` ONCE with `wave_isolation_active_run_id=canary-…`; it picks that single row, publishes, gets a `pinterest_pin_id`. Then `pinterest-verify-worker` GETs the pin.
 
-**`pinterest-cron-worker/index.ts`** (patch):
-- Only claim rows where `run_id = active_run_id` (from `pinterest_run_config` where `status='active' AND manual_resume=true`). Rows with null `run_id` are skipped (legacy backlog isolation).
+Terminal states enforced: at the end wave-runner marks the run `completed` or `paused`; any row still in `wave_draft`/`draft`/`processing` after the cron tick is flipped to `technically_deferred` with a reason.
 
-**New edge function `pinterest-wave-runner/index.ts`** — Control 10, resume-safe.
-- Body: `{run_id, requested_pin_count, product_category, max_credit_spend?, allow_pro_image?, manual_resume?, hero_priority_slugs?}`.
-- On first call: upsert `pinterest_run_config` with derived defaults (`max_image_calls = requested_pin_count + 1`, `max_qa_calls = max_image_calls`, `manual_resume_required = true`). Returns `{status:'awaiting_manual_resume'}` unless `manual_resume=true` was passed.
-- On resume: selects candidates, runs preflight, dispatches to creative-director per candidate, respects budget, terminates cleanly when any limit hits. Idempotent — can be re-invoked with same `run_id`; it will read the ledger and continue from remaining budget.
-- Returns run summary (see Control 9).
+## F. Live verification
 
-**New edge function `pinterest-run-summary/index.ts`** — read-only.
-- Body: `{run_id}`. Returns `{spend_credits, remaining_budget, image_calls, qa_calls, retries, published_pins, rejected_pins, cost_per_published_pin, status, paused_reason}` computed from `pinterest_run_cost_ledger` + `pinterest_pin_queue`.
+`pinterest-verify-worker` already exists and does GET /pins/{id}. Extend it to return a canary-shaped payload: `{pin_exists, is_public, image_url_match, title_match, destination_match, destination_http_status, board_id_match, duplicate_scan}`. Board mismatch → `POSTED_WITH_BOARD_WARNING`; anything else that fails → `TERMINAL_REJECTED`.
 
----
+## G. Negative safety tests (added to `pinterest-wave-runner/index.test.ts`)
 
-### 4. Tests (`supabase/functions/pinterest-wave-runner/index.test.ts`)
+Nine new pure unit tests covering: NULL run_id row skipped by cron claim query when isolation flag set; second candidate refused because `requested_pin_count=1`; pro-image call refused with `allow_pro_image=false`; second QA on same image hash returns cache hit (no ledger row); post-pause invocation without `manual_resume=true` returns `awaiting_manual_resume`; projected cost > cap throws `BudgetExceededError` before provider fetch; per-pin cap enforced independently of run cap; per-hash QA cap enforced; unledgered paid call impossible (creative-director throws `MissingRunContractError`).
 
-Deno test suite, all dry-run (mock `aiGatewayFetch` + service-role supabase client):
-- **A** occupancy 30% → preflight rejects, zero ledger rows with `provider='gemini'`.
-- **B** unchanged hash → second QA call returns cached, ledger row `cached_hit=true, credits=0`.
-- **C** second image retry request → thrown `RetryLimitExceeded`, ledger records `abort_reason='retry_limit'`.
-- **D** projected spend > cap → `BudgetExceeded` thrown before mock gateway call.
-- **E** red event mid-run → run flips paused; green flip alone does not resume; only `manual_resume=true` re-opens.
-- **F** row with different `run_id` → worker skips it.
-- **G** composite path chosen → `pickImageStrategy` returns `composite_photo_lock`, no gateway call.
-- **H** `allow_pro_image=false` but pro requested → falls back to flash-image; ledger model = `google/gemini-2.5-flash-image`.
+## H. Final report format
 
----
+Delivered inline as the chat reply after the canary completes, following the exact structure in the user request (Architecture / Canary / Safety, plus PASS/FAIL verdict).
 
-### 5. Deliverables
+## Deliverables
 
-Files changed / added:
-- Migration: `supabase/migrations/<ts>_pinterest_cost_controls.sql`
-- New: `supabase/functions/_shared/pinterest-cost-guard.ts`, `pinterest-image-policy.ts`, `pinterest-qa-cache.ts`, `pinterest-source-preflight.ts`
-- Patched: `supabase/functions/_shared/pinterest-credit-guard.ts`, `pinterest-creative-director/index.ts`, `pinterest-cron-worker/index.ts`, `pinterest-credit-probe/index.ts`
-- New: `supabase/functions/pinterest-wave-runner/index.ts`, `pinterest-run-summary/index.ts`, `pinterest-wave-runner/index.test.ts`
-- Memory: `mem://marketing/pinterest-cost-controls-v1`
+1. Migration: add 4 columns to `pinterest_run_config`, new `pinterest_runtime_settings.wave_isolation_active_run_id text`.
+2. `_shared/pinterest-cost-guard.ts`: add per-pin & per-hash checks + `MissingRunContractError`.
+3. `pinterest-cron-worker/index.ts`: patch claim SELECT + isolation flag + `wave_draft` skip.
+4. `pinterest-wave-runner/index.ts`: promote `wave_draft`→`queued`; set/clear isolation flag; final terminal-status pass.
+5. `pinterest-creative-director/index.ts`: route all paid calls through guard + `pickImageStrategy`; fail-closed when no run contract.
+6. Entry-guard on the 4 legacy paid functions listed in B4.
+7. Extend `pinterest-verify-worker` return payload.
+8. Extend test suite with 9 negative-safety cases.
+9. Update `.lovable/mem/marketing/pinterest-cost-controls-v1.md` with ownership table.
 
-Enforcement point (single choke): every paid AI call in `pinterest-creative-director` and `pinterest-wave-runner` MUST go through `pinterest-cost-guard.assertBudget` + `pinterest-image-policy.pickImageStrategy` + `pinterest-qa-cache.runScoredWithCache`. No direct `aiGatewayFetch` for image/QA outside this path.
+## What happens during implementation
 
-Runtime effect (previous → new):
-- Default image model: `google/gemini-3-pro-image` → `google/gemini-2.5-flash-image` (~3.7× cheaper).
-- Retry ceiling: 2 hidden → 1 recorded.
-- QA re-scoring: every attempt → hash-memoised (5:1 → ~1:1 ratio).
-- Budget cap: none → 10 cr default per wave, hard-abort before call.
-- Post-red resume: automatic → manual-only.
-- Backlog: any row eligible → only rows matching active `run_id`.
+Zero paid AI calls. Zero Pinterest POSTs. Only after the user approves this plan AND explicitly says "run the canary" do we invoke `pinterest-wave-runner` with the canary body above.
 
-Post-implementation report will include the exact PASS/FAIL matrix for tests A–H, confirmation of zero paid AI calls, zero pin publications, and the new callable command signature for future waves.
+## Risks / open questions
+
+- Cron-worker has ~30 downstream gates (overlay, dedupe, US-score, etc.). Any one of them can turn the canary into `rejected`. That's an acceptable terminal state per the request but will show as `TERMINAL_REJECTED` in the final report, not `POSTED`.
+- If NO candidate passes preflight in the 20-row sample, canary ends as `BUDGET_STOPPED` with zero spend (still terminal, still PASS-eligible under the request's own rules? The request lists this as terminal but PASS requires "exactly one canary pin reaches a terminal state" — a preflight-only rejection would leave zero pins in any lifecycle. Please confirm whether that counts as PASS or FAIL before we start.).

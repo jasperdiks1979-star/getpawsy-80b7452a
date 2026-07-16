@@ -31,3 +31,23 @@ type: feature
 **Enforcement choke-points:** `supabase/functions/_shared/pinterest-cost-guard.ts` (`assertBudget`, `assertNotPaused`, `recordLedger`, `pauseRun`), `pinterest-image-policy.ts` (`pickImageStrategy`, retry constants), `pinterest-qa-cache.ts` (`runScoredWithCache`), `pinterest-source-preflight.ts` (`runSourcePreflight`).
 
 **Tests:** `supabase/functions/pinterest-wave-runner/index.test.ts` — 9 assertions covering budget cap, retry limit, paused-run gating, deterministic waterfall, pro-image gating, run_id isolation. Pure unit tests, no paid calls.
+
+**Canonical lifecycle ownership (canary v1.1):**
+
+| Stage | Owner | Status before → after | Paid? | Guard+Ledger |
+|---|---|---|---|---|
+| candidate selection | `pinterest-wave-runner` | (none) → (none) | no | n/a |
+| source preflight | `_shared/pinterest-source-preflight` | (none) → (none) | no | 0-cr ledger row |
+| queue insertion | `pinterest-wave-runner` | (none) → `queued` (deterministic) or `wave_draft` (needs render) with `run_id` | no | n/a |
+| image gen (non-deterministic) | `pinterest-creative-director` | `wave_draft` → `draft` | YES | mandatory |
+| QA / PRE | `pinterest-qa-cache` + director | `draft` → `draft`/`rejected` | YES | mandatory (+cache) |
+| integrity guard | `_shared/pinterest-integrity-guard` | `draft` → `draft`/`rejected` | no | n/a |
+| promote to queued | `pinterest-wave-runner` | `draft` → `queued` (`run_id` preserved) | no | n/a |
+| board routing + POST | `pinterest-cron-worker` (isolation-aware) | `queued` → `publishing` → `posted` | no | n/a |
+| live GET verify | `pinterest-verify-worker` | `posted` → `posted (verified_at)` | no | n/a |
+
+**Wave isolation (`pinterest_runtime_settings.wave_isolation_active_run_id`):** while non-null, `pinterest-cron-worker` publishes ONLY rows whose `pinterest_pin_queue.run_id` matches — legacy `run_id IS NULL` backlog is skipped and logged to `pinterest_post_logs` with action `wave_isolation_skip`. Every legacy paid Pinterest edge function (`pinterest-creative-director`, `pinterest-creative-factory`, `pinterest-warmup-regenerate`, `pinterest-regen-autopilot`, `pinterest-recovery-worker`, `pinterest-noai-refill`) calls `assertIsolationAllows()` at entry and returns HTTP 423 when the caller's body `run_id` does not match. `pinterest-wave-runner` sets the flag before processing and clears it only when the run reaches `completed`.
+
+**Per-pin financial caps:** `pinterest_run_config` now carries `max_credit_spend_per_pin` (default 1.0), `max_paid_image_calls_per_pin` (default 1), `max_paid_qa_calls_per_image_hash` (default 1), `max_total_paid_calls` (default 3). `assertBudget(sb, cfg, projected, kind, {queue_id, image_hash})` enforces all four in addition to the run-wide caps.
+
+**Unit reconciliation:** `pinterest_run_cost_ledger.credits` = internal Lovable AI credits (dimensionless). `provider_cost_usd` is only populated when the gateway exposes it — otherwise NULL. Conversion `1 cr ≈ $0.10 ≈ €0.09` from `src/lib/aiPricing.ts` is an ESTIMATE, not billing truth.

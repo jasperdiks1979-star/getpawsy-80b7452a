@@ -91,6 +91,14 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  try {
+    const { assertIsolationAllows } = await import("../_shared/pinterest-wave-isolation.ts");
+    const guard = await assertIsolationAllows(supabase, body?.run_id ?? null, corsHeaders);
+    if (guard) return guard;
+  } catch (e) {
+    console.warn("[regen-autopilot] wave-isolation check failed (non-fatal):", e);
+  }
+
   // 2026-06-17 hard cost-protection kill switch: the entire autopilot lane is
   // disabled. Recovery worker + publish drain continue independently. Reset by
   // flipping `pinterest_credit_state.autopilot_disabled=false`.

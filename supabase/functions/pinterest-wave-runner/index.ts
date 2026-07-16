@@ -12,7 +12,11 @@
 //         allow_pro_image?, manual_resume?, hero_priority_slugs?, dry_run? }
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 import {
   assertBudget,
   assertNotPaused,
@@ -36,6 +40,9 @@ import {
 import { runScoredWithCache } from "../_shared/pinterest-qa-cache.ts";
 import { runSourcePreflight } from "../_shared/pinterest-source-preflight.ts";
 import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
+import {
+  setActiveIsolationRunId,
+} from "../_shared/pinterest-wave-isolation.ts";
 
 interface WaveRunBody {
   run_id: string;
@@ -309,15 +316,29 @@ async function processCandidate(
   // In production the wave-runner would insert an approved draft into
   // pinterest_pin_queue with run_id set (backlog isolation). Skipped in dry_run.
   if (!opts.dry_run) {
-    await sb.from("pinterest_pin_queue").insert({
+    // Deterministic composite path — publish-ready row goes straight to
+    // `queued` so the cron-worker (under wave_isolation_active_run_id) can
+    // pick it up. Non-deterministic paths still land as `wave_draft` and are
+    // promoted by pinterest-creative-director once it produces the final image.
+    const isDeterministic = decision.model === null;
+    const insertStatus = isDeterministic ? "queued" : "wave_draft";
+    const insertRow: Record<string, unknown> = {
       product_id: candidate.product_id,
       product_slug: candidate.product_slug,
-      status: "wave_draft",
+      status: insertStatus,
       run_id: cfg.run_id,
       hero_priority: candidate.hero_priority === true,
       pdp_hero_hash: pre.pdp_hero_hash,
       image_hash: pre.image_hash,
-    });
+      pin_image_url: candidate.pdp_hero_url,
+      destination_link: `https://getpawsy.pet/products/${candidate.product_slug}?utm_source=pinterest&utm_medium=social&utm_campaign=canary&utm_content=${cfg.run_id}`,
+      meta: {
+        creative_source: "canary_composite_photo_lock",
+        strategy: decision.strategy,
+        run_id: cfg.run_id,
+      },
+    };
+    await sb.from("pinterest_pin_queue").insert(insertRow);
   }
 
   return {
@@ -363,15 +384,25 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Activate wave isolation for the lifetime of this call. Cron-worker will
+  // only publish rows with matching run_id while this is set; legacy paid
+  // Pinterest functions refuse to run. Cleared in the finally block below.
+  if (!body.dry_run) {
+    await setActiveIsolationRunId(sb, cfg.run_id);
+  }
+
   // Candidate selection — respect product_category if provided; only unclaimed
   // active products; never legacy backlog rows. Real product selector lives in
   // its own module; this shim delegates to the products_public view.
   const dry_run = body.dry_run === true;
-  const { data: products } = await sb
+  let productsQuery = sb
     .from("products_public")
     .select("id, name, slug, image_url")
-    .eq("is_active", true)
-    .limit(cfg.requested_pin_count * 2);
+    .eq("is_active", true);
+  if (cfg.product_category) {
+    productsQuery = productsQuery.ilike("primary_species", `%${cfg.product_category}%`);
+  }
+  const { data: products } = await productsQuery.limit(Math.max(20, cfg.requested_pin_count * 5));
 
   const hero = new Set(cfg.hero_priority_slugs);
   const results: Array<Record<string, unknown>> = [];
@@ -413,6 +444,12 @@ Deno.serve(async (req) => {
     await pauseRun(sb, cfg.run_id, "budget_exceeded");
   }
 
+  // Isolation stays ON until the operator clears it OR the wave completes and
+  // no unresolved rows remain. Safe default: clear when finalStatus=completed.
+  if (!body.dry_run && finalStatus === "completed") {
+    await setActiveIsolationRunId(sb, null);
+  }
+
   return ok({
     ok: true,
     run_id: cfg.run_id,
@@ -421,6 +458,7 @@ Deno.serve(async (req) => {
     published,
     rejected,
     stopped_reason,
+    isolation_active: !body.dry_run && finalStatus !== "completed",
     results,
   });
 });

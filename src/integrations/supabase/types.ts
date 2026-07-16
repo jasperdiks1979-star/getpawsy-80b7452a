@@ -60586,8 +60586,12 @@ export type Database = {
           manual_resume: boolean
           manual_resume_required: boolean
           max_credit_spend: number
+          max_credit_spend_per_pin: number
           max_image_calls: number
+          max_paid_image_calls_per_pin: number
+          max_paid_qa_calls_per_image_hash: number
           max_qa_calls: number
+          max_total_paid_calls: number
           paused_reason: string | null
           product_category: string | null
           requested_pin_count: number
@@ -60605,8 +60609,12 @@ export type Database = {
           manual_resume?: boolean
           manual_resume_required?: boolean
           max_credit_spend?: number
+          max_credit_spend_per_pin?: number
           max_image_calls?: number
+          max_paid_image_calls_per_pin?: number
+          max_paid_qa_calls_per_image_hash?: number
           max_qa_calls?: number
+          max_total_paid_calls?: number
           paused_reason?: string | null
           product_category?: string | null
           requested_pin_count?: number
@@ -60624,8 +60632,12 @@ export type Database = {
           manual_resume?: boolean
           manual_resume_required?: boolean
           max_credit_spend?: number
+          max_credit_spend_per_pin?: number
           max_image_calls?: number
+          max_paid_image_calls_per_pin?: number
+          max_paid_qa_calls_per_image_hash?: number
           max_qa_calls?: number
+          max_total_paid_calls?: number
           paused_reason?: string | null
           product_category?: string | null
           requested_pin_count?: number
@@ -60765,6 +60777,7 @@ export type Database = {
           v3_publish_paused: boolean
           verified_client_id_prefix: string | null
           warmup_until: string | null
+          wave_isolation_active_run_id: string | null
         }
         Insert: {
           active_board_id?: string | null
@@ -60814,6 +60827,7 @@ export type Database = {
           v3_publish_paused?: boolean
           verified_client_id_prefix?: string | null
           warmup_until?: string | null
+          wave_isolation_active_run_id?: string | null
         }
         Update: {
           active_board_id?: string | null
@@ -60863,6 +60877,7 @@ export type Database = {
           v3_publish_paused?: boolean
           verified_client_id_prefix?: string | null
           warmup_until?: string | null
+          wave_isolation_active_run_id?: string | null
         }
         Relationships: [
           {

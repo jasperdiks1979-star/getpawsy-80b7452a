@@ -485,6 +485,52 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── 1a. Wave isolation — when the operator has set
+    // pinterest_runtime_settings.wave_isolation_active_run_id, the worker may
+    // only publish rows whose pinterest_pin_queue.run_id matches. Legacy
+    // (run_id IS NULL) backlog rows are skipped entirely during a canary/wave.
+    try {
+      const { data: rtIso } = await sb
+        .from("pinterest_runtime_settings")
+        .select("wave_isolation_active_run_id")
+        .eq("id", 1)
+        .maybeSingle();
+      const activeRunId = (rtIso as any)?.wave_isolation_active_run_id
+        ? String((rtIso as any).wave_isolation_active_run_id)
+        : null;
+      if (activeRunId) {
+        const pinIds = (pins as any[]).map((p) => p.id).filter(Boolean);
+        const { data: rowRuns } = await sb
+          .from("pinterest_pin_queue")
+          .select("id, run_id, status")
+          .in("id", pinIds);
+        const runById = new Map<string, string | null>();
+        for (const r of rowRuns ?? []) runById.set(String((r as any).id), (r as any).run_id ?? null);
+        const before = pins.length;
+        const kept = (pins as any[]).filter((p) => runById.get(String(p.id)) === activeRunId);
+        const dropped = (pins as any[]).filter((p) => runById.get(String(p.id)) !== activeRunId);
+        pins.length = 0;
+        pins.push(...kept);
+        for (const d of dropped) {
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: d.id,
+            action: "wave_isolation_skip",
+            status: "skipped",
+            response_data: { active_run_id: activeRunId, row_run_id: runById.get(String(d.id)) ?? null },
+          });
+        }
+        console.log(`[cron][isolation] active=${activeRunId} kept=${pins.length}/${before}`);
+        if (pins.length === 0) {
+          return await respond(
+            { ok: true, message: `wave_isolation_active_run_id=${activeRunId}: no matching pins`, results: [] },
+            { logStatus: "skipped", success: true, processed: 0 },
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("[cron] wave isolation filter failed (non-fatal):", e);
+    }
+
     // ── 1b. Hard exclude paused/excluded products via pinterest_autopilot_overrides ──
     try {
       const { data: ovr } = await sb
