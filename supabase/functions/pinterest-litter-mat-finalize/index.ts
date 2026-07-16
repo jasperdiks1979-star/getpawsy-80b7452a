@@ -134,7 +134,6 @@ Deno.serve(async (req) => {
       .update({
         pin_image_url: publicUrl,
         overlay_text: HEADLINE, // ≤32 chars, no `|` / `•`
-        cta: CTA,
         status: "queued",
         priority: "high",
         scheduled_at: scheduledAt,
