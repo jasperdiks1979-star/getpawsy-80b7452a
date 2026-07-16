@@ -23,6 +23,7 @@ import {
   vpiEnabled,
 } from "./visual-product-identity.ts";
 import { readVisualTruth } from "./product-identity-graph.ts";
+import { verifyProductVariant } from "./product-variant-guard.ts";
 
 export type IntegrityVerdict = {
   passed: boolean;
@@ -40,6 +41,12 @@ export type IntegrityInput = {
   pin_image_url: string | null | undefined;
   destination_link: string;
   niche_or_category?: string | null;
+  // Optional: candidate source image (e.g. photo_lock_source / cutout base)
+  // evaluated by the Product Variant Guard BEFORE render. When set and the
+  // guard fails, the whole integrity check is short-circuited with the
+  // concrete `product_variant_mismatch:<kind>` reason.
+  source_image_url?: string | null;
+  source_image_label?: string | null;
 };
 
 const CAT_TOKENS = /\b(cat|kitten|feline|kitty|litter|catnip|scratch|cat tree)\b/i;
@@ -93,6 +100,46 @@ export async function verifyPinIntegrity(
     return finalize(checks, reasons);
   }
   checks.product_exists = { ok: true };
+
+  // 0. Product Variant Guard — earliest visual identity check on the
+  //    candidate SOURCE image (not the final pin). Catches cases where the
+  //    catalogue photo or photo_lock_source depicts a different variant/
+  //    material than the PDP hero (e.g. plush vs. plastic rolling ball).
+  //    Runs only when a source image is supplied by the caller.
+  if (input.source_image_url && /^https:\/\//i.test(input.source_image_url)) {
+    try {
+      const pvg = await verifyProductVariant(supabase, {
+        product_id: input.product_id,
+        product_slug: input.product_slug,
+        product_name: input.product_name,
+        source_image_url: input.source_image_url,
+        context_label: input.source_image_label ?? "source_image",
+        destination_link: input.destination_link,
+      });
+      if (pvg.skipped) {
+        checks.product_variant = { ok: true, reason: `PVG skipped: ${pvg.skip_reason ?? "n/a"}` };
+      } else if (!pvg.passed) {
+        checks.product_variant = {
+          ok: false,
+          reason: `PVG ${pvg.identity_score}/100 — ${pvg.detail ?? pvg.reason ?? "variant mismatch"}`,
+        };
+        reasons.push(pvg.reason ?? "product_variant_mismatch");
+        // Short-circuit: no point running PRE/VPI on the final pin — the
+        // source is already the wrong product variant.
+        return finalize(checks, reasons);
+      } else {
+        checks.product_variant = {
+          ok: true,
+          reason: `PVG ${pvg.identity_score}/100${pvg.cached ? " (cached)" : ""}`,
+        };
+      }
+    } catch (err) {
+      checks.product_variant = { ok: false, reason: `PVG error: ${(err as Error).message}` };
+      reasons.push("product_variant_error");
+      return finalize(checks, reasons);
+    }
+  }
+
 
   if (!product.is_active) {
     checks.product_active = { ok: false, reason: "is_active=false" };
