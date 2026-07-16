@@ -43,6 +43,10 @@ import { isCreditPaused } from "../_shared/pinterest-credit-guard.ts";
 import {
   setActiveIsolationRunId,
 } from "../_shared/pinterest-wave-isolation.ts";
+import {
+  REQUIRED_PUBLISH_FIELDS,
+  validatePublishPayload,
+} from "../_shared/pinterest-publish-payload.ts";
 
 interface WaveRunBody {
   run_id: string;
@@ -67,51 +71,9 @@ function svc(): SupabaseClient {
   );
 }
 
-// ── Publish-payload contract ────────────────────────────────────────────────
-// Every field the cron-worker + pinterest_publishable_queue view actually read
-// before POST /v5/pins. Missing any one blocks publication silently.
-const REQUIRED_PUBLISH_FIELDS = [
-  "product_id",
-  "product_slug",
-  "product_name",
-  "run_id",
-  "status",
-  "pin_image_url",
-  "destination_link",
-  "pin_title",
-  "pin_description",
-  "board_id",
-  "board_name",
-  "category_key",
-  "hook_group",
-  "priority",
-  "scheduled_at",
-  "approved_at",
-  "us_audience_score",
-  "meta",
-] as const;
-
 type PublishPayload = Record<string, unknown> & {
   meta: Record<string, unknown>;
 };
-
-export function validatePublishPayload(row: Record<string, unknown>): {
-  ok: boolean;
-  missing: string[];
-} {
-  const missing: string[] = [];
-  for (const f of REQUIRED_PUBLISH_FIELDS) {
-    const v = row[f];
-    if (v === null || v === undefined || v === "") missing.push(f);
-  }
-  const meta = row.meta as Record<string, unknown> | undefined;
-  if (!meta || typeof meta !== "object") missing.push("meta");
-  else {
-    if (!meta.creative_source) missing.push("meta.creative_source");
-    if (meta.run_id !== row.run_id) missing.push("meta.run_id");
-  }
-  return { ok: missing.length === 0, missing };
-}
 
 // Static dog-category → board fallback. Live DB lookup runs first; this is
 // used only when the board table lookup returns nothing.
