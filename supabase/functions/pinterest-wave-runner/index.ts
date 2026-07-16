@@ -239,7 +239,7 @@ async function buildPublishPayload(
     pdp_hero_hash: pre.pdp_hero_hash,
     hero_priority: heroPriority,
     idempotency_key,
-    source_type: "canary_photo_lock",
+    source_type: "product_ai", // must be in {lifestyle_ai,product_ai,cinematic_ai}; tracking trigger silently drops other sources
     retries: 0,
     meta: {
       creative_source: "creative_director_v2", // satisfies cron AI-only gate
