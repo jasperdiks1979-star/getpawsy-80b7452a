@@ -95,6 +95,10 @@ function baseCfg(overrides: Partial<RunConfig> = {}): RunConfig {
     manual_resume: true,
     status: "active",
     paused_reason: null,
+    max_credit_spend_per_pin: 1.0,
+    max_paid_image_calls_per_pin: 1,
+    max_paid_qa_calls_per_image_hash: 1,
+    max_total_paid_calls: 3,
     ...overrides,
   };
 }
