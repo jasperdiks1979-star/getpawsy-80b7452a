@@ -234,7 +234,7 @@ async function buildPublishPayload(
     approved_at: now, // canary is pre-approved by operator invocation
     approved_by: null, // approved_by is a uuid FK; operator-driven canary leaves it null
     us_audience_score: 0.95, // column is numeric(4,3): 0..1 fraction, not a 0..100 percent
-    content_type: "photo_lock_composite",
+    content_type: "product", // must be in allowed check-constraint enum
     image_hash: pre.image_hash,
     pdp_hero_hash: pre.pdp_hero_hash,
     hero_priority: heroPriority,
