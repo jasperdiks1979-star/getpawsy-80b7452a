@@ -26,6 +26,10 @@ export interface RunConfig {
     | "aborted"
     | "awaiting_manual_resume";
   paused_reason: string | null;
+  max_credit_spend_per_pin: number;
+  max_paid_image_calls_per_pin: number;
+  max_paid_qa_calls_per_image_hash: number;
+  max_total_paid_calls: number;
 }
 
 export class BudgetExceededError extends Error {
@@ -46,6 +50,13 @@ export class RetryLimitExceededError extends Error {
   constructor(public readonly kind: "image" | "qa", public readonly limit: number) {
     super(`retry_limit_exceeded:${kind}:${limit}`);
     this.name = "RetryLimitExceededError";
+  }
+}
+
+export class MissingRunContractError extends Error {
+  constructor(public readonly detail: Record<string, unknown>) {
+    super(`missing_run_contract: ${JSON.stringify(detail)}`);
+    this.name = "MissingRunContractError";
   }
 }
 
@@ -145,6 +156,7 @@ export async function assertBudget(
   cfg: RunConfig,
   projected_credits: number,
   kind: "image" | "qa",
+  scope?: { queue_id?: string | null; image_hash?: string | null },
 ): Promise<{ before: number; projected: number }> {
   const spend = await currentRunSpend(sb, cfg.run_id);
   const projected = spend.credits + Math.max(0, projected_credits);
@@ -171,6 +183,55 @@ export async function assertBudget(
       qa_calls: spend.qa_calls,
       cap: cfg.max_qa_calls,
       kind,
+    });
+  }
+  // Per-pin and per-hash hard caps (canary financial limits).
+  if (scope?.queue_id) {
+    const { data: perPin } = await sb
+      .from("pinterest_run_cost_ledger")
+      .select("credits, operation, cached_hit")
+      .eq("run_id", cfg.run_id)
+      .eq("queue_id", scope.queue_id);
+    let pinCredits = 0;
+    let pinImageCalls = 0;
+    for (const r of perPin ?? []) {
+      if (!r.cached_hit) pinCredits += Number(r.credits ?? 0);
+      if (!r.cached_hit && (r.operation === "image_gen" || r.operation === "image_edit")) pinImageCalls++;
+    }
+    if (pinCredits + Math.max(0, projected_credits) > cfg.max_credit_spend_per_pin) {
+      throw new BudgetExceededError({
+        run_id: cfg.run_id, queue_id: scope.queue_id,
+        per_pin_cap: cfg.max_credit_spend_per_pin, before: pinCredits, projected: pinCredits + projected_credits,
+        kind: `per_pin_${kind}`,
+      });
+    }
+    if (kind === "image" && pinImageCalls + 1 > cfg.max_paid_image_calls_per_pin) {
+      throw new BudgetExceededError({
+        run_id: cfg.run_id, queue_id: scope.queue_id,
+        per_pin_image_calls: pinImageCalls, cap: cfg.max_paid_image_calls_per_pin,
+      });
+    }
+  }
+  if (kind === "qa" && scope?.image_hash) {
+    const { count } = await sb
+      .from("pinterest_run_cost_ledger")
+      .select("id", { count: "exact", head: true })
+      .eq("run_id", cfg.run_id)
+      .eq("image_hash", scope.image_hash)
+      .eq("operation", "qa")
+      .eq("cached_hit", false);
+    if ((count ?? 0) + 1 > cfg.max_paid_qa_calls_per_image_hash) {
+      throw new BudgetExceededError({
+        run_id: cfg.run_id, image_hash: scope.image_hash,
+        per_hash_qa_calls: count, cap: cfg.max_paid_qa_calls_per_image_hash,
+      });
+    }
+  }
+  // Global paid-call cap.
+  const totalPaid = spend.image_calls + spend.qa_calls;
+  if (totalPaid + 1 > cfg.max_total_paid_calls) {
+    throw new BudgetExceededError({
+      run_id: cfg.run_id, total_paid_calls: totalPaid, cap: cfg.max_total_paid_calls,
     });
   }
   return { before: spend.credits, projected };
