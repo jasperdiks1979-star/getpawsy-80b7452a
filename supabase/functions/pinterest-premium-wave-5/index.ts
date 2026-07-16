@@ -187,7 +187,7 @@ async function runWave(
         idempotency_key: idempotencyKey,
         creative_source_tracked: "premium_wave_5_2026_07_16",
         batch_id: waveId,
-        source_type: "premium_wave",
+        source_type: "lifestyle_ai",
         meta: {
           creative_method: "safe_background_extension",
           photo_lock: true,
