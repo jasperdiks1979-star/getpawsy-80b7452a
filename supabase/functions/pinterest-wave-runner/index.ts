@@ -77,11 +77,8 @@ type PublishPayload = Record<string, unknown> & {
 
 // Static dog-category → board fallback. Live DB lookup runs first; this is
 // used only when the board table lookup returns nothing.
-const CATEGORY_BOARD_FALLBACK: Record<string, { id: string; name: string; category_key: string }> = {
-  dog_travel: { id: "1117103951261719226", name: "Dog Travel Accessories", category_key: "dog_travel" },
-  dog: { id: "1117103951261719227", name: "Dog Walking Essentials", category_key: "dog_general" },
-  cat: { id: "1117103951261719219", name: "Best Cat Trees 2026", category_key: "cat_general" },
-};
+import { resolveDogBoard } from "../_shared/pinterest-board-routing.ts";
+const CAT_FALLBACK = { id: "1117103951261719219", name: "Best Cat Trees 2026", category_key: "cat_general" };
 
 async function resolveBoard(
   sb: SupabaseClient,
@@ -89,15 +86,9 @@ async function resolveBoard(
   productName: string,
 ): Promise<{ id: string; name: string; category_key: string }> {
   const blob = `${productCategory ?? ""} ${productName}`.toLowerCase();
-  const key = /travel|carrier|transport|stroller|ramp|car\b/.test(blob) &&
-    /dog|canine|puppy/.test(blob)
-    ? "dog_travel"
-    : /dog|canine|puppy/.test(blob)
-      ? "dog"
-      : /cat|feline|kitten/.test(blob)
-        ? "cat"
-        : "dog";
-  const preferredName = CATEGORY_BOARD_FALLBACK[key]?.name;
+  const isCat = /\bcat|feline|kitten\b/.test(blob) && !/\bdog|canine|puppy\b/.test(blob);
+  const preferred = isCat ? CAT_FALLBACK : resolveDogBoard(productCategory, productName);
+  const preferredName = preferred.name;
   if (preferredName) {
     const { data } = await sb
       .from("pinterest_boards")
@@ -109,11 +100,11 @@ async function resolveBoard(
       return {
         id: String((data as any).id),
         name: String((data as any).name),
-        category_key: CATEGORY_BOARD_FALLBACK[key].category_key,
+        category_key: preferred.category_key,
       };
     }
   }
-  return CATEGORY_BOARD_FALLBACK[key] ?? CATEGORY_BOARD_FALLBACK.dog;
+  return preferred;
 }
 
 function truncate(s: string, max: number): string {
