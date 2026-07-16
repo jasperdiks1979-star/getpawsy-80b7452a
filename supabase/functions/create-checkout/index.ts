@@ -308,7 +308,11 @@ serve(async (req) => {
     const couponPercent = normalizedCode && COUPON_CODE_PERCENT[normalizedCode]
       ? COUPON_CODE_PERCENT[normalizedCode]
       : 0;
-    const tierPercent = getTierPercent(subtotal);
+    // Guard: tiered incentive is a VOLUME discount. It must never apply
+    // when the shopper has only a single unit in the cart, regardless of
+    // subtotal. Fixes the qty=1 / $268.99 / 10% off leak observed in
+    // session cs_live_a1jDugDcHJDz5udTQgKuYk3dwt0GLipTCPkfhuXpoJXDNn1ZfpVs1kbXrA.
+    const tierPercent = totalItems >= 2 ? getTierPercent(subtotal) : 0;
 
     // Combined deduction in cents — applied as ONE Stripe coupon so Stripe
     // can render both lines while charging the exact displayed total.
@@ -495,7 +499,7 @@ serve(async (req) => {
     sessionConfig.invoice_creation = {
       enabled: true,
       invoice_data: {
-        description: "GetPawsy order — ships from our US warehouse.",
+        description: "GetPawsy order",
         footer: "GetPawsy · 30-day money-back guarantee · support@getpawsy.pet",
         metadata: { brand: "GetPawsy" },
       },
@@ -503,15 +507,15 @@ serve(async (req) => {
     sessionConfig.custom_text = {
       submit: {
         message:
-          "Secure checkout by Stripe. Backed by our 30-day money-back guarantee. Ships from our US warehouse in 5–10 business days.",
+          "Secure checkout by Stripe. Backed by our 30-day money-back guarantee. Shipping options and estimated delivery are shown at checkout.",
       },
       shipping_address: {
-        message: "We ship from our US warehouse. Free shipping on orders $35+.",
+        message: "Shipping options and estimated delivery are shown at checkout. Free shipping on orders $35+.",
       },
     };
     // Payment-intent description shows on the Stripe receipt & dashboard.
     sessionConfig.payment_intent_data = {
-      description: `GetPawsy order — ${totalItems} item${totalItems === 1 ? "" : "s"}`,
+      description: `GetPawsy order`,
       metadata: { brand: "GetPawsy" },
       // Bank/card statement descriptor. Prefix comes from the Stripe account
       // (Dashboard → Public business name); this suffix is the per-order tail
