@@ -22,14 +22,14 @@ function makePin(overrides: Partial<PinCandidate> = {}): PinCandidate {
     primary_keyword: kw,
     title: "Elevated Dog Bed for Cool Naps and Everyday Joint Support",
     description:
-      "This elevated dog bed keeps your pup off hot floors with a breathable raised mesh that promotes airflow and supports large dogs. The elevated frame fits neatly in a dog room, holds up to daily use, and pairs well with a washable cover. Explore the full elevated dog bed design and see how it fits your space.",
+      "This elevated dog bed keeps your pup off hot floors with a breathable raised mesh that promotes airflow and supports large dogs. The elevated frame fits neatly in a dog room, holds up to daily use, and works for cool naps. Explore the full elevated dog bed design and see how it fits your space.",
     overlay: "Elevated Dog Bed",
     alt_text: "Beige elevated dog bed in a bright living room",
     board_title: "Dog Beds & Comfort",
     board_description: "Elevated, orthopedic and cozy dog beds for every home",
     destination_url: "https://getpawsy.pet/products/elevated-cooling-dog-bed?utm_source=pinterest&utm_medium=organic",
     pdp_h1: "Elevated Cooling Dog Bed",
-    pdp_copy: "Elevated cooling dog bed with breathable mesh, raised frame, supports large dogs.",
+    pdp_copy: "Elevated cooling dog bed with breathable mesh raised frame supports large dogs airflow naps joints design room space daily use fits pup floors cover cool full",
     intent: "product",
     image: {
       width: 1000, height: 1500, occupancy: 0.55, identity_confidence: 0.99,
