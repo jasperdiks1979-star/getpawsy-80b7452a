@@ -3,6 +3,7 @@ import { PINTEREST_API_BASE } from "./pinterest-config.ts";
 type PinterestBoard = {
   id: string;
   name?: string | null;
+  ownerUsername?: string | null;
 };
 
 function normalizeBoardName(value: string): string {
@@ -50,6 +51,11 @@ async function listPinterestBoards(accessToken: string, apiBase = PINTEREST_API_
         .map((item: Record<string, unknown>) => ({
           id: String(item.id ?? ""),
           name: typeof item.name === "string" ? item.name : null,
+          ownerUsername: typeof (item as any)?.owner?.username === "string"
+            ? (item as any).owner.username
+            : typeof (item as any)?.board_owner?.username === "string"
+            ? (item as any).board_owner.username
+            : null,
         }))
         .filter((item: PinterestBoard) => item.id),
     );
@@ -204,6 +210,56 @@ export async function resolvePinterestBoardId(accessToken: string, boardRef: str
   const created = await createRes.json();
   console.log(`[Pinterest] Board "${trimmedBoardRef}" created with id ${created.id}`);
   return String(created.id);
+}
+
+export async function validatePinterestBoardId(
+  accessToken: string,
+  boardId: string,
+  apiBase = PINTEREST_API_BASE,
+  expectedOwnerUsername = "getpawsyshop",
+): Promise<{ ok: boolean; id: string; name?: string | null; ownerUsername?: string | null; reason?: string }> {
+  const trimmedBoardId = String(boardId || "").trim();
+  if (!trimmedBoardId || /\s/.test(trimmedBoardId)) {
+    return { ok: false, id: trimmedBoardId, reason: "invalid_board_id" };
+  }
+
+  try {
+    const boardRes = await fetch(`${apiBase}/boards/${encodeURIComponent(trimmedBoardId)}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (boardRes.ok) {
+      const boardData: any = await boardRes.json().catch(() => ({}));
+      const returnedId = String(boardData?.id ?? trimmedBoardId);
+      const ownerUsername = typeof boardData?.owner?.username === "string"
+        ? boardData.owner.username
+        : typeof boardData?.board_owner?.username === "string"
+        ? boardData.board_owner.username
+        : null;
+      if (returnedId !== trimmedBoardId) {
+        return { ok: false, id: trimmedBoardId, name: boardData?.name ?? null, ownerUsername, reason: `board_id_mismatch:${returnedId}` };
+      }
+      if (ownerUsername && ownerUsername !== expectedOwnerUsername) {
+        return { ok: false, id: trimmedBoardId, name: boardData?.name ?? null, ownerUsername, reason: `wrong_board_owner:${ownerUsername}` };
+      }
+      return { ok: true, id: trimmedBoardId, name: boardData?.name ?? null, ownerUsername, reason: "board_get_ok" };
+    }
+  } catch (e) {
+    console.warn(`[Pinterest] Board ${trimmedBoardId} direct validation failed:`, (e as Error).message);
+  }
+
+  // Fallback validation: /boards lists boards owned by the connected account.
+  // A match here confirms the board exists and belongs to GetPawsy even when
+  // direct /boards/{id} is unavailable for the app/token combination.
+  const boards = await listPinterestBoards(accessToken, apiBase);
+  const listed = boards.find((board) => String(board.id) === trimmedBoardId) ?? null;
+  if (listed) {
+    if (listed.ownerUsername && listed.ownerUsername !== expectedOwnerUsername) {
+      return { ok: false, id: trimmedBoardId, name: listed.name ?? null, ownerUsername: listed.ownerUsername, reason: `wrong_board_owner:${listed.ownerUsername}` };
+    }
+    return { ok: true, id: trimmedBoardId, name: listed.name ?? null, ownerUsername: listed.ownerUsername ?? expectedOwnerUsername, reason: "board_list_ok" };
+  }
+
+  return { ok: false, id: trimmedBoardId, reason: "board_not_found_for_connected_account" };
 }
 
 /**

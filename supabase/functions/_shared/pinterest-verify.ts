@@ -23,6 +23,7 @@ export interface VerificationResult {
   score: number; // 0..100
   checks: VerificationCheck[];
   failureReason: string | null;
+  warningReason?: string | null;
   pinterestPayload?: unknown;
   httpStatus?: number;
 }
@@ -184,10 +185,10 @@ export async function verifyPinFull(
     detail: imgOk ? `${imageUrls.length} variants` : "no https media images on Pinterest payload",
   });
 
-  // publicly accessible: Pinterest returns is_owner=true for our own pins and
-  // omits `is_removable` when restricted. We treat missing privacy block as
-  // public.
-  const publicOk = payload?.is_removable !== false && payload?.visibility !== "secret";
+  // publicly accessible: `is_removable=false` can be returned for owner/account
+  // state and is not a restriction signal. Treat explicit secret/hidden/deleted
+  // markers as blocking, otherwise a 200 + standard pin is live-public enough.
+  const publicOk = payload?.visibility !== "secret" && payload?.is_deleted !== true && payload?.is_hidden !== true && payload?.is_standard !== false;
   checks.push({ name: "publicly_accessible", ok: publicOk });
 
   // hidden rejection signal
@@ -198,12 +199,14 @@ export async function verifyPinFull(
   const score = Math.round((passed / checks.length) * 100);
 
   const failed = checks.filter((c) => !c.ok);
+  const boardWarning = failed.some((c) => c.name === "board_match") &&
+    failed.every((c) => c.name === "board_match");
   const blockingFailure = failed.find((c) =>
-    ["pin_exists", "destination_url_match", "board_match", "preview_image_present", "publicly_accessible"].includes(c.name)
+    ["pin_exists", "destination_url_match", "preview_image_present", "publicly_accessible"].includes(c.name)
   );
 
   const state: VerificationState =
-    failed.length === 0
+    failed.length === 0 || boardWarning
       ? "verified_success"
       : blockingFailure
       ? "verification_failed"
@@ -217,7 +220,8 @@ export async function verifyPinFull(
     state,
     score,
     checks,
-    failureReason: state === "verified_success" ? null : (blockingFailure?.name ?? failed[0]?.name ?? null),
+    failureReason: state === "verified_success" ? (boardWarning ? "board_warning" : null) : (blockingFailure?.name ?? failed[0]?.name ?? null),
+    warningReason: boardWarning ? "board_match" : null,
     pinterestPayload: { id: payload?.id, link: payload?.link, board_id: payload?.board_id, created_at: payload?.created_at },
     httpStatus: res.status,
   };

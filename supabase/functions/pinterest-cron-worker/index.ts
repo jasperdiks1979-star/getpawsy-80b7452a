@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { resolvePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
+import { validatePinterestBoardId, validatePinterestExternalUrl } from "../_shared/pinterest.ts";
 import { pickBestBoard, probeUrlQuality } from "../_shared/pinterest-board-intelligence.ts";
 import { verifyPinFull } from "../_shared/pinterest-verify.ts";
 import { runPinQa } from "../_shared/pinterest-qa.ts";
@@ -341,7 +341,8 @@ Deno.serve(async (req) => {
   }> = [];
   const boardIdCache = new Map<string, string>();
 
-  // Load admin-pinned active board (overrides per-pin board_name routing)
+  // Load admin-pinned active board. It is now a fallback only; a valid per-pin
+  // queue board_id must never be overwritten by this global setting.
   let activeBoardOverride: { id: string; name: string | null } | null = null;
   try {
     const { data: settings } = await sb
@@ -1238,57 +1239,16 @@ Deno.serve(async (req) => {
       }
 
       try {
-        let boardId: string;
-        if (activeBoardOverride) {
-          boardId = activeBoardOverride.id;
-        } else {
-          // ── Board Intelligence: pick the highest-EV publishable board
-          //    using historical CTR/save/purchase × keyword similarity.
-          //    Falls back to keyword match when 30d perf rollup is empty.
-          let chosenBoardName = pin.board_name || "";
-          try {
-            const pick = await pickBestBoard(sb, {
-              category_key: (pin as any).category_key ?? null,
-              niche: (pin as any).niche_key ?? (pin as any).category_key ?? null,
-              product_name: (pin as any).product_name ?? (pin as any).product_slug ?? null,
-              current_board_name: pin.board_name ?? null,
-              current_board_id: (pin as any).board_id ?? null,
-            });
-            if (pick.picked) {
-              chosenBoardName = pick.picked.name;
-              boardIdCache.set(chosenBoardName, pick.picked.id);
-              // Persist + log if the intelligence migrated the pin.
-              if (pick.migrated) {
-                await sb.from("pinterest_pin_queue").update({
-                  board_id: pick.picked.id,
-                  board_name: pick.picked.name,
-                  updated_at: new Date().toISOString(),
-                }).eq("id", pin.id);
-                await sb.from("pinterest_post_logs").insert({
-                  pin_queue_id: pin.id,
-                  action: "board_intelligence_migrate",
-                  status: "ok",
-                  response_data: {
-                    from: pin.board_name,
-                    to: pick.picked.name,
-                    reason: pick.reason,
-                    score: pick.picked.score,
-                    alternatives: pick.alternatives.slice(0, 3),
-                  },
-                });
-                pin.board_name = pick.picked.name;
-                (pin as any).board_id = pick.picked.id;
-              }
-            }
-          } catch (e) {
-            console.warn("[cron] board-intelligence failed, falling back to static name:", e);
-          }
-          const boardRef = chosenBoardName;
-          boardId = boardIdCache.has(boardRef)
-            ? boardIdCache.get(boardRef)!
-            : await resolvePinterestBoardId(accessToken, boardRef, PINTEREST_PRODUCTION_API_BASE);
-          if (!boardIdCache.has(boardRef)) boardIdCache.set(boardRef, boardId);
-        }
+          const boardResolution = await resolveBoardForPublish(sb, accessToken, pin, activeBoardOverride, boardIdCache);
+          const boardId = boardResolution.id;
+          pin.board_name = boardResolution.name;
+          (pin as any).board_id = boardId;
+          await sb.from("pinterest_post_logs").insert({
+            pin_queue_id: pin.id,
+            action: "board_publish_resolution",
+            status: "success",
+            response_data: boardResolution,
+          });
         if (blacklistedBoardIds.has(boardId)) {
           console.warn(`[cron] board ${boardId} is blacklisted, skipping pin ${pin.id}`);
           await sb.from("pinterest_pin_queue").update({
@@ -1462,6 +1422,18 @@ Deno.serve(async (req) => {
           link: destinationLink,
         };
         const safePayload = await preparePinterestPayload(sb, requestPayload, { endpoint: "/pins", function: "pinterest-cron-worker", pin_id: pin.id });
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "create_pin_request",
+          status: "success",
+          response_data: {
+            queue_board_id: (pin as any).board_id ?? null,
+            queue_board_name: pin.board_name ?? null,
+            outgoing_board_id: safePayload.payload.board_id,
+            board_resolution: { id: boardId, name: pin.board_name ?? null },
+            endpoint: "/v5/pins",
+          },
+        });
         const pinRes = await fetch(`${apiBase}/pins`, {
           method: "POST",
           headers: {
@@ -1603,9 +1575,35 @@ Deno.serve(async (req) => {
         if (!pinData?.id || !externalUrl) {
           throw new Error(`Pinterest response missing real pin id or external URL: ${JSON.stringify(pinData)}`);
         }
+        const responseBoardId = pinData?.board_id ? String(pinData.board_id) : null;
+        const boardMatch = responseBoardId === String(boardId);
+        if (!boardMatch) {
+          console.warn("[pinterest] board warning", { pin_id: pinData.id, queue_id: pin.id, intended_board_id: boardId, response_board_id: responseBoardId });
+        }
+        await sb.from("pinterest_post_logs").insert({
+          pin_queue_id: pin.id,
+          action: "create_pin_response",
+          status: boardMatch ? "success" : "warning",
+          error_message: boardMatch ? null : "board_warning",
+          response_data: {
+            pinterest_pin_id: pinData.id,
+            intended_board_id: boardId,
+            response_board_id: responseBoardId,
+            board_match: boardMatch,
+            response_board_name: pinData?.board?.name ?? null,
+            queue_board_name: pin.board_name ?? null,
+          },
+        });
         const verification = await validatePinterestExternalUrl(accessToken, apiBase, externalUrl, pinData.id);
         console.log("[pinterest] verify", { pin_id: pinData.id, ...verification });
         await markPosted(sb, pin, pinData.id, verification);
+        if (!boardMatch) {
+          await sb.from("pinterest_pin_queue").update({
+            pin_verified: true,
+            pin_verification_reason: "board_warning",
+            pin_verified_at: new Date().toISOString(),
+          }).eq("id", pin.id);
+        }
         // E2E first pass: re-read /pins/{id} with full field check. The
         // background verify-worker handles retries/recovery; here we just
         // capture an initial score so the dashboard reflects reality on
@@ -1629,6 +1627,11 @@ Deno.serve(async (req) => {
             verification_checks: e2e.checks,
             verification_attempts: 1,
             verification_failure_reason: e2e.failureReason,
+            pin_verified: e2e.state === "verified_success",
+            pin_verification_reason: e2e.state === "verified_success"
+              ? (e2e.failureReason === "board_warning" ? "board_warning" : "verified_e2e")
+              : e2e.failureReason,
+            pin_verified_at: new Date().toISOString(),
             last_verified_at: new Date().toISOString(),
           }).eq("id", pin.id);
         } catch (e) {
@@ -1660,18 +1663,18 @@ Deno.serve(async (req) => {
         await sb.from("pinterest_publish_logs").insert({
           pin_queue_id: pin.id,
           attempt: (pin.publish_attempts || 0) + 1,
-          status: verification.ok ? "success" : "warning",
+          status: verification.ok && boardMatch ? "success" : "warning",
           board_id: boardId,
           image_url: pin.pin_image_url,
           pin_title: pin.pin_title,
           destination_link: pin.destination_link,
           request_payload: requestPayload,
-          response_payload: { ...pinData, pin_verified: verification.ok, pin_verification_reason: verification.reason, external_url: externalUrl },
+          response_payload: { ...pinData, pin_verified: verification.ok, pin_verification_reason: boardMatch ? verification.reason : "board_warning", external_url: externalUrl, intended_board_id: boardId, response_board_id: responseBoardId, board_match: boardMatch },
           duration_ms: Date.now() - publishStartedAt,
         });
         results.push({
           pinId: pin.id,
-          status: "posted",
+          status: boardMatch ? "posted" : "posted_with_board_warning",
           externalId: pinData.id,
           pinVerified: verification.ok,
         });
@@ -1721,7 +1724,7 @@ Deno.serve(async (req) => {
     }
 
     // Update connection last publish time if any succeeded
-    if (results.some((r) => r.status === "posted") && conn) {
+    if (results.some((r) => r.status === "posted" || r.status === "posted_with_board_warning") && conn) {
       await sb
         .from("pinterest_connection")
         .update({ last_publish_at: new Date().toISOString(), last_error: null })
@@ -1729,8 +1732,8 @@ Deno.serve(async (req) => {
     }
 
     {
-      const failedCount = results.filter((r) => r.status !== "posted").length;
-      const postedCount = results.filter((r) => r.status === "posted").length;
+      const failedCount = results.filter((r) => r.status !== "posted" && r.status !== "posted_with_board_warning").length;
+      const postedCount = results.filter((r) => r.status === "posted" || r.status === "posted_with_board_warning").length;
       return await respond(
         { ok: true, processed: results.length, results },
         {
