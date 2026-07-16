@@ -376,11 +376,12 @@ export interface WaveIntentSlot {
 
 export function planWaveMix(pinCount: number): WaveIntentSlot[] {
   if (pinCount <= 3) {
-    return [
+    const base: WaveIntentSlot[] = [
       { index: 0, intent: "high_intent_product", role: "high_intent" },
       { index: 1, intent: "long_tail_commercial", role: "long_tail" },
       { index: 2, intent: "inspiration_save", role: "inspiration" },
-    ].slice(0, pinCount);
+    ];
+    return base.slice(0, pinCount);
   }
   if (pinCount >= 10) {
     const slots: WaveIntentSlot[] = [];
