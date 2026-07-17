@@ -44,7 +44,6 @@ import {
 } from "../_shared/pinterest-cost-guard.ts";
 import {
   buildCacheKey,
-  putCached,
   runScoredWithCache,
   sha256Hex,
 } from "../_shared/pinterest-qa-cache.ts";
@@ -511,13 +510,6 @@ async function scoreOneProduct(
         species: product.primary_species,
       });
       credits = out.actual_credits;
-      await putCached(sb, cacheLookup.cache_key_requested, {
-        image_hash: hash,
-        pdp_hero_hash: hash,
-        product_id: productId,
-        scorer: CANDIDATE_SCORER,
-        scoring_version: SCORING_VERSION,
-      }, out.result, out.passed, VISION_EST_CREDITS);
       return out;
       },
     });
