@@ -7,6 +7,8 @@
 
 // ── PHASE 1: CTR DOMINATION — Titles & Meta Descriptions ──
 
+import { buildStructuredProductName } from '@/lib/structured-product-name';
+
 export interface CategorySerpConfig {
   slug: string;
   namespace: string;
