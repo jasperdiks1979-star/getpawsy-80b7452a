@@ -402,11 +402,9 @@ export function selectReplacementRoundRobin45(
   const selectedRanked: Ranked[] = [];
   let redistributedSlots = 0;
 
-  let idx = 0;
   while (selectedRanked.length < cfg.totalMax) {
     let progressed = false;
-    for (let step = 0; step < order.length; step++) {
-      const bucket = order[(idx + step) % order.length];
+    for (const bucket of order) {
       if (selectedRanked.length >= cfg.totalMax) break;
       if (taken[bucket] >= caps[bucket]) continue;
       if (cursor[bucket] >= buckets[bucket].length) continue;
@@ -414,7 +412,6 @@ export function selectReplacementRoundRobin45(
       taken[bucket]++;
       progressed = true;
     }
-    idx = (idx + 1) % order.length;
     if (!progressed) break;
   }
 
@@ -422,7 +419,6 @@ export function selectReplacementRoundRobin45(
   if (selectedRanked.length < cfg.totalMax) {
     const survivors = order.filter((b) => cursor[b] < buckets[b].length);
     if (survivors.length > 0) {
-      let i = 0;
       while (selectedRanked.length < cfg.totalMax) {
         let progressed = false;
         for (const b of survivors) {
@@ -432,7 +428,6 @@ export function selectReplacementRoundRobin45(
           taken[b]++;
           redistributedSlots++;
           progressed = true;
-          i++;
         }
         if (!progressed) break;
       }
