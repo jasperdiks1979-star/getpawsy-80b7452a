@@ -17,6 +17,7 @@ import {
   assembleLegacyCacheRows,
   classifyCandidate,
   evaluateStructuredCacheRow,
+  normalizeProductRow,
   TIER_A,
   TIER_B,
   type CacheCompatibility,
@@ -123,11 +124,11 @@ interface ProductRow {
 async function loadProduct(sb: SupabaseClient, id: string): Promise<ProductRow | null> {
   const { data, error } = await sb
     .from("products")
-    .select("id,slug,title:name,primary_species,active:is_active,effective_stock,hero_image_url:image_url,gallery_image_urls:images")
+    .select("id,slug,name,primary_species,is_active,effective_stock,stock,image_url,images")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(`product_lookup_failed:${error.message}`);
-  return (data as ProductRow | null) ?? null;
+  return data ? normalizeProductRow(data as any) : null;
 }
 
 async function hashSourceImage(url: string): Promise<{ hash: string | null; decode: "pass" | "fail" }> {
