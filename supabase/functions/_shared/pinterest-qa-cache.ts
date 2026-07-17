@@ -3,7 +3,7 @@
 // PDP hero hash, product ID and scoring version. Reuse cached result when
 // present; write a ledger row with cached_hit=true / credits=0.
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import {
   recordLedger,
   SCORING_VERSION,

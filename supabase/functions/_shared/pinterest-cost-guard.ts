@@ -2,7 +2,7 @@
 // Pinterest pipeline. Controls per-run budget cap, ledger writes, and
 // paused-run enforcement. See mem://marketing/pinterest-cost-controls-v1.
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 export const SCORING_VERSION = "v1.2026-07-16";
 
