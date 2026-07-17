@@ -126,7 +126,9 @@ Deno.serve(async (req) => {
   const isCanary = expectedCanary.length > 0 && canaryToken === expectedCanary;
   const replToken = req.headers.get("x-replacement-token") || "";
   const expectedRepl = Deno.env.get("THREE_PIN_REPLACEMENT_TOKEN") || "";
-  const isRepl = expectedRepl.length > 0 && replToken === expectedRepl;
+  const expectedV4 = Deno.env.get("V4_REPLACEMENT_TOKEN") || "";
+  const isRepl = (expectedRepl.length > 0 && replToken === expectedRepl) ||
+                 (expectedV4.length > 0 && replToken === expectedV4);
   if (!isService && !isCanary && !isRepl) {
     return json({ ok: false, verdict: "THREE_PIN_V4_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "unauthorized" }, 401);
   }
