@@ -1,77 +1,168 @@
-# Analytics Traffic Classification Rebuild (Phased)
 
-The forensic audit proved the current dashboard treats crawlers, Lovable previews and verifiers as US/desktop/direct humans. Fixing all 16 sections of your brief in one turn is not safe — it spans schema, views, ~15 edge functions, the tracker script, retention policy, dashboard UI, tests and a 30-day historical reclass. Doing it as one shipped diff would almost certainly break canonical ingest or the dashboard.
+# Bot Filter Fix — Shadow Rollout Plan (Phases 1–3)
 
-Below is the phased plan. Each phase is independently deployable and reversible. **Nothing ships until you approve.**
+Read-only audit conclusion (already delivered):
+`BOT_FILTER_NOT_APPLIED_TO_REPORT` · root cause `BOT_FILTER_NOT_CONNECTED_TO_CANONICAL`.
 
-## Phase 1 — Kill the US fallback and the "direct" default (schema + views only)
+This plan implements the fix in **shadow mode only**. No production default flip, no data mutation, no historical rewrite until you approve the shadow report.
 
-Goal: stop the lie at the read layer. Zero write-path changes, zero data mutation.
+---
 
-- New SQL function `public.normalize_country(text)` → returns `Unknown` for `NULL`/`''`/`'??'`; passes through real ISO/name values; maps `US/USA/United States` → `United States`, `NL` → `Netherlands`, etc.
-- New SQL function `public.classify_channel_v2(referrer, utm_source, user_agent, query, headers jsonb, has_js_evidence bool)` implementing the 12-step ordered classifier from §2.
-- Rewrite the 12 canonical views (`canonical_sessions_traffic_class`, `canonical_sources`, `canonical_kpis_hourly`, `canonical_funnel`, `canonical_traffic_class_funnel_24h`, `canonical_products`, `canonical_orders`, `canonical_revenue`, `canonical_attribution`, `canonical_heatmap`, `analytics_funnel_dropoff_v`, `canonical_sessions_traffic_class_summary_7d`) to:
-  - call `normalize_country()` — never coerce NULL to US
-  - call `classify_channel_v2()` — never fall back to `direct` when signals are missing (use `unknown`)
-  - expose new columns: `traffic_class`, `is_internal`, `exclude_from_commercial`, `classification_reason`, `classifier_version = 'v2'`
-- `analytics-canonical` edge function: remove the `geo='US'` implicit filter comments (already noted), add `traffic_class` filter param, default commercial responses to `HUMAN_CONFIRMED + HUMAN_PROBABLE`.
+## Scope guardrails (hard rules for this run)
 
-Regression tests (Deno + Vitest): the 15 test cases from §14, plus the 5 country cases from §1.
+- No `DELETE` on `canonical_events`, `canonical_sessions`, `visitor_activity`, `cci_events`.
+- No `UPDATE` of existing rows during Phase 1–3 (only backfill dry-run reports).
+- Schema changes are **additive** (new nullable / defaulted columns). Never drop, rename, retype.
+- New classifier writes are opt-in via `?mode=shadow`; the existing `analytics-canonical` truth envelope stays the production default.
+- Session-id unification only affects **new** events; historical rows stay as-is.
 
-## Phase 2 — Signed internal-automation headers (write path, code-controlled traffic)
+---
 
-- New shared helper `supabase/functions/_shared/internal-fetch.ts` that wraps `fetch` with `X-GetPawsy-Automation: <worker>` + `X-GetPawsy-Internal: true` + HMAC signature (`INTERNAL_TRAFFIC_SIGNING_SECRET`).
-- Update the ~7 internal callers that hit our own storefront: `pinterest-verify-worker`, `pinterest-cron-worker` (verify leg), `pinterest-track`, `canonical-health-check`, `analytics-health-probe`, `monitoring-tracking-heartbeat`, `pinterest-flow-monitor`.
-- Update `canonical-ingest` and the storefront edge/middleware that produces `canonical_events` to:
-  - verify the signature → set `is_internal=true`, `traffic_class='internal_automation'`, `automation_source=<worker>`, `exclude_from_commercial=true`
-  - never write these rows into the human-facing views
+## Phase 1 — Implementation + Tests
 
-New secret required: `INTERNAL_TRAFFIC_SIGNING_SECRET` (I'll request it via `add_secret` at the start of Phase 2).
+### A. Schema (additive migration)
 
-## Phase 3 — Client telemetry expansion (privacy-conscious)
+`canonical_events` (adds, all nullable/defaulted):
+`is_internal bool default false`, `is_bot bool default false`, `bot_confidence numeric`,
+`bot_reason text`, `traffic_quality text default 'uncertain'`, `classification_version text`,
+`classified_at timestamptz`, `source_user_agent text`, `technical_path bool default false`.
 
-Update the storefront tracker (in `src/lib/analytics/*` and the ingest endpoint):
+`canonical_sessions` (adds): same nine + `engagement_ms int default 0`, `interaction_count int default 0`.
 
-- Add: `viewport_w/h`, `screen_w/h`, `timezone`, `platform`, `browser_major`, `sec_purpose`, `document_visibility`, `navigation_type`, `has_scroll`, `has_pointer`, `has_keyboard`, `visible_ms`, `js_executed=true` beacon.
-- Server side: hash IP (`sha256(ip + daily_salt)`), resolve ASN via existing geo table if present else NULL, drop raw IP after ingest.
-- Schema: `ALTER TABLE canonical_events` + `canonical_sessions` to add nullable columns above + `classifier_version`, `traffic_class`, `is_internal`, `exclude_from_commercial`, `classification_reason`, `automation_source`, `bot_name`, `bot_family`, `bot_confidence`, `ip_hash`, `asn`.
-- Retention: `ip_hash` kept 30d, raw UA kept 90d, then daily job scrubs.
+Validation via **trigger** (not CHECK — per platform rule): `traffic_quality ∈ {human,uncertain,bot,internal,technical}`.
 
-## Phase 4 — Bot + frozen-UA detection
+Backfill defaults on existing rows via `UPDATE ... WHERE traffic_quality IS NULL` set to `'uncertain'` — this is the only allowed non-destructive touch and only fills defaults. No reclassification.
 
-- Server-side classifier upgraded to detect:
-  - Googlebot, Bingbot, Pinterestbot, AhrefsBot, SemrushBot, DuckDuckBot, UptimeRobot, Pingdom, StatusCake, headless-Chrome, Puppeteer, Playwright (`HeadlessChrome`, `sec-ch-ua` mismatches).
-  - Reverse-DNS verification for Googlebot/Bingbot/Pinterestbot when we have IP.
-  - **Frozen-UA anomaly**: rolling 24h window; if `count(UA) > 50 AND distinct_visitor_ids > 20 AND all sessions <1s with no interaction` → `BOT_PROBABLE, reason='frozen_ua_pattern'`. Runs in the ingest function against a small in-memory cache + a daily materialized aggregate.
-- Non-page routes: hard exclude `/api/*`, `/api/img/*`, `/healthz*`, `/*.map`, `/robots.txt`, `/sitemap*.xml`, `/favicon.*` from `CANONICAL_PAGE_VIEW` at the tracker level and re-assert at ingest.
+### B. Session-ID unification (writer-side, forward only)
 
-## Phase 5 — Historical reclassification (immutable raw preserved)
+Root cause of 0-overlap namespaces: multiple client writers (`cci_events`, `visitor_activity`, `checkout_funnel_events`) each mint their own session id.
 
-- New table `canonical_session_classifications_v2` (session_id, traffic_class, is_internal, confidence, reason, classifier_version, reclassified_at). Raw `canonical_events` untouched.
-- Backfill job: iterate last 30d of sessions using stored telemetry from Phase 3 columns; where telemetry is missing → `UNKNOWN` (never `HUMAN`, never `US`, never `direct`).
-- Views join to v2 classifications and prefer them over row-level v1 columns.
+Fix: create `src/lib/canonicalSession.ts` — single provider:
+- Reads/writes `sessionStorage['gp_canonical_sid']` (uuid v4).
+- 30-min inactivity timeout → new sid.
+- Exported `getCanonicalSessionId()` used by: `useVisitorTracking`, `analyticsFunnel`, `sessionQuality`, `cci_events` writer, checkout writer.
+- No fingerprinting, no PII, no cookies added.
 
-## Phase 6 — Dashboard split
+Rollout gate: new module writes only. Legacy `gp_session_id` kept for backward compat; new writes emit **both** so the 30-day dedup key remains valid.
 
-- `src/pages/admin/Analytics*` (and the Visitor World Map V2 already governed by mem): three visually separated blocks per §13:
-  1. **Commercial** — HUMAN_CONFIRMED only by default, toggle to include HUMAN_PROBABLE.
-  2. **Traffic quality** — stacked bar: human / internal / bots / verifiers / unknown.
-  3. **Technical observability** — raw crawler / verifier / preview / uptime counts.
-- Conversion-rate denominator switched to human sessions only. Country pie chart uses `normalize_country()`.
+### C. Technical route exclusion (defence in depth, 4 layers)
 
-## Phase 7 — Controlled verification matrix
+```text
+Layer 1  storefront tracker      → skip page_view when path matches TECHNICAL_PATTERNS
+Layer 2  gtag page_view dispatch → same skip
+Layer 3  canonical-ingest        → mark technical_path=true, traffic_quality='technical'
+Layer 4  analytics-canonical     → exclude technical from human/uncertain buckets
+```
 
-Run 8 synthetic requests (Bingbot UA, Lovable preview URL, signed automation, `/api/img`, real headless with all telemetry, etc.) and assert each lands in the expected `traffic_class`. Zero fake Pinterest clicks or public engagement.
+`TECHNICAL_PATTERNS` (shared const, `src/lib/technicalRoutes.ts` + Deno mirror in `_shared/technical-routes.ts`):
+`/api/`, `/functions/`, `/storage/`, `/favicon.ico`, `/robots.txt`, `/sitemap`, `/healthz`, `/.well-known/`, `/admin/`, `_lovable_preview`, image proxy patterns.
 
-## Technical details
+### D. Rules-based classifier (new)
 
-- Migrations: schema-only, additive (new columns nullable, new tables, new functions, new views recreated with `CREATE OR REPLACE`). No destructive changes; the `analytics_traffic_classification` and `canonical_sessions_traffic_class` v1 outputs stay readable for one release cycle.
-- Feature flag `ANALYTICS_CLASSIFIER_V2_ENABLED` on the ingest function so Phase 2–4 can dark-launch.
-- Tests: `supabase/functions/_shared/traffic-classifier-v2.test.ts` (Deno) + `src/lib/analytics/__tests__/classifierV2.test.ts` (Vitest) covering all 15 §14 cases.
-- Rollback per phase: `DROP FUNCTION classify_channel_v2`, revert view definitions from git — no data loss because raw `canonical_events` is never mutated.
+`supabase/functions/_shared/traffic-classifier.ts`:
 
-## Recommended execution order
+```text
+input:  { page_path, user_agent, referrer, utm, is_internal_hint,
+          is_bot_suspect_hint, bot_suspect_reason, engagement_ms,
+          interaction_count, pageviews, has_atc, has_checkout }
 
-Phase 1 → Phase 3 (write-path telemetry needs to exist before Phase 4 can lean on it) → Phase 4 → Phase 2 → Phase 5 → Phase 6 → Phase 7.
+decision order (fail-safe priority):
+  1. internal   (existing internal/admin rules)
+  2. technical  (TECHNICAL_PATTERNS match)
+  3. bot        (hard signals only:
+                  - crawler/spider UA regex
+                  - Lighthouse / synthetic monitor UA
+                  - headless UA + no interactions
+                  - is_bot_suspect=true AND reason in HIGH_CONF_REASONS
+                  - mechanical pattern + datacenter/automation evidence)
+  4. human      (has_atc || has_checkout || interaction_count >= 3
+                  || (pageviews >= 2 && engagement_ms >= 5000 && interaction_count >= 1))
+  5. uncertain  (everything else — includes 0s bounces, single-PV direct,
+                 lone VPN/datacenter signal, missing referrer)
 
-Reply **"go phase 1"** to start (schema/view fixes + tests only, zero write-path or dashboard risk), or **"go all phases sequentially"** to authorize the whole sequence (I'll pause between phases for review), or name any subset.
+output: { traffic_quality, is_bot, is_internal, technical_path,
+          bot_confidence 0..1, bot_reason, classification_version: 'v1' }
+```
+
+Explicit non-rule: no hard `engagement_ms >= 3000 → human`. Engagement is a weighted input only.
+
+### E. Ingest & session aggregation
+
+`canonical-ingest` extended: after upserting an event, resolve classification via classifier using enrichment from `visitor_activity` on **shared session_id** (new) or `visitor_id` fallback (existing), write classification columns.
+
+Session aggregation priority when merging per-session:
+`internal > technical > bot > human > uncertain`. A single weak bot signal on an otherwise human session (has_atc/checkout) does **not** override human.
+
+### F. Analytics-canonical truth envelope (shadow-capable)
+
+New response fields under `bucket_counts`:
+`total_raw_sessions, human_sessions, uncertain_sessions, bot_sessions, technical_sessions, internal_sessions` (+ `_visitors` variants).
+
+Request modes:
+- default (unchanged): today's `is_internal`-only filter → **production stays intact**.
+- `?mode=shadow`: use new classification columns; response also includes `parity: { old_totals, new_totals, delta }`.
+- `?bucket=human|human_uncertain|bot|technical|internal|raw`: explicit filter.
+
+UI stays on the old default until Phase 4.
+
+### G. Tests (`src/test/traffic-classifier.test.ts` — Vitest, ~20 cases)
+
+Covers all 20 numbered regression cases from the request: `/api/img` never human, crawler UA → bot, Lighthouse → bot/technical, short session + ATC → human, headless long session → bot, VPN alone → uncertain, shared sid match, dashboard/CSV parity, raw totals unchanged, backfill idempotent, no visitor-per-event inflation, human filters exclude bot/technical/internal, orders preserved.
+
+---
+
+## Phase 2 — Shadow classification (dry-run only)
+
+New edge function `analytics-shadow-classifier` (read-heavy, write-limited):
+
+- Reads canonical_events for windows: 1h, 10h, 24h, 7d.
+- Runs classifier per session using in-memory join with visitor_activity (session_id + visitor_id fallback).
+- Writes classification columns **only for events in the target windows** (idempotent upsert, `classification_version='v1-shadow'`). This is the single allowed mutation in Phase 2 and is auditable — no rows deleted, no visitor_ids regenerated.
+- Emits comparison report to `analytics_truth_snapshots` with `mode='shadow'`.
+
+Explicit re-check of the audited 10h window: 216 sessions / 213 visitors / 699 events / 672 PV / 27 PDP / 5 `/api/img` / 276 `visitor_activity` bot suspects.
+
+---
+
+## Phase 3 — Read-only parity report (delivered to you)
+
+Markdown + JSON containing:
+1. Files & migration list.
+2. Session-id root cause (multiple writers, no shared provider).
+3. New schema diff.
+4. Classifier rules table.
+5. Technical route list.
+6. Test results (pass/fail matrix).
+7. Shadow bucket counts for 1h/10h/24h/7d.
+8. Old vs new for the audited 10h window.
+9. Human/uncertain/bot/technical/internal totals.
+10. CSV & summary parity check.
+11. Backfill dry-run summary (join coverage, unclassifiable count).
+12. Mutations executed during shadow run (only classification column writes, listed with counts).
+13. Proof production default unchanged: `analytics-canonical` default response still uses `is_internal`-only filter; dashboard hook unchanged.
+
+Verdict: one of `BOT_FILTER_FIX_SHADOW_PASS` / `PARTIAL` / `FAILED` / `SESSION_NAMESPACE_FIX_FAILED` / `CLASSIFICATION_PARITY_FAILED`.
+
+---
+
+## Phase 4 — (Awaits your explicit GO)
+
+Not executed in this run. Would flip `analytics-canonical` default to new classification and update dashboards.
+
+---
+
+## Deliverables in this run (Phase 1–3)
+
+- 1 migration (additive schema + trigger).
+- ~6 new/edited files: `technicalRoutes.ts` (client+Deno), `canonicalSession.ts`, `_shared/traffic-classifier.ts`, `canonical-ingest/index.ts` (classifier hook), `analytics-canonical/index.ts` (shadow mode), `analytics-shadow-classifier/index.ts` (new).
+- Client writers updated to use shared session id (additive; keeps legacy id).
+- Vitest suite.
+- Shadow report markdown + JSON in `public/admin-reports/bot-filter-shadow/`.
+
+## Confirmation of non-execution
+
+- Production dashboard default: unchanged (verified by grep on `useCanonicalFunnel` — no code path switched).
+- Historical `canonical_events` rows: only new columns filled with defaults + shadow classification; no `DELETE`, no `UPDATE` on business columns.
+- Backfill remains dry-run.
+
+Approve to proceed with Phase 1 implementation, or request changes.

@@ -9588,9 +9588,13 @@ export type Database = {
       }
       canonical_events: {
         Row: {
+          bot_confidence: number | null
+          bot_reason: string | null
           browser: string | null
           canonical_name: Database["public"]["Enums"]["canonical_event_name"]
           city: string | null
+          classification_version: string | null
+          classified_at: string | null
           country: string | null
           currency: string | null
           dedup_key: string
@@ -9598,6 +9602,8 @@ export type Database = {
           ga_client_id: string | null
           id: string
           ingested_at: string
+          is_bot: boolean
+          is_internal: boolean
           landing_page: string | null
           meta: Json
           occurred_at: string
@@ -9609,7 +9615,10 @@ export type Database = {
           session_id: string | null
           source_event_id: string | null
           source_system: Database["public"]["Enums"]["canonical_source_system"]
+          source_user_agent: string | null
           stripe_session_id: string | null
+          technical_path: boolean
+          traffic_quality: string
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -9619,9 +9628,13 @@ export type Database = {
           visitor_id: string | null
         }
         Insert: {
+          bot_confidence?: number | null
+          bot_reason?: string | null
           browser?: string | null
           canonical_name: Database["public"]["Enums"]["canonical_event_name"]
           city?: string | null
+          classification_version?: string | null
+          classified_at?: string | null
           country?: string | null
           currency?: string | null
           dedup_key: string
@@ -9629,6 +9642,8 @@ export type Database = {
           ga_client_id?: string | null
           id?: string
           ingested_at?: string
+          is_bot?: boolean
+          is_internal?: boolean
           landing_page?: string | null
           meta?: Json
           occurred_at: string
@@ -9640,7 +9655,10 @@ export type Database = {
           session_id?: string | null
           source_event_id?: string | null
           source_system: Database["public"]["Enums"]["canonical_source_system"]
+          source_user_agent?: string | null
           stripe_session_id?: string | null
+          technical_path?: boolean
+          traffic_quality?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -9650,9 +9668,13 @@ export type Database = {
           visitor_id?: string | null
         }
         Update: {
+          bot_confidence?: number | null
+          bot_reason?: string | null
           browser?: string | null
           canonical_name?: Database["public"]["Enums"]["canonical_event_name"]
           city?: string | null
+          classification_version?: string | null
+          classified_at?: string | null
           country?: string | null
           currency?: string | null
           dedup_key?: string
@@ -9660,6 +9682,8 @@ export type Database = {
           ga_client_id?: string | null
           id?: string
           ingested_at?: string
+          is_bot?: boolean
+          is_internal?: boolean
           landing_page?: string | null
           meta?: Json
           occurred_at?: string
@@ -9671,7 +9695,10 @@ export type Database = {
           session_id?: string | null
           source_event_id?: string | null
           source_system?: Database["public"]["Enums"]["canonical_source_system"]
+          source_user_agent?: string | null
           stripe_session_id?: string | null
+          technical_path?: boolean
+          traffic_quality?: string
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -9686,7 +9713,9 @@ export type Database = {
         Row: {
           attribution_locked: boolean
           attribution_snapshot_at: string | null
+          bot_confidence: number | null
           bot_name: string | null
+          bot_reason: string | null
           browser: string | null
           city: string | null
           classification_reason: string | null
@@ -9694,6 +9723,7 @@ export type Database = {
           classifier_version: string | null
           country: string | null
           device: string | null
+          engagement_ms: number
           exclude_from_commercial: boolean
           first_affiliate_id: string | null
           first_email_id: string | null
@@ -9713,6 +9743,8 @@ export type Database = {
           first_utm_source: string | null
           first_utm_term: string | null
           ga_client_id: string | null
+          interaction_count: number
+          is_bot: boolean
           is_internal: boolean
           landing_page: string | null
           language: string | null
@@ -9726,8 +9758,10 @@ export type Database = {
           screen_wxh: string | null
           session_id: string
           stripe_session_id: string | null
+          technical_path: boolean
           timezone: string | null
           traffic_class: string | null
+          traffic_quality: string
           updated_at: string
           utm_campaign: string | null
           utm_content: string | null
@@ -9739,7 +9773,9 @@ export type Database = {
         Insert: {
           attribution_locked?: boolean
           attribution_snapshot_at?: string | null
+          bot_confidence?: number | null
           bot_name?: string | null
+          bot_reason?: string | null
           browser?: string | null
           city?: string | null
           classification_reason?: string | null
@@ -9747,6 +9783,7 @@ export type Database = {
           classifier_version?: string | null
           country?: string | null
           device?: string | null
+          engagement_ms?: number
           exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
           first_email_id?: string | null
@@ -9766,6 +9803,8 @@ export type Database = {
           first_utm_source?: string | null
           first_utm_term?: string | null
           ga_client_id?: string | null
+          interaction_count?: number
+          is_bot?: boolean
           is_internal?: boolean
           landing_page?: string | null
           language?: string | null
@@ -9781,8 +9820,10 @@ export type Database = {
           screen_wxh?: string | null
           session_id: string
           stripe_session_id?: string | null
+          technical_path?: boolean
           timezone?: string | null
           traffic_class?: string | null
+          traffic_quality?: string
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -9794,7 +9835,9 @@ export type Database = {
         Update: {
           attribution_locked?: boolean
           attribution_snapshot_at?: string | null
+          bot_confidence?: number | null
           bot_name?: string | null
+          bot_reason?: string | null
           browser?: string | null
           city?: string | null
           classification_reason?: string | null
@@ -9802,6 +9845,7 @@ export type Database = {
           classifier_version?: string | null
           country?: string | null
           device?: string | null
+          engagement_ms?: number
           exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
           first_email_id?: string | null
@@ -9821,6 +9865,8 @@ export type Database = {
           first_utm_source?: string | null
           first_utm_term?: string | null
           ga_client_id?: string | null
+          interaction_count?: number
+          is_bot?: boolean
           is_internal?: boolean
           landing_page?: string | null
           language?: string | null
@@ -9836,8 +9882,10 @@ export type Database = {
           screen_wxh?: string | null
           session_id?: string
           stripe_session_id?: string | null
+          technical_path?: boolean
           timezone?: string | null
           traffic_class?: string | null
+          traffic_quality?: string
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
