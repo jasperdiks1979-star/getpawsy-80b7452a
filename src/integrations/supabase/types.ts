@@ -53064,6 +53064,87 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_candidate_run_items: {
+        Row: {
+          cache_status: string | null
+          categorical_decisions: Json
+          completed_at: string | null
+          created_at: string
+          credits_used: number
+          disposition: string
+          error_code: string | null
+          error_message: string | null
+          evaluator_version: string | null
+          id: string
+          numeric_scores: Json
+          ordinal: number
+          product_id: string
+          provider_call_count: number
+          rejection_reasons: Json
+          requested_at: string
+          run_id: string
+          source_image_hash: string | null
+          source_image_url: string | null
+          species: string | null
+          started_at: string | null
+          tier_a_result: string | null
+          tier_b_result: string | null
+          updated_at: string
+        }
+        Insert: {
+          cache_status?: string | null
+          categorical_decisions?: Json
+          completed_at?: string | null
+          created_at?: string
+          credits_used?: number
+          disposition?: string
+          error_code?: string | null
+          error_message?: string | null
+          evaluator_version?: string | null
+          id?: string
+          numeric_scores?: Json
+          ordinal: number
+          product_id: string
+          provider_call_count?: number
+          rejection_reasons?: Json
+          requested_at?: string
+          run_id: string
+          source_image_hash?: string | null
+          source_image_url?: string | null
+          species?: string | null
+          started_at?: string | null
+          tier_a_result?: string | null
+          tier_b_result?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cache_status?: string | null
+          categorical_decisions?: Json
+          completed_at?: string | null
+          created_at?: string
+          credits_used?: number
+          disposition?: string
+          error_code?: string | null
+          error_message?: string | null
+          evaluator_version?: string | null
+          id?: string
+          numeric_scores?: Json
+          ordinal?: number
+          product_id?: string
+          provider_call_count?: number
+          rejection_reasons?: Json
+          requested_at?: string
+          run_id?: string
+          source_image_hash?: string | null
+          source_image_url?: string | null
+          species?: string | null
+          started_at?: string | null
+          tier_a_result?: string | null
+          tier_b_result?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pinterest_candidate_score_results: {
         Row: {
           cache_hit: boolean
@@ -53088,6 +53169,7 @@ export type Database = {
           source_image_url: string | null
           species: string | null
           species_confidence: number | null
+          stable_key: string
           supplier_text_detected: boolean | null
           tier_a_result: string
           tier_b_potential_result: string
@@ -53118,6 +53200,7 @@ export type Database = {
           source_image_url?: string | null
           species?: string | null
           species_confidence?: number | null
+          stable_key: string
           supplier_text_detected?: boolean | null
           tier_a_result?: string
           tier_b_potential_result?: string
@@ -53148,6 +53231,7 @@ export type Database = {
           source_image_url?: string | null
           species?: string | null
           species_confidence?: number | null
+          stable_key?: string
           supplier_text_detected?: boolean | null
           tier_a_result?: string
           tier_b_potential_result?: string
