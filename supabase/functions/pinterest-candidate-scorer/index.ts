@@ -11,7 +11,7 @@
 //
 // See: mem://marketing/pinterest-cost-controls-v1.
 
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.90.1";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
