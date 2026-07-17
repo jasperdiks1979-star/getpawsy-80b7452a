@@ -34,7 +34,10 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("authorization") || "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
   const isService = bearer && bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!isService) {
+  const canaryToken = req.headers.get("x-canary-token") || "";
+  const expectedCanaryToken = Deno.env.get("PINTEREST_CANARY_TOKEN") || "";
+  const isCanaryTokenAuth = expectedCanaryToken.length > 0 && canaryToken === expectedCanaryToken;
+  if (!isService && !isCanaryTokenAuth) {
     if (!authHeader) return json({ ok: false, verdict: "STOP_PREFLIGHT_FAILED", reason: "unauthorized" }, 401);
     const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
     const { data: userData } = await userClient.auth.getUser();
