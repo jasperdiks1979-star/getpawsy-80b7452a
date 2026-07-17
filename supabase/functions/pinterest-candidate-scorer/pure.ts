@@ -22,6 +22,7 @@ export const RequestSchema = z
     allow_tier_b_evaluation: z.boolean().default(true),
     publication_allowed: z.literal(false),
     queue_writes_allowed: z.literal(false),
+    calibrated_v2_enabled: z.boolean().default(false),
   })
   .strict();
 
