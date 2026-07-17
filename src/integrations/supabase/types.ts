@@ -9686,11 +9686,15 @@ export type Database = {
         Row: {
           attribution_locked: boolean
           attribution_snapshot_at: string | null
+          bot_name: string | null
           browser: string | null
           city: string | null
+          classification_reason: string | null
           classified_channel: string | null
+          classifier_version: string | null
           country: string | null
           device: string | null
+          exclude_from_commercial: boolean
           first_affiliate_id: string | null
           first_email_id: string | null
           first_fbclid: string | null
@@ -9709,6 +9713,7 @@ export type Database = {
           first_utm_source: string | null
           first_utm_term: string | null
           ga_client_id: string | null
+          is_internal: boolean
           landing_page: string | null
           language: string | null
           last_seen_at: string
@@ -9722,6 +9727,7 @@ export type Database = {
           session_id: string
           stripe_session_id: string | null
           timezone: string | null
+          traffic_class: string | null
           updated_at: string
           utm_campaign: string | null
           utm_content: string | null
@@ -9733,11 +9739,15 @@ export type Database = {
         Insert: {
           attribution_locked?: boolean
           attribution_snapshot_at?: string | null
+          bot_name?: string | null
           browser?: string | null
           city?: string | null
+          classification_reason?: string | null
           classified_channel?: string | null
+          classifier_version?: string | null
           country?: string | null
           device?: string | null
+          exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
           first_email_id?: string | null
           first_fbclid?: string | null
@@ -9756,6 +9766,7 @@ export type Database = {
           first_utm_source?: string | null
           first_utm_term?: string | null
           ga_client_id?: string | null
+          is_internal?: boolean
           landing_page?: string | null
           language?: string | null
           last_seen_at: string
@@ -9771,6 +9782,7 @@ export type Database = {
           session_id: string
           stripe_session_id?: string | null
           timezone?: string | null
+          traffic_class?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -9782,11 +9794,15 @@ export type Database = {
         Update: {
           attribution_locked?: boolean
           attribution_snapshot_at?: string | null
+          bot_name?: string | null
           browser?: string | null
           city?: string | null
+          classification_reason?: string | null
           classified_channel?: string | null
+          classifier_version?: string | null
           country?: string | null
           device?: string | null
+          exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
           first_email_id?: string | null
           first_fbclid?: string | null
@@ -9805,6 +9821,7 @@ export type Database = {
           first_utm_source?: string | null
           first_utm_term?: string | null
           ga_client_id?: string | null
+          is_internal?: boolean
           landing_page?: string | null
           language?: string | null
           last_seen_at?: string
@@ -9820,6 +9837,7 @@ export type Database = {
           session_id?: string
           stripe_session_id?: string | null
           timezone?: string | null
+          traffic_class?: string | null
           updated_at?: string
           utm_campaign?: string | null
           utm_content?: string | null
@@ -74587,6 +74605,64 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_commercial_sessions_v2: {
+        Row: {
+          classification_reason: string | null
+          classified_channel: string | null
+          classifier_version: string | null
+          country: string | null
+          device: string | null
+          first_seen_at: string | null
+          last_seen_at: string | null
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          order_id: string | null
+          session_id: string | null
+          traffic_class: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          classification_reason?: string | null
+          classified_channel?: string | null
+          classifier_version?: string | null
+          country?: never
+          device?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          session_id?: string | null
+          traffic_class?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          classification_reason?: string | null
+          classified_channel?: string | null
+          classifier_version?: string | null
+          country?: never
+          device?: string | null
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          session_id?: string | null
+          traffic_class?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       canonical_funnel: {
         Row: {
           country: string | null
@@ -77500,6 +77576,20 @@ export type Database = {
           vo_url: string
         }[]
       }
+      classify_channel_v2: {
+        Args: {
+          p_click_ids?: Json
+          p_has_interaction?: boolean
+          p_has_js_evidence?: boolean
+          p_landing_path?: string
+          p_query_string?: string
+          p_referrer: string
+          p_user_agent?: string
+          p_utm_medium: string
+          p_utm_source: string
+        }
+        Returns: Json
+      }
       classify_traffic_class: { Args: { p_channel: string }; Returns: string }
       classify_traffic_source: {
         Args: {
@@ -78143,6 +78233,7 @@ export type Database = {
             Returns: string
           }
       module_is_active: { Args: { _module_key: string }; Returns: boolean }
+      normalize_country: { Args: { p: string }; Returns: string }
       pcie2_claim_creative_jobs: {
         Args: { p_limit?: number; p_token?: string }
         Returns: {
