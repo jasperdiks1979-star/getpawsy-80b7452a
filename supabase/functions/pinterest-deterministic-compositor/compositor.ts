@@ -26,6 +26,7 @@ import {
 } from "./layouts.ts";
 
 export const CLOUDINARY_CLOUD = "dlkqycfzn";
+const BASE_CANVAS_URL = "https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/pinterest-ads/deterministic%2Fsystem%2Fbase-canvas-1x1.png";
 
 // ─── Text validation ─────────────────────────────────────────────────────
 
@@ -208,23 +209,26 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
   const ctaFill = hex(INK.ctaFill);
   const ctaText = hex(INK.ctaText);
 
-  // --- Product layer: geometry-preserving fit inside layout.productFit box.
-  // c_fit ONLY. Never c_fill (would crop product). Never any e_/co_/o_ etc.
-  const productFit = [
-    "w_" + n(L.productFit.w, 100, 2000),
-    "h_" + n(L.productFit.h, 100, 2000),
-    "c_fit",
-    "f_png",
-  ].join(",");
-
-  // --- Canvas: pad product onto 1200x1800 warm background at productBox.
-  // Cloudinary places the transformed source with c_pad, then we position by
-  // computing x/y offsets from productBox top-left.
-  const padCanvas = [
+  // --- Base canvas: start from a neutral 1x1 asset, then pad to 1200x1800.
+  // This avoids Cloudinary centering the product as the primary fetched image.
+  const baseCanvas = [
     "w_" + n(CANVAS.w, 1, 4000),
     "h_" + n(CANVAS.h, 1, 4000),
     "c_pad",
     "b_rgb:" + bgHex,
+    "f_png",
+  ].join(",");
+
+  // --- Product layer: geometry-preserving fit inside layout.productFit box,
+  // applied as an explicitly positioned overlay. c_fit ONLY. Never c_fill.
+  const productLayer = [
+    "l_fetch:" + b64UrlEncode(inp.sourceUrl),
+    "w_" + n(L.productFit.w, 100, 2000),
+    "h_" + n(L.productFit.h, 100, 2000),
+    "c_fit",
+    "f_png",
+  ].join(",") + "/" + [
+    "fl_layer_apply",
     "g_north_west",
     "x_" + n(L.productBox.x + Math.floor((L.productBox.w - L.productFit.w) / 2), -2000, 4000),
     "y_" + n(L.productBox.y + Math.floor((L.productBox.h - L.productFit.h) / 2), -2000, 4000),
@@ -284,10 +288,10 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "y_" + n(L.ctaBox.y + Math.floor((L.ctaBox.h - inp.ctaSize) / 2), 0, CANVAS.h),
   ].join(",");
 
-  const segs = [productFit, padCanvas, headline, benefit, ctaBg, ctaLayer, "f_png"].join("/");
-  // Cloudinary /image/fetch/ terminates with the raw source URL. Base64
-  // encoding is used ONLY for `l_fetch:` layers, not the primary source.
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${inp.sourceUrl}`;
+  const segs = [baseCanvas, productLayer, headline, benefit, ctaBg, ctaLayer, "f_png"].join("/");
+  // Cloudinary /image/fetch/ terminates with a neutral base canvas. The product
+  // source is an explicit l_fetch overlay so all geometry is auditable.
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${BASE_CANVAS_URL}`;
 }
 
 // ─── Transformation allowlist self-audit ─────────────────────────────────
