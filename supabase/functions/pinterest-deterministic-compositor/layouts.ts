@@ -4,6 +4,21 @@
 export const CANVAS = { w: 1200, h: 1800 } as const;
 export const SAFE = { top: 80, bottom: 80, left: 80, right: 80 } as const;
 
+// Minimum vertical breathing room between any two text/CTA blocks.
+// Mobile-readability requirement: no block may sit within MIN_GAP of another.
+export const MIN_GAP = 48;
+
+// Line-height multiplier used by Cloudinary's l_text rendering for our
+// chosen fonts. Empirically ~1.15 for Georgia Bold and Arial.
+export const LINE_HEIGHT = 1.18;
+
+// Absolute mobile-readable floors. fitText must not go below these.
+export const MOBILE_MIN = {
+  headline: 56,
+  benefit: 34,
+  cta: 36,
+} as const;
+
 // Warm palette (locked; text layers only — never applied to product).
 export const BG = {
   cream: "F5EDE0",
@@ -55,109 +70,109 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
   editorial_hero: {
     key: "editorial_hero",
     bg: "cream",
-    productFit: { w: 1080, h: 1080 },
-    productBox: { x: 60, y: 160, w: 1080, h: 1080 },
-    headlineBox: { x: 100, y: 1280, w: 1000, h: 180 },
-    headlineMaxSize: 96,
-    headlineMinSize: 60,
+    productFit: { w: 960, h: 960 },
+    productBox: { x: 120, y: 120, w: 960, h: 960 },
+    headlineBox: { x: 100, y: 1120, w: 1000, h: 240 },
+    headlineMaxSize: 88,
+    headlineMinSize: 56,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 1480, w: 1000, h: 120 },
-    benefitMaxSize: 52,
-    benefitMinSize: 36,
+    benefitBox: { x: 100, y: 1400, w: 1000, h: 140 },
+    benefitMaxSize: 46,
+    benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1620, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.45, 0.65],
+    targetOccupancy: [0.35, 0.55],
   },
   // Product slightly smaller, dedicated headline zone above.
   feature_spotlight: {
     key: "feature_spotlight",
     bg: "oat",
-    productFit: { w: 960, h: 960 },
-    productBox: { x: 120, y: 460, w: 960, h: 960 },
-    headlineBox: { x: 100, y: 140, w: 1000, h: 260 },
-    headlineMaxSize: 104,
-    headlineMinSize: 64,
+    productFit: { w: 860, h: 860 },
+    productBox: { x: 170, y: 480, w: 860, h: 860 },
+    headlineBox: { x: 100, y: 140, w: 1000, h: 240 },
+    headlineMaxSize: 92,
+    headlineMinSize: 58,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 1440, w: 1000, h: 110 },
-    benefitMaxSize: 48,
-    benefitMinSize: 34,
+    benefitBox: { x: 100, y: 1420, w: 1000, h: 130 },
+    benefitMaxSize: 44,
+    benefitMinSize: 32,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1580, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.40, 0.65],
+    targetOccupancy: [0.30, 0.50],
   },
   // Compact — product mid-canvas, tight margins, minimalist copy.
   compact_space: {
     key: "compact_space",
     bg: "beige",
-    productFit: { w: 1020, h: 1020 },
-    productBox: { x: 90, y: 300, w: 1020, h: 1020 },
-    headlineBox: { x: 100, y: 100, w: 1000, h: 180 },
-    headlineMaxSize: 88,
+    productFit: { w: 900, h: 900 },
+    productBox: { x: 150, y: 340, w: 900, h: 900 },
+    headlineBox: { x: 100, y: 100, w: 1000, h: 200 },
+    headlineMaxSize: 84,
     headlineMinSize: 56,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 1360, w: 1000, h: 110 },
-    benefitMaxSize: 46,
+    benefitBox: { x: 100, y: 1300, w: 1000, h: 130 },
+    benefitMaxSize: 44,
     benefitMinSize: 32,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1500, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1490, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.40, 0.62],
+    targetOccupancy: [0.30, 0.50],
   },
   // Tall product — vertical bias, headline and benefit both above.
   tall_product_scale: {
     key: "tall_product_scale",
     bg: "cream",
-    productFit: { w: 900, h: 1100 },
-    productBox: { x: 150, y: 480, w: 900, h: 1100 },
+    productFit: { w: 780, h: 980 },
+    productBox: { x: 210, y: 500, w: 780, h: 980 },
     headlineBox: { x: 100, y: 120, w: 1000, h: 200 },
-    headlineMaxSize: 92,
-    headlineMinSize: 58,
+    headlineMaxSize: 88,
+    headlineMinSize: 56,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 340, w: 1000, h: 120 },
-    benefitMaxSize: 46,
+    benefitBox: { x: 100, y: 350, w: 1000, h: 130 },
+    benefitMaxSize: 44,
     benefitMinSize: 32,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1620, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.45, 0.75],
+    targetOccupancy: [0.30, 0.50],
   },
   // Product-left visual, benefit right-hand column emphasis.
   product_plus_benefit: {
     key: "product_plus_benefit",
     bg: "oat",
-    productFit: { w: 1000, h: 1000 },
-    productBox: { x: 100, y: 280, w: 1000, h: 1000 },
-    headlineBox: { x: 100, y: 100, w: 1000, h: 160 },
-    headlineMaxSize: 84,
+    productFit: { w: 880, h: 880 },
+    productBox: { x: 160, y: 320, w: 880, h: 880 },
+    headlineBox: { x: 100, y: 100, w: 1000, h: 180 },
+    headlineMaxSize: 80,
     headlineMinSize: 54,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 1320, w: 1000, h: 200 },
-    benefitMaxSize: 56,
-    benefitMinSize: 38,
+    benefitBox: { x: 100, y: 1260, w: 1000, h: 200 },
+    benefitMaxSize: 48,
+    benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1560, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1580, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.40, 0.62],
+    targetOccupancy: [0.30, 0.50],
   },
   // Seasonal editorial — softer palette, product bottom-centered.
   seasonal_editorial: {
     key: "seasonal_editorial",
     bg: "beige",
-    productFit: { w: 980, h: 980 },
-    productBox: { x: 110, y: 560, w: 980, h: 980 },
-    headlineBox: { x: 100, y: 140, w: 1000, h: 220 },
-    headlineMaxSize: 100,
-    headlineMinSize: 60,
+    productFit: { w: 840, h: 840 },
+    productBox: { x: 180, y: 560, w: 840, h: 840 },
+    headlineBox: { x: 100, y: 140, w: 1000, h: 200 },
+    headlineMaxSize: 88,
+    headlineMinSize: 58,
     headlineMaxLines: 2,
-    benefitBox: { x: 100, y: 380, w: 1000, h: 140 },
-    benefitMaxSize: 50,
-    benefitMinSize: 36,
+    benefitBox: { x: 100, y: 380, w: 1000, h: 130 },
+    benefitMaxSize: 44,
+    benefitMinSize: 32,
     benefitMaxLines: 2,
-    ctaBox: { x: 420, y: 1620, w: 360, h: 100 },
+    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
     ctaSize: 40,
-    targetOccupancy: [0.40, 0.62],
+    targetOccupancy: [0.25, 0.45],
   },
 };
 
@@ -174,4 +189,13 @@ export function withinSafe(box: Box): boolean {
 
 export function occupancy(box: Box): number {
   return (box.w * box.h) / (CANVAS.w * CANVAS.h);
+}
+
+// Vertical distance between two non-overlapping stacked boxes (0 if they touch
+// or overlap on the y-axis, positive otherwise). Used by the layout auditor
+// to enforce MIN_GAP between text/CTA blocks.
+export function verticalGap(a: Box, b: Box): number {
+  const top = a.y < b.y ? a : b;
+  const bot = a.y < b.y ? b : a;
+  return bot.y - (top.y + top.h);
 }

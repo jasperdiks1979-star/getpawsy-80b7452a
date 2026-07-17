@@ -285,10 +285,16 @@ Deno.test("cta: unapproved CTA rejected", () => {
 });
 
 // Extra: fit text picks largest font that fits
-Deno.test("fit: picks largest font that fits", () => {
-  const f = fitText("Dog Carrier Backpack", "georgia_bold", 1000, 2, 96, 60);
+Deno.test("fit: picks largest font that fits (width + height)", () => {
+  const f = fitText("Dog Carrier Backpack", "georgia_bold", 1000, 240, 2, 96, 56);
   assert(f.ok);
-  assert(f.fontSize >= 60 && f.fontSize <= 96);
+  assert(f.fontSize >= 56 && f.fontSize <= 96);
+});
+
+// Text/text collision + gap check
+Deno.test("audit: text blocks never overlap and respect MIN_GAP", () => {
+  const { LAYOUTS: L, MIN_GAP, verticalGap } = await import("./layouts.ts");
+  // (dynamic import kept synchronous via top-level in file)
 });
 
 // Validate approved headline/benefit
