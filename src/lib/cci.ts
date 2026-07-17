@@ -3,6 +3,8 @@
  * Fires sendBeacon to cci-ingest. Never throws, never blocks render.
  */
 import { resolveUtm } from '@/lib/utmNormalizer';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
+import { isTechnicalPath } from '@/lib/technicalRoutes';
 
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 const SESSION_KEY = 'gp_session_id';
@@ -25,12 +27,10 @@ export type CciEvent =
 function ensureSessionId(): string | null {
   try {
     if (typeof window === 'undefined') return null;
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id = (crypto?.randomUUID?.() ?? `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
+    // Phase 4A: unified canonical session id. Also mirrors to gp_session_id
+    // so legacy reads keep working. Solves the session-namespace mismatch
+    // that made analytics-canonical joins return 0 rows.
+    return getCanonicalSessionId();
   } catch { return null; }
 }
 
