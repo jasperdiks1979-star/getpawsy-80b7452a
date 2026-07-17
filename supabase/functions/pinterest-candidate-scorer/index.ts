@@ -581,6 +581,85 @@ async function scoreOneProduct(
 
   const cls = classifyCandidate(signals, req.allow_tier_b_evaluation);
 
+  // ── Calibrated V2 evaluator (feature-gated, side-effect free) ──
+  const v2Active = isCalibratedV2Active(cfg, req);
+  let v2Fields: Record<string, unknown> = { calibrated_v2_active: false };
+  let finalTierA = cls.tier_a_result;
+  let finalTierB = cls.tier_b_potential_result;
+  let finalReasons = cls.rejection_reasons;
+  let finalScorerVersion: string = SCORING_VERSION;
+  if (v2Active) {
+    const provenance: SourceProvenance = classifyProvenance({
+      source_image_url: imageUrl,
+      source_image_hash: hash,
+      product_hero_url: product.hero_image_url,
+      product_hero_hash: hash,
+      product_gallery_urls: product.gallery_image_urls,
+    });
+    const identityDec = identityDecisionFromScore(signals.identity_confidence);
+    const pdpDec = pdpDecisionFromScore(signals.pdp_similarity);
+    const variantDec = boolToTrichotomy(signals.variant_match);
+    const colorDec = boolToTrichotomy(signals.color_match);
+    const shapeDec = boolToTrichotomy(signals.shape_match);
+    const species_applicable = signals.species_applicable;
+    const species_ok =
+      !species_applicable || (signals.species_confidence ?? 0) >= 0.6;
+    const calSignals: CalibratedSignals = {
+      provenance,
+      identity_decision: identityDec,
+      pdp_visual_decision: pdpDec,
+      variant_decision: variantDec,
+      color_decision: colorDec,
+      shape_decision: shapeDec,
+      species_ok,
+      species_applicable,
+      occupancy: signals.occupancy,
+      watermark_detected: signals.watermark_detected === true,
+      supplier_text_detected: signals.supplier_text_detected === true,
+      collage_detected: signals.collage_detected === true,
+      image_decode_pass: signals.image_decode_status === "pass",
+      destination_integrity_pass: signals.destination_integrity_pass,
+      no_competing_variant: signals.no_competing_variant,
+      identity_confidence: signals.identity_confidence,
+      pdp_similarity: signals.pdp_similarity,
+    };
+    const v2 = classifyCalibratedV2(calSignals);
+    v2Fields = {
+      calibrated_v2_active: true,
+      evaluator_version: CALIBRATION_VERSION,
+      source_provenance: provenance,
+      provenance_deterministic: isDeterministicProvenance(provenance),
+      identity_decision: identityDec,
+      pdp_visual_decision: pdpDec,
+      variant_decision: variantDec,
+      color_decision: colorDec,
+      shape_decision: shapeDec,
+      hard_safety_reasons: v2.rejection_reasons.filter((r) =>
+        [
+          "image_decode_fail",
+          "watermark_detected",
+          "supplier_text_detected",
+          "collage_detected",
+          "low_occupancy",
+          "destination_integrity_fail",
+          "competing_variant",
+          "species_mismatch",
+        ].includes(r),
+      ),
+      v2_tier_a_result: v2.tier_a_result,
+      v2_tier_b_result: v2.tier_b_result,
+      v2_rejection_reasons: v2.rejection_reasons,
+      provenance_verdict: v2.provenance_verdict,
+      legacy_tier_a_result: cls.tier_a_result,
+      legacy_tier_b_result: cls.tier_b_potential_result,
+      legacy_rejection_reasons: cls.rejection_reasons,
+    };
+    finalTierA = v2.tier_a_result;
+    finalTierB = v2.tier_b_result;
+    finalReasons = v2.rejection_reasons;
+    finalScorerVersion = CALIBRATION_VERSION;
+  }
+
   const row = {
     run_id: req.run_id,
     product_id: productId,
@@ -592,7 +671,7 @@ async function scoreOneProduct(
     current_gallery_image_urls: product.gallery_image_urls,
     gallery_membership_verified: signals.gallery_membership_verified,
     cache_hit: cached,
-    scorer_version: SCORING_VERSION,
+    scorer_version: finalScorerVersion,
     occupancy: signals.occupancy,
     identity_confidence: signals.identity_confidence,
     pdp_similarity: signals.pdp_similarity,
@@ -604,13 +683,14 @@ async function scoreOneProduct(
     supplier_text_detected: signals.supplier_text_detected,
     collage_detected: signals.collage_detected,
     image_decode_status: "pass",
-    tier_a_result: cls.tier_a_result,
-    tier_b_potential_result: cls.tier_b_potential_result,
-    rejection_reasons: cls.rejection_reasons,
+    tier_a_result: finalTierA,
+    tier_b_potential_result: finalTierB,
+    rejection_reasons: finalReasons,
     credits_used: credits,
     deterministic_prefilter_failure: [],
     cache_compatibility_decision: cached ? "HIT" : "MISS_PAID_SCORE",
     ...cacheLookup,
+    ...v2Fields,
   };
 
   return {
