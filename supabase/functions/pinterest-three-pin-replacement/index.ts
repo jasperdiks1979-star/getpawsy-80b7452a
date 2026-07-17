@@ -14,6 +14,7 @@ const PIN_API = "https://api.pinterest.com/v5";
 type ApprovedItem = {
   ordinal: number;
   product_id: string;
+  product_slug: string;
   product_name: string;
   old_pin_id: string;
   board_id: string;
@@ -30,6 +31,7 @@ const APPROVED: ApprovedItem[] = [
   {
     ordinal: 1,
     product_id: "b7133bed-107c-4463-8277-1bd8ba7d9b94",
+    product_slug: "pet-dog-carrier-bag-carrier-for-dogs-backpack-out-double-shoulder-portable-b713",
     product_name: "Dog Carrier Backpack",
     old_pin_id: "1117103882602565080",
     board_id: "1117103951261719226",
@@ -44,6 +46,7 @@ const APPROVED: ApprovedItem[] = [
   {
     ordinal: 2,
     product_id: "908bb847-5058-4219-bebc-0d77bb2beede",
+    product_slug: "5-level-revolving-stair-cat-tree-scratcher-climbing-activity-tower-with-play-908b",
     product_name: "Cat Tree Condo 5-Level",
     old_pin_id: "1117103882602566162",
     board_id: "1117103951261719219",
@@ -58,6 +61,7 @@ const APPROVED: ApprovedItem[] = [
   {
     ordinal: 3,
     product_id: "c882d898-5aaa-44eb-9d3e-d90d14f06ff0",
+    product_slug: "extra-large-stainless-steel-cat-litter-box-for-big-cats-with-flip-cover-high-c882",
     product_name: "XL Steel Litter Box",
     old_pin_id: "1117103882602566165",
     board_id: "1117103951261719235",
@@ -180,7 +184,7 @@ Deno.serve(async (req) => {
 
     // 4) Queue insert (exactly one)
     const insertRow = {
-      product_id: item.product_id, product_slug: null, product_name: item.product_name,
+      product_id: item.product_id, product_slug: item.product_slug, product_name: item.product_name,
       pin_variant: `replace_${item.layout}`,
       pin_title: item.title.slice(0, 100), pin_description: item.description.slice(0, 500),
       pin_image_url: item.public_asset_url, destination_link: item.destination_url,
