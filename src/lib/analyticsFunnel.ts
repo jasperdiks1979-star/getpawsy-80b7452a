@@ -2,6 +2,8 @@
  * Thin client wrapper to record a funnel step into analytics_funnel_waterfall
  * via the analytics-funnel-ingest edge function. Non-blocking, never throws.
  */
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { isTechnicalPath } from "@/lib/technicalRoutes";
 const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
@@ -20,18 +22,14 @@ export type FunnelStep =
 function ensureSessionId(): string | null {
   try {
     if (typeof window === "undefined") return null;
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id = (crypto?.randomUUID?.() ?? `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
+    return getCanonicalSessionId();
   } catch { return null; }
 }
 
 export function recordFunnelStep(step: FunnelStep, extra?: Record<string, unknown>): void {
   try {
     if (typeof window === "undefined" || !PROJECT) return;
+    try { if (isTechnicalPath(location.pathname)) return; } catch { /* ignore */ }
     const session_id = ensureSessionId();
     if (!session_id) return;
     const body = JSON.stringify({
