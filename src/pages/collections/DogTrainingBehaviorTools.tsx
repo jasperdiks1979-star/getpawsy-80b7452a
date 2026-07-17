@@ -1,3 +1,4 @@
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Layout } from '@/components/layout/Layout';
@@ -83,7 +84,7 @@ export default function DogTrainingBehaviorTools() {
       '@type': 'ItemList', numberOfItems: products.length,
       itemListElement: products.slice(0, 8).map((p, i) => ({
         '@type': 'ListItem', position: i + 1,
-        item: { '@type': 'Product', '@id': `${BASE}/products/${p.slug || p.id}`, name: p.name, image: p.image_url,
+        item: { '@type': 'Product', '@id': `${BASE}/products/${p.slug || p.id}`, name: buildStructuredProductName(p), image: p.image_url,
           ...((p.price && Number(p.price) > 0) ? { offers: { '@type': 'Offer', price: Number(p.price).toFixed(2), priceCurrency: 'USD', availability: getSchemaAvailability(p) } } : {}) }
       })).filter((entry: any) => entry.item.offers)
     }
