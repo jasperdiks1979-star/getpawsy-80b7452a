@@ -184,8 +184,10 @@ Deno.test("21: URL audit passes (no banned transforms)", () => {
 // 22. arbitrary transform injection rejected — sourceUrl scheme must be https
 Deno.test("22: non-https source rejected", () => {
   const p = plan(goodReq({ sourceUrl: "http://evil.example/x.jpg" }));
-  // plan() delegates to buildCloudinaryUrl which throws — plan wraps result
-  // But our current plan() doesn't wrap. Verify buildCloudinaryUrl throws.
+  assertFalse(p.ok);
+  assertMatch(p.reason || "", /source_not_https/);
+  // Also verify buildCloudinaryUrl throws on non-https/malicious schemes.
+  let threw = false;
   try {
     buildCloudinaryUrl({
       sourceUrl: "javascript:alert(1)",
@@ -194,10 +196,10 @@ Deno.test("22: non-https source rejected", () => {
       benefitLines: ["b"], benefitSize: 40,
       ctaText: "View Product", ctaSize: 40,
     });
-    throw new Error("should have thrown");
   } catch (e) {
-    assertMatch(String(e), /source_not_https/);
+    threw = true; assertMatch(String(e), /source_not_https/);
   }
+  assert(threw);
 });
 
 // 23. source URL is base64url-encoded (no raw slashes/colons after fetch/)
