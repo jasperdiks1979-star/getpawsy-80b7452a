@@ -58,6 +58,34 @@ Deno.test("1. valid score-only request parses", () => {
   assert(r.success, JSON.stringify((r as any).error?.flatten?.()));
 });
 
+// ── Calibrated V2 request-schema tests ─────────────────────────────────────
+
+Deno.test("V2. RequestSchema defaults calibrated_v2_enabled=false", () => {
+  const r = RequestSchema.safeParse(validBody);
+  assert(r.success);
+  assertEquals((r.data as any).calibrated_v2_enabled, false);
+});
+
+Deno.test("V2. RequestSchema accepts calibrated_v2_enabled=true only alongside publication_allowed=false + queue_writes_allowed=false", () => {
+  const good = RequestSchema.safeParse({
+    ...validBody,
+    calibrated_v2_enabled: true,
+  });
+  assert(good.success);
+  const badPub = RequestSchema.safeParse({
+    ...validBody,
+    calibrated_v2_enabled: true,
+    publication_allowed: true,
+  });
+  assert(!badPub.success);
+  const badQueue = RequestSchema.safeParse({
+    ...validBody,
+    calibrated_v2_enabled: true,
+    queue_writes_allowed: true,
+  });
+  assert(!badQueue.success);
+});
+
 Deno.test("2. publication_allowed=true is rejected", () => {
   const r = RequestSchema.safeParse({ ...validBody, publication_allowed: true });
   assert(!r.success);

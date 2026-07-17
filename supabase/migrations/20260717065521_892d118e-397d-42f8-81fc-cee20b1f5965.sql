@@ -1,0 +1,1 @@
+ALTER TABLE public.pinterest_run_config ADD COLUMN IF NOT EXISTS calibrated_v2_enabled boolean NOT NULL DEFAULT false;

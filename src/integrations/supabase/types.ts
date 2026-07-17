@@ -60698,6 +60698,7 @@ export type Database = {
       pinterest_run_config: {
         Row: {
           allow_pro_image: boolean
+          calibrated_v2_enabled: boolean
           created_at: string
           created_by: string | null
           force_rescore: boolean
@@ -60722,6 +60723,7 @@ export type Database = {
         }
         Insert: {
           allow_pro_image?: boolean
+          calibrated_v2_enabled?: boolean
           created_at?: string
           created_by?: string | null
           force_rescore?: boolean
@@ -60746,6 +60748,7 @@ export type Database = {
         }
         Update: {
           allow_pro_image?: boolean
+          calibrated_v2_enabled?: boolean
           created_at?: string
           created_by?: string | null
           force_rescore?: boolean
