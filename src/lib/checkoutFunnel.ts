@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
 import { ttTrackKlarnaEvent } from '@/lib/tiktok-pixel';
 import { resolveUtm } from '@/lib/utmNormalizer';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 export type FunnelStep =
   | 'begin_checkout'
@@ -35,16 +36,11 @@ export interface FunnelEvent {
 
 function getSessionId(): string {
   if (typeof window === 'undefined') return 'ssr';
-  try {
-    let id = sessionStorage.getItem('gp_funnel_sid');
-    if (!id) {
-      id = `fs_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-      sessionStorage.setItem('gp_funnel_sid', id);
-    }
-    return id;
-  } catch {
-    return `fs_${Date.now()}`;
-  }
+  // Phase 4A: unified canonical session id so checkout_funnel_events joins
+  // with visitor_activity / cci_events / canonical_events. The canonical
+  // provider also mirrors the sid back into `gp_funnel_sid` for any legacy
+  // reader.
+  try { return getCanonicalSessionId(); } catch { return `fs_${Date.now()}`; }
 }
 
 /**
