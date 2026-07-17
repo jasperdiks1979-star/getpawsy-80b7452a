@@ -136,8 +136,19 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json().catch(() => ({})); } catch { body = {}; }
   const dryRun = body?.dry_run === true;
-  const confirm = body?.confirm === "REPLACE_PINS_4_5_6_V4";
-  if (!dryRun && !confirm) return json({ ok: false, verdict: "THREE_PIN_V4_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "confirm_token_missing" }, 400);
+  const confirmToken = body?.confirm;
+  const validConfirms = new Set(["REPLACE_PINS_4_5_6_V4", "REPLACE_PINS_4_5_V4"]);
+  const confirm = typeof confirmToken === "string" && validConfirms.has(confirmToken);
+  if (!dryRun && !confirm) return json({ ok: false, verdict: "REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "confirm_token_missing" }, 400);
+
+  // Scope to specific ordinals if requested (e.g. [4,5] to skip Pin 6).
+  const onlyOrdinals: number[] | null = Array.isArray(body?.only_ordinals) && body.only_ordinals.length > 0
+    ? body.only_ordinals.map((n: any) => Number(n)).filter((n: number) => Number.isFinite(n))
+    : null;
+  const scoped: Approved[] = onlyOrdinals
+    ? APPROVED.filter((a) => onlyOrdinals.includes(a.ordinal))
+    : APPROVED;
+  if (scoped.length === 0) return json({ ok: false, verdict: "REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "no_matching_ordinals" }, 400);
 
   // OAuth
   const { data: conn } = await sb.from("pinterest_connection")
@@ -166,7 +177,7 @@ Deno.serve(async (req) => {
   let preflightFail: string | null = null;
   let stopVerdict: string | null = null;
 
-  for (const item of APPROVED) {
+  for (const item of scoped) {
     const rep: any = {
       ordinal: item.ordinal,
       product_id: item.product_id,
@@ -300,7 +311,7 @@ Deno.serve(async (req) => {
   let hardStop = false;
   let hardStopVerdict: string | null = null;
 
-  for (const item of APPROVED) {
+  for (const item of scoped) {
     if (hardStop) break;
     const pre = preflight.find((p) => p.ordinal === item.ordinal)!;
     const rep: any = { ...pre };
@@ -452,10 +463,13 @@ Deno.serve(async (req) => {
     items.push(rep);
   }
 
-  const allReplaced = counts.new_pins === 3 && counts.deleted_pins === 3 &&
+  const targetCount = scoped.length;
+  const allReplaced = counts.new_pins === targetCount && counts.deleted_pins === targetCount &&
     counts.uncertain_states === 0 && counts.duplicates === 0 &&
     items.every((it) => it.final_item_status === "replaced_verified");
-  const verdict = hardStopVerdict ?? (allReplaced ? "THREE_PIN_V4_REPLACEMENT_PASS" : "THREE_PIN_V4_REPLACEMENT_PARTIAL");
+  const passVerdict = targetCount === 2 ? "TWO_PIN_REPLACEMENT_PASS" : "THREE_PIN_V4_REPLACEMENT_PASS";
+  const partialVerdict = targetCount === 2 ? "TWO_PIN_REPLACEMENT_PARTIAL" : "THREE_PIN_V4_REPLACEMENT_PARTIAL";
+  const verdict = hardStopVerdict ?? (allReplaced ? passVerdict : partialVerdict);
 
   return json({
     ok: verdict === "THREE_PIN_V4_REPLACEMENT_PASS",
