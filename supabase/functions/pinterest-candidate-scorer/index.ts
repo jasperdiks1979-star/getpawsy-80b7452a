@@ -48,6 +48,17 @@ import {
   runScoredWithCache,
   sha256Hex,
 } from "../_shared/pinterest-qa-cache.ts";
+import {
+  CALIBRATION_VERSION,
+  classifyCalibratedV2,
+  classifyProvenance,
+  identityDecisionFromScore,
+  pdpDecisionFromScore,
+  boolToTrichotomy,
+  isDeterministicProvenance,
+  type CalibratedSignals,
+  type SourceProvenance,
+} from "../_shared/pinterest-calibration-v2.ts";
 
 // (Request schema, classifier, and thresholds live in ./pure.ts and are re-exported above.)
 
@@ -300,6 +311,29 @@ function persistable(row: Record<string, unknown>): Record<string, unknown> {
     "credits_used",
   ]);
   return Object.fromEntries(Object.entries(row).filter(([key]) => allowed.has(key)));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+//  Calibrated V2 gating — activation requires ALL of:
+//    - persisted run_type = candidate_scoring
+//    - persisted calibrated_v2_enabled = true
+//    - request publication_allowed === false (RequestSchema enforces)
+//    - request queue_writes_allowed === false (RequestSchema enforces)
+//    - persisted max_image_calls === 0 (score-only lane)
+//  Any single missing condition disables V2 → legacy evaluator only.
+// ────────────────────────────────────────────────────────────────────────────
+function isCalibratedV2Active(
+  cfg: RunConfig,
+  req: ScoringRequest,
+): boolean {
+  const cfgAny = cfg as any;
+  return (
+    cfgAny.run_type === "candidate_scoring" &&
+    cfgAny.calibrated_v2_enabled === true &&
+    req.publication_allowed === false &&
+    req.queue_writes_allowed === false &&
+    cfg.max_image_calls === 0
+  );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
