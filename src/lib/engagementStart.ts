@@ -11,22 +11,14 @@
  */
 import { classifyTraffic, detectDevice } from "@/lib/trafficClassifier";
 import { resolveUtm } from "@/lib/utmNormalizer";
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 
 const STORAGE_KEY = "gp_engagement_started_v1";
 const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
 function getSessionId(): string {
-  try {
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id = (crypto?.randomUUID?.() ?? `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`);
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
-  } catch {
-    return `anon_${Date.now()}`;
-  }
+  try { return getCanonicalSessionId(); } catch { return `anon_${Date.now()}`; }
 }
 
 async function postEngagementStart(payload: Record<string, unknown>) {
