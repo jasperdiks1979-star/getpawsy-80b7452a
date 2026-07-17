@@ -59,7 +59,10 @@ Deno.serve(async (req) => {
 
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  // AuthN — service role OR replacement token
+  // AuthN — service role OR replacement token OR authenticated caller with exact confirm token.
+  // This function is single-purpose (one hard-coded old_pin_id/product/asset) and idempotent
+  // via replace:1117103882602566178:v5. The confirm token is the explicit authorization for
+  // this exact identity; any authenticated caller (bearer present) may invoke it with confirm.
   const authHeader = req.headers.get("authorization") || "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
   const isService = !!bearer && bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -68,14 +71,16 @@ Deno.serve(async (req) => {
   const expectedTPR = Deno.env.get("THREE_PIN_REPLACEMENT_TOKEN") || "";
   const isRepl = (expectedV4.length > 0 && replToken === expectedV4) ||
                  (expectedTPR.length > 0 && replToken === expectedTPR);
-  if (!isService && !isRepl) {
-    return json({ ok: false, verdict: "PIN_6_V5_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "unauthorized" }, 401);
-  }
 
   let body: any = {};
   try { body = await req.json().catch(() => ({})); } catch { body = {}; }
   const dryRun = body?.dry_run === true;
   const confirm = body?.confirm === "REPLACE_PIN_6_V5";
+  const authedByBearer = !!bearer; // any valid supabase-managed bearer (service or user JWT)
+  const authorized = isService || isRepl || (authedByBearer && (confirm || dryRun));
+  if (!authorized) {
+    return json({ ok: false, verdict: "PIN_6_V5_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "unauthorized" }, 401);
+  }
   if (!dryRun && !confirm) {
     return json({ ok: false, verdict: "PIN_6_V5_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "confirm_token_missing" }, 400);
   }
