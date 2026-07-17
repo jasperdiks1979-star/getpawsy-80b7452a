@@ -548,3 +548,6 @@ verify_jwt = false
 
 [functions.pinterest-three-pin-replacement]
 verify_jwt = false
+
+[functions.pinterest-v4-replacement]
+verify_jwt = false
