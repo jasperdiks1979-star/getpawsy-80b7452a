@@ -9,7 +9,7 @@ import {
   classifyCandidate,
   TIER_A,
   type ScoreSignals,
-} from "./index.ts";
+} from "./pure.ts";
 
 function baseSignals(overrides: Partial<ScoreSignals> = {}): ScoreSignals {
   return {
