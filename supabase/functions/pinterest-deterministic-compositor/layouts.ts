@@ -146,7 +146,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     productBox: { x: 160, y: 320, w: 880, h: 880 },
     headlineBox: { x: 100, y: 100, w: 1000, h: 180 },
     headlineMaxSize: 80,
-    headlineMinSize: 54,
+    headlineMinSize: 56,
     headlineMaxLines: 2,
     benefitBox: { x: 100, y: 1260, w: 1000, h: 200 },
     benefitMaxSize: 48,
