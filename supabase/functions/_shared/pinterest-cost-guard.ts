@@ -3,6 +3,7 @@
 // paused-run enforcement. See mem://marketing/pinterest-cost-controls-v1.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { creditsToMicro, microToCredits } from "./pinterest-calibration-v2.ts";
 
 export const SCORING_VERSION = "v1.2026-07-16";
 
@@ -121,17 +122,17 @@ export async function upsertRunConfig(
 export async function currentRunSpend(
   sb: SupabaseClient,
   run_id: string,
-): Promise<{ credits: number; image_calls: number; qa_calls: number }> {
+): Promise<{ credits: number; credits_micro: number; image_calls: number; qa_calls: number }> {
   const { data, error } = await sb
     .from("pinterest_run_cost_ledger")
     .select("credits, operation, cached_hit")
     .eq("run_id", run_id);
   if (error) throw error;
-  let credits = 0;
+  let credits_micro = 0;
   let image_calls = 0;
   let qa_calls = 0;
   for (const row of data ?? []) {
-    if (!row.cached_hit) credits += Number(row.credits ?? 0);
+    if (!row.cached_hit) credits_micro += creditsToMicro(Number(row.credits ?? 0));
     if (row.operation === "image_gen" || row.operation === "image_edit") {
       if (!row.cached_hit) image_calls++;
     }
@@ -144,7 +145,7 @@ export async function currentRunSpend(
       if (!row.cached_hit) qa_calls++;
     }
   }
-  return { credits, image_calls, qa_calls };
+  return { credits: microToCredits(credits_micro), credits_micro, image_calls, qa_calls };
 }
 
 /**
@@ -159,8 +160,11 @@ export async function assertBudget(
   scope?: { queue_id?: string | null; image_hash?: string | null },
 ): Promise<{ before: number; projected: number }> {
   const spend = await currentRunSpend(sb, cfg.run_id);
-  const projected = spend.credits + Math.max(0, projected_credits);
-  if (projected > cfg.max_credit_spend) {
+  const projected_call_micro = creditsToMicro(Math.max(0, projected_credits));
+  const cap_micro = creditsToMicro(cfg.max_credit_spend);
+  const projected_micro = spend.credits_micro + projected_call_micro;
+  const projected = microToCredits(projected_micro);
+  if (projected_micro > cap_micro) {
     throw new BudgetExceededError({
       run_id: cfg.run_id,
       cap: cfg.max_credit_spend,
@@ -192,16 +196,18 @@ export async function assertBudget(
       .select("credits, operation, cached_hit")
       .eq("run_id", cfg.run_id)
       .eq("queue_id", scope.queue_id);
-    let pinCredits = 0;
+    let pinCreditsMicro = 0;
     let pinImageCalls = 0;
     for (const r of perPin ?? []) {
-      if (!r.cached_hit) pinCredits += Number(r.credits ?? 0);
+      if (!r.cached_hit) pinCreditsMicro += creditsToMicro(Number(r.credits ?? 0));
       if (!r.cached_hit && (r.operation === "image_gen" || r.operation === "image_edit")) pinImageCalls++;
     }
-    if (pinCredits + Math.max(0, projected_credits) > cfg.max_credit_spend_per_pin) {
+    const perPinCapMicro = creditsToMicro(cfg.max_credit_spend_per_pin);
+    const perPinProjectedMicro = pinCreditsMicro + projected_call_micro;
+    if (perPinProjectedMicro > perPinCapMicro) {
       throw new BudgetExceededError({
         run_id: cfg.run_id, queue_id: scope.queue_id,
-        per_pin_cap: cfg.max_credit_spend_per_pin, before: pinCredits, projected: pinCredits + projected_credits,
+        per_pin_cap: cfg.max_credit_spend_per_pin, before: microToCredits(pinCreditsMicro), projected: microToCredits(perPinProjectedMicro),
         kind: `per_pin_${kind}`,
       });
     }
