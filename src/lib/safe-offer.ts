@@ -22,6 +22,8 @@ export interface SafeOfferInput {
   id?: string;
 }
 
+import { buildStructuredProductName } from "./structured-product-name";
+
 const BASE = 'https://getpawsy.pet';
 
 /**
@@ -56,7 +58,12 @@ export function buildSafeOffer(
  * when the product cannot produce a valid offer. Filter nulls before use.
  */
 export function buildSafeProductListItem(
-  product: SafeOfferInput & { name: string; image_url?: string | null; images?: (string | null)[] | null },
+  product: SafeOfferInput & {
+    name: string;
+    name_clean?: string | null;
+    image_url?: string | null;
+    images?: (string | null)[] | null;
+  },
   position: number,
   baseUrl: string = BASE
 ): Record<string, unknown> | null {
@@ -72,7 +79,7 @@ export function buildSafeProductListItem(
     item: {
       '@type': 'Product',
       '@id': `${baseUrl}/products/${productPath}`,
-      name: product.name,
+      name: buildStructuredProductName(product),
       ...(image ? { image } : {}),
       offers: offer,
     },
