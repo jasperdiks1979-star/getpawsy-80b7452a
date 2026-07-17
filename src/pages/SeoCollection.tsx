@@ -74,6 +74,7 @@ import { CollectionMiniComparison } from '@/components/seo/CollectionMiniCompari
 import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/CollectionCROBadges';
 import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
 import { TrainingCollectionCrossLinks } from '@/components/collections/TrainingCollectionCrossLinks';
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 // SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
 
 const TRAINING_COLLECTION_SLUGS = ['dog-potty-training', 'dog-leash-control', 'dog-anti-bark', 'puppy-essentials', 'dog-training-accessories'];
@@ -117,7 +118,7 @@ const generateCollectionJsonLd = (collection: SeoCollectionData, products: Colle
       item: {
         '@type': 'Product',
         '@id': `https://getpawsy.pet/product/${product.slug || product.id}`,
-        name: product.name,
+        name: buildStructuredProductName(product),
         image: product.image_url,
         ...((product.price && Number(product.price) > 0) ? {
           offers: {
