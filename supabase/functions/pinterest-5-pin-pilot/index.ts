@@ -33,18 +33,31 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required" }, 405);
 
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const sb = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  const authHeader = req.headers.get("authorization") || "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isService = bearer && bearer === SERVICE_KEY;
   const token = req.headers.get("x-canary-token") || "";
   const expected = Deno.env.get("PINTEREST_CANARY_TOKEN_V2") || "";
-  if (!expected || token !== expected) return json({ ok: false, error: "unauthorized" }, 401);
+  const isTokenAuth = expected && token === expected;
+  if (!isService && !isTokenAuth) {
+    if (!authHeader) return json({ ok: false, error: "unauthorized" }, 401);
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData } = await userClient.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return json({ ok: false, error: "unauthorized" }, 401);
+    const { data: role } = await sb.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+    if (!role) return json({ ok: false, error: "admin_only" }, 403);
+  }
 
   let body: { items?: Item[]; dry_run?: boolean };
   try { body = await req.json(); } catch { return json({ ok: false, error: "invalid_json" }, 400); }
   const items = body.items ?? [];
   if (items.length !== 5) return json({ ok: false, error: "must_be_exactly_5_items", got: items.length }, 400);
-
-  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const compositorUrl = `${SUPABASE_URL}/functions/v1/pinterest-deterministic-compositor`;
   const canaryUrl = `${SUPABASE_URL}/functions/v1/pinterest-one-pin-canary`;
@@ -130,7 +143,6 @@ Deno.serve(async (req) => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${SERVICE_KEY}`,
-          "x-canary-token": expected,
         },
         body: JSON.stringify({
           product_id: it.product_id,
