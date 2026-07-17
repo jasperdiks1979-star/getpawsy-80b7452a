@@ -410,7 +410,9 @@ export function plan(req: ComposeRequest): ComposePlan {
   const bf = fitText(req.benefit, "arial", L.benefitBox.w, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
   if (!bf.ok) return { ok: false, reason: "benefit_text_overflow" };
 
-  const cloudinaryUrl = buildCloudinaryUrl({
+  let cloudinaryUrl: string;
+  try {
+    cloudinaryUrl = buildCloudinaryUrl({
     sourceUrl: req.sourceUrl,
     layout: L,
     headlineLines: hf.lines,
@@ -420,6 +422,9 @@ export function plan(req: ComposeRequest): ComposePlan {
     ctaText: req.cta,
     ctaSize: L.ctaSize,
   });
+  } catch (e) {
+    return { ok: false, reason: `build_url_failed:${String((e as Error).message)}` };
+  }
 
   const urlAudit = auditUrl(cloudinaryUrl);
   if (!urlAudit.ok) return { ok: false, reason: "url_audit_failed", urlAudit };
