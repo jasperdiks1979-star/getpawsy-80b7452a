@@ -716,7 +716,26 @@ async function scoreOneProduct(
 //  HTTP handler
 // ────────────────────────────────────────────────────────────────────────────
 
-Deno.serve(async (req) => {
+export interface CandidateScorerDeps {
+  /** Factory for the Supabase client. Production uses env vars; tests inject a mock. */
+  makeSupabase?: () => SupabaseClient;
+  /** Override per-product scoring (used by hermetic persistence tests). */
+  scoreOne?: typeof scoreOneProduct;
+  /** Deterministic clock for tests. */
+  now?: () => Date;
+}
+
+export function createCandidateScorerHandler(deps: CandidateScorerDeps = {}) {
+  const makeSupabase =
+    deps.makeSupabase ??
+    (() => {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      return createClient(supabaseUrl, serviceKey);
+    });
+  const scoreOneImpl = deps.scoreOne ?? scoreOneProduct;
+  const nowFn = deps.now ?? (() => new Date());
+  return async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -749,9 +768,7 @@ Deno.serve(async (req) => {
     return json({ error: "publication_disabled_by_endpoint" }, 400);
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const sb = createClient(supabaseUrl, serviceKey);
+  const sb = makeSupabase();
 
   let cfg: RunConfig;
   try {
@@ -774,7 +791,7 @@ Deno.serve(async (req) => {
     ordinal: idx,
     product_id: pid,
     disposition: "REQUESTED",
-    requested_at: new Date().toISOString(),
+    requested_at: nowFn().toISOString(),
   }));
   let runItemsSeeded = 0;
   let runItemsSeedError: string | null = null;
@@ -796,9 +813,9 @@ Deno.serve(async (req) => {
   const dispositions: Array<{ product_id: string; disposition: string; row: Record<string, unknown>; provider_calls: number; credits: number; started_at: string; completed_at: string; error?: string }> = [];
 
   for (const pid of products) {
-    const started_at = new Date().toISOString();
+    const started_at = nowFn().toISOString();
     try {
-      const out = await scoreOneProduct(sb, cfg, request, pid);
+      const out = await scoreOneImpl(sb, cfg, request, pid);
       results.push(out.row);
       reports.push(out.report);
       provider_calls += out.provider_calls;
@@ -810,7 +827,7 @@ Deno.serve(async (req) => {
         provider_calls: out.provider_calls,
         credits: out.credits,
         started_at,
-        completed_at: new Date().toISOString(),
+        completed_at: nowFn().toISOString(),
       });
     } catch (e) {
       const msg = (e as Error).message;
@@ -822,7 +839,7 @@ Deno.serve(async (req) => {
         provider_calls: 0,
         credits: 0,
         started_at,
-        completed_at: new Date().toISOString(),
+        completed_at: nowFn().toISOString(),
         error: msg,
       });
       // Provider failure NEVER creates a queue row (endpoint doesn't touch queue).
@@ -970,7 +987,10 @@ Deno.serve(async (req) => {
       publication_allowed: false,
     },
   }, persistence_ok ? 200 : 500);
-});
+  };
+}
+
+Deno.serve(createCandidateScorerHandler());
 
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
