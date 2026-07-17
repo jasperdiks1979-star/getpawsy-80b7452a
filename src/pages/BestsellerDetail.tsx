@@ -1,3 +1,4 @@
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -136,7 +137,10 @@ const generateProductJsonLd = (
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: bestseller.hero_headline || product.name,
+    name: buildStructuredProductName({
+      name_clean: bestseller.hero_headline || null,
+      name: product.name,
+    }),
     description: bestseller.seo_description || product.description || '',
     image: images,
     sku: product.id,

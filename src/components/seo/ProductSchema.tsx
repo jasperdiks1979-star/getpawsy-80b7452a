@@ -3,11 +3,13 @@ import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keyw
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
 import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
 import type { MerchantProduct } from '@/lib/merchant-safe-product';
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 
 interface ProductSchemaProps {
   product: {
     id: string;
     name: string;
+    name_clean?: string | null;
     slug?: string | null;
     description?: string | null;
     price: number;
@@ -106,10 +108,10 @@ export function ProductSchema({
   // Use slug for SEO-friendly URLs, fallback to id
   const productPath = product.slug || product.id;
 
-  // Truncate product name for Google (max 150 chars recommended)
-  const truncatedName = product.name.length > 150 
-    ? product.name.slice(0, 147) + '...' 
-    : product.name;
+  // Merchant-Listings-safe name: prefers name_clean, strips HTML/control chars,
+  // hard cap 150 code points, word-boundary truncation. Shared helper so PDP,
+  // collection ItemList, and breadcrumbs all emit the identical canonical name.
+  const safeName = buildStructuredProductName(product);
 
   // Dynamic priceValidUntil - 12 months from now
   const priceValidUntil = new Date();
@@ -121,7 +123,7 @@ export function ProductSchema({
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `${baseUrl}/products/${productPath}#product`,
-    name: truncatedName,
+    name: safeName,
     description: cleanDescription,
     image: images.length > 0 ? images : [primaryImage],
     sku: product.sku || product.id,
@@ -239,7 +241,7 @@ export function ProductSchema({
       {
         '@type': 'ListItem',
         position: product.category ? 4 : 3,
-        name: product.name,
+        name: safeName,
         item: `${baseUrl}/products/${productPath}`,
       },
     ],

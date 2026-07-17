@@ -1,3 +1,4 @@
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -78,7 +79,7 @@ export default function DogCarTravelSafety() {
         item: {
           '@type': 'Product',
           '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
-          name: p.name,
+          name: buildStructuredProductName(p),
           image: p.images?.[0],
           ...((p.price && Number(p.price) > 0) ? {
             offers: {
