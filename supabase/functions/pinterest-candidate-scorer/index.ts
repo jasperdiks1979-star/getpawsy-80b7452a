@@ -767,16 +767,64 @@ Deno.serve(async (req) => {
   let credits_spent = 0;
   const errors: Array<{ product_id: string; error: string }> = [];
 
+  // ── Seed pinterest_candidate_run_items with REQUESTED for every requested candidate.
+  //   One durable row per (run_id, product_id). Idempotent by unique constraint.
+  const runItemSeeds = products.map((pid, idx) => ({
+    run_id: request.run_id,
+    ordinal: idx,
+    product_id: pid,
+    disposition: "REQUESTED",
+    requested_at: new Date().toISOString(),
+  }));
+  let runItemsSeeded = 0;
+  let runItemsSeedError: string | null = null;
+  if (runItemSeeds.length > 0) {
+    const { data: seeded, error: seedErr } = await sb
+      .from("pinterest_candidate_run_items")
+      .upsert(runItemSeeds, {
+        onConflict: "run_id,product_id",
+        ignoreDuplicates: false,
+      })
+      .select("id");
+    if (seedErr) {
+      runItemsSeedError = `run_item_seed_failed:${seedErr.message}`;
+    } else {
+      runItemsSeeded = seeded?.length ?? 0;
+    }
+  }
+
+  const dispositions: Array<{ product_id: string; disposition: string; row: Record<string, unknown>; provider_calls: number; credits: number; started_at: string; completed_at: string; error?: string }> = [];
+
   for (const pid of products) {
+    const started_at = new Date().toISOString();
     try {
       const out = await scoreOneProduct(sb, cfg, request, pid);
       results.push(out.row);
       reports.push(out.report);
       provider_calls += out.provider_calls;
       credits_spent += out.credits;
+      dispositions.push({
+        product_id: pid,
+        disposition: out.disposition,
+        row: out.row,
+        provider_calls: out.provider_calls,
+        credits: out.credits,
+        started_at,
+        completed_at: new Date().toISOString(),
+      });
     } catch (e) {
       const msg = (e as Error).message;
       errors.push({ product_id: pid, error: msg });
+      dispositions.push({
+        product_id: pid,
+        disposition: msg.startsWith("budget_exceeded") ? "BUDGET_STOPPED" : (msg.startsWith("vision_call_failed") ? "PROVIDER_FAILED" : "TECHNICAL_ERROR"),
+        row: {},
+        provider_calls: 0,
+        credits: 0,
+        started_at,
+        completed_at: new Date().toISOString(),
+        error: msg,
+      });
       // Provider failure NEVER creates a queue row (endpoint doesn't touch queue).
       // Ledger already recorded by cost guard on assertBudget throw.
       if (msg.startsWith("budget_exceeded")) break;
@@ -784,8 +832,10 @@ Deno.serve(async (req) => {
   }
 
   // Persist results (never touches pinterest_pin_queue).
-  // Idempotent upsert against the (run_id, product_id, source_image_hash, scorer_version)
-  // stable key. Any persistence failure MUST surface — never return ok:true silently.
+  // Idempotent upsert against the concrete `stable_key` unique constraint
+  // (populated by a BEFORE INSERT/UPDATE trigger from run_id/product_id/
+  // source_image_hash/scorer_version). Any persistence failure MUST surface —
+  // never return ok:true silently.
   let persisted_rows = 0;
   let failed_rows = 0;
   let persistence_error: string | null = null;
@@ -793,7 +843,7 @@ Deno.serve(async (req) => {
     const { data: persisted, error: persistErr, status, statusText } = await sb
       .from("pinterest_candidate_score_results")
       .upsert(results as any, {
-        onConflict: "run_id,product_id,source_image_hash,scorer_version",
+        onConflict: "stable_key",
         ignoreDuplicates: false,
       })
       .select("id");
@@ -820,6 +870,67 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ── Finalize durable run-items with real dispositions.
+  let run_items_finalized = 0;
+  let run_items_error: string | null = runItemsSeedError;
+  for (const d of dispositions) {
+    const row: Record<string, unknown> = d.row ?? {};
+    const { error: upErr } = await sb
+      .from("pinterest_candidate_run_items")
+      .update({
+        disposition: d.disposition,
+        species: row.species ?? null,
+        source_image_url: row.source_image_url ?? null,
+        source_image_hash: row.source_image_hash ?? null,
+        cache_status: (row.cache_hit === true ? "HIT" : (row.cache_hit === false ? "MISS" : null)),
+        evaluator_version: (row.scorer_version as string | undefined) ?? SCORING_VERSION,
+        tier_a_result: (row.tier_a_result as string | undefined) ?? null,
+        tier_b_result: (row.tier_b_potential_result as string | undefined) ?? null,
+        rejection_reasons: Array.isArray(row.rejection_reasons) ? row.rejection_reasons : [],
+        numeric_scores: {
+          occupancy: row.occupancy ?? null,
+          identity_confidence: row.identity_confidence ?? null,
+          pdp_similarity: row.pdp_similarity ?? null,
+          species_confidence: row.species_confidence ?? null,
+        },
+        categorical_decisions: {
+          variant_match: row.variant_match ?? null,
+          color_match: row.color_match ?? null,
+          shape_match: row.shape_match ?? null,
+          watermark_detected: row.watermark_detected ?? null,
+          supplier_text_detected: row.supplier_text_detected ?? null,
+          collage_detected: row.collage_detected ?? null,
+          image_decode_status: row.image_decode_status ?? null,
+        },
+        credits_used: d.credits,
+        provider_call_count: d.provider_calls,
+        error_code: d.error ? d.error.split(":")[0] : null,
+        error_message: d.error ?? null,
+        started_at: d.started_at,
+        completed_at: d.completed_at,
+      })
+      .eq("run_id", request.run_id)
+      .eq("product_id", d.product_id);
+    if (upErr) {
+      run_items_error = run_items_error
+        ? `${run_items_error};update:${upErr.message}`
+        : `run_item_update_failed:${upErr.message}`;
+    } else {
+      run_items_finalized += 1;
+    }
+  }
+  if (run_items_error && !persistence_error) {
+    // Any run-item durability failure is a persistence failure too.
+    persistence_error = run_items_error;
+    await sb
+      .from("pinterest_run_config")
+      .update({
+        persistence_failed: true,
+        persistence_failure_reason: run_items_error.slice(0, 500),
+      })
+      .eq("run_id", request.run_id);
+  }
+
   const tier_a = results.filter((r) => r.tier_a_result === "tier_a_ready").length;
   const tier_b = results.filter(
     (r) => r.tier_b_potential_result === "tier_b_canary_candidate",
@@ -843,6 +954,12 @@ Deno.serve(async (req) => {
     provider_calls,
     credits_spent,
     errors,
+    run_items: {
+      requested: products.length,
+      seeded: runItemsSeeded,
+      finalized: run_items_finalized,
+      error: run_items_error,
+    },
     results: reports,
     // Loudly confirm no side effects on the publication pipeline.
     side_effects: {
