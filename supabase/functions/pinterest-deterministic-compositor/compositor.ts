@@ -301,18 +301,19 @@ export function auditUrl(url: string): { ok: boolean; violations: string[] } {
 
 export function auditLayout(L: LayoutSpec): { ok: boolean; issues: string[] } {
   const issues: string[] = [];
-  const boxes: [string, Box][] = [
-    ["product", L.productBox],
-    ["headline", L.headlineBox],
-    ["benefit", L.benefitBox],
-    ["cta", L.ctaBox],
-  ];
-  for (const [name, b] of boxes) {
-    if (!withinSafe(b)) issues.push(`${name}_outside_safe`);
+  // Product may extend to canvas edges (text-safe margins do not apply to it),
+  // but must stay inside the canvas.
+  const P = L.productBox;
+  if (P.x < 0 || P.y < 0 || P.x + P.w > CANVAS.w || P.y + P.h > CANVAS.h) {
+    issues.push("product_outside_canvas");
   }
-  // text ↔ product overlap
-  for (const [name, b] of boxes.slice(1)) {
-    if (overlaps(b, L.productBox)) issues.push(`${name}_overlaps_product`);
+  // Text/CTA must respect safe margins.
+  const textBoxes: [string, Box][] = [
+    ["headline", L.headlineBox], ["benefit", L.benefitBox], ["cta", L.ctaBox],
+  ];
+  for (const [name, b] of textBoxes) {
+    if (!withinSafe(b)) issues.push(`${name}_outside_safe`);
+    if (overlaps(b, P)) issues.push(`${name}_overlaps_product`);
   }
   const occ = occupancy(L.productBox);
   if (occ < L.targetOccupancy[0] || occ > L.targetOccupancy[1]) {
