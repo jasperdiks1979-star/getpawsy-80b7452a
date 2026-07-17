@@ -28,10 +28,29 @@ interface Item {
 }
 
 const RUN_ID = "5pin-pilot-2026-07-17";
+const PUBLICATION_DISABLED_REASON = "deterministic_template_remediation_active";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "POST required" }, 405);
+
+  return json({
+    ok: false,
+    verdict: "PUBLICATION_DISABLED",
+    reason: PUBLICATION_DISABLED_REASON,
+    totals: {
+      assets_ok: 0,
+      queue_rows_created: 0,
+      pinterest_post_calls: 0,
+      pinterest_readback_calls: 0,
+      pins_created: 0,
+      pins_verified: 0,
+      ai_calls: 0,
+      paid_image_calls: 0,
+      paid_vision_calls: 0,
+      credits_spent: 0,
+    },
+  }, 423);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

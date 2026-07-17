@@ -9,6 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 const PIN_API = "https://api.pinterest.com/v5";
+const PUBLICATION_DISABLED_REASON = "deterministic_template_remediation_active";
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -28,6 +29,21 @@ function pngDims(bytes: Uint8Array): { width: number; height: number } | null {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, verdict: "STOP_PREFLIGHT_FAILED", reason: "POST required" }, 405);
+
+  return json({
+    ok: false,
+    verdict: "PUBLICATION_DISABLED",
+    reason: PUBLICATION_DISABLED_REASON,
+    side_effects: {
+      new_queue_rows: 0,
+      new_pins: 0,
+      pinterest_api_calls: 0,
+      ai_provider_calls: 0,
+      paid_image_calls: 0,
+      paid_vision_calls: 0,
+      credits_spent: 0,
+    },
+  }, 423);
 
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 

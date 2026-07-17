@@ -50,7 +50,7 @@ Deno.test("4: canvas is 1200x1800", () => {
 // 5. aspect ratio preserved (c_fit on product)
 Deno.test("5: product layer uses c_fit only (aspect preserved)", () => {
   const p = plan(goodReq()); assert(p.ok);
-  assertMatch(p.cloudinaryUrl!, /w_\d+,h_\d+,c_fit,f_png/);
+  assertMatch(p.cloudinaryUrl!, /l_fetch:[A-Za-z0-9_-]+,w_\d+,h_\d+,c_fit,f_png\/fl_layer_apply,g_north_west,x_\d+,y_\d+/);
   assertNotMatch(p.cloudinaryUrl!, /c_fill|c_crop|c_thumb|c_scale/);
 });
 
@@ -202,12 +202,11 @@ Deno.test("22: non-https source rejected", () => {
   assert(threw);
 });
 
-// 23. source URL is appended raw (Cloudinary /image/fetch/ contract)
-Deno.test("23: source URL is appended after transforms", () => {
+// 23. source URL is encoded as an explicitly positioned product overlay.
+Deno.test("23: source URL is encoded in l_fetch overlay", () => {
   const p = plan(goodReq()); assert(p.ok);
-  assert(p.cloudinaryUrl!.endsWith("/" + SRC));
-  // b64UrlEncode is still exported and used by l_fetch layers elsewhere.
-  assertEquals(b64UrlEncode("a"), "YQ");
+  assertMatch(p.cloudinaryUrl!, new RegExp("l_fetch:" + b64UrlEncode(SRC)));
+  assertMatch(p.cloudinaryUrl!, /base-canvas-1x1\.png$/);
 });
 
 // 24. apostrophes and unicode escape safely
@@ -221,8 +220,8 @@ Deno.test("24: apostrophe headline encoded safely", () => {
 // 25. product layer contains no tint/recolor/filter tokens
 Deno.test("25: product layer has no tint/recolor/filter", () => {
   const p = plan(goodReq()); assert(p.ok);
-  // Extract the very first transform segment (product layer).
-  const m = p.cloudinaryUrl!.match(/\/image\/fetch\/([^/]+)\//);
+  // Extract the product l_fetch segment.
+  const m = p.cloudinaryUrl!.match(/(l_fetch:[^/]+)\/fl_layer_apply/);
   assert(m, "no first segment");
   const seg = m![1];
   for (const banned of ["e_", "co_rgb", "o_", "a_", "r_"]) {
@@ -313,4 +312,15 @@ Deno.test("validators: canary strings accepted", () => {
   assert(validateHeadline("Dog Carrier Backpack").ok);
   assert(validateBenefit("Hands-Free Travel With Your Pet").ok);
   assert(validateCta("View Product").ok);
+});
+
+Deno.test("cloudinary overlays: positions are attached to fl_layer_apply", () => {
+  const p = plan(goodReq({ layout: "tall_product_scale" }));
+  assert(p.ok, p.reason);
+  const url = p.cloudinaryUrl!;
+  assertMatch(url, /fl_layer_apply,g_north_west,x_210,y_500/);
+  assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_120/);
+  assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_370/);
+  assertMatch(url, /fl_layer_apply,g_north_west,x_400,y_1600/);
+  assertNotMatch(url, /g_north_west,x_100,y_120,w_1000,c_fit\/fl_layer_apply/);
 });
