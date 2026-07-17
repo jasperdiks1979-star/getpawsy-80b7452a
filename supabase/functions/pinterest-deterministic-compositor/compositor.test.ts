@@ -291,10 +291,21 @@ Deno.test("fit: picks largest font that fits (width + height)", () => {
   assert(f.fontSize >= 56 && f.fontSize <= 96);
 });
 
-// Text/text collision + gap check
-Deno.test("audit: text blocks never overlap and respect MIN_GAP", () => {
-  const { LAYOUTS: L, MIN_GAP, verticalGap } = await import("./layouts.ts");
-  // (dynamic import kept synchronous via top-level in file)
+// Text/text collision + gap check (uses already-imported LAYOUTS via auditLayout)
+Deno.test("audit: text blocks never overlap and respect MIN_GAP", async () => {
+  const mod = await import("./layouts.ts");
+  for (const L of Object.values(mod.LAYOUTS)) {
+    for (const pair of [
+      [L.headlineBox, L.benefitBox, "headline-benefit"],
+      [L.benefitBox, L.ctaBox, "benefit-cta"],
+      [L.headlineBox, L.ctaBox, "headline-cta"],
+    ] as const) {
+      const [a, b, name] = pair;
+      assertFalse(mod.overlaps(a, b), `${L.key} ${name} overlaps`);
+      const gap = mod.verticalGap(a, b);
+      assert(gap >= mod.MIN_GAP, `${L.key} ${name} gap=${gap} < ${mod.MIN_GAP}`);
+    }
+  }
 });
 
 // Validate approved headline/benefit
