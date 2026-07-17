@@ -60713,6 +60713,8 @@ export type Database = {
           max_qa_calls: number
           max_total_paid_calls: number
           paused_reason: string | null
+          persistence_failed: boolean
+          persistence_failure_reason: string | null
           product_category: string | null
           requested_pin_count: number
           run_id: string
@@ -60738,6 +60740,8 @@ export type Database = {
           max_qa_calls?: number
           max_total_paid_calls?: number
           paused_reason?: string | null
+          persistence_failed?: boolean
+          persistence_failure_reason?: string | null
           product_category?: string | null
           requested_pin_count?: number
           run_id?: string
@@ -60763,6 +60767,8 @@ export type Database = {
           max_qa_calls?: number
           max_total_paid_calls?: number
           paused_reason?: string | null
+          persistence_failed?: boolean
+          persistence_failure_reason?: string | null
           product_category?: string | null
           requested_pin_count?: number
           run_id?: string

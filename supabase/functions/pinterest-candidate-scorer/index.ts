@@ -774,8 +774,40 @@ Deno.serve(async (req) => {
   }
 
   // Persist results (never touches pinterest_pin_queue).
+  // Idempotent upsert against the (run_id, product_id, source_image_hash, scorer_version)
+  // stable key. Any persistence failure MUST surface — never return ok:true silently.
+  let persisted_rows = 0;
+  let failed_rows = 0;
+  let persistence_error: string | null = null;
   if (results.length > 0) {
-    await sb.from("pinterest_candidate_score_results").insert(results as any);
+    const { data: persisted, error: persistErr, status, statusText } = await sb
+      .from("pinterest_candidate_score_results")
+      .upsert(results as any, {
+        onConflict: "run_id,product_id,source_image_hash,scorer_version",
+        ignoreDuplicates: false,
+      })
+      .select("id");
+    if (persistErr) {
+      persistence_error = `persist_failed:${status ?? ""}:${statusText ?? ""}:${persistErr.message}`;
+      failed_rows = results.length;
+    } else {
+      persisted_rows = persisted?.length ?? 0;
+      if (persisted_rows !== results.length) {
+        failed_rows = results.length - persisted_rows;
+        persistence_error =
+          `partial_persist:expected=${results.length} persisted=${persisted_rows}`;
+      }
+    }
+    if (persistence_error) {
+      // Mark the run so downstream planners cannot treat it as durably complete.
+      await sb
+        .from("pinterest_run_config")
+        .update({
+          persistence_failed: true,
+          persistence_failure_reason: persistence_error.slice(0, 500),
+        })
+        .eq("run_id", request.run_id);
+    }
   }
 
   const tier_a = results.filter((r) => r.tier_a_result === "tier_a_ready").length;
@@ -784,8 +816,13 @@ Deno.serve(async (req) => {
   ).length;
   const rejected = results.filter((r) => r.tier_a_result === "not_ready").length;
 
+  const persistence_ok = persistence_error === null && failed_rows === 0;
   return json({
-    ok: true,
+    ok: persistence_ok,
+    persistence_ok,
+    persisted_rows,
+    failed_rows,
+    persistence_error,
     run_id: request.run_id,
     run_type: "candidate_scoring",
     scorer_version: SCORING_VERSION,
@@ -805,7 +842,7 @@ Deno.serve(async (req) => {
       legacy_rows_modified: 0,
       publication_allowed: false,
     },
-  });
+  }, persistence_ok ? 200 : 500);
 });
 
 function json(payload: unknown, status = 200): Response {
