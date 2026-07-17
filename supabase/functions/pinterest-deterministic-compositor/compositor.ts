@@ -13,11 +13,15 @@ import {
   CANVAS,
   INK,
   LAYOUTS,
+  LINE_HEIGHT,
+  MIN_GAP,
+  MOBILE_MIN,
   type LayoutSpec,
   type LayoutVariant,
   overlaps,
   withinSafe,
   occupancy,
+  verticalGap,
   type Box,
 } from "./layouts.ts";
 
@@ -100,6 +104,7 @@ export function fitText(
   text: string,
   font: keyof typeof CHAR_W,
   widthPx: number,
+  heightPx: number,
   maxLines: 1 | 2,
   maxSize: number,
   minSize: number,
@@ -109,6 +114,10 @@ export function fitText(
   for (let size = maxSize; size >= minSize; size -= 2) {
     const perLine = Math.floor(widthPx / (size * cw));
     if (perLine < 4) continue;
+    // Height check: rendered lines must vertically fit in the target box.
+    const maxRenderedLines = Math.max(1, Math.floor(heightPx / (size * LINE_HEIGHT)));
+    const effectiveMax = Math.min(maxLines, maxRenderedLines);
+    if (effectiveMax < 1) continue;
     const lines: string[] = [];
     let cur = "";
     let ok = true;
@@ -116,11 +125,11 @@ export function fitText(
       if (w.length > perLine) { ok = false; break; }
       const next = cur ? cur + " " + w : w;
       if (next.length <= perLine) cur = next;
-      else { lines.push(cur); cur = w; if (lines.length >= maxLines) { ok = false; break; } }
+      else { lines.push(cur); cur = w; if (lines.length >= effectiveMax) { ok = false; break; } }
     }
     if (!ok) continue;
     if (cur) lines.push(cur);
-    if (lines.length <= maxLines) return { ok: true, lines, fontSize: size };
+    if (lines.length <= effectiveMax) return { ok: true, lines, fontSize: size };
   }
   return { ok: false, lines: [], fontSize: minSize, reason: "text_overflow" };
 }
@@ -316,6 +325,24 @@ export function auditLayout(L: LayoutSpec): { ok: boolean; issues: string[] } {
     if (!withinSafe(b)) issues.push(`${name}_outside_safe`);
     if (overlaps(b, P)) issues.push(`${name}_overlaps_product`);
   }
+  // Text/text and text/CTA collision — NO block may overlap another block.
+  for (let i = 0; i < textBoxes.length; i++) {
+    for (let j = i + 1; j < textBoxes.length; j++) {
+      const [na, a] = textBoxes[i]; const [nb, b] = textBoxes[j];
+      if (overlaps(a, b)) issues.push(`${na}_overlaps_${nb}`);
+      const g = verticalGap(a, b);
+      if (g >= 0 && g < MIN_GAP) issues.push(`${na}_${nb}_gap_${g}<${MIN_GAP}`);
+    }
+  }
+  // Mobile-readability floors — min font sizes must be at or above thresholds.
+  if (L.headlineMinSize < MOBILE_MIN.headline) issues.push(`headline_min_${L.headlineMinSize}<${MOBILE_MIN.headline}`);
+  if (L.benefitMinSize < MOBILE_MIN.benefit) issues.push(`benefit_min_${L.benefitMinSize}<${MOBILE_MIN.benefit}`);
+  if (L.ctaSize < MOBILE_MIN.cta) issues.push(`cta_size_${L.ctaSize}<${MOBILE_MIN.cta}`);
+  // Headline box must fit 2 lines at min size (otherwise long headlines truncate).
+  const needH = Math.ceil(L.headlineMinSize * LINE_HEIGHT * L.headlineMaxLines);
+  if (L.headlineBox.h < needH) issues.push(`headline_box_h_${L.headlineBox.h}<${needH}`);
+  const needB = Math.ceil(L.benefitMinSize * LINE_HEIGHT * L.benefitMaxLines);
+  if (L.benefitBox.h < needB) issues.push(`benefit_box_h_${L.benefitBox.h}<${needB}`);
   const occ = occupancy(L.productBox);
   if (occ < L.targetOccupancy[0] || occ > L.targetOccupancy[1]) {
     issues.push(`product_occupancy_${occ.toFixed(3)}_outside_${L.targetOccupancy.join("-")}`);
@@ -406,9 +433,9 @@ export function plan(req: ComposeRequest): ComposePlan {
   const vc = validateCta(req.cta);
   if (!vc.ok) return { ok: false, reason: `cta:${vc.reason}` };
 
-  const hf = fitText(req.headline, "georgia_bold", L.headlineBox.w, L.headlineMaxLines, L.headlineMaxSize, L.headlineMinSize);
+  const hf = fitText(req.headline, "georgia_bold", L.headlineBox.w, L.headlineBox.h, L.headlineMaxLines, L.headlineMaxSize, L.headlineMinSize);
   if (!hf.ok) return { ok: false, reason: "headline_text_overflow" };
-  const bf = fitText(req.benefit, "arial", L.benefitBox.w, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
+  const bf = fitText(req.benefit, "arial", L.benefitBox.w, L.benefitBox.h, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
   if (!bf.ok) return { ok: false, reason: "benefit_text_overflow" };
 
   let cloudinaryUrl: string;
