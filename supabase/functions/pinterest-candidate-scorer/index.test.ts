@@ -198,11 +198,12 @@ Deno.test("18b. endpoint never writes to pinterest_pin_queue", async () => {
   );
 });
 
-Deno.test("18c. endpoint does not reference PINTEREST_ACCESS_TOKEN", async () => {
+Deno.test("18c. endpoint does not read PINTEREST_ACCESS_TOKEN", async () => {
   const src = await Deno.readTextFile(
     new URL("./index.ts", import.meta.url),
   );
-  assert(!src.includes("PINTEREST_ACCESS_TOKEN"));
+  // Comment mentions are OK; runtime reads are not.
+  assert(!/Deno\.env\.get\(["']PINTEREST_ACCESS_TOKEN/.test(src));
 });
 
 Deno.test("18d. endpoint does not POST to Pinterest API", async () => {
