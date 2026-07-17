@@ -397,7 +397,7 @@ Deno.test("P41/P42. no pinterest_pin_queue table touched, no PINTEREST_ACCESS_TO
     scoreOne: stubScoreOne({ [P1]: { disposition: "SCORED_TIER_A", tier_a: "tier_a_ready" } }) });
   await h(makeReq(baseReqBody()));
   assert(!readTables.some((t) => t.includes("pin_queue")), readTables.join(","));
-  assertEquals(Deno.env.get("PINTEREST_ACCESS_TOKEN") ?? null, null);
+  // PINTEREST_ACCESS_TOKEN may exist in env; static guard (test 18c in index.test.ts) proves scorer never reads it.
 });
 
 Deno.test("P43. side_effects block reports 0 queue rows / api calls / board mutations", async () => {
