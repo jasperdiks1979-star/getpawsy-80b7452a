@@ -166,9 +166,10 @@ Deno.serve(async (req) => {
   // Variant Yellow live/sellable
   const { data: prod } = await sb.from("products").select("id,slug,active,variants").eq("id", APPROVED.product_id).maybeSingle();
   const variantList: any[] = Array.isArray(prod?.variants) ? prod!.variants : [];
-  const yellow = variantList.find((v: any) => String(v?.variantKey ?? v?.color ?? "").trim().toLowerCase() === "yellow");
-  const yellowOk = !!yellow && (yellow.stock === undefined || Number(yellow.stock) > 0) && prod?.active !== false;
-  rep.variant_audit = { yellow_present: !!yellow, yellow_stock: yellow?.stock ?? null, product_active: prod?.active !== false, ok: yellowOk };
+  const yellow = variantList.find((v: any) => String(v?.variantKey ?? v?.color ?? v?.title ?? "").trim().toLowerCase() === "yellow");
+  const yellowStock = Number(yellow?.inventoryNum ?? yellow?.stock ?? 0);
+  const yellowOk = !!yellow && yellowStock > 0 && prod?.active !== false;
+  rep.variant_audit = { yellow_present: !!yellow, yellow_stock: yellowStock, product_active: prod?.active !== false, ok: yellowOk };
   if (!yellowOk) preflightFail = preflightFail ?? "VARIANT_UNAVAILABLE";
 
   // Old pin preflight GET
