@@ -1,3 +1,4 @@
+import { buildStructuredProductName } from '@/lib/structured-product-name';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
 import { sanitizeHtml } from '@/lib/sanitize';
