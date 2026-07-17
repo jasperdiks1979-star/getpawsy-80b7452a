@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveUtm } from "@/lib/utmNormalizer";
 import { sanitizeTrackingFields, isBotUserAgent } from "@/lib/eventSanitizer";
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { isTechnicalPath } from "@/lib/technicalRoutes";
 
 type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "remove_from_cart" | "purchase";
 
@@ -138,12 +140,12 @@ function geoConfidenceFor(country?: string | null): string {
 
 // Generate a unique session ID
 const getSessionId = (): string => {
-  let sessionId = sessionStorage.getItem("visitor_session_id");
-  if (!sessionId) {
-    sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-    sessionStorage.setItem("visitor_session_id", sessionId);
+  // Phase 4A: canonical unified sid. Also mirrors to `visitor_session_id`
+  // so this hook, utm-session-logger, and any legacy reader receive the
+  // same value that cci_events / checkout_funnel_events / canonical_events use.
+  try { return getCanonicalSessionId(); } catch {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
   }
-  return sessionId;
 };
 
 // Persistent visitor ID (localStorage) — stable across browser sessions so we
@@ -360,6 +362,9 @@ export const useVisitorTracking = () => {
     const currentPath = options?.pagePath || window.location.pathname;
     // Hard-exclude admin/auth/diagnostic/preview paths from commercial analytics.
     if (isExcludedPath(currentPath)) return;
+    // Additional technical-route guard (favicon, /api/*, /img/*, static assets,
+    // sitemaps, healthchecks, _lovable_* preview routes).
+    if (isTechnicalPath(currentPath)) return;
 
     const activityKey = `${activityType}-${currentPath}-${options?.productId || ''}-${options?.orderId || ''}`;
     

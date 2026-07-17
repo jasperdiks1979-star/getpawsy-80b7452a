@@ -11,6 +11,8 @@ import { armEngagementStart } from '@/lib/engagementStart';
 import { installSessionQuality, sessionQualitySignals } from '@/lib/sessionQuality';
 import { recordFunnelStep } from '@/lib/analyticsFunnel';
 import { trackCci } from '@/lib/cci';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
+import { isTechnicalPath } from '@/lib/technicalRoutes';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -23,6 +25,10 @@ const TrackerInner = () => {
   useVisitorHeartbeat(30000);
 
   useEffect(() => {
+    // Phase 4A: seed the canonical session id BEFORE any writer fires so
+    // every downstream writer (cci, visitor_activity, checkout_funnel_events,
+    // analytics_funnel_waterfall) receives the same sid on first paint.
+    try { getCanonicalSessionId(); } catch { /* non-fatal */ }
     // One-time install of rage / dead-click / scroll-depth / form-abandon
     // capture. Never throws — wraps its own listeners.
     try { installUxSignals(); } catch { /* non-fatal */ }
@@ -34,6 +40,8 @@ const TrackerInner = () => {
 
   useEffect(() => {
     const path = location.pathname;
+    // Guard: never dispatch commercial analytics for technical routes.
+    if (isTechnicalPath(path)) return;
 
     // Backfill the URL with inferred UTMs (e.g. TikTok ad clicks that
     // arrive with only `ttclid` / `ad=tt`) BEFORE firing GA4 page_view,
