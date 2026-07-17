@@ -14,6 +14,7 @@ import { getBotClassification, recordEventTimingSample, markEngagementVerified }
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
 import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
 import { getDeviceClassification } from '@/lib/deviceClassify';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 const SESSION_KEY = 'gp_session_id';
 const DEDUPE_PREFIX = 'gp_fe_dedupe_';
@@ -28,19 +29,7 @@ export type EventSource =
   | 'unknown';
 
 function getSessionId(): string {
-  try {
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
-  } catch {
-    return `anon_${Date.now()}`;
-  }
+  try { return getCanonicalSessionId(); } catch { return `anon_${Date.now()}`; }
 }
 
 /** djb2 hash → hex string. Stable across runs, no Web Crypto async cost. */
