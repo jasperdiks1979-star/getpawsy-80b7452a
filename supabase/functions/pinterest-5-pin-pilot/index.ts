@@ -43,7 +43,8 @@ Deno.serve(async (req) => {
   const isService = bearer && bearer === SERVICE_KEY;
   const token = req.headers.get("x-canary-token") || "";
   const expected = Deno.env.get("PINTEREST_CANARY_TOKEN_V2") || "";
-  const isTokenAuth = expected && token === expected;
+  const pilotToken = Deno.env.get("PILOT_5PIN_TOKEN") || "";
+  const isTokenAuth = (expected && token === expected) || (pilotToken && token === pilotToken);
   if (!isService && !isTokenAuth) {
     if (!authHeader) return json({ ok: false, error: "unauthorized" }, 401);
     const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
