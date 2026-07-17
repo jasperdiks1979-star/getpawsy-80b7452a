@@ -373,6 +373,8 @@ async function ensureScoringRunConfig(
     max_paid_image_calls_per_pin: 0,
     max_paid_qa_calls_per_image_hash: 1,
     max_total_paid_calls: req.max_paid_calls,
+    // @ts-ignore — column added by migration.
+    calibrated_v2_enabled: req.calibrated_v2_enabled === true,
   });
   return cfg;
 }
