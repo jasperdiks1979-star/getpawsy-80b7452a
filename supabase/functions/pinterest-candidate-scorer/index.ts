@@ -388,7 +388,7 @@ async function scoreOneProduct(
   cfg: RunConfig,
   req: ScoringRequest,
   productId: string,
-): Promise<{ ok: boolean; row: Record<string, unknown>; report: Record<string, unknown>; provider_calls: number; credits: number }> {
+): Promise<{ ok: boolean; row: Record<string, unknown>; report: Record<string, unknown>; provider_calls: number; credits: number; disposition: string }> {
   const product = await loadProduct(sb, productId);
   if (!product) {
     const row = {
@@ -406,6 +406,7 @@ async function scoreOneProduct(
       credits: 0,
       row: persistable(row),
       report: row,
+      disposition: "PREFILTER_REJECTED",
     };
   }
 
@@ -435,6 +436,7 @@ async function scoreOneProduct(
       credits: 0,
       row: persistable(row),
       report: row,
+      disposition: prefilter_reasons.includes("no_source_image") ? "MISSING_SOURCE" : "PREFILTER_REJECTED",
     };
   }
 
@@ -464,6 +466,7 @@ async function scoreOneProduct(
       credits: 0,
       row: persistable(row),
       report: row,
+      disposition: "MISSING_SOURCE",
     };
   }
 
@@ -503,7 +506,7 @@ async function scoreOneProduct(
       cache_compatibility_decision: "CACHE_INCOMPATIBLE",
       ...cacheLookup,
     };
-    return { ok: true, provider_calls: 0, credits: 0, row: persistable(row), report: row };
+    return { ok: true, provider_calls: 0, credits: 0, row: persistable(row), report: row, disposition: "CACHE_HIT_REJECTED" };
   } else if (req.max_paid_calls === 0 || req.max_credit_spend === 0) {
     const row = {
       run_id: req.run_id,
@@ -526,7 +529,7 @@ async function scoreOneProduct(
       ...cacheLookup,
       cache_lookup_status: "CACHE_MISS_NO_SPEND",
     };
-    return { ok: true, provider_calls: 0, credits: 0, row: persistable(row), report: row };
+    return { ok: true, provider_calls: 0, credits: 0, row: persistable(row), report: row, disposition: "BUDGET_STOPPED" };
   }
 
   if (!scored) {
@@ -693,12 +696,19 @@ async function scoreOneProduct(
     ...v2Fields,
   };
 
+  const finalDisposition =
+    finalTierA === "tier_a_ready"
+      ? (cached ? "CACHE_HIT_TIER_A" : "SCORED_TIER_A")
+      : finalTierB === "tier_b_canary_candidate"
+        ? (cached ? "CACHE_HIT_TIER_B" : "SCORED_TIER_B")
+        : (cached ? "CACHE_HIT_REJECTED" : "SCORED_REJECTED");
   return {
     ok: true,
     provider_calls,
     credits,
     row: persistable(row),
     report: row,
+    disposition: finalDisposition,
   };
 }
 
