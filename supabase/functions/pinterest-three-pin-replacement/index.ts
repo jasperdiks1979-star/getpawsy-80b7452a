@@ -99,7 +99,17 @@ Deno.serve(async (req) => {
   const canaryToken = req.headers.get("x-canary-token") || "";
   const expected = Deno.env.get("PINTEREST_CANARY_TOKEN_V2") || "";
   const isCanary = expected.length > 0 && canaryToken === expected;
-  if (!isService && !isCanary) return json({ ok: false, verdict: "THREE_PIN_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "unauthorized" }, 401);
+  let isAdmin = false;
+  if (!isService && !isCanary && authHeader) {
+    const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData } = await userClient.auth.getUser();
+    const uid = userData?.user?.id;
+    if (uid) {
+      const { data: role } = await sb.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+      isAdmin = !!role;
+    }
+  }
+  if (!isService && !isCanary && !isAdmin) return json({ ok: false, verdict: "THREE_PIN_REPLACEMENT_FAILED_NO_UNCERTAIN_STATE", reason: "unauthorized" }, 401);
 
   let body: any = {};
   try { body = await req.json().catch(() => ({})); } catch { body = {}; }
