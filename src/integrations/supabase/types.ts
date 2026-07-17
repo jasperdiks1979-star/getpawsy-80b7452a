@@ -53064,6 +53064,107 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_candidate_score_results: {
+        Row: {
+          cache_hit: boolean
+          collage_detected: boolean | null
+          color_match: boolean | null
+          created_at: string
+          credits_used: number
+          gallery_membership_verified: boolean
+          id: string
+          identity_confidence: number | null
+          image_decode_status: string | null
+          occupancy: number | null
+          pdp_similarity: number | null
+          product_id: string
+          rejection_reasons: string[]
+          run_id: string
+          scored_at: string
+          scorer_version: string | null
+          shape_match: boolean | null
+          slug: string | null
+          source_image_hash: string | null
+          source_image_url: string | null
+          species: string | null
+          species_confidence: number | null
+          supplier_text_detected: boolean | null
+          tier_a_result: string
+          tier_b_potential_result: string
+          updated_at: string
+          variant_match: boolean | null
+          watermark_detected: boolean | null
+        }
+        Insert: {
+          cache_hit?: boolean
+          collage_detected?: boolean | null
+          color_match?: boolean | null
+          created_at?: string
+          credits_used?: number
+          gallery_membership_verified?: boolean
+          id?: string
+          identity_confidence?: number | null
+          image_decode_status?: string | null
+          occupancy?: number | null
+          pdp_similarity?: number | null
+          product_id: string
+          rejection_reasons?: string[]
+          run_id: string
+          scored_at?: string
+          scorer_version?: string | null
+          shape_match?: boolean | null
+          slug?: string | null
+          source_image_hash?: string | null
+          source_image_url?: string | null
+          species?: string | null
+          species_confidence?: number | null
+          supplier_text_detected?: boolean | null
+          tier_a_result?: string
+          tier_b_potential_result?: string
+          updated_at?: string
+          variant_match?: boolean | null
+          watermark_detected?: boolean | null
+        }
+        Update: {
+          cache_hit?: boolean
+          collage_detected?: boolean | null
+          color_match?: boolean | null
+          created_at?: string
+          credits_used?: number
+          gallery_membership_verified?: boolean
+          id?: string
+          identity_confidence?: number | null
+          image_decode_status?: string | null
+          occupancy?: number | null
+          pdp_similarity?: number | null
+          product_id?: string
+          rejection_reasons?: string[]
+          run_id?: string
+          scored_at?: string
+          scorer_version?: string | null
+          shape_match?: boolean | null
+          slug?: string | null
+          source_image_hash?: string | null
+          source_image_url?: string | null
+          species?: string | null
+          species_confidence?: number | null
+          supplier_text_detected?: boolean | null
+          tier_a_result?: string
+          tier_b_potential_result?: string
+          updated_at?: string
+          variant_match?: boolean | null
+          watermark_detected?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinterest_candidate_score_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pinterest_run_config"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
       pinterest_capi_outbox: {
         Row: {
           attempts: number
@@ -60614,6 +60715,7 @@ export type Database = {
           product_category: string | null
           requested_pin_count: number
           run_id: string
+          run_type: string
           status: string
           updated_at: string
           wave_slug: string | null
@@ -60637,6 +60739,7 @@ export type Database = {
           product_category?: string | null
           requested_pin_count?: number
           run_id?: string
+          run_type?: string
           status?: string
           updated_at?: string
           wave_slug?: string | null
@@ -60660,6 +60763,7 @@ export type Database = {
           product_category?: string | null
           requested_pin_count?: number
           run_id?: string
+          run_type?: string
           status?: string
           updated_at?: string
           wave_slug?: string | null
