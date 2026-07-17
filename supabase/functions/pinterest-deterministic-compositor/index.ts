@@ -1,9 +1,9 @@
 // pinterest-deterministic-compositor
 // Zero-AI, deterministic Pinterest creative compositor.
 //
-// STATIC INVARIANT: this function must not import Lovable AI Gateway,
-// Gemini, OpenAI, image-generation SDKs, or the Pinterest API. Its
-// companion test suite greps this directory tree to prove it.
+// STATIC INVARIANT: this function must not import any generative image
+// provider, LLM SDK, or the pin-publishing API. Its companion test suite
+// greps this directory tree to prove it.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 
