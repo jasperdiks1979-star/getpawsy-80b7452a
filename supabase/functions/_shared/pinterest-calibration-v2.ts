@@ -394,11 +394,15 @@ export function reclassifyStoredV1(row: StoredV1Result): CalibrationPreview {
 
 export const MICROCREDITS_PER_CREDIT = 1_000_000;
 
-/** Convert a float credit amount into integer microcredits, rounding UP so we
- *  never under-count spend against the cap. */
+/** Convert a float credit amount into integer microcredits. We use
+ *  Math.round (not ceil) because the caller sums up accumulated float credits
+ *  such as `0.48000000000000015` — the drift is sub-microcredit noise and
+ *  rounding UP would falsely inflate the ledger. Single-call estimates like
+ *  0.02 round trivially to 20_000. Production callers should accumulate
+ *  microcredits directly, avoiding any float sum in the first place. */
 export function creditsToMicro(credits: number): number {
   if (!Number.isFinite(credits) || credits <= 0) return 0;
-  return Math.ceil(credits * MICROCREDITS_PER_CREDIT);
+  return Math.round(credits * MICROCREDITS_PER_CREDIT);
 }
 
 export function microToCredits(micro: number): number {
