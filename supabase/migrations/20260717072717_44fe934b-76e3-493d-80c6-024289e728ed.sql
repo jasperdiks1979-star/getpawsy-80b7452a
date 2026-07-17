@@ -1,0 +1,1 @@
+ALTER VIEW public.canonical_commercial_sessions_v2 SET (security_invoker = on);
