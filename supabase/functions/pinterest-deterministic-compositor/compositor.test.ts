@@ -202,11 +202,12 @@ Deno.test("22: non-https source rejected", () => {
   assert(threw);
 });
 
-// 23. source URL is base64url-encoded (no raw slashes/colons after fetch/)
-Deno.test("23: source URL is base64url-encoded", () => {
+// 23. source URL is appended raw (Cloudinary /image/fetch/ contract)
+Deno.test("23: source URL is appended after transforms", () => {
   const p = plan(goodReq()); assert(p.ok);
-  const encoded = b64UrlEncode(SRC);
-  assert(p.cloudinaryUrl!.endsWith("/" + encoded));
+  assert(p.cloudinaryUrl!.endsWith("/" + SRC));
+  // b64UrlEncode is still exported and used by l_fetch layers elsewhere.
+  assertEquals(b64UrlEncode("a"), "YQ");
 });
 
 // 24. apostrophes and unicode escape safely
