@@ -6,7 +6,12 @@
 // companion test suite greps this directory tree to prove it.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { corsHeaders } from "../_shared/cors.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 import {
   plan,
   sha256Hex,
