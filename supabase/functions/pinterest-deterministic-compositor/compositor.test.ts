@@ -314,3 +314,13 @@ Deno.test("validators: canary strings accepted", () => {
   assert(validateBenefit("Hands-Free Travel With Your Pet").ok);
   assert(validateCta("View Product").ok);
 });
+
+Deno.test("cloudinary overlays: positions are attached to fl_layer_apply", () => {
+  const p = plan(goodReq({ layout: "tall_product_scale" }));
+  assert(p.ok, p.reason);
+  const url = p.cloudinaryUrl!;
+  assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_120/);
+  assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_370/);
+  assertMatch(url, /fl_layer_apply,g_north_west,x_400,y_1600/);
+  assertNotMatch(url, /g_north_west,x_100,y_120,w_1000,c_fit\/fl_layer_apply/);
+});

@@ -235,23 +235,27 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
   const headline = [
     "l_text:" + headlineFont + ":" + cloudinaryTextEscape(inp.headlineLines.join("\n")),
     "co_rgb:" + inkH,
+    "w_" + n(L.headlineBox.w, 50, CANVAS.w),
+    "c_fit",
+  ].join(",") + "/" + [
+    "fl_layer_apply",
     "g_north_west",
     "x_" + n(L.headlineBox.x, 0, CANVAS.w),
     "y_" + n(L.headlineBox.y, 0, CANVAS.h),
-    "w_" + n(L.headlineBox.w, 50, CANVAS.w),
-    "c_fit",
-  ].join(",") + "/fl_layer_apply";
+  ].join(",");
 
   const benefitFont = FONT_MAP.arial.replace("%%SIZE%%", String(n(inp.benefitSize, 20, 120)));
   const benefit = [
     "l_text:" + benefitFont + ":" + cloudinaryTextEscape(inp.benefitLines.join("\n")),
     "co_rgb:" + inkB,
+    "w_" + n(L.benefitBox.w, 50, CANVAS.w),
+    "c_fit",
+  ].join(",") + "/" + [
+    "fl_layer_apply",
     "g_north_west",
     "x_" + n(L.benefitBox.x, 0, CANVAS.w),
     "y_" + n(L.benefitBox.y, 0, CANVAS.h),
-    "w_" + n(L.benefitBox.w, 50, CANVAS.w),
-    "c_fit",
-  ].join(",") + "/fl_layer_apply";
+  ].join(",");
 
   const ctaFont = FONT_MAP.arial_bold.replace("%%SIZE%%", String(n(inp.ctaSize, 20, 100)));
   // CTA pill: solid fill rectangle then text on top.
@@ -259,22 +263,26 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "l_text:" + FONT_MAP.arial.replace("%%SIZE%%", "10") + ":%2520",
     "b_rgb:" + ctaFill,
     "co_rgb:" + ctaFill,
-    "g_north_west",
-    "x_" + n(L.ctaBox.x, 0, CANVAS.w),
-    "y_" + n(L.ctaBox.y, 0, CANVAS.h),
     "w_" + n(L.ctaBox.w, 50, CANVAS.w),
     "h_" + n(L.ctaBox.h, 20, CANVAS.h),
     "c_pad",
-  ].join(",") + "/fl_layer_apply";
+  ].join(",") + "/" + [
+    "fl_layer_apply",
+    "g_north_west",
+    "x_" + n(L.ctaBox.x, 0, CANVAS.w),
+    "y_" + n(L.ctaBox.y, 0, CANVAS.h),
+  ].join(",");
   const ctaLayer = [
     "l_text:" + ctaFont + ":" + cloudinaryTextEscape(inp.ctaText),
     "co_rgb:" + ctaText,
+    "w_" + n(L.ctaBox.w, 50, CANVAS.w),
+    "c_fit",
+  ].join(",") + "/" + [
+    "fl_layer_apply",
     "g_north_west",
     "x_" + n(L.ctaBox.x, 0, CANVAS.w),
     "y_" + n(L.ctaBox.y + Math.floor((L.ctaBox.h - inp.ctaSize) / 2), 0, CANVAS.h),
-    "w_" + n(L.ctaBox.w, 50, CANVAS.w),
-    "c_fit",
-  ].join(",") + "/fl_layer_apply";
+  ].join(",");
 
   const segs = [productFit, padCanvas, headline, benefit, ctaBg, ctaLayer, "f_png"].join("/");
   // Cloudinary /image/fetch/ terminates with the raw source URL. Base64
