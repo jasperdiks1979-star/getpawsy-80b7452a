@@ -68,6 +68,211 @@ export interface Classification {
   rejection_reasons: string[];
 }
 
+export type CacheCompatibilityDecision =
+  | "HIT"
+  | "MISS"
+  | "CACHE_INCOMPATIBLE";
+
+export interface CacheRowLike {
+  cache_key?: string | null;
+  scorer?: string | null;
+  scoring_version?: string | null;
+  image_hash?: string | null;
+  pdp_hero_hash?: string | null;
+  product_id?: string | null;
+  result?: Record<string, unknown> | null;
+  passed?: boolean | null;
+  created_at?: string | null;
+  last_hit_at?: string | null;
+}
+
+export interface CacheExpectation {
+  product_id: string;
+  image_hash: string;
+  pdp_hero_hash: string;
+  scorer: string;
+  compatible_scoring_versions: string[];
+}
+
+export interface CacheCompatibility {
+  decision: CacheCompatibilityDecision;
+  reasons: string[];
+  result: VisionScoreResult | null;
+}
+
+export interface VisionScoreResult {
+  occupancy: number;
+  identity_confidence: number;
+  pdp_similarity: number;
+  species_confidence: number;
+  variant_match: boolean;
+  color_match: boolean;
+  shape_match: boolean;
+  watermark_detected: boolean;
+  supplier_text_detected: boolean;
+  collage_detected: boolean;
+}
+
+const REQUIRED_STRUCTURED_FIELDS: Array<keyof VisionScoreResult> = [
+  "occupancy",
+  "identity_confidence",
+  "pdp_similarity",
+  "species_confidence",
+  "variant_match",
+  "color_match",
+  "shape_match",
+  "watermark_detected",
+  "supplier_text_detected",
+  "collage_detected",
+];
+
+const LEGACY_REQUIRED_SCORERS = [
+  "occupancy",
+  "identity",
+  "pdp_similarity",
+  "species",
+  "variant_match",
+  "color_match",
+  "shape_match",
+  "watermark",
+  "supplier_text",
+  "collage",
+] as const;
+
+function numberField(raw: Record<string, unknown>, key: string): number | null {
+  const value = raw[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
+}
+
+function booleanField(raw: Record<string, unknown>, key: string): boolean | null {
+  const value = raw[key];
+  if (typeof value === "boolean") return value;
+  return null;
+}
+
+function legacyValue(row: CacheRowLike): unknown {
+  return row.result && Object.prototype.hasOwnProperty.call(row.result, "value")
+    ? row.result.value
+    : undefined;
+}
+
+function legacyPassBoolean(row: CacheRowLike): boolean | null {
+  const value = legacyValue(row);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+    if (normalized === "pass" || normalized === "true") return true;
+    if (normalized === "fail" || normalized === "false") return false;
+  }
+  if (typeof row.passed === "boolean") return row.passed;
+  return null;
+}
+
+function legacyZeroMeansAbsent(row: CacheRowLike): boolean | null {
+  const value = legacyValue(row);
+  if (typeof value === "number") return value === 0;
+  if (typeof value === "boolean") return value === false;
+  if (typeof row.passed === "boolean") return row.passed;
+  return null;
+}
+
+export function evaluateStructuredCacheRow(
+  row: CacheRowLike | null,
+  expected: CacheExpectation,
+): CacheCompatibility {
+  if (!row) return { decision: "MISS", reasons: ["cache_row_missing"], result: null };
+
+  const reasons: string[] = [];
+  if (row.product_id !== expected.product_id) reasons.push("product_id_mismatch");
+  if (row.image_hash !== expected.image_hash) reasons.push("image_hash_mismatch");
+  if (row.pdp_hero_hash !== expected.pdp_hero_hash) reasons.push("pdp_hero_hash_mismatch");
+  if (row.scorer !== expected.scorer) reasons.push("scorer_mismatch");
+  if (!row.scoring_version || !expected.compatible_scoring_versions.includes(row.scoring_version)) {
+    reasons.push("scoring_version_incompatible");
+  }
+
+  const raw = row.result ?? {};
+  const missing = REQUIRED_STRUCTURED_FIELDS.filter((field) => raw[field] == null);
+  if (missing.length > 0) reasons.push(`missing_required_fields:${missing.join(",")}`);
+
+  const result: VisionScoreResult = {
+    occupancy: numberField(raw, "occupancy") ?? NaN,
+    identity_confidence: numberField(raw, "identity_confidence") ?? NaN,
+    pdp_similarity: numberField(raw, "pdp_similarity") ?? NaN,
+    species_confidence: numberField(raw, "species_confidence") ?? NaN,
+    variant_match: booleanField(raw, "variant_match") ?? false,
+    color_match: booleanField(raw, "color_match") ?? false,
+    shape_match: booleanField(raw, "shape_match") ?? false,
+    watermark_detected: booleanField(raw, "watermark_detected") ?? false,
+    supplier_text_detected: booleanField(raw, "supplier_text_detected") ?? false,
+    collage_detected: booleanField(raw, "collage_detected") ?? false,
+  };
+
+  const numericBad = [
+    result.occupancy,
+    result.identity_confidence,
+    result.pdp_similarity,
+    result.species_confidence,
+  ].some((n) => !Number.isFinite(n));
+  if (numericBad) reasons.push("numeric_field_invalid");
+
+  if (reasons.length > 0) return { decision: "CACHE_INCOMPATIBLE", reasons, result: null };
+  return { decision: "HIT", reasons: [], result };
+}
+
+export function assembleLegacyCacheRows(
+  rows: CacheRowLike[],
+  expected: Omit<CacheExpectation, "scorer">,
+): CacheCompatibility {
+  if (rows.length === 0) return { decision: "MISS", reasons: ["legacy_cache_rows_missing"], result: null };
+
+  const reasons: string[] = [];
+  const byScorer = new Map<string, CacheRowLike>();
+  for (const row of rows) {
+    if (row.product_id !== expected.product_id) reasons.push(`product_id_mismatch:${row.scorer ?? "unknown"}`);
+    if (row.image_hash !== expected.image_hash) reasons.push(`image_hash_mismatch:${row.scorer ?? "unknown"}`);
+    if (row.pdp_hero_hash !== expected.pdp_hero_hash) reasons.push(`pdp_hero_hash_mismatch:${row.scorer ?? "unknown"}`);
+    if (!row.scoring_version || !expected.compatible_scoring_versions.includes(row.scoring_version)) {
+      reasons.push(`scoring_version_incompatible:${row.scorer ?? "unknown"}`);
+    }
+    if (row.scorer) byScorer.set(row.scorer, row);
+  }
+
+  const missing = LEGACY_REQUIRED_SCORERS.filter((scorer) => !byScorer.has(scorer));
+  if (missing.length > 0) reasons.push(`missing_required_fields:${missing.join(",")}`);
+
+  const num = (scorer: string): number | null => {
+    const row = byScorer.get(scorer);
+    const value = row ? legacyValue(row) : null;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  };
+
+  const result: VisionScoreResult = {
+    occupancy: num("occupancy") ?? NaN,
+    identity_confidence: num("identity") ?? NaN,
+    pdp_similarity: num("pdp_similarity") ?? NaN,
+    species_confidence: num("species") ?? NaN,
+    variant_match: byScorer.get("variant_match") ? legacyPassBoolean(byScorer.get("variant_match")!) ?? false : false,
+    color_match: byScorer.get("color_match") ? legacyPassBoolean(byScorer.get("color_match")!) ?? false : false,
+    shape_match: byScorer.get("shape_match") ? legacyPassBoolean(byScorer.get("shape_match")!) ?? false : false,
+    watermark_detected: byScorer.get("watermark") ? !(legacyZeroMeansAbsent(byScorer.get("watermark")!) ?? false) : true,
+    supplier_text_detected: byScorer.get("supplier_text") ? !(legacyZeroMeansAbsent(byScorer.get("supplier_text")!) ?? false) : true,
+    collage_detected: byScorer.get("collage") ? !(legacyZeroMeansAbsent(byScorer.get("collage")!) ?? false) : true,
+  };
+
+  const numericBad = [
+    result.occupancy,
+    result.identity_confidence,
+    result.pdp_similarity,
+    result.species_confidence,
+  ].some((n) => !Number.isFinite(n));
+  if (numericBad) reasons.push("numeric_field_invalid");
+
+  if (reasons.length > 0) return { decision: "CACHE_INCOMPATIBLE", reasons: Array.from(new Set(reasons)), result: null };
+  return { decision: "HIT", reasons: [], result };
+}
+
 export function classifyCandidate(
   s: ScoreSignals,
   allow_tier_b: boolean,
