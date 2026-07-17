@@ -121,9 +121,9 @@ Deno.serve(async (req) => {
     publicContentType = h.headers.get("content-type");
   } catch { publicOk = false; }
 
-  // NOTE: publication_allowed=false means: do NOT insert into
-  // pinterest_pin_queue and do NOT call Pinterest. This function never does
-  // either on its own; publication is handled by the cron-worker path.
+  // NOTE: this function never writes to the pin queue nor calls the pin
+  // publishing API. When publication_allowed is false the caller is telling
+  // us so explicitly; the cron-worker owns the publish step separately.
   const queueRowsCreated = 0;
   const pinterestCalls = 0;
 
