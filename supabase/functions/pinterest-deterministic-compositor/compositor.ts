@@ -268,8 +268,9 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
   ].join(",") + "/fl_layer_apply";
 
   const segs = [productFit, padCanvas, headline, benefit, ctaBg, ctaLayer, "f_png"].join("/");
-  const src = b64UrlEncode(inp.sourceUrl);
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${src}`;
+  // Cloudinary /image/fetch/ terminates with the raw source URL. Base64
+  // encoding is used ONLY for `l_fetch:` layers, not the primary source.
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${inp.sourceUrl}`;
 }
 
 // ─── Transformation allowlist self-audit ─────────────────────────────────
