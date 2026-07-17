@@ -6,8 +6,13 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   RequestSchema,
+  assembleLegacyCacheRows,
   classifyCandidate,
+  evaluateStructuredCacheRow,
+  normalizeProductRow,
+  noSpendCacheStatus,
   TIER_A,
+  type CacheRowLike,
   type ScoreSignals,
 } from "./pure.ts";
 
@@ -237,4 +242,166 @@ Deno.test("16. cache key is deterministic per (hash, product, scorer)", async ()
     scorer: "candidate_structured_vision_v1",
   });
   assert(a !== c);
+});
+
+// ── Product a504... consistency regression ────────────────────────────────
+
+const PRODUCT_ID = "a5044834-2d8e-4c9b-8da8-70901de9fdba";
+const CANARY_HASH = "724d2d661b4247c07592ee29943e1d08fb2a282080449c773f12f0b040dce717";
+const HERO_URL = "https://backend/storage/v1/object/public/product-images/rehosted/a5044834-2d8e-4c9b-8da8-70901de9fdba/65f43e5e68933629.jpg";
+
+function legacyRow(scorer: string, result: Record<string, unknown>, passed = true): CacheRowLike {
+  return {
+    cache_key: `${CANARY_HASH}|${scorer}|v1`,
+    scorer,
+    scoring_version: "v1",
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    product_id: PRODUCT_ID,
+    result,
+    passed,
+    created_at: "2026-07-16T21:47:26.345141Z",
+  };
+}
+
+const compatibleLegacyRows: CacheRowLike[] = [
+  legacyRow("occupancy", { value: 0.4 }),
+  legacyRow("identity", { value: 1 }),
+  legacyRow("pdp_similarity", { value: 1 }),
+  legacyRow("species", { expected: "dog", value: 1 }),
+  legacyRow("variant_match", { value: true }),
+  legacyRow("color_match", { value: true }),
+  legacyRow("shape_match", { value: true }),
+  legacyRow("watermark", { value: 0 }),
+  legacyRow("supplier_text", { value: 0 }),
+  legacyRow("collage", { value: 0 }),
+];
+
+Deno.test("product schema aliases map current live row instead of product_not_found", () => {
+  const product = normalizeProductRow({
+    id: PRODUCT_ID,
+    slug: "pawhut-dog-agility-equipment-ramp-with-safety-bar-non-slip-surface-for-walk-and-a504",
+    name: "Durable Dog Training Agility Ramp – Non-Slip Surface with Safety Bar",
+    primary_species: "dog",
+    is_active: true,
+    effective_stock: 308,
+    image_url: HERO_URL,
+    images: [HERO_URL],
+  });
+  assertEquals(product.title, "Durable Dog Training Agility Ramp – Non-Slip Surface with Safety Bar");
+  assertEquals(product.active, true);
+  assertEquals(product.hero_image_url, HERO_URL);
+  assertEquals(product.gallery_image_urls.includes(HERO_URL), true);
+});
+
+Deno.test("same product + same hash + compatible legacy score keeps historical Tier A", () => {
+  const compat = assembleLegacyCacheRows(compatibleLegacyRows, {
+    product_id: PRODUCT_ID,
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    compatible_scoring_versions: ["v1"],
+  });
+  assertEquals(compat.decision, "HIT");
+  const c = classifyCandidate({
+    ...baseSignals(),
+    ...compat.result!,
+    image_decode_status: "pass",
+    gallery_membership_verified: true,
+    species_applicable: true,
+    no_competing_variant: true,
+    product_not_obscured: true,
+    destination_integrity_pass: true,
+    product_pin_integrity_pass: true,
+  }, true);
+  assertEquals(c.tier_a_result, "tier_a_ready");
+  assertEquals(c.rejection_reasons, []);
+});
+
+Deno.test("same product + different hash does not reuse cache", () => {
+  const rows = compatibleLegacyRows.map((row) => ({ ...row, image_hash: "different" }));
+  const compat = assembleLegacyCacheRows(rows, {
+    product_id: PRODUCT_ID,
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    compatible_scoring_versions: ["v1"],
+  });
+  assertEquals(compat.decision, "CACHE_INCOMPATIBLE");
+  assert(compat.reasons.some((reason) => reason.startsWith("image_hash_mismatch")));
+});
+
+Deno.test("incompatible scoring version is CACHE_INCOMPATIBLE, not REJECTED", () => {
+  const compat = assembleLegacyCacheRows(compatibleLegacyRows, {
+    product_id: PRODUCT_ID,
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    compatible_scoring_versions: ["v2026.07"],
+  });
+  assertEquals(compat.decision, "CACHE_INCOMPATIBLE");
+  assertEquals(noSpendCacheStatus(compat.decision), "CACHE_INCOMPATIBLE");
+});
+
+Deno.test("missing required field is CACHE_INCOMPATIBLE", () => {
+  const compat = assembleLegacyCacheRows(
+    compatibleLegacyRows.filter((row) => row.scorer !== "color_match"),
+    {
+      product_id: PRODUCT_ID,
+      image_hash: CANARY_HASH,
+      pdp_hero_hash: CANARY_HASH,
+      compatible_scoring_versions: ["v1"],
+    },
+  );
+  assertEquals(compat.decision, "CACHE_INCOMPATIBLE");
+  assert(compat.reasons.some((reason) => reason.includes("color_match")));
+});
+
+Deno.test("candidate scorer reports exact rejection reasons", () => {
+  const c = classifyCandidate(
+    baseSignals({
+      occupancy: 0.3,
+      variant_match: false,
+      watermark_detected: true,
+      identity_confidence: 0.8,
+    }),
+    true,
+  );
+  assertEquals(c.tier_a_result, "not_ready");
+  assert(c.rejection_reasons.includes("low_occupancy"));
+  assert(c.rejection_reasons.includes("variant_mismatch"));
+  assert(c.rejection_reasons.includes("watermark_detected"));
+  assert(c.rejection_reasons.includes("identity_below_tier_a"));
+});
+
+Deno.test("zero-cost smoke exposes cache miss without classifying as rejected", () => {
+  assertEquals(noSpendCacheStatus("MISS"), "CACHE_MISS_NO_SPEND");
+});
+
+Deno.test("structured candidate cache requires all fields and exact scorer semantics", () => {
+  const compat = evaluateStructuredCacheRow({
+    cache_key: "k",
+    scorer: "candidate_structured_vision_v1",
+    scoring_version: "v1.2026-07-16",
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    product_id: PRODUCT_ID,
+    result: {
+      occupancy: 0.4,
+      identity_confidence: 1,
+      pdp_similarity: 1,
+      species_confidence: 1,
+      variant_match: true,
+      color_match: true,
+      shape_match: true,
+      watermark_detected: false,
+      supplier_text_detected: false,
+      collage_detected: false,
+    },
+    passed: true,
+  }, {
+    product_id: PRODUCT_ID,
+    image_hash: CANARY_HASH,
+    pdp_hero_hash: CANARY_HASH,
+    scorer: "candidate_structured_vision_v1",
+    compatible_scoring_versions: ["v1.2026-07-16"],
+  });
+  assertEquals(compat.decision, "HIT");
 });
