@@ -442,7 +442,11 @@ async function scoreOneProduct(
   if (cacheLookup.cache_lookup_status === "HIT" && cacheLookup.result) {
     cached = true;
     scored = cacheLookup.result;
-  } else if (cacheLookup.cache_lookup_status === "CACHE_INCOMPATIBLE") {
+  } else if (
+    cacheLookup.cache_lookup_status === "CACHE_INCOMPATIBLE" &&
+    (req.max_paid_calls === 0 || req.max_credit_spend === 0)
+  ) {
+    // Cache is incompatible AND no paid budget → cannot resolve; return without spend.
     const row = {
       run_id: req.run_id,
       product_id: productId,
