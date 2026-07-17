@@ -3,6 +3,7 @@
  * Aggregates signals client-side; flushes every 15s and on visibility:hidden.
  * Non-blocking; uses sendBeacon when available.
  */
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 const RETURN_KEY = "gp_returning_visitor_v1";
@@ -22,7 +23,7 @@ const state = {
 
 let installed = false;
 function getSessionId(): string {
-  try { return sessionStorage.getItem(SESSION_KEY) || ""; } catch { return ""; }
+  try { return getCanonicalSessionId(); } catch { return ""; }
 }
 
 function flush() {
