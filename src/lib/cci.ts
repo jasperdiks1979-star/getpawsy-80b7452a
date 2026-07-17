@@ -119,6 +119,9 @@ function device(): string {
 export function trackCci(event_name: CciEvent, extra?: Record<string, unknown>): void {
   try {
     if (typeof window === 'undefined' || !PROJECT) return;
+    // Never emit commercial events on technical routes (/api/*, /img/*,
+    // sitemaps, static assets, healthchecks, admin, preview, _lovable_*).
+    try { if (isTechnicalPath(location.pathname)) return; } catch { /* ignore */ }
     const session_id = ensureSessionId();
     if (!session_id) return;
     const utm = readUtm();
