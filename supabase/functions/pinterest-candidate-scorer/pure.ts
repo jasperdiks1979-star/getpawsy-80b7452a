@@ -113,6 +113,33 @@ export interface VisionScoreResult {
   collage_detected: boolean;
 }
 
+export interface RawProductRow {
+  id: string;
+  slug: string | null;
+  title?: string | null;
+  name?: string | null;
+  primary_species: string | null;
+  active?: boolean | null;
+  is_active?: boolean | null;
+  effective_stock?: number | null;
+  stock?: number | null;
+  hero_image_url?: string | null;
+  image_url?: string | null;
+  gallery_image_urls?: string[] | null;
+  images?: string[] | null;
+}
+
+export interface NormalizedProductRow {
+  id: string;
+  slug: string;
+  title: string;
+  primary_species: string | null;
+  active: boolean;
+  effective_stock: number | null;
+  hero_image_url: string | null;
+  gallery_image_urls: string[];
+}
+
 const REQUIRED_STRUCTURED_FIELDS: Array<keyof VisionScoreResult> = [
   "occupancy",
   "identity_confidence",
@@ -219,6 +246,30 @@ export function evaluateStructuredCacheRow(
 
   if (reasons.length > 0) return { decision: "CACHE_INCOMPATIBLE", reasons, result: null };
   return { decision: "HIT", reasons: [], result };
+}
+
+export function normalizeProductRow(row: RawProductRow): NormalizedProductRow {
+  const hero = row.hero_image_url ?? row.image_url ?? null;
+  const gallery = row.gallery_image_urls ?? row.images ?? [];
+  return {
+    id: row.id,
+    slug: row.slug ?? "",
+    title: row.title ?? row.name ?? "",
+    primary_species: row.primary_species ?? null,
+    active: row.active ?? row.is_active ?? false,
+    effective_stock: row.effective_stock ?? row.stock ?? null,
+    hero_image_url: hero,
+    gallery_image_urls: gallery.includes(hero ?? "") || !hero ? gallery : [hero, ...gallery],
+  };
+}
+
+export function noSpendCacheStatus(decision: CacheCompatibilityDecision):
+  | "CACHE_INCOMPATIBLE"
+  | "CACHE_MISS_NO_SPEND"
+  | "HIT" {
+  if (decision === "CACHE_INCOMPATIBLE") return "CACHE_INCOMPATIBLE";
+  if (decision === "MISS") return "CACHE_MISS_NO_SPEND";
+  return "HIT";
 }
 
 export function assembleLegacyCacheRows(
