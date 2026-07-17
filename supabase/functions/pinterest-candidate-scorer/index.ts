@@ -13,7 +13,7 @@
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { z } from "npm:zod@3.23.8";
+import { z } from "https://esm.sh/zod@3.23.8";
 import {
   assertBudget,
   loadRunConfig,
