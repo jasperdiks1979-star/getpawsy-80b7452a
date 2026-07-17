@@ -164,12 +164,12 @@ Deno.serve(async (req) => {
   if (banned.length > 0) preflightFail = preflightFail ?? "BANNED_CLAIM";
 
   // Variant Yellow live/sellable
-  const { data: prod } = await sb.from("products").select("id,slug,active,variants").eq("id", APPROVED.product_id).maybeSingle();
+  const { data: prod, error: prodErr } = await sb.from("products").select("id,slug,variants").eq("id", APPROVED.product_id).maybeSingle();
   const variantList: any[] = Array.isArray(prod?.variants) ? prod!.variants : [];
   const yellow = variantList.find((v: any) => String(v?.variantKey ?? v?.color ?? v?.title ?? "").trim().toLowerCase() === "yellow");
   const yellowStock = Number(yellow?.inventoryNum ?? yellow?.stock ?? 0);
-  const yellowOk = !!yellow && yellowStock > 0 && prod?.active !== false;
-  rep.variant_audit = { yellow_present: !!yellow, yellow_stock: yellowStock, product_active: prod?.active !== false, ok: yellowOk };
+  const yellowOk = !!yellow && yellowStock > 0 && !!prod;
+  rep.variant_audit = { yellow_present: !!yellow, yellow_stock: yellowStock, product_found: !!prod, product_error: prodErr?.message ?? null, ok: yellowOk };
   if (!yellowOk) preflightFail = preflightFail ?? "VARIANT_UNAVAILABLE";
 
   // Old pin preflight GET
