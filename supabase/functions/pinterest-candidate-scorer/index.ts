@@ -800,7 +800,10 @@ export function createCandidateScorerHandler(deps: CandidateScorerDeps = {}) {
       .from("pinterest_candidate_run_items")
       .upsert(runItemSeeds, {
         onConflict: "run_id,product_id",
-        ignoreDuplicates: false,
+        // Preserve pre-seeded rows (ordinal, requested_at) when they already
+        // exist — the scorer must never mutate the ordering of a selector-
+        // seeded candidate set.
+        ignoreDuplicates: true,
       })
       .select("id");
     if (seedErr) {
