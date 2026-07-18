@@ -92,7 +92,7 @@ import SlugResolverFallback from "@/components/products/SlugResolverFallback";
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
 import { ProductFAQAccordion } from "@/components/products/ProductFAQAccordion";
-import { isSectionHiddenForProduct } from "@/config/product-content-overrides";
+import { getProductContentOverride, isSectionHiddenForProduct, type ProductContentOverride } from "@/config/product-content-overrides";
 import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
@@ -159,6 +159,38 @@ interface ProductVariant {
 }
 
 type ProductRecord = Record<string, any>;
+
+function flattenUnknownArray(values: unknown[]): unknown[] {
+  return values.flatMap((value) => (Array.isArray(value) ? flattenUnknownArray(value) : [value]));
+}
+
+function sanitizeProductGalleryImages(
+  rawValues: unknown[],
+  fallbackImageUrl?: string | null,
+  override?: ProductContentOverride,
+): string[] {
+  const blockedTokens = override?.galleryFilter?.blockedUrlTokens ?? [];
+  const maxImages = override?.galleryFilter?.maxImages ?? Number.POSITIVE_INFINITY;
+  const seen = new Set<string>();
+  const candidates = flattenUnknownArray(rawValues)
+    .filter((img): img is string => typeof img === "string")
+    .map((img) => img.trim())
+    .filter((img) => img.startsWith("http") && !img.includes("undefined"))
+    .filter((img) => {
+      if (!override?.galleryFilter?.imageOnly) return true;
+      const lower = img.toLowerCase();
+      return !blockedTokens.some((token) => lower.includes(token.toLowerCase()));
+    })
+    .filter((img) => {
+      if (seen.has(img)) return false;
+      seen.add(img);
+      return true;
+    })
+    .slice(0, maxImages);
+
+  if (candidates.length > 0) return candidates;
+  return fallbackImageUrl ? [fallbackImageUrl] : ["/placeholder.svg"];
+}
 
 async function fetchExistingProduct(productIdentifier: string): Promise<ProductRecord | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productIdentifier);
@@ -491,6 +523,7 @@ const ProductDetail = () => {
   const isLitterBoxProduct =
     !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
   const showTikTokVariant = isTikTok && isLitterBoxProduct;
+  const productContentOverride = useMemo(() => getProductContentOverride(product?.id), [product?.id]);
 
   // Fire a single PDP-load analytics event capturing which variant actually
   // activated for this visitor. Pairs with `tiktok_deep_link_click` on the
@@ -792,7 +825,7 @@ const ProductDetail = () => {
   useEffect(() => {
     if (selectedVariant?.variantImage) {
       const productImages = Array.isArray(product?.images) ? product.images : [];
-      const images = productImages.length > 0 ? productImages : [product?.image_url || "/placeholder.svg"];
+      const images = sanitizeProductGalleryImages(productImages, product?.image_url, getProductContentOverride(product?.id));
       const variantImageIndex = images.findIndex((img) => img === selectedVariant.variantImage);
       if (variantImageIndex !== -1) {
         setSelectedImage(variantImageIndex);
@@ -807,18 +840,8 @@ const ProductDetail = () => {
   // CRITICAL: Must be wrapped in useMemo for stable hook count across renders
   const images = useMemo(() => {
     const productImagesArray = Array.isArray(product?.images) ? product.images : [];
-    const rawImages =
-      productImagesArray.length > 0
-        ? productImagesArray
-            .flat()
-            .filter(
-              (img): img is string => typeof img === "string" && img.startsWith("http") && !img.includes("undefined"),
-            )
-        : [];
-
-    // Use image_url as fallback if no valid images
-    return rawImages.length > 0 ? rawImages : product?.image_url ? [product.image_url] : ["/placeholder.svg"];
-  }, [product?.images, product?.image_url]);
+    return sanitizeProductGalleryImages(productImagesArray, product?.image_url, productContentOverride);
+  }, [product?.images, product?.image_url, productContentOverride]);
 
   // Cleanup autoplay timeout on unmount
   useEffect(() => {
@@ -1339,13 +1362,14 @@ const ProductDetail = () => {
               )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
               {adIntent.headline && allowHeadlineOverride && (
-                <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
+                <p className={productContentOverride?.hideAdIntentHeadline ? "sr-only" : "text-base md:text-lg font-semibold text-primary mt-1.5"}>
                   {adIntent.headline}
                 </p>
               )}
               {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
                 {(allowHeadlineOverride && adIntent.subline) ||
+                  productContentOverride?.intro ||
                   generateClarityIntro(product.name, product.category || "")}
               </p>
 
@@ -1353,16 +1377,18 @@ const ProductDetail = () => {
                   CI-9: under premiumPdpV2 we hide it on mobile (the subline +
                   SwipeBenefitChips already carry the emotional read above the
                   fold). Desktop still renders it. */}
-              <div
-                className={
-                  getConversionFlag('premiumPdpV2') ? 'mt-3 hidden md:block' : 'mt-3'
-                }
-              >
-                <EmotionalHook
-                  category={product.category || undefined}
-                  productName={product.name}
-                />
-              </div>
+              {!productContentOverride?.hideEmotionalHook && (
+                <div
+                  className={
+                    getConversionFlag('premiumPdpV2') ? 'mt-3 hidden md:block' : 'mt-3'
+                  }
+                >
+                  <EmotionalHook
+                    category={product.category || undefined}
+                    productName={product.name}
+                  />
+                </div>
+              )}
 
               {/* Rating — only shown when real verified reviews exist */}
               {reviews.length > 0 && (
@@ -1744,16 +1770,16 @@ const ProductDetail = () => {
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${inStock ? "bg-success" : "bg-destructive"}`} />
                 <span className="font-semibold text-foreground">
-                  {inStock ? "In Stock – Ready to Ship" : "Currently Unavailable"}
+                  {inStock ? (productContentOverride?.inStockLine ?? "In Stock – Ready to Ship") : "Currently Unavailable"}
                 </span>
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  Orders processed within 1–2 business days
+                  {productContentOverride?.verifiedShippingLine ?? "Orders processed within 1–2 business days"}
                 </p>
               )}
               {/* Safe urgency signal */}
-              {inStock && (
+              {inStock && !productContentOverride?.suppressUrgencyLine && (
                 <p className="text-xs font-medium text-primary pl-6 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                   High demand item — frequently purchased
