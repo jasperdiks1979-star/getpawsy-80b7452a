@@ -35,6 +35,13 @@
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { checkCanonicalV2Gate } from "../_shared/canonicalV2Flag.ts";
+import {
+  aggregateBuckets,
+  classificationCoverage,
+  totalsFromAggregate,
+  type ClassifiableRow,
+} from "../_shared/canonicalV2Buckets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
