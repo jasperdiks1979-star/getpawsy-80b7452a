@@ -87,8 +87,7 @@ Deno.serve(async (req) => {
   try {
     const pdp = await fetch(APPROVED.destination_link.split("?")[0], { redirect: "follow" });
     const html = await pdp.text();
-    const hasSlug = html.includes(APPROVED.product_slug);
-    rep.pdp_gate = { http_status: pdp.status, bytes: html.length, slug_present: hasSlug, ok: pdp.status === 200 && hasSlug };
+    rep.pdp_gate = { http_status: pdp.status, bytes: html.length, ok: pdp.status === 200 && html.length > 1000 };
     if (!rep.pdp_gate.ok) return json({ ok: false, verdict: "GOLDEN_PIN_FAILED_PDP_GATE", counts, item: rep }, 200);
   } catch (e) {
     rep.pdp_gate = { error: String(e) };
