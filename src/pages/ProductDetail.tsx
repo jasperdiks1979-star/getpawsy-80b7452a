@@ -1936,6 +1936,7 @@ const ProductDetail = () => {
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <USProductDescription
+                  productId={product?.id}
                   description={product.description || "No description available."}
                   productName={product.name}
                 />
