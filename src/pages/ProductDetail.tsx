@@ -2231,7 +2231,7 @@ const ProductDetail = () => {
         )}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
-        {isLitterBoxProduct && <LitterBoxLovedSection />}
+        {isLitterBoxProduct && !isSectionHiddenForProduct(product?.id, 'litterBoxLovedSection') && <LitterBoxLovedSection />}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
