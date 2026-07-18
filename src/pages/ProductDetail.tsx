@@ -1305,7 +1305,7 @@ const ProductDetail = () => {
                 Suppressed when the TikTok-only hero is already taking the
                 top slot to avoid stacking two heroes.
               */}
-              {isLitterBoxProduct && !showTikTokVariant && (
+              {isLitterBoxProduct && !showTikTokVariant && !isSectionHiddenForProduct(product?.id, 'litterBoxConversionBoost') && (
                 <LitterBoxConversionBoost
                   images={safeArray<string>(product.images)}
                   productName={product.name}
