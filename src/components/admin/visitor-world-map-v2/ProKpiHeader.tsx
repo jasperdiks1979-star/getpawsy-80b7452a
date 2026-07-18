@@ -6,6 +6,7 @@ import {
 } from "@/hooks/useAnalyticsTruth";
 import type { ProToolbarState } from "./ProToolbar";
 import { proHoursForRange } from "./ProToolbar";
+import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
 
 /**
  * Canonical KPI header for the Pro page.
@@ -51,6 +52,7 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
     hours: proHoursForRange(state.timeRange),
     geo: state.usOnly ? "US" : "all",
   });
+  const v2metrics = useMemo(() => getCanonicalAnalyticsMetrics(truth as any), [truth]);
 
   const derived = useMemo(() => {
     if (!truth?.sessions) return null;
@@ -59,7 +61,22 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   }, [truth, state]);
 
   const currency = truth?.totals?.currency ?? "USD";
-  const cards: { label: string; value: string; testid: string }[] = derived
+  const useV2 = v2metrics?.envelope_resolved === "v2";
+  const cards: { label: string; value: string; testid: string }[] = useV2 && v2metrics
+    ? [
+        { label: V2_LABELS_NL.human, value: fmtInt(v2metrics.human_sessions ?? 0), testid: "kpi-human" },
+        { label: V2_LABELS_NL.commercial, value: fmtInt(v2metrics.commercial_sessions ?? 0), testid: "kpi-commercial" },
+        { label: V2_LABELS_NL.uncertain, value: fmtInt(v2metrics.genuine_uncertain_sessions ?? 0), testid: "kpi-uncertain" },
+        { label: V2_LABELS_NL.crawler, value: fmtInt(v2metrics.crawler_sessions ?? 0), testid: "kpi-crawler" },
+        { label: V2_LABELS_NL.bot, value: fmtInt(v2metrics.bot_sessions ?? 0), testid: "kpi-bot" },
+        { label: V2_LABELS_NL.technical, value: fmtInt(v2metrics.technical_sessions ?? 0), testid: "kpi-technical" },
+        { label: V2_LABELS_NL.internal, value: fmtInt(v2metrics.internal_sessions ?? 0), testid: "kpi-internal" },
+        { label: V2_LABELS_NL.legacy, value: fmtInt(v2metrics.legacy_unclassified_sessions ?? 0), testid: "kpi-legacy" },
+        { label: V2_LABELS_NL.raw, value: fmtInt(v2metrics.raw_sessions ?? 0), testid: "kpi-raw" },
+        { label: "Purchases", value: fmtInt(v2metrics.purchases), testid: "kpi-purchases" },
+        { label: "Revenue", value: fmtMoney(v2metrics.revenue, currency), testid: "kpi-revenue" },
+      ]
+    : derived
     ? [
         { label: "Visitors", value: fmtInt(derived.visitors), testid: "kpi-visitors" },
         { label: "Sessions", value: fmtInt(derived.sessions), testid: "kpi-sessions" },
@@ -84,6 +101,17 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Business KPIs · analytics-canonical
+          <span
+            data-testid="vwm-pro-envelope"
+            className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+              useV2
+                ? "bg-emerald-500/15 text-emerald-600"
+                : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+            }`}
+            title={useV2 ? "traffic-quality v2 (Phase 4C)" : "legacy v1 envelope"}
+          >
+            {useV2 ? "v2" : "v1 (legacy)"}
+          </span>
         </div>
         {isLive && (
           <div className="text-[11px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">
