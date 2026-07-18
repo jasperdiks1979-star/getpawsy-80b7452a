@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
     // ── orders (paid) ──────────────────────────────────────────
     const { data: paidOrders, error: oErr } = await supabase
       .from("orders")
-      .select("id,total_amount,currency,status,created_at,shipping_address")
+      .select("id,total_amount,currency,status,created_at,shipping_address,items,stripe_session_id,stripe_payment_intent_id")
       .in("status", ["paid", "completed"])
       .gte("created_at", since)
       .lte("created_at", until)
@@ -171,8 +171,30 @@ Deno.serve(async (req) => {
         return isUS(c);
       });
     }
-    const revenue = purchases.reduce((s, o: any) => s + Number(o.total_amount || 0), 0);
-    const currency = (purchases[0] as any)?.currency ?? "eur";
+    // ── Purchase semantics (v2 rule) ──────────────────────────────
+    // Classify each paid/completed order as GENUINE or TEST_ORDER. A
+    // genuine sale requires: real Stripe session, non-empty line items,
+    // positive amount, and no explicit test marker (`test_` id prefix or
+    // `is_test` flag). We DO NOT use a naïve minimum-order-value filter;
+    // €1 with a real product still qualifies as genuine.
+    function classifyOrder(o: any): "genuine" | "test" {
+      const amount = Number(o?.total_amount || 0);
+      const items = Array.isArray(o?.items) ? o.items : [];
+      const ssid = String(o?.stripe_session_id || "");
+      const piid = String(o?.stripe_payment_intent_id || "");
+      const isTestGateway = ssid.startsWith("cs_test_") || piid.startsWith("pi_test_");
+      const explicitTestFlag = o?.is_test === true || o?.test === true;
+      if (explicitTestFlag) return "test";
+      if (isTestGateway) return "test";
+      if (items.length === 0) return "test"; // smoke test / zero-line-item
+      if (amount <= 0) return "test";
+      return "genuine";
+    }
+    const genuineOrders = purchases.filter((o: any) => classifyOrder(o) === "genuine");
+    const testOrders = purchases.filter((o: any) => classifyOrder(o) === "test");
+    const revenue = genuineOrders.reduce((s, o: any) => s + Number(o.total_amount || 0), 0);
+    const testOrderAmount = testOrders.reduce((s, o: any) => s + Number(o.total_amount || 0), 0);
+    const currency = (genuineOrders[0] as any)?.currency ?? (purchases[0] as any)?.currency ?? "eur";
 
     // ── aggregate ──────────────────────────────────────────────
     const visitors = new Set<string>();
@@ -214,7 +236,10 @@ Deno.serve(async (req) => {
       if (r.session_id) perSource.get(src)!.add(r.session_id);
     }
 
-    const purchases_count = purchases.length;
+    // Primary purchase counter is GENUINE only. Test and cancelled are
+    // reported separately so admins can audit without polluting revenue.
+    const purchases_count = genuineOrders.length;
+    const test_orders_count = testOrders.length;
     // NOTE: `totals` intentionally aggregated later from `sessionAgg` so
     // Map/CSV/Summary parity holds by construction. See below.
 
@@ -459,6 +484,11 @@ Deno.serve(async (req) => {
       currency,
       conversion_rate: visitorsSet.size > 0
         ? +((purchases_count / visitorsSet.size) * 100).toFixed(2) : 0,
+      // v2 purchase semantics — additive, safe to ignore for legacy readers.
+      genuine_orders: purchases_count,
+      test_orders: test_orders_count,
+      genuine_revenue: Number(revenue.toFixed(2)),
+      test_order_amount: Number(testOrderAmount.toFixed(2)),
     };
 
     const funnel = STAGES.map((stage) => ({
@@ -599,6 +629,10 @@ Deno.serve(async (req) => {
               ? Math.round((joinableBySession / historicalSessions) * 10000) / 100
               : 0,
             orders_count: purchases_count,
+            genuine_orders: purchases_count,
+            test_orders: test_orders_count,
+            genuine_revenue: Number(revenue.toFixed(2)),
+            test_order_amount: Number(testOrderAmount.toFixed(2)),
             checkout_started: totals.checkout_started,
             atc_sessions_matched: atcMap.size,
             atc_sessions_scanned: uniqSids.length,
