@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface ProductHowItWorksProps {
+  productId?: string;
   productName: string;
   category: string;
 }
@@ -69,11 +71,13 @@ const STEPS: Record<ProductType, Step[]> = {
   ],
 };
 
-export function ProductHowItWorks({ productName, category }: ProductHowItWorksProps) {
+export function ProductHowItWorks({ productId, productName, category }: ProductHowItWorksProps) {
   const steps = useMemo(() => {
+    const override = getProductContentOverride(productId);
+    if (override?.steps && override.steps.length > 0) return override.steps;
     const type = detectType(productName, category);
     return STEPS[type];
-  }, [productName, category]);
+  }, [productId, productName, category]);
 
   return (
     <section id="how-it-works" className="mt-12 scroll-mt-20">

@@ -92,6 +92,7 @@ import SlugResolverFallback from "@/components/products/SlugResolverFallback";
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
 import { ProductFAQAccordion } from "@/components/products/ProductFAQAccordion";
+import { isSectionHiddenForProduct } from "@/config/product-content-overrides";
 import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
@@ -1304,7 +1305,7 @@ const ProductDetail = () => {
                 Suppressed when the TikTok-only hero is already taking the
                 top slot to avoid stacking two heroes.
               */}
-              {isLitterBoxProduct && !showTikTokVariant && (
+              {isLitterBoxProduct && !showTikTokVariant && !isSectionHiddenForProduct(product?.id, 'litterBoxConversionBoost') && (
                 <LitterBoxConversionBoost
                   images={safeArray<string>(product.images)}
                   productName={product.name}
@@ -1935,9 +1936,11 @@ const ProductDetail = () => {
             <TabsContent value="description" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
                 <USProductDescription
+                  productId={product?.id}
                   description={product.description || "No description available."}
                   productName={product.name}
                 />
+                {/* per-SKU override applied via productId */}
               </div>
             </TabsContent>
 
@@ -2159,22 +2162,26 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Who Is This For? — audience targeting */}
-        {allowReassuranceStack && (
+        {allowReassuranceStack && !isSectionHiddenForProduct(product?.id, 'reassuranceCallout') && (
           <ReassuranceCallout
             category={product.category || undefined}
             productName={product.name}
           />
         )}
-        <ProductIdealFor productName={product.name} category={product.category || ""} />
+        {!isSectionHiddenForProduct(product?.id, 'productIdealFor') && (
+          <ProductIdealFor productName={product.name} category={product.category || ""} />
+        )}
 
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
         {/* Comparison block — "Why this is a better choice" */}
-        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
+        {!isSectionHiddenForProduct(product?.id, 'productVsAlternatives') && (
+          <ProductVsAlternatives productName={product.name} category={product.category || ""} />
+        )}
 
         {/* 4. Visible FAQ Accordion */}
-        <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
+        <ProductFAQAccordion productId={product?.id} productName={product.name} category={product.category || undefined} />
 
         {/* E-E-A-T Trust Block */}
         <WhyTrustGetPawsy variant="pdp" className="mt-8" />
@@ -2226,7 +2233,7 @@ const ProductDetail = () => {
         )}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
-        {isLitterBoxProduct && <LitterBoxLovedSection />}
+        {isLitterBoxProduct && !isSectionHiddenForProduct(product?.id, 'litterBoxLovedSection') && <LitterBoxLovedSection />}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
