@@ -110,7 +110,8 @@ Deno.serve(async (req) => {
     let body: any = null;
     if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
     const { hours, geo } = parseInput(url, body);
-    const key = `${hours}|${geo}`;
+    const envelope = (url.searchParams.get("envelope") || body?.envelope) === "v2" ? "v2" : "v1";
+    const key = `${hours}|${geo}|${envelope}`;
     const now = Date.now();
     const hit = cache.get(key);
     if (hit && now - hit.at < TTL_MS) {
