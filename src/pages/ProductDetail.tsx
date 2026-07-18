@@ -2173,7 +2173,9 @@ const ProductDetail = () => {
         )}
 
         {/* 1. Problem → Solution Block */}
-        <ProductProblemSolution productName={product.name} category={product.category || ""} />
+        {!isSectionHiddenForProduct(product?.id, 'problemSolution') && (
+          <ProductProblemSolution productName={product.name} category={product.category || ""} />
+        )}
 
         {/* Comparison block — "Why this is a better choice" */}
         {!isSectionHiddenForProduct(product?.id, 'productVsAlternatives') && (
@@ -2343,7 +2345,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Crawlable related product links — visible to search engines */}
-        {relatedProducts && relatedProducts.length > 0 && (
+        {relatedProducts && relatedProducts.length > 0 && !isSectionHiddenForProduct(product?.id, 'crawlableRelatedLinks') && (
           <CrawlableRelatedLinks
             products={relatedProducts.map((p) => ({
               id: p.id,

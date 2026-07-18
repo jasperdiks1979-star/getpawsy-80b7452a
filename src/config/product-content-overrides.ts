@@ -39,7 +39,9 @@ export type PdpSectionFlag =
   | 'productIdealFor'
   | 'productVsAlternatives'
   | 'litterBoxLovedSection'
-  | 'reassuranceCallout';
+  | 'reassuranceCallout'
+  | 'problemSolution'
+  | 'crawlableRelatedLinks';
 
 export interface ProductContentOverride {
   benefits?: string[];
@@ -133,6 +135,12 @@ const AUTOMATIC_CAT_LITTER_BOX: ProductContentOverride = {
     'productVsAlternatives',
     'litterBoxLovedSection',
     'reassuranceCallout',
+    // Problem/Solution duplicates the Key Benefits + How It Works messaging
+    // and adds generic THE PROBLEM / THE SOLUTION headings with no new facts.
+    'problemSolution',
+    // CrawlableRelatedLinks ("More Products You Might Like") duplicates the
+    // "You May Also Like" RelatedProductsCarousel that renders right above it.
+    'crawlableRelatedLinks',
   ],
 };
 
