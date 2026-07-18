@@ -579,6 +579,11 @@ Deno.serve(async (req) => {
       test_orders: test_orders_count,
       genuine_revenue: Number(revenue.toFixed(2)),
       test_order_amount: Number(testOrderAmount.toFixed(2)),
+      // Truth-fix additions (backward compatible): dashboards should
+      // display `human_visitors` as the primary "Visitors" KPI and
+      // `raw_sessions_all` as an auditable secondary tile.
+      human_visitors: visitorsSet.size,
+      raw_sessions_all: allSessionsArr.length,
     };
 
     const funnel = STAGES.map((stage) => ({
