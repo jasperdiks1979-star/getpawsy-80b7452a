@@ -3,9 +3,9 @@ import {
   auditLayout, auditUrl, b64UrlEncode, buildCloudinaryUrl, fitText,
   parsePngDimensions, plan, sha256Hex, storageKey,
   validateBenefit, validateCta, validateHeadline,
-  computeCtaPill,
+  computeCtaPill, computeChipStrip, validateChips,
 } from "./compositor.ts";
-import { CANVAS, CTA_BUTTON, LAYOUTS, occupancy, overlaps, withinSafe } from "./layouts.ts";
+import { CANVAS, CHIP_STRIP, CTA_BUTTON, LAYOUTS, occupancy, overlaps, withinSafe } from "./layouts.ts";
 
 const RUN = "11111111-2222-3333-4444-555555555555";
 const PROD = "b7133bed-107c-4463-8277-1bd8ba7d9b94";
@@ -76,6 +76,74 @@ Deno.test("8: text does not overlap product", () => {
     assertFalse(overlaps(L.headlineBox, L.productBox), `${L.key} headline overlaps`);
     assertFalse(overlaps(L.benefitBox, L.productBox), `${L.key} benefit overlaps`);
     assertFalse(overlaps(L.ctaBox, L.productBox), `${L.key} cta overlaps`);
+  }
+});
+
+// ── Chip-strip v7 tests ─────────────────────────────────────────────────
+Deno.test("chips: validateChips accepts 3 short labels", () => {
+  const v = validateChips(["Less scooping", "Lower odor", "Quiet motor"]);
+  assert(v.ok, v.reason);
+});
+Deno.test("chips: validateChips rejects wrong count", () => {
+  const v = validateChips(["a", "b"]);
+  assertFalse(v.ok);
+});
+Deno.test("chips: validateChips rejects >22 chars", () => {
+  const v = validateChips(["x".repeat(23), "ok", "ok"]);
+  assertFalse(v.ok);
+});
+Deno.test("chips: validateChips rejects banned claims", () => {
+  const v = validateChips(["FDA cleared", "Best seller", "5 stars"]);
+  assertFalse(v.ok);
+});
+Deno.test("chips: computeChipStrip produces 3 equal-width pills inside reservation", () => {
+  const L = LAYOUTS.editorial_hero;
+  const s = computeChipStrip(L.benefitBox, ["A", "B", "C"]);
+  assertEquals(s.pills.length, 3);
+  // equal widths
+  assertEquals(s.pills[0].w, s.pills[1].w);
+  assertEquals(s.pills[1].w, s.pills[2].w);
+  // stays inside reservation
+  const first = s.pills[0], last = s.pills[2];
+  assert(first.x >= L.benefitBox.x, "chip strip left in bounds");
+  assert(last.x + last.w <= L.benefitBox.x + L.benefitBox.w, "chip strip right in bounds");
+  // vertically centered inside reservation
+  const cy = L.benefitBox.y + Math.floor((L.benefitBox.h - CHIP_STRIP.height) / 2);
+  assertEquals(first.y, cy);
+});
+Deno.test("chips: computeChipStrip flags overflow only when max chars would clip at fontMin", () => {
+  const L = LAYOUTS.editorial_hero;
+  // 22-char label is the hard cap — must fit at fontMin per layout audit.
+  const s = computeChipStrip(L.benefitBox, ["a".repeat(22), "ok", "ok"]);
+  assertFalse(s.overflow[0], "22-char chip must fit");
+});
+Deno.test("chips: plan() emits chip layers when chips provided (no benefit segment)", () => {
+  const p = plan({
+    runId: RUN, productId: PROD, sourceUrl: SRC,
+    expectedSourceHash: SRC_HASH, actualSourceHash: SRC_HASH,
+    headline: "Dog Carrier Backpack",
+    chips: ["Hands-free carry", "US pet parents", "Fits small dogs"],
+    cta: "Explore Product",
+    layout: "editorial_hero",
+  });
+  assert(p.ok, p.reason);
+  // Three chip labels must appear as URL-encoded l_text segments.
+  const url = p.cloudinaryUrl!;
+  assertMatch(url, /Hands/);
+  assertMatch(url, /parents/);
+  assertMatch(url, /Fits/);
+});
+Deno.test("chips: Explore Product CTA remains within pill at any layout", () => {
+  for (const L of Object.values(LAYOUTS)) {
+    const pill = computeCtaPill(L, "Explore Product");
+    assert(pill.fontSize >= 36, `${L.key} cta fontSize ${pill.fontSize} < 36`);
+    assert(pill.box.w <= L.ctaBox.w, `${L.key} cta pill exceeds reservation`);
+  }
+});
+Deno.test("chips: every layout's benefitBox passes chip-strip audit", () => {
+  for (const L of Object.values(LAYOUTS)) {
+    const a = auditLayout(L);
+    assert(a.ok, `${L.key}: ${a.issues.join(",")}`);
   }
 });
 
