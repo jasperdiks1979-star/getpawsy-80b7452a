@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
     const { hours, geo } = parseInput(url, body);
     const envelope = (url.searchParams.get("envelope") || body?.envelope) === "v2" ? "v2" : "v1";
     const key = `${hours}|${geo}|${envelope}`;
+    // Deploy marker to prove new bundle is live.
+    (globalThis as any).__ac_deploy_marker = "phase4b-v2-2";
     const now = Date.now();
     const hit = cache.get(key);
     if (hit && now - hit.at < TTL_MS) {
