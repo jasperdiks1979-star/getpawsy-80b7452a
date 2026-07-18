@@ -4250,6 +4250,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="pinterest-campaign-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCampaignReportPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="pinterest-generic-niche"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
