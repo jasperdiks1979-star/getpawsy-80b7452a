@@ -10,8 +10,8 @@
 // - Idempotent via idempotency_key = "golden:128e0207:v1".
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
-import { plan, sha256Hex, parsePngDimensions, type ComposeRequest } from "../pinterest-deterministic-compositor/compositor.ts";
-import { CANVAS, type LayoutVariant } from "../pinterest-deterministic-compositor/layouts.ts";
+import { plan, sha256Hex, parsePngDimensions, type ComposeRequest } from "./compositor.ts";
+import { CANVAS, type LayoutVariant } from "./layouts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
