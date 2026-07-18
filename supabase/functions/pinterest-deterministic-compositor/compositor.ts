@@ -356,25 +356,25 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "y_" + n(pill.box.y, 0, CANVAS.h),
   ].join(",");
 
-  // Label — optically centered.
-  // Text layer width is the pill width minus horizontal padding; we then
-  // shift the layer's x by half of the leftover slack so the rendered text
-  // is horizontally centered inside the pill (Cloudinary's l_text with
-  // c_fit renders left-aligned within the given width).
-  const labelLayerW = pill.box.w - CTA_BUTTON.hPad;
-  const labelX = pill.box.x + Math.round((pill.box.w - labelLayerW) / 2);
+  // Label — horizontally + optically centered inside the pill.
+  //
+  // Cloudinary's l_text short form renders left-aligned when a w_ constraint
+  // is set. To center precisely we:
+  //  1. Omit w_ so the text layer is rendered at its natural width.
+  //  2. Apply the layer with g_center anchor at the geometric pill center.
+  //  3. Nudge y downward by the optical-lift adjustment (rounded here so the
+  //     shift is applied as a small y offset from center, not from top-left).
+  const pillCenterX = pill.box.x + Math.floor(pill.box.w / 2);
+  const pillCenterY = pill.box.y + Math.floor(pill.box.h / 2);
+  const opticalDy = -Math.round(pill.fontSize * CTA_BUTTON.opticalLiftPct);
   const ctaLayer = [
     "l_text:" + ctaFont + ":" + cloudinaryTextEscape(inp.ctaText),
     "co_rgb:" + ctaText,
-    "w_" + n(labelLayerW, 50, CANVAS.w),
-    "c_fit",
-    "co_rgb:" + ctaText,
-    "g_center",
   ].join(",") + "/" + [
     "fl_layer_apply",
-    "g_north_west",
-    "x_" + n(labelX, 0, CANVAS.w),
-    "y_" + n(pill.textY, 0, CANVAS.h),
+    "g_center",
+    "x_" + n(pillCenterX - CANVAS.w / 2, -CANVAS.w, CANVAS.w),
+    "y_" + n(pillCenterY - CANVAS.h / 2 + opticalDy, -CANVAS.h, CANVAS.h),
   ].join(",");
 
   const segs = [baseCanvas, productLayer, headline, benefit, ctaShadow, ctaBg, ctaLayer, "f_png"].join("/");
