@@ -114,6 +114,9 @@ Deno.serve(async (req) => {
     rep.plan = { reason: p.reason, layoutAudit: p.layoutAudit, urlAudit: p.urlAudit };
     return json({ ok: false, verdict: "GOLDEN_PIN_FAILED_PLAN", counts, item: rep }, 200);
   }
+  // v2 storage suffix so we don't overwrite the v1 asset and don't collide on
+  // the by_asset duplicate check against v1's queue row.
+  p.storagePath = p.storagePath.replace(/\.png$/, "-v2.png");
   rep.plan = { layout: APPROVED.layout_variant, storage_path: p.storagePath, cloudinary_url: p.cloudinaryUrl, layout_audit_ok: p.layoutAudit?.ok, url_audit_ok: p.urlAudit?.ok };
 
   // ── Render via Cloudinary ──
