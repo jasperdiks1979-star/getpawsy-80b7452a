@@ -1939,6 +1939,7 @@ const ProductDetail = () => {
                   description={product.description || "No description available."}
                   productName={product.name}
                 />
+                {/* per-SKU override applied via productId */}
               </div>
             </TabsContent>
 
