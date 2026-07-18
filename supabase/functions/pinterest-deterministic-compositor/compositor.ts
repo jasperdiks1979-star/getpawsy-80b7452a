@@ -17,6 +17,7 @@ import {
   MIN_GAP,
   MOBILE_MIN,
   CTA_BUTTON,
+  CHIP_STRIP,
   type LayoutSpec,
   type LayoutVariant,
   overlaps,
@@ -87,6 +88,26 @@ export function validateCta(text: string): TextValidation {
   return { ok: true };
 }
 
+// Chip validation: exactly CHIP_STRIP.count non-empty chips, each within the
+// character cap and free of banned claims.
+export function validateChips(chips: string[]): TextValidation {
+  if (!Array.isArray(chips)) return { ok: false, reason: "chips_not_array" };
+  if (chips.length !== CHIP_STRIP.count) {
+    return { ok: false, reason: `chips_count_${chips.length}_expected_${CHIP_STRIP.count}` };
+  }
+  for (let i = 0; i < chips.length; i++) {
+    const t = (chips[i] || "").trim();
+    if (!t) return { ok: false, reason: `chip_${i}_empty` };
+    if (t.length > CHIP_STRIP.maxChars) {
+      return { ok: false, reason: `chip_${i}_too_long_${t.length}>${CHIP_STRIP.maxChars}` };
+    }
+    for (const rx of BANNED_CLAIMS) {
+      if (rx.test(t)) return { ok: false, reason: `chip_${i}_banned_claim:${rx.source}` };
+    }
+  }
+  return { ok: true };
+}
+
 // ─── Text fit (word-aware wrap + font shrink to fit width & lines) ───────
 
 // Average glyph width per pixel of font size for our chosen fonts. Bold/serif
@@ -147,6 +168,45 @@ export function computeCtaPill(layout: LayoutSpec, text: string): CtaPill {
     textWidth: textW,
     textY,
   };
+}
+
+// ── Chip strip geometry (v7) ─────────────────────────────────────────────
+//
+// Given the benefitBox reservation and 3 chip labels, produces 3 equal-width
+// horizontally-arranged pill rectangles centered vertically inside the
+// reservation, plus a per-chip font size that guarantees the label fits
+// within (chipWidth - 2*hPad). If any chip cannot fit down to fontMin, the
+// pill is emitted at fontMin and the audit surfaces the overflow.
+
+export interface ChipStrip {
+  pills: Box[];        // 3 boxes, left → right
+  fontSizes: number[]; // per-chip final size
+  overflow: boolean[]; // per-chip: label exceeds pill at fontMin
+}
+
+export function computeChipStrip(reservation: Box, chips: string[]): ChipStrip {
+  const { count, gap, height, hPad, fontMax, fontMin } = CHIP_STRIP;
+  const chipW = Math.floor((reservation.w - gap * (count - 1)) / count);
+  const yTop = reservation.y + Math.floor((reservation.h - height) / 2);
+  const pills: Box[] = [];
+  const fontSizes: number[] = [];
+  const overflow: boolean[] = [];
+  for (let i = 0; i < count; i++) {
+    const x = reservation.x + i * (chipW + gap);
+    pills.push({ x, y: yTop, w: chipW, h: height });
+    const label = (chips[i] ?? "").trim();
+    let size = fontMax;
+    const maxTextW = chipW - hPad * 2;
+    while (size >= fontMin) {
+      const w = Math.ceil(label.length * size * CHAR_W.arial_bold);
+      if (w <= maxTextW) break;
+      size -= 2;
+    }
+    fontSizes.push(size);
+    const finalW = Math.ceil(label.length * size * CHAR_W.arial_bold);
+    overflow.push(finalW > maxTextW);
+  }
+  return { pills, fontSizes, overflow };
 }
 
 export interface TextFit {
@@ -247,8 +307,10 @@ export interface BuildUrlInput {
   layout: LayoutSpec;
   headlineLines: string[];
   headlineSize: number;
-  benefitLines: string[];
-  benefitSize: number;
+  benefitLines?: string[];
+  benefitSize?: number;
+  chips?: string[];
+  chipStrip?: ChipStrip;
   ctaText: string;
   ctaSize: number;
   ctaPill?: CtaPill;
@@ -304,18 +366,87 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "y_" + n(L.headlineBox.y, 0, CANVAS.h),
   ].join(",");
 
-  const benefitFont = FONT_MAP.arial.replace("%%SIZE%%", String(n(inp.benefitSize, 20, 120)));
-  const benefit = [
-    "l_text:" + benefitFont + ":" + cloudinaryTextEscape(inp.benefitLines.join("\n")),
-    "co_rgb:" + inkB,
-    "w_" + n(L.benefitBox.w, 50, CANVAS.w),
-    "c_fit",
-  ].join(",") + "/" + [
-    "fl_layer_apply",
-    "g_north_west",
-    "x_" + n(L.benefitBox.x, 0, CANVAS.w),
-    "y_" + n(L.benefitBox.y, 0, CANVAS.h),
-  ].join(",");
+  // Middle band: either the classic benefit line OR a chip strip (v7).
+  // Chips take precedence when supplied. Reservation coordinates match
+  // benefitBox so overall layout geometry is unchanged.
+  let middleBand: string;
+  if (inp.chips && inp.chips.length > 0) {
+    const strip = inp.chipStrip ?? computeChipStrip(L.benefitBox, inp.chips);
+    const chipBgHex = hex(INK.ctaFill);
+    const chipTextHex = hex(INK.ctaText);
+    const chipShadowHex = hex(INK.ctaShadow);
+    const chipRadius = n(CHIP_STRIP.radius, 0, 200);
+    const shadowRadius = chipRadius + Math.floor(CHIP_STRIP.shadowGrow / 2);
+    const segs: string[] = [];
+    for (let i = 0; i < strip.pills.length; i++) {
+      const pill = strip.pills[i];
+      const label = inp.chips[i];
+      const fontSize = strip.fontSizes[i];
+      // shadow
+      segs.push([
+        "l_text:" + FONT_MAP.arial.replace("%%SIZE%%", "10") + ":%2520",
+        "b_rgb:" + chipShadowHex,
+        "co_rgb:" + chipShadowHex,
+        "w_" + n(pill.w + CHIP_STRIP.shadowGrow * 2, 20, CANVAS.w),
+        "h_" + n(pill.h + CHIP_STRIP.shadowGrow, 10, CANVAS.h),
+        "c_pad",
+        "r_" + n(shadowRadius, 0, 200),
+        "o_" + n(CHIP_STRIP.shadowOpacity, 1, 100),
+      ].join(",") + "/" + [
+        "fl_layer_apply",
+        "g_north_west",
+        "x_" + n(pill.x - CHIP_STRIP.shadowGrow, 0, CANVAS.w),
+        "y_" + n(pill.y + CHIP_STRIP.shadowOffsetY, 0, CANVAS.h),
+      ].join(","));
+      // pill background
+      segs.push([
+        "l_text:" + FONT_MAP.arial.replace("%%SIZE%%", "10") + ":%2520",
+        "b_rgb:" + chipBgHex,
+        "co_rgb:" + chipBgHex,
+        "w_" + n(pill.w, 20, CANVAS.w),
+        "h_" + n(pill.h, 10, CANVAS.h),
+        "c_pad",
+        "r_" + chipRadius,
+      ].join(",") + "/" + [
+        "fl_layer_apply",
+        "g_north_west",
+        "x_" + n(pill.x, 0, CANVAS.w),
+        "y_" + n(pill.y, 0, CANVAS.h),
+      ].join(","));
+      // label (optically centered)
+      const cxPill = pill.x + Math.floor(pill.w / 2);
+      const cyPill = pill.y + Math.floor(pill.h / 2);
+      const opticalDy = -Math.round(fontSize * CHIP_STRIP.opticalLiftPct);
+      const canvasCX = Math.floor(CANVAS.w / 2);
+      const canvasCY = Math.floor(CANVAS.h / 2);
+      const chipFont = FONT_MAP.arial_bold.replace("%%SIZE%%", String(n(fontSize, 20, 100)));
+      segs.push([
+        "l_text:" + chipFont + ":" + cloudinaryTextEscape(label),
+        "co_rgb:" + chipTextHex,
+      ].join(",") + "/" + [
+        "fl_layer_apply",
+        "g_center",
+        "x_" + n(cxPill - canvasCX, -CANVAS.w, CANVAS.w),
+        "y_" + n(cyPill - canvasCY + opticalDy, -CANVAS.h, CANVAS.h),
+      ].join(","));
+    }
+    middleBand = segs.join("/");
+  } else {
+    const benefitSize = n(inp.benefitSize ?? 40, 20, 120);
+    const benefitLines = inp.benefitLines ?? [];
+    const benefitFont = FONT_MAP.arial.replace("%%SIZE%%", String(benefitSize));
+    middleBand = [
+      "l_text:" + benefitFont + ":" + cloudinaryTextEscape(benefitLines.join("\n")),
+      "co_rgb:" + inkB,
+      "w_" + n(L.benefitBox.w, 50, CANVAS.w),
+      "c_fit",
+    ].join(",") + "/" + [
+      "fl_layer_apply",
+      "g_north_west",
+      "x_" + n(L.benefitBox.x, 0, CANVAS.w),
+      "y_" + n(L.benefitBox.y, 0, CANVAS.h),
+    ].join(",");
+  }
 
   // ── CTA button v6: shadow → rounded pill → text (optically centered) ──
   const pill = inp.ctaPill ?? computeCtaPill(L, inp.ctaText);
@@ -379,7 +510,7 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "y_" + n(pillCenterY - canvasCY + opticalDy, -CANVAS.h, CANVAS.h),
   ].join(",");
 
-  const segs = [baseCanvas, productLayer, headline, benefit, ctaShadow, ctaBg, ctaLayer, "f_png"].join("/");
+  const segs = [baseCanvas, productLayer, headline, middleBand, ctaShadow, ctaBg, ctaLayer, "f_png"].join("/");
   // Cloudinary /image/fetch/ terminates with a neutral base canvas. The product
   // source is an explicit l_fetch overlay so all geometry is auditable.
   return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${BASE_CANVAS_URL}`;
