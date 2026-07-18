@@ -357,15 +357,23 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
   ].join(",");
 
   // Label — optically centered.
+  // Text layer width is the pill width minus horizontal padding; we then
+  // shift the layer's x by half of the leftover slack so the rendered text
+  // is horizontally centered inside the pill (Cloudinary's l_text with
+  // c_fit renders left-aligned within the given width).
+  const labelLayerW = pill.box.w - CTA_BUTTON.hPad;
+  const labelX = pill.box.x + Math.round((pill.box.w - labelLayerW) / 2);
   const ctaLayer = [
     "l_text:" + ctaFont + ":" + cloudinaryTextEscape(inp.ctaText),
     "co_rgb:" + ctaText,
-    "w_" + n(pill.box.w - CTA_BUTTON.hPad, 50, CANVAS.w),
+    "w_" + n(labelLayerW, 50, CANVAS.w),
     "c_fit",
+    "co_rgb:" + ctaText,
+    "g_center",
   ].join(",") + "/" + [
     "fl_layer_apply",
     "g_north_west",
-    "x_" + n(pill.box.x, 0, CANVAS.w),
+    "x_" + n(labelX, 0, CANVAS.w),
     "y_" + n(pill.textY, 0, CANVAS.h),
   ].join(",");
 
