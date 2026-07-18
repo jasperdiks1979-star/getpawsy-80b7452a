@@ -30,6 +30,8 @@ export interface CanonicalFunnelResponse {
     revenue: number;
     currency: string;
     conversion_rate: number;
+    human_visitors?: number;
+    raw_sessions_all?: number;
   };
   funnel: Array<{ stage: CanonicalStage; count: number }>;
   countries: Array<{
