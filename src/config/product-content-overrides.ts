@@ -49,6 +49,18 @@ export interface ProductContentOverride {
   steps?: PdpStep[];
   faqs?: PdpFaq[];
   hideSections?: PdpSectionFlag[];
+  intro?: string;
+  inStockLine?: string;
+  verifiedShippingLine?: string;
+  supportLabel?: string;
+  suppressUrgencyLine?: boolean;
+  hideAdIntentHeadline?: boolean;
+  hideEmotionalHook?: boolean;
+  galleryFilter?: {
+    imageOnly?: boolean;
+    maxImages?: number;
+    blockedUrlTokens?: string[];
+  };
 }
 
 /**
@@ -59,6 +71,19 @@ export interface ProductContentOverride {
  * "50% less scooping", and specific dimensions are intentionally omitted.
  */
 const AUTOMATIC_CAT_LITTER_BOX: ProductContentOverride = {
+  intro:
+    'A self-cleaning litter box for busy cat homes, with a 60 L interior, app scheduling, usage monitoring, and an infrared exit sensor that starts cleaning only after your cat leaves.',
+  inStockLine: 'In stock — ships to United States',
+  verifiedShippingLine: 'Estimated delivery: 5–10 business days',
+  supportLabel: 'Customer Support',
+  suppressUrgencyLine: true,
+  hideAdIntentHeadline: true,
+  hideEmotionalHook: true,
+  galleryFilter: {
+    imageOnly: true,
+    maxImages: 15,
+    blockedUrlTokens: ['cinematic', 'video', '.mp4', '.webm', '.mov', '.m4v', '.avi', '.m3u8'],
+  },
   benefits: [
     'Automatic cleaning cycle after each visit',
     'App control for schedules and usage monitoring',
