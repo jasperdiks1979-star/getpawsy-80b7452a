@@ -3,8 +3,9 @@ import {
   auditLayout, auditUrl, b64UrlEncode, buildCloudinaryUrl, fitText,
   parsePngDimensions, plan, sha256Hex, storageKey,
   validateBenefit, validateCta, validateHeadline,
+  computeCtaPill,
 } from "./compositor.ts";
-import { CANVAS, LAYOUTS, occupancy, overlaps } from "./layouts.ts";
+import { CANVAS, CTA_BUTTON, LAYOUTS, occupancy, overlaps, withinSafe } from "./layouts.ts";
 
 const RUN = "11111111-2222-3333-4444-555555555555";
 const PROD = "b7133bed-107c-4463-8277-1bd8ba7d9b94";
@@ -321,6 +322,110 @@ Deno.test("cloudinary overlays: positions are attached to fl_layer_apply", () =>
   assertMatch(url, /fl_layer_apply,g_north_west,x_210,y_500/);
   assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_120/);
   assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_370/);
-  assertMatch(url, /fl_layer_apply,g_north_west,x_400,y_1600/);
+  // v6 CTA: the pill background is placed with g_north_west at the pill's
+  // top-left; the label is applied with g_center offsets from canvas center.
+  assertMatch(url, /b_rgb:0F0D0B,co_rgb:0F0D0B,w_420,h_110,c_pad,r_28\/fl_layer_apply,g_north_west,x_390,y_1600/);
+  // Label uses g_center with x offset = pillCenterX - canvasCenterX = 0
+  // (pill perfectly centered around canvas center x=600).
+  assertMatch(url, /Arial_40_bold:View%2520Product,co_rgb:FFFFFF\/fl_layer_apply,g_center,x_0,y_/);
   assertNotMatch(url, /g_north_west,x_100,y_120,w_1000,c_fit\/fl_layer_apply/);
+});
+
+// ─── CTA button v6 ───────────────────────────────────────────────────────
+
+Deno.test("cta v6: pill has rounded corners and drop shadow", () => {
+  const p = plan(goodReq());
+  assert(p.ok, p.reason);
+  const url = p.cloudinaryUrl!;
+  // Main pill r_28
+  assertMatch(url, /b_rgb:0F0D0B,co_rgb:0F0D0B,w_\d+,h_\d+,c_pad,r_28/);
+  // Shadow layer: black fill, rounded, low opacity
+  assertMatch(url, /b_rgb:000000,co_rgb:000000,w_\d+,h_\d+,c_pad,r_\d+,o_\d+/);
+});
+
+Deno.test("cta v6: audit accepts r_ and o_ on text overlays but not product", () => {
+  const p = plan(goodReq());
+  assert(p.ok, p.reason);
+  const audit = auditUrl(p.cloudinaryUrl!);
+  assert(audit.ok, `unexpected violations: ${audit.violations.join(",")}`);
+  // Manually inject r_16 into the l_fetch product segment → audit must reject.
+  const bad = p.cloudinaryUrl!.replace(
+    /l_fetch:([A-Za-z0-9_-]+),w_/,
+    "l_fetch:$1,r_16,w_",
+  );
+  const badAudit = auditUrl(bad);
+  assertFalse(badAudit.ok);
+});
+
+Deno.test("cta v6: dynamic width scales with label length", () => {
+  const L = LAYOUTS.editorial_hero;
+  const shortPill = computeCtaPill(L, "Shop Now");
+  const medPill = computeCtaPill(L, "See Details");
+  const longPill = computeCtaPill(L, "Explore Product");
+  // Longer labels produce wider (or at least ≥) pills.
+  assert(shortPill.box.w <= medPill.box.w);
+  assert(medPill.box.w <= longPill.box.w);
+  // All pills honor the minimum width.
+  assert(shortPill.box.w >= CTA_BUTTON.minWidth);
+  // All pills fit inside the layout reservation.
+  assert(longPill.box.w <= L.ctaBox.w);
+});
+
+Deno.test("cta v6: pill horizontally centered inside reservation", () => {
+  for (const L of Object.values(LAYOUTS)) {
+    for (const label of ["Shop Now", "See Details", "Explore Product"]) {
+      const pill = computeCtaPill(L, label);
+      const pillCenter = pill.box.x + pill.box.w / 2;
+      const reservCenter = L.ctaBox.x + L.ctaBox.w / 2;
+      const deviation = Math.abs(pillCenter - reservCenter);
+      assert(
+        deviation <= 1,
+        `${L.key}/${label}: pill center off by ${deviation}px`,
+      );
+    }
+  }
+});
+
+Deno.test("cta v6: pill always stays inside canvas safe area", () => {
+  for (const L of Object.values(LAYOUTS)) {
+    for (const label of ["Shop Now", "See Details", "Explore Product", "Discover More"]) {
+      const pill = computeCtaPill(L, label);
+      assert(
+        withinSafe(pill.box),
+        `${L.key}/${label}: pill outside safe area (${JSON.stringify(pill.box)})`,
+      );
+    }
+  }
+});
+
+Deno.test("cta v6: label text bounds fit inside pill with min padding", () => {
+  for (const L of Object.values(LAYOUTS)) {
+    for (const label of ["Shop Now", "See Details", "Explore Product"]) {
+      const pill = computeCtaPill(L, label);
+      // Horizontal padding: text width vs pill width
+      const hPad = (pill.box.w - pill.textWidth) / 2;
+      assert(
+        hPad >= CTA_BUTTON.hPad - 4, // ≤4px estimator tolerance
+        `${L.key}/${label}: hPad=${hPad} < ${CTA_BUTTON.hPad}`,
+      );
+      // Vertical padding: font size vs pill height, symmetric under optical lift
+      const remaining = pill.box.h - pill.fontSize;
+      assert(remaining / 2 >= CTA_BUTTON.vPadMin,
+        `${L.key}/${label}: vPad=${remaining / 2} < ${CTA_BUTTON.vPadMin}`);
+    }
+  }
+});
+
+Deno.test("cta v6: optical center shifts text upward by ~6% of font size", () => {
+  const L = LAYOUTS.editorial_hero;
+  const pill = computeCtaPill(L, "Shop Now");
+  const mathematicalY = pill.box.y + Math.round((pill.box.h - pill.fontSize) / 2);
+  const lift = mathematicalY - pill.textY;
+  const expected = Math.round(pill.fontSize * CTA_BUTTON.opticalLiftPct);
+  assertEquals(lift, expected);
+});
+
+Deno.test("cta v6: extended approved CTAs accepted", () => {
+  assert(validateCta("Explore Product").ok);
+  assert(validateCta("Discover More").ok);
 });

@@ -1,156 +1,73 @@
+# Pinterest CTA Button — Global Repair Plan
 
-# Phase 4B — Admin Canary for `canonical_traffic_quality_v2`
+## 1. Root-cause fix in the shared compositor
 
-Scope: expose the new traffic classification (post-deploy only) to admins behind a reversible feature flag. Leave every public/default path — dashboard, API defaults, CSV, markdown — untouched. No backfill. No default flip.
+**File:** `supabase/functions/pinterest-deterministic-compositor/compositor.ts` (+ `layouts.ts`)
 
-## A. Feature Flag
+Current defects:
+- CTA pill is a flat `c_pad` rectangle with no corner radius, no shadow, no top highlight → looks like a pasted black box.
+- Text is placed with `y = ctaBox.y + (h - ctaSize)/2`, i.e. mathematical centering on font em-height, not optical centering → labels drift high/low depending on ascenders/descenders.
+- `ctaBox` width is hard-coded at 400 px in every layout regardless of label length ("View Product", "Explore Product" overflow risk; short labels look cramped).
+- `BANNED_TRANSFORMS` currently rejects any `r_\d+` globally, blocking rounded corners on the CTA itself.
 
-- Add row to existing `app_config` table (already present):
-  - key: `canonical_traffic_quality_v2.enabled` → `false`
-  - key: `canonical_traffic_quality_v2.admin_only` → `true`
-- Client helper `src/lib/featureFlags/canonicalV2.ts`:
-  - `useCanonicalV2Flag()` → reads `app_config` + `has_role(auth.uid(),'admin')`, returns `{ enabled, isAdmin, allowV2 }`.
-  - Falls back to `false` on any error (fail-closed).
-- Server helper `supabase/functions/_shared/canonicalV2Flag.ts`:
-  - Reads `app_config` + verifies JWT + admin role via `has_role`.
-  - Only returns `true` when both flag on AND caller is admin.
+Changes:
+1. Introduce a `renderCtaButton()` helper that emits **three stacked Cloudinary layers**:
+   - Shadow layer (soft dark drop, `r_max` rounded, offset +6 px, low opacity).
+   - Main pill (`b_rgb:0F0D0B`, `r_24`, subtle 1 px inner top highlight via a second thin rounded rect at 8% white).
+   - Bottom edge darker rounded rect for physical depth.
+2. **Dynamic width**: `buttonWidth = clamp(minWidth=420, textWidthEstimate + 2*hPad(48), maxWidth=0.72*CANVAS.w)`. Text width estimated from `ctaText.length * ctaSize * 0.55` (Arial bold approx). Recompute `ctaBox.x` to keep alignment (left-anchored or centered per layout preset).
+3. **Optical centering**: use `y = ctaBox.y + Math.round((ctaBox.h - ctaSize) / 2) - Math.round(ctaSize * 0.06)` (Arial cap-height adjustment ≈ 6% lift). Add unit tests for short/medium/long labels.
+4. **Height**: bump `ctaBox.h` from 110 → 104 min, keep 22 px min vertical padding, 42 px min horizontal padding.
+5. **Radius**: use `r_28` on the CTA pill. Narrow `BANNED_TRANSFORMS` so `r_\d+` is only banned inside the product-layer segment (scope via URL segment position, not global regex). Product layer keeps sharp geometry.
+6. Update `auditLayout()` gates: enforce new min height, radius consistency, horizontal-center deviation ≤ 4 px, vertical optical deviation ≤ 5 px, text bounds inside pill bounds with ≥ 22 px / 42 px padding.
+7. Update `compositor.test.ts` with:
+   - Snapshot of new URL segments (radius + shadow present).
+   - Width scales for short ("Shop Now"), medium ("See Details"), long ("Explore Product").
+   - Audit rejects if radius is missing.
 
-## B. API Envelope — `analytics-canonical`
+## 2. Apply the fix in the golden-pin variant
 
-Backward-compatible extension. All existing fields preserved unchanged.
+`supabase/functions/pinterest-golden-pin-litter-box/compositor.ts` + `layouts.ts` are vendored copies. Mirror the same changes so the golden-pin regeneration produces the new button.
 
-- New query param `?envelope=v2` (only honored when server flag helper returns true).
-- Legacy `envelope=v1` (default) returns the current shape byte-for-byte.
-- v2 adds:
-  ```
-  raw_sessions, commercial_sessions,
-  human_sessions, uncertain_sessions,
-  crawler_sessions, bot_sessions, technical_sessions, internal_sessions,
-  raw_visitors, commercial_visitors, human_visitors, uncertain_visitors,
-  crawler_visitors, bot_visitors, technical_visitors, internal_visitors,
-  classification_version, classification_coverage_pct,
-  legacy_unclassified_sessions, phase4a_cutoff_iso
-  ```
-- Bucket rules (mutually exclusive, in order):
-  1. `is_internal` → internal
-  2. `technical_path IS NOT NULL` → technical
-  3. `is_bot AND bot_confidence >= 0.7` → bot
-  4. `traffic_quality = 'crawler'` → crawler
-  5. `traffic_quality = 'uncertain'` → uncertain
-  6. `traffic_quality = 'human'` → human
-  7. else if `ingested_at < phase4a_cutoff` → legacy_unclassified
-  8. else → uncertain (fail-safe, never counted as human)
-- `commercial_sessions = human + uncertain` (never bot/crawler/technical/internal).
-- Historical rows (before `2026-07-17T23:20:00Z`) always emitted as `legacy_unclassified`; NEVER folded into human.
+## 3. Affected-pin inventory (read-only DB scan)
 
-## C. Admin Dashboard Canary
+Query `public.pinterest_pins` (or the canonical pins table) for pins whose asset was produced by:
+- `pinterest-deterministic-compositor`
+- `pinterest-golden-pin-litter-box`
+- `pinterest-three-pin-replacement` / `pinterest-v4-replacement` / `pinterest-pin6-v5-replacement` / `pinterest-5-pin-pilot`
+- any row where `cta_text ∈ {Shop Now, View Product, See Details, Learn More, Explore Product, Discover More}` AND `template_version < 'cta-v6'`.
 
-New route: `src/pages/admin/AnalyticsCanaryV2.tsx` mounted at `/admin/analytics/canary-v2`.
-- Route guarded by admin `has_role` check + `useCanonicalV2Flag`.
-- Layout: two columns.
-  - Left "Huidige weergave (v1)" — calls existing endpoint, renders existing totals.
-  - Right "Canary (v2)" — calls `?envelope=v2`, renders buckets.
-- Bucket selector (default `Bezoekers (human + uncertain)`):
-  - `Echte bezoekers` → human only.
-  - `Bezoekers` → human + uncertain, with visible breakdown badge (`X human · Y uncertain`).
-  - `Crawler/Bot`, `Technical`, `Internal`, `Raw` — each selectable.
-- Legacy period ribbon: any bar/row before cutoff labeled `legacy_unclassified` and styled grey.
-- Uncertain sessions never rendered as "proven human"; tooltip explains classification.
+Produce a list with `{pin_id, product_id, cta_text, board_id, destination_url, source_asset_url, published_at}`.
 
-## D. CSV + Markdown Canary Export
+## 4. Regeneration + replacement (per pin, sequential, fail-closed)
 
-- New edge function `analytics-canonical-export-v2` (admin+flag gated).
-- Query params: `format=csv|md`, `period=1h|10h|24h|7d`.
-- CSV columns: `session_id, occurred_at, traffic_quality, is_bot, bot_reason, bot_confidence, is_internal, technical_path, classification_version, engagement_ms, interaction_count, page_path, visitor_id`.
-- Markdown: bucket totals table + parity block + `legacy_unclassified` line.
-- Existing global CSV/markdown paths untouched.
+For each affected pin:
+1. Re-run the compositor with the new CTA system (0 paid credits — Cloudinary fetch only).
+2. Local audit gate (`auditLayout` + `auditUrl` + geometry checks). If any fails → SKIP, log reason.
+3. Preserve title, description, alt, board, destination URL + UTM.
+4. Attempt `PATCH /v5/pins/:id` with new media (Pinterest API generally does **not** allow media replace → expected to fail). On failure, fall back to `create pin` on the same board with identical metadata + idempotency key `cta-v6:<old_pin_id>`.
+5. Read back new pin URL, verify HTTP 200 + correct board.
+6. Only after new pin verified: `DELETE` old pin. Never delete before read-back.
+7. Persist mapping (old_pin_id → new_pin_id) in `pinterest_candidate_run_items` or equivalent audit table.
 
-## E. Parity Validation
+New orchestrator function: `supabase/functions/pinterest-cta-v6-repair/index.ts` (sequential, budget=0 credits, per-run cap = 3 pins for the first canary batch, then unlocked after user re-approval).
 
-New edge function `analytics-canonical-parity-check` (admin+flag gated, read-only).
-For each period `1h / 10h / 24h / 7d`:
-- Query API v2, dashboard aggregation SQL, CSV aggregation, markdown aggregation.
-- Assert:
-  - `raw = human + uncertain + crawler + bot + technical + internal + legacy_unclassified`
-  - `commercial = human + uncertain`
-  - technical never in human/uncertain
-  - crawler/bot never in commercial
-  - internal never in commercial
-  - `orders` and `checkout_funnel_events` counts preserved between v1 and v2.
-- Emits `PARITY_PASS` / `PARITY_FAIL` per period + JSON evidence.
+## 5. Phased execution
 
-## F. Historical Reporting (no backfill)
+- **Phase A — Code + tests only.** Ship compositor changes + tests. Zero live-pin writes. Produce a rendered PNG contact sheet for the 3 sample CTAs at `/mnt/documents/cta-v6-preview.png` (short / medium / long labels).
+- **Phase B — Canary (3 pins).** After user sight-checks the preview, run the repair against exactly the 3 named pins (Foldable Dog Bowl, Steel Litter Box, Smart Self-Cleaning Cat Litter Box). Fail-closed.
+- **Phase C — Sweep.** After canary PASS, run the orchestrator over the full inventory from step 3.
 
-The v2 envelope includes:
-- `classified_sessions_post_deploy`
-- `unclassified_historical_sessions`
-- `estimated_backfill_coverage_pct` = joinable by session_id / total historical
-- `joinable_by_session_id`
-- `joinable_by_visitor_fallback`
-- `permanently_unclassifiable`
+## 6. Report
 
-No writes to historical rows. `legacy_unclassified` bucket surfaced in UI.
+Final `PINTEREST_CTA_BUTTON_GLOBAL_REPAIR_REPORT` in the exact 12-section structure requested.
 
-## G. Safety & Rollback
+## 7. Non-goals / preserved
 
-- Rollback: set `canonical_traffic_quality_v2.enabled=false` in `app_config`. Client + server helpers immediately return false → dashboard renders v1 only, API drops v2 fields.
-- No schema drop needed. No RLS change. No event deletion. No visitor-ID rewrite.
-- Documented in `docs/phase-4b-rollback.md` with one-line SQL to flip flag.
+- No changes to headline, benefit copy, product image, background, logo, board, destination, UTMs, alt.
+- No paid image-generation credits (Cloudinary fetch URLs only).
+- No red review annotations were ever baked into the compositor output — the red circles/arrows in the user's screenshots are external markup; nothing to strip.
 
-## H. Tests
+---
 
-`supabase/functions/analytics-canonical/__tests__/v2-envelope.test.ts` and `src/lib/featureFlags/__tests__/canonicalV2.test.ts`. Covers all 10 requirements:
-1. Flag on + admin → v2 buckets present.
-2. Flag off → v2 fields absent, v1 identical to baseline.
-3. Non-admin + flag on → v2 fields absent, 403 on canary route.
-4. Commercial excludes bot/crawler/technical/internal.
-5. Human-only excludes uncertain.
-6. API/dashboard/CSV/markdown numeric parity (fixture dataset).
-7. Historical row without classification → `legacy_unclassified`, never human.
-8. Technical routes excluded from commercial in all four outputs.
-9. Orders count identical between v1 and v2.
-10. Flag flip false→true→false round-trip restores exact v1 response bytes.
-
-## I. Rollback Proof
-
-Run inside the test suite: enable flag, snapshot v2 API response, disable flag, snapshot v1 API response, assert v1 snapshot equals pre-enable v1 snapshot (byte-equal on the shared field subset).
-
-## J. Final Report
-
-Written to `/mnt/documents/PHASE_4B_ADMIN_CANARY_REPORT.md` with:
-- files/functions changed
-- feature-flag SQL
-- canary screenshot (Playwright, admin login)
-- example v1 vs v2 API JSON
-- 4-period parity table
-- classified vs legacy-unclassified counts
-- test results (green)
-- rollback proof snippet
-- mutation ledger (only `app_config` inserts, `analytics_canonical` non-destructive extension, new files)
-- confirmation: **zero historical backfill**, **zero destructive migration**, **default flag = false**.
-
-## Guardrails Respected
-
-- No default flip (`enabled=false` stays after deploy).
-- No historical rewrite.
-- No removal of the old analytics path.
-- No raw event deletion.
-- Old dashboard + old API path remain the sole default for every non-admin.
-
-## Technical Details
-
-- Files touched:
-  - `supabase/migrations/<ts>_phase4b_canary_flag.sql` (2× `app_config` inserts).
-  - `supabase/functions/_shared/canonicalV2Flag.ts` (new).
-  - `supabase/functions/analytics-canonical/index.ts` (add v2 branch, gated).
-  - `supabase/functions/analytics-canonical-export-v2/index.ts` (new).
-  - `supabase/functions/analytics-canonical-parity-check/index.ts` (new).
-  - `src/lib/featureFlags/canonicalV2.ts` (new).
-  - `src/pages/admin/AnalyticsCanaryV2.tsx` (new).
-  - `src/App.tsx` (add guarded route).
-  - Tests as listed.
-  - Docs: `docs/phase-4b-rollback.md`.
-- No changes to: existing analytics-canonical response for `envelope=v1` / no param, existing dashboard components, existing export functions, existing RLS, existing schemas beyond `app_config` rows.
-- Verdict returned at end: `PHASE_4B_ADMIN_CANARY_PASS` iff all 10 tests + 4 parity periods green and rollback proof passes; otherwise the corresponding failure verdict.
-
-Awaiting approval to implement.
+**Ask before I start:** Approve Phase A → C, or restrict to Phase A only (code + preview) for your sight-check first?

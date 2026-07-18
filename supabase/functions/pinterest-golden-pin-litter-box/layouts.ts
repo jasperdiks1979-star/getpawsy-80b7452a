@@ -30,7 +30,23 @@ export const INK = {
   headline: "1F1B16",   // near-black warm
   benefit: "3B3226",
   ctaText: "FFFFFF",
-  ctaFill: "1F1B16",
+  ctaFill: "0F0D0B",     // deep charcoal, near-black warm undertone
+  ctaShadow: "000000",   // shadow beneath pill
+} as const;
+
+// CTA button system (v6). Reusable geometry constants applied at URL-build
+// time so every layout renders the same premium push-button.
+export const CTA_BUTTON = {
+  radius: 28,          // corner radius on the pill
+  minHeight: 104,      // minimum pill height at 1200x1800
+  hPad: 48,            // horizontal padding around text
+  vPadMin: 22,         // vertical padding around text (min)
+  minWidth: 420,       // pill minimum width
+  maxWidthFrac: 0.72,  // pill maximum width as fraction of canvas width
+  shadowOffsetY: 8,    // shadow drop distance below pill
+  shadowOpacity: 28,   // 0-100 (Cloudinary o_ token uses percentage)
+  shadowGrow: 6,       // shadow rect is grown by this many px on all sides
+  opticalLiftPct: 0.06, // shift text up by this fraction of font size for optical centering
 } as const;
 
 export interface Box { x: number; y: number; w: number; h: number }
@@ -80,7 +96,9 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 46,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
+    // ctaBox is now a *reservation* area. The actual pill is centered inside
+    // this box at URL-build time and may be narrower for short labels.
+    ctaBox: { x: 240, y: 1600, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.35, 0.55],
   },
@@ -98,7 +116,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 44,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
+    ctaBox: { x: 240, y: 1600, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.30, 0.50],
   },
@@ -116,7 +134,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 44,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1490, w: 400, h: 110 },
+    ctaBox: { x: 240, y: 1490, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.30, 0.50],
   },
@@ -134,7 +152,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 44,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
+    ctaBox: { x: 240, y: 1600, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.30, 0.50],
   },
@@ -152,7 +170,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 48,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1580, w: 400, h: 110 },
+    ctaBox: { x: 240, y: 1580, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.30, 0.50],
   },
@@ -170,7 +188,7 @@ export const LAYOUTS: Record<LayoutVariant, LayoutSpec> = {
     benefitMaxSize: 44,
     benefitMinSize: 34,
     benefitMaxLines: 2,
-    ctaBox: { x: 400, y: 1600, w: 400, h: 110 },
+    ctaBox: { x: 240, y: 1600, w: 720, h: 110 },
     ctaSize: 40,
     targetOccupancy: [0.25, 0.45],
   },
