@@ -2,8 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { getShortBenefits } from './ClarityIntro';
+import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface WhyPetParentsLoveThisProps {
+  productId?: string;
   productName: string;
   category: string;
   className?: string;
@@ -20,20 +22,19 @@ interface WhyPetParentsLoveThisProps {
  * For cold traffic (Pinterest) who need reassurance
  */
 export const WhyPetParentsLoveThis: React.FC<WhyPetParentsLoveThisProps> = ({
+  productId,
   productName,
   category,
   className = '',
 }) => {
-  const benefits = getShortBenefits(productName, category);
-  
-  // Additional universal benefits that apply to all pet products
-  const universalBenefits = [
-    'Designed with your pet\'s comfort in mind',
-    'Easy to incorporate into daily routines',
-  ];
-  
-  // Combine product-specific benefits with universal ones
-  const allBenefits = [...benefits, ...universalBenefits].slice(0, 5);
+  const override = getProductContentOverride(productId);
+  const allBenefits = override?.benefits && override.benefits.length > 0
+    ? override.benefits.slice(0, 5)
+    : [
+        ...getShortBenefits(productName, category),
+        'Designed with your pet\'s comfort in mind',
+        'Easy to incorporate into daily routines',
+      ].slice(0, 5);
   
   return (
     <motion.div
