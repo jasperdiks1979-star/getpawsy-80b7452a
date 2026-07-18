@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
-import { Play } from "lucide-react";
+import { Play, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,12 @@ interface Props {
   productName: string;
   posterUrl?: string;
   className?: string;
+  /**
+   * Max videos shown up-front. Prevents the "3 stacked repetitive videos"
+   * amateur look on PDPs where suppliers ship near-identical slideshow
+   * clips. Extras stay accessible behind a "More clips" reveal. Default 1.
+   */
+  maxVisible?: number;
 }
 
 /**
@@ -27,7 +33,7 @@ interface Props {
  * Emits a VideoObject schema for the first video so it's eligible for the
  * Google video carousel.
  */
-export function ProductVideoSection({ productId, productName, posterUrl, className }: Props) {
+export function ProductVideoSection({ productId, productName, posterUrl, className, maxVisible = 1 }: Props) {
   const { data } = useQuery({
     queryKey: ["product-media-videos", productId],
     queryFn: async (): Promise<ProductVideo[]> => {
@@ -43,10 +49,13 @@ export function ProductVideoSection({ productId, productName, posterUrl, classNa
     staleTime: 5 * 60 * 1000,
   });
 
+  const [showAll, setShowAll] = useState(false);
   const videos = data ?? [];
   if (videos.length === 0) return null;
 
   const firstVideoUrl = videos[0]?.storage_url;
+  const primary = videos.slice(0, Math.max(1, maxVisible));
+  const extras = videos.slice(primary.length);
 
   return (
     <section className={cn("w-full space-y-3", className)} aria-label="Product videos">
@@ -65,8 +74,8 @@ export function ProductVideoSection({ productId, productName, posterUrl, classNa
           </script>
         </Helmet>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {videos.map((v, idx) => (
+      <div className="w-full">
+        {primary.map((v, idx) => (
           <ProductVideoTile
             key={v.id}
             src={v.storage_url}
@@ -75,6 +84,28 @@ export function ProductVideoSection({ productId, productName, posterUrl, classNa
           />
         ))}
       </div>
+      {extras.length > 0 && !showAll && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+        >
+          Show {extras.length} more clip{extras.length !== 1 ? "s" : ""}
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {extras.length > 0 && showAll && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {extras.map((v, idx) => (
+            <ProductVideoTile
+              key={v.id}
+              src={v.storage_url}
+              posterUrl={posterUrl}
+              label={`${productName} – clip ${primary.length + idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
