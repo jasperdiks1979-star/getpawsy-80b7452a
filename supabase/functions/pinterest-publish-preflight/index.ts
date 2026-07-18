@@ -322,23 +322,33 @@ Deno.serve(async (req) => {
   const gates: Gate[] = [metaGate, pdpGate, boardGate, imgResult.imgGate, imgResult.dupGate];
   const preflightPass = gates.every((g) => g.ok);
 
-  // Persist an audit row regardless of outcome.
-  await sb.from("pinterest_integrity_reports").insert({
-    report_type: "publish_preflight",
-    payload: {
-      trace_id: traceId,
-      product_slug: input.product_slug,
-      product_id: input.product_id ?? null,
-      board_id: input.board_id,
-      destination_url: input.destination_url,
-      image_hash: imgResult.imageHash ?? null,
-      idempotency_key: input.idempotency_key ?? null,
-      gates,
-      preflight_pass: preflightPass,
-    },
-  }).catch(() => { /* audit best-effort */ });
+  // Persist an audit row regardless of outcome (best-effort).
+  const auditBase = {
+    trace_id: traceId,
+    product_slug: input.product_slug,
+    product_id: input.product_id ?? null,
+    board_id: input.board_id,
+    destination_url: input.destination_url,
+    image_hash: imgResult.imageHash ?? null,
+    idempotency_key: input.idempotency_key ?? null,
+    preflight_pass: preflightPass,
+    failed_gates: gates.filter((g) => !g.ok).map((g) => g.name),
+    gates,
+    executed: false as boolean,
+    publisher_function: input.publisher_function ?? null,
+    publisher_status: null as number | null,
+    publisher_body: null as unknown,
+    pinterest_pin_id: null as string | null,
+    pin_url: null as string | null,
+    public_verified: null as boolean | null,
+    public_verification_detail: null as string | null,
+    verdict: preflightPass ? "PREFLIGHT_PASS" : "PREFLIGHT_FAIL",
+  };
 
   if (!preflightPass) {
+    await sb.from("pinterest_publish_preflight_audits").insert(auditBase).then(
+      () => {}, () => {},
+    );
     return new Response(JSON.stringify({
       ok: false, traceId, verdict: "PREFLIGHT_FAIL",
       failed_gates: gates.filter((g) => !g.ok).map((g) => g.name),
@@ -347,6 +357,9 @@ Deno.serve(async (req) => {
   }
 
   if (!input.execute) {
+    await sb.from("pinterest_publish_preflight_audits").insert(auditBase).then(
+      () => {}, () => {},
+    );
     return new Response(JSON.stringify({
       ok: true, traceId, verdict: "PREFLIGHT_PASS", gates,
       image_hash: imgResult.imageHash ?? null,
@@ -367,6 +380,12 @@ Deno.serve(async (req) => {
   };
   const pub = await invokePublisher(input.publisher_function, pubBody);
   if (!pub.ok) {
+    await sb.from("pinterest_publish_preflight_audits").insert({
+      ...auditBase, executed: true,
+      publisher_status: pub.status,
+      publisher_body: pub.body,
+      verdict: "PUBLISH_FAIL",
+    }).then(() => {}, () => {});
     return new Response(JSON.stringify({
       ok: false, traceId, verdict: "PUBLISH_FAIL",
       gates, publisher: { status: pub.status, body: pub.body },
@@ -380,6 +399,13 @@ Deno.serve(async (req) => {
     (pinId ? `https://www.pinterest.com/pin/${pinId}/` : null)) as string | null;
 
   if (!pinUrl) {
+    await sb.from("pinterest_publish_preflight_audits").insert({
+      ...auditBase, executed: true,
+      publisher_status: pub.status,
+      publisher_body: pub.body,
+      pinterest_pin_id: pinId,
+      verdict: "PUBLISHED_UNVERIFIABLE",
+    }).then(() => {}, () => {});
     return new Response(JSON.stringify({
       ok: false, traceId, verdict: "PUBLISHED_UNVERIFIABLE",
       gates, publisher: pub.body,
@@ -390,16 +416,17 @@ Deno.serve(async (req) => {
   const publicGate = await verifyLivePin(pinUrl);
   gates.push(publicGate);
 
-  await sb.from("pinterest_integrity_reports").insert({
-    report_type: "publish_verification",
-    payload: {
-      trace_id: traceId,
-      pinterest_pin_id: pinId,
-      pin_url: pinUrl,
-      product_slug: input.product_slug,
-      public_gate: publicGate,
-    },
-  }).catch(() => { /* audit best-effort */ });
+  await sb.from("pinterest_publish_preflight_audits").insert({
+    ...auditBase, executed: true,
+    publisher_status: pub.status,
+    publisher_body: pub.body,
+    pinterest_pin_id: pinId,
+    pin_url: pinUrl,
+    public_verified: publicGate.ok,
+    public_verification_detail: publicGate.detail ?? null,
+    gates,
+    verdict: publicGate.ok ? "PUBLISHED_AND_VERIFIED" : "PUBLISHED_BUT_UNVERIFIED",
+  }).then(() => {}, () => {});
 
   return new Response(JSON.stringify({
     ok: publicGate.ok, traceId,
