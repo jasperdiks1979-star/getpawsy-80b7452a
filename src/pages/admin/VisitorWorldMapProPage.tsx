@@ -10,6 +10,7 @@ import {
   proHoursForRange,
 } from "@/components/admin/visitor-world-map-v2/ProToolbar";
 import { ProKpiHeader } from "@/components/admin/visitor-world-map-v2/ProKpiHeader";
+import { V2EnvelopeBadge } from "@/components/admin/V2EnvelopeBadge";
 import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVisitorFeed";
 import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
@@ -172,6 +173,17 @@ export default function VisitorWorldMapProPage() {
 
           <div className="mb-4">
             <ProKpiHeader state={state} />
+          </div>
+
+          {/* Phase 4C v2 envelope indicator + bucket split. Additive — the
+              legacy KPI grid above stays intact so no admin loses context
+              during rollout. */}
+          <div className="mb-4">
+            <V2EnvelopeBadge
+              hours={proHoursForRange(state.timeRange)}
+              geo={state.usOnly ? "US" : "all"}
+              label="Traffic quality (Pro map)"
+            />
           </div>
 
           {/* Organic / Paid / Total split — canonical, excludes internal & bot */}

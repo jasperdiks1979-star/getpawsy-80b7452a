@@ -10,6 +10,7 @@ import { Activity, Compass, ShieldCheck, RefreshCw, Loader2, Award, AlertTriangl
 import { toast } from "sonner";
 import QualityAndGatesPanel from "@/components/admin/QualityAndGatesPanel";
 import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+import { V2EnvelopeBadge } from "@/components/admin/V2EnvelopeBadge";
 import { useCanonicalFunnel } from "@/hooks/useCanonicalFunnel";
 
 type Overview = {
@@ -152,6 +153,7 @@ export default function CustomerJourneyCenterPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <CanonicalKpiStrip defaultRange="24h" title="Canonical truth — Customer Journey" />
+      <V2EnvelopeBadge hours={hours} geo="all" label="Traffic quality (Customer Journey)" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold flex items-center gap-2">
