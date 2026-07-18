@@ -110,7 +110,10 @@ Deno.serve(async (req) => {
     let body: any = null;
     if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
     const { hours, geo } = parseInput(url, body);
-    const key = `${hours}|${geo}`;
+    const envelope = (url.searchParams.get("envelope") || body?.envelope) === "v2" ? "v2" : "v1";
+    const key = `${hours}|${geo}|${envelope}`;
+    // Deploy marker to prove new bundle is live.
+    (globalThis as any).__ac_deploy_marker = "phase4b-v2-2";
     const now = Date.now();
     const hit = cache.get(key);
     if (hit && now - hit.at < TTL_MS) {
@@ -473,6 +476,7 @@ Deno.serve(async (req) => {
 
     const respBody: Record<string, unknown> = {
       ok: true,
+      deploy_marker: (globalThis as any).__ac_deploy_marker,
       window: { hours, since, until },
       filter: { geo, clean: true, source: "canonical_events + orders(status IN paid,completed)" },
       totals,

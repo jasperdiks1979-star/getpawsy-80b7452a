@@ -17,7 +17,8 @@ export interface ClassifiableRow {
   occurred_at?: string | null;
   ingested_at?: string | null;
   is_internal?: boolean | null;
-  technical_path?: string | null;
+  // Stored as boolean in canonical_events.technical_path (true = technical route hit).
+  technical_path?: boolean | string | null;
   is_bot?: boolean | null;
   bot_confidence?: number | null;
   traffic_quality?: string | null;
@@ -26,7 +27,7 @@ export interface ClassifiableRow {
 
 export function classifyRow(row: ClassifiableRow, phase4aCutoffIso: string): Bucket {
   if (row.is_internal === true) return "internal";
-  if (row.technical_path && String(row.technical_path).length > 0) return "technical";
+  if (row.technical_path === true || (typeof row.technical_path === "string" && row.technical_path.length > 0)) return "technical";
   if (row.is_bot === true && Number(row.bot_confidence ?? 0) >= 0.7) return "bot";
   const tq = String(row.traffic_quality || "").toLowerCase();
   if (tq === "crawler") return "crawler";

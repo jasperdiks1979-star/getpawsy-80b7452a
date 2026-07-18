@@ -1,0 +1,1 @@
+UPDATE public.app_config SET value = 'false'::jsonb, updated_at = now() WHERE key = 'canonical_traffic_quality_v2.enabled';
