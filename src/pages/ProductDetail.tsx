@@ -2160,22 +2160,26 @@ const ProductDetail = () => {
         </motion.div>
 
         {/* 0. Who Is This For? — audience targeting */}
-        {allowReassuranceStack && (
+        {allowReassuranceStack && !isSectionHiddenForProduct(product?.id, 'reassuranceCallout') && (
           <ReassuranceCallout
             category={product.category || undefined}
             productName={product.name}
           />
         )}
-        <ProductIdealFor productName={product.name} category={product.category || ""} />
+        {!isSectionHiddenForProduct(product?.id, 'productIdealFor') && (
+          <ProductIdealFor productName={product.name} category={product.category || ""} />
+        )}
 
         {/* 1. Problem → Solution Block */}
         <ProductProblemSolution productName={product.name} category={product.category || ""} />
 
         {/* Comparison block — "Why this is a better choice" */}
-        <ProductVsAlternatives productName={product.name} category={product.category || ""} />
+        {!isSectionHiddenForProduct(product?.id, 'productVsAlternatives') && (
+          <ProductVsAlternatives productName={product.name} category={product.category || ""} />
+        )}
 
         {/* 4. Visible FAQ Accordion */}
-        <ProductFAQAccordion productName={product.name} category={product.category || undefined} />
+        <ProductFAQAccordion productId={product?.id} productName={product.name} category={product.category || undefined} />
 
         {/* E-E-A-T Trust Block */}
         <WhyTrustGetPawsy variant="pdp" className="mt-8" />
