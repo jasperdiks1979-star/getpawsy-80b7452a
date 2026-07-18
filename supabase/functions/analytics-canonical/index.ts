@@ -417,7 +417,85 @@ Deno.serve(async (req) => {
       ? allSessionsArr.filter((s) => isUS(s.country))
       : allSessionsArr;
 
-    const cleanSessionsArr = sessionsArr.filter((s) => !s.is_internal);
+    // ── Commercial-eligibility join ────────────────────────────────────
+    // Authoritative flags live on `canonical_sessions`. `visitor_activity`
+    // only knew about `is_internal`. Without this join, bot/technical/
+    // excluded-from-commercial traffic bled into the "visitors" KPI (the
+    // documented 55/55 US inflation). Truth predicate:
+    //   NOT is_internal AND NOT is_bot AND NOT technical_path
+    //   AND NOT exclude_from_commercial
+    //   AND (traffic_class ∈ {human classes} OR NULL / traffic_quality is human)
+    type CommercialFlags = {
+      is_internal: boolean;
+      is_bot: boolean;
+      technical_path: boolean;
+      exclude_from_commercial: boolean;
+      traffic_class: string | null;
+      traffic_quality: string | null;
+    };
+    const flagsMap = new Map<string, CommercialFlags>();
+    const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
+    for (let i = 0; i < sidsForFlags.length; i += 500) {
+      const batch = sidsForFlags.slice(i, i + 500);
+      const { data: csRows } = await supabase
+        .from("canonical_sessions")
+        .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
+        .in("session_id", batch);
+      for (const r of csRows ?? []) {
+        flagsMap.set(r.session_id as string, {
+          is_internal: r.is_internal === true,
+          is_bot: r.is_bot === true,
+          technical_path: r.technical_path === true,
+          exclude_from_commercial: r.exclude_from_commercial === true,
+          traffic_class: (r.traffic_class as string | null) ?? null,
+          traffic_quality: (r.traffic_quality as string | null) ?? null,
+        });
+      }
+    }
+    const HUMAN_CLASS = new Set([
+      "CONFIRMED_HUMAN","PROBABLE_HUMAN","HUMAN_CONFIRMED","HUMAN_PROBABLE",
+    ]);
+    const HUMAN_QUALITY = new Set(["confirmed_human","probable_human","human"]);
+    function isCommercial(s: SessionAgg): boolean {
+      const f = flagsMap.get(s.session_id);
+      if (f) {
+        if (f.is_internal || f.is_bot || f.technical_path || f.exclude_from_commercial) return false;
+        if (f.traffic_class && !HUMAN_CLASS.has(f.traffic_class)
+            && !(f.traffic_quality && HUMAN_QUALITY.has(f.traffic_quality))) {
+          // classifier ran and did not label as human → exclude
+          if (["INTERNAL_PREVIEW","BOT_CONFIRMED","BOT_PROBABLE","CRAWLER","TECHNICAL"].includes(f.traffic_class)) return false;
+        }
+        return true;
+      }
+      // No canonical_sessions row → fall back to legacy `is_internal` only.
+      return !s.is_internal;
+    }
+    // Buckets for the traffic-quality breakdown card.
+    let excluded_internal = 0, excluded_bot = 0, excluded_technical = 0,
+        excluded_commercial_flag = 0, excluded_low_quality = 0;
+    for (const s of sessionsArr) {
+      const f = flagsMap.get(s.session_id);
+      if (!f) continue;
+      if (f.is_internal) { excluded_internal++; continue; }
+      if (f.is_bot) { excluded_bot++; continue; }
+      if (f.technical_path) { excluded_technical++; continue; }
+      if (f.exclude_from_commercial) { excluded_commercial_flag++; continue; }
+      if (f.traffic_class && !HUMAN_CLASS.has(f.traffic_class)
+          && ["INTERNAL_PREVIEW","BOT_CONFIRMED","BOT_PROBABLE","CRAWLER","TECHNICAL"].includes(f.traffic_class)) {
+        excluded_low_quality++;
+      }
+    }
+    const cleanSessionsArr = sessionsArr.filter(isCommercial);
+    const traffic_quality_breakdown = {
+      raw_sessions: allSessionsArr.length,
+      commercial_sessions: cleanSessionsArr.length,
+      excluded_internal,
+      excluded_bot,
+      excluded_technical,
+      excluded_commercial_flag,
+      excluded_low_quality,
+      unknown_country: cleanSessionsArr.filter((s) => !s.country || !s.country.trim()).length,
+    };
 
     // ── diagnostics: makes monotonicity + geo failures self-explaining ─
     const sessionsWithGeo = cleanSessionsArr.filter(
