@@ -521,6 +521,7 @@ const AiTraceExplorerPage = lazyWithRetry(() => import("./pages/admin/AiTraceExp
 const PinterestAdStudio = lazyWithRetry(() => import("./pages/admin/PinterestAdStudio"));
 const AdminE2eVerify = lazyWithRetry(() => import("./pages/admin/AdminE2eVerify"));
 const VisitorWorldMapProPage = lazyWithRetry(() => import("./pages/admin/VisitorWorldMapProPage"));
+const AnalyticsCanaryV2Page = lazyWithRetry(() => import("./pages/admin/AnalyticsCanaryV2"));
 const VisitorMapStabilizationPage = lazyWithRetry(() => import("./pages/admin/VisitorMapStabilizationPage"));
 const StripeTestCheckoutPage = lazyWithRetry(() => import("./pages/admin/StripeTestCheckoutPage"));
 const CjInventorySync = lazyWithRetry(() => import("./pages/admin/CjInventorySync"));
@@ -1000,6 +1001,14 @@ const App = () => {
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <VisitorWorldMapProPage />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="/admin/analytics/canary-v2"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <AnalyticsCanaryV2Page />
                               </Suspense>
                             }
                           />
