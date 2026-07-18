@@ -652,6 +652,7 @@ const PinterestControlCenterPage = lazyWithRetry(() => import("./pages/admin/Pin
 const PqifV4Page = lazyWithRetry(() => import("./pages/admin/PqifV4Page"));
 const PinterestCreativeIntelV2Page = lazyWithRetry(() => import("./pages/admin/PinterestCreativeIntelV2Page"));
 const PinterestGrowthEnginePage = lazyWithRetry(() => import("./pages/admin/PinterestGrowthEnginePage"));
+const PinterestCampaignReportPage = lazyWithRetry(() => import("./pages/admin/PinterestCampaignReport"));
 const PinterestGenericNichePage = lazyWithRetry(() => import("./pages/admin/PinterestGenericNichePage"));
 const PinterestNicheCoveragePage = lazyWithRetry(() => import("./pages/admin/PinterestNicheCoveragePage"));
 const ProductDiversityPage = lazyWithRetry(() => import("./pages/admin/ProductDiversityPage"));
@@ -4245,6 +4246,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestGrowthEnginePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="pinterest-campaign-report"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PinterestCampaignReportPage />
                                 </Suspense>
                               }
                             />
