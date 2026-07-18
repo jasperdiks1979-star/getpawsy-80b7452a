@@ -16,6 +16,7 @@ import {
   LINE_HEIGHT,
   MIN_GAP,
   MOBILE_MIN,
+  CTA_BUTTON,
   type LayoutSpec,
   type LayoutVariant,
   overlaps,
@@ -36,6 +37,8 @@ const APPROVED_CTAS = new Set([
   "See Details",
   "Learn More",
   "Save This",
+  "Explore Product",
+  "Discover More",
 ]);
 
 const BANNED_CLAIMS = [
@@ -93,6 +96,58 @@ const CHAR_W: Record<string, number> = {
   arial: 0.50,
   arial_bold: 0.55,
 };
+
+// ─── CTA button geometry (v6) ────────────────────────────────────────────
+//
+// Computes the effective pill geometry inside a layout's ctaBox reservation.
+// The pill is horizontally centered inside the reservation and its width is
+// derived from the rendered text width plus symmetric padding, clamped to
+// [minWidth, min(reservation.w, canvas * maxWidthFrac)].
+//
+// The pill font size is shrunk (in steps of 2) until the label fits within
+// the max width at the required padding. Never falls below MOBILE_MIN.cta.
+
+export interface CtaPill {
+  box: Box;         // effective pill rectangle
+  fontSize: number; // final rendered CTA text size
+  textWidth: number;
+  textY: number;    // optically-centered text y (top-left origin)
+}
+
+export function computeCtaPill(layout: LayoutSpec, text: string): CtaPill {
+  const reservation = layout.ctaBox;
+  const hardMaxW = Math.min(
+    reservation.w,
+    Math.floor(CANVAS.w * CTA_BUTTON.maxWidthFrac),
+  );
+  let size = layout.ctaSize;
+  const minSize = MOBILE_MIN.cta;
+  let textW = 0;
+  let pillW = 0;
+  // Shrink font size until pill fits inside hardMaxW at required padding.
+  while (size >= minSize) {
+    textW = Math.ceil(text.length * size * CHAR_W.arial_bold);
+    pillW = Math.max(CTA_BUTTON.minWidth, textW + CTA_BUTTON.hPad * 2);
+    if (pillW <= hardMaxW) break;
+    size -= 2;
+  }
+  // If even minSize still overflows, clamp pillW to hardMaxW (label may
+  // visually crowd, but audit will flag it).
+  if (pillW > hardMaxW) pillW = hardMaxW;
+
+  const pillH = Math.max(CTA_BUTTON.minHeight, reservation.h);
+  const pillX = reservation.x + Math.floor((reservation.w - pillW) / 2);
+  const pillY = reservation.y;
+  const textY = pillY
+    + Math.round((pillH - size) / 2)
+    - Math.round(size * CTA_BUTTON.opticalLiftPct);
+  return {
+    box: { x: pillX, y: pillY, w: pillW, h: pillH },
+    fontSize: size,
+    textWidth: textW,
+    textY,
+  };
+}
 
 export interface TextFit {
   ok: boolean;
@@ -196,6 +251,7 @@ export interface BuildUrlInput {
   benefitSize: number;
   ctaText: string;
   ctaSize: number;
+  ctaPill?: CtaPill;
 }
 
 export function buildCloudinaryUrl(inp: BuildUrlInput): string {
@@ -261,34 +317,59 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
     "y_" + n(L.benefitBox.y, 0, CANVAS.h),
   ].join(",");
 
-  const ctaFont = FONT_MAP.arial_bold.replace("%%SIZE%%", String(n(inp.ctaSize, 20, 100)));
-  // CTA pill: solid fill rectangle then text on top.
+  // ── CTA button v6: shadow → rounded pill → text (optically centered) ──
+  const pill = inp.ctaPill ?? computeCtaPill(L, inp.ctaText);
+  const ctaFont = FONT_MAP.arial_bold.replace("%%SIZE%%", String(n(pill.fontSize, 20, 100)));
+  const shadowGrow = CTA_BUTTON.shadowGrow;
+  const shadowRadius = CTA_BUTTON.radius + Math.floor(shadowGrow / 2);
+
+  // Shadow layer: slightly larger, offset down, low opacity.
+  const ctaShadow = [
+    "l_text:" + FONT_MAP.arial.replace("%%SIZE%%", "10") + ":%2520",
+    "b_rgb:" + hex(INK.ctaShadow),
+    "co_rgb:" + hex(INK.ctaShadow),
+    "w_" + n(pill.box.w + shadowGrow * 2, 50, CANVAS.w),
+    "h_" + n(pill.box.h + shadowGrow, 20, CANVAS.h),
+    "c_pad",
+    "r_" + n(shadowRadius, 0, 200),
+    "o_" + n(CTA_BUTTON.shadowOpacity, 1, 100),
+  ].join(",") + "/" + [
+    "fl_layer_apply",
+    "g_north_west",
+    "x_" + n(pill.box.x - shadowGrow, 0, CANVAS.w),
+    "y_" + n(pill.box.y + CTA_BUTTON.shadowOffsetY, 0, CANVAS.h),
+  ].join(",");
+
+  // Main pill: solid near-black, rounded corners.
   const ctaBg = [
     "l_text:" + FONT_MAP.arial.replace("%%SIZE%%", "10") + ":%2520",
     "b_rgb:" + ctaFill,
     "co_rgb:" + ctaFill,
-    "w_" + n(L.ctaBox.w, 50, CANVAS.w),
-    "h_" + n(L.ctaBox.h, 20, CANVAS.h),
+    "w_" + n(pill.box.w, 50, CANVAS.w),
+    "h_" + n(pill.box.h, 20, CANVAS.h),
     "c_pad",
+    "r_" + n(CTA_BUTTON.radius, 0, 200),
   ].join(",") + "/" + [
     "fl_layer_apply",
     "g_north_west",
-    "x_" + n(L.ctaBox.x, 0, CANVAS.w),
-    "y_" + n(L.ctaBox.y, 0, CANVAS.h),
+    "x_" + n(pill.box.x, 0, CANVAS.w),
+    "y_" + n(pill.box.y, 0, CANVAS.h),
   ].join(",");
+
+  // Label — optically centered.
   const ctaLayer = [
     "l_text:" + ctaFont + ":" + cloudinaryTextEscape(inp.ctaText),
     "co_rgb:" + ctaText,
-    "w_" + n(L.ctaBox.w, 50, CANVAS.w),
+    "w_" + n(pill.box.w - CTA_BUTTON.hPad, 50, CANVAS.w),
     "c_fit",
   ].join(",") + "/" + [
     "fl_layer_apply",
     "g_north_west",
-    "x_" + n(L.ctaBox.x, 0, CANVAS.w),
-    "y_" + n(L.ctaBox.y + Math.floor((L.ctaBox.h - inp.ctaSize) / 2), 0, CANVAS.h),
+    "x_" + n(pill.box.x, 0, CANVAS.w),
+    "y_" + n(pill.textY, 0, CANVAS.h),
   ].join(",");
 
-  const segs = [baseCanvas, productLayer, headline, benefit, ctaBg, ctaLayer, "f_png"].join("/");
+  const segs = [baseCanvas, productLayer, headline, benefit, ctaShadow, ctaBg, ctaLayer, "f_png"].join("/");
   // Cloudinary /image/fetch/ terminates with a neutral base canvas. The product
   // source is an explicit l_fetch overlay so all geometry is auditable.
   return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/${segs}/${BASE_CANVAS_URL}`;
@@ -299,6 +380,10 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
 // Called AFTER buildCloudinaryUrl(). Ensures the URL contains no banned
 // transformation tokens that would alter product pixels.
 
+// Product-layer bans: these tokens must never appear inside a product image
+// segment (l_fetch:...). They MAY appear inside CTA / text overlay segments
+// (rounded pill uses r_, drop shadow uses o_, etc.), which is why the
+// auditor scopes the check to product segments only.
 const BANNED_TRANSFORMS = [
   /(^|[/,])e_[a-z_]+/,     // any effect (blur, sharpen, art, colorize, etc.)
   /(^|[/,])o_\d+/,          // opacity manipulation on product layer
@@ -313,8 +398,17 @@ const BANNED_TRANSFORMS = [
 
 export function auditUrl(url: string): { ok: boolean; violations: string[] } {
   const violations: string[] = [];
-  for (const rx of BANNED_TRANSFORMS) {
-    if (rx.test(url)) violations.push(rx.source);
+  // Segment-scoped audit: bans apply only to product image overlays
+  // (segments containing l_fetch:). Text/CTA overlays (l_text:) may legally
+  // use r_ (rounded pill) and o_ (shadow opacity).
+  const segments = url.split("/");
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (!seg.includes("l_fetch:")) continue;
+    // Product param segment; the next segment is its fl_layer_apply (safe to skip).
+    for (const rx of BANNED_TRANSFORMS) {
+      if (rx.test(seg)) violations.push(rx.source);
+    }
   }
   return { ok: violations.length === 0, violations };
 }
@@ -350,6 +444,17 @@ export function auditLayout(L: LayoutSpec): { ok: boolean; issues: string[] } {
   if (L.headlineMinSize < MOBILE_MIN.headline) issues.push(`headline_min_${L.headlineMinSize}<${MOBILE_MIN.headline}`);
   if (L.benefitMinSize < MOBILE_MIN.benefit) issues.push(`benefit_min_${L.benefitMinSize}<${MOBILE_MIN.benefit}`);
   if (L.ctaSize < MOBILE_MIN.cta) issues.push(`cta_size_${L.ctaSize}<${MOBILE_MIN.cta}`);
+  // CTA reservation must be tall enough for the v6 pill (with padding).
+  if (L.ctaBox.h < CTA_BUTTON.minHeight) {
+    issues.push(`cta_box_h_${L.ctaBox.h}<${CTA_BUTTON.minHeight}`);
+  }
+  // Reservation must be wide enough for the widest approved CTA at min size.
+  const widestPill = Math.ceil(
+    "Explore Product".length * MOBILE_MIN.cta * CHAR_W.arial_bold,
+  ) + CTA_BUTTON.hPad * 2;
+  if (L.ctaBox.w < Math.min(widestPill, Math.floor(CANVAS.w * CTA_BUTTON.maxWidthFrac))) {
+    issues.push(`cta_box_w_${L.ctaBox.w}<${widestPill}`);
+  }
   // Headline box must fit 2 lines at min size (otherwise long headlines truncate).
   const needH = Math.ceil(L.headlineMinSize * LINE_HEIGHT * L.headlineMaxLines);
   if (L.headlineBox.h < needH) issues.push(`headline_box_h_${L.headlineBox.h}<${needH}`);
@@ -450,6 +555,8 @@ export function plan(req: ComposeRequest): ComposePlan {
   const bf = fitText(req.benefit, "arial", L.benefitBox.w, L.benefitBox.h, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
   if (!bf.ok) return { ok: false, reason: "benefit_text_overflow" };
 
+  const pill = computeCtaPill(L, req.cta);
+
   let cloudinaryUrl: string;
   try {
     cloudinaryUrl = buildCloudinaryUrl({
@@ -460,7 +567,8 @@ export function plan(req: ComposeRequest): ComposePlan {
     benefitLines: bf.lines,
     benefitSize: bf.fontSize,
     ctaText: req.cta,
-    ctaSize: L.ctaSize,
+    ctaSize: pill.fontSize,
+    ctaPill: pill,
   });
   } catch (e) {
     return { ok: false, reason: `build_url_failed:${String((e as Error).message)}` };
