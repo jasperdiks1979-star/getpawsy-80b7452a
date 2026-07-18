@@ -489,14 +489,34 @@ Deno.serve(async (req) => {
       generated_at: new Date().toISOString(),
     };
 
-    // ── Phase 4B admin canary (envelope=v2) ────────────────────────────
-    // Backward-compatible. All existing fields above are unchanged.
-    // Fields under `v2` are only present when the gate passes.
-    const wantsV2 = (url.searchParams.get("envelope") || body?.envelope) === "v2";
-    if (wantsV2) {
+    // ── Phase 4C: v2 as default for authenticated internal consumers ───
+    // Backward-compatible. All existing v1 fields above are unchanged.
+    // v2 fields are populated when:
+    //   (a) caller explicitly requests envelope=v2, OR
+    //   (b) admin caller AND `canonical_traffic_quality_v2.default_for_internal`
+    //       flag is on AND envelope != 'v1' (explicit legacy fallback).
+    const envParam = (url.searchParams.get("envelope") || body?.envelope || "").toLowerCase();
+    const wantsV1Fallback = envParam === "v1";
+    const wantsV2Explicit = envParam === "v2";
+    let defaultForInternal = false;
+    try {
+      const { data: cfg } = await supabase
+        .from("app_config")
+        .select("key,value")
+        .eq("key", "canonical_traffic_quality_v2.default_for_internal")
+        .maybeSingle();
+      defaultForInternal = cfg?.value === true || cfg?.value === "true";
+    } catch { /* noop */ }
+    if (!wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
       try {
         const gate = await checkCanonicalV2Gate(req);
-        respBody.v2_gate = { enabled: gate.enabled, isAdmin: gate.isAdmin, allowV2: gate.allowV2 };
+        respBody.v2_gate = {
+          enabled: gate.enabled,
+          isAdmin: gate.isAdmin,
+          allowV2: gate.allowV2,
+          default_for_internal: defaultForInternal,
+          envelope_resolved: gate.allowV2 ? "v2" : "v1",
+        };
         if (gate.allowV2) {
           const rows: ClassifiableRow[] = [];
           const PAGE2 = 1000;
