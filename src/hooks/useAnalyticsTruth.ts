@@ -51,6 +51,19 @@ export interface TruthTotals {
   revenue: number;
   currency: string;
   conversion_rate: number;
+  human_visitors?: number;
+  raw_sessions_all?: number;
+}
+
+export interface TrafficQualityBreakdown {
+  raw_sessions: number;
+  commercial_sessions: number;
+  excluded_internal: number;
+  excluded_bot: number;
+  excluded_technical: number;
+  excluded_commercial_flag: number;
+  excluded_low_quality: number;
+  unknown_country: number;
 }
 
 export interface TruthResponse {
@@ -74,6 +87,7 @@ export interface TruthResponse {
   generated_at: string;
   cached?: boolean;
   error?: string;
+  traffic_quality_breakdown?: TrafficQualityBreakdown;
 }
 
 export interface UseAnalyticsTruthOptions {

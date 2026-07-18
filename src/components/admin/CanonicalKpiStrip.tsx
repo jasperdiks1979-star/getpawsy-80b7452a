@@ -84,8 +84,9 @@ export function CanonicalKpiStrip({
           </div>
         )}
         <div className={`grid gap-2 ${compact ? "grid-cols-3 md:grid-cols-6" : "grid-cols-2 md:grid-cols-5 lg:grid-cols-9"}`}>
-          <Kpi label="Visitors"   value={fmt(t?.visitors)}   loading={q.isLoading} />
-          <Kpi label="Sessions"   value={fmt(t?.sessions)}   loading={q.isLoading} />
+          <Kpi label="Human visitors" value={fmt(t?.human_visitors ?? t?.visitors)} loading={q.isLoading} highlight />
+          <Kpi label="Raw sessions" value={fmt(t?.raw_sessions_all)} loading={q.isLoading} />
+          <Kpi label="Human sessions" value={fmt(t?.sessions)} loading={q.isLoading} />
           <Kpi label="Pageviews"  value={fmt(t?.page_views)} loading={q.isLoading} />
           <Kpi label="Products"   value={fmt(t?.product_views)} loading={q.isLoading} />
           <Kpi label="Add to cart" value={fmt(t?.add_to_cart)} loading={q.isLoading} />
@@ -94,6 +95,17 @@ export function CanonicalKpiStrip({
           <Kpi label="Purchases"  value={fmt(t?.purchases)}  loading={q.isLoading} highlight />
           <Kpi label="Revenue"    value={money(t?.revenue, t?.currency)} loading={q.isLoading} highlight />
         </div>
+        {(q.data as any)?.traffic_quality_breakdown && (
+          <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 border-t pt-2">
+            <span className="font-medium text-foreground">Traffic quality:</span>
+            <span>excluded internal <b>{(q.data as any).traffic_quality_breakdown.excluded_internal}</b></span>
+            <span>bot <b>{(q.data as any).traffic_quality_breakdown.excluded_bot}</b></span>
+            <span>technical <b>{(q.data as any).traffic_quality_breakdown.excluded_technical}</b></span>
+            <span>non-commercial <b>{(q.data as any).traffic_quality_breakdown.excluded_commercial_flag}</b></span>
+            <span>low quality <b>{(q.data as any).traffic_quality_breakdown.excluded_low_quality}</b></span>
+            <span>unknown country <b>{(q.data as any).traffic_quality_breakdown.unknown_country}</b></span>
+          </div>
+        )}
         <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
           <span>CVR: <b>{t?.conversion_rate ?? 0}%</b></span>
           <span>Window: last {hours}h · {q.data?.window?.since?.slice(0, 19) || "…"} → {q.data?.window?.until?.slice(0, 19) || "…"}</span>
