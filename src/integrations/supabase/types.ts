@@ -59283,6 +59283,78 @@ export type Database = {
           },
         ]
       }
+      pinterest_publish_preflight_audits: {
+        Row: {
+          board_id: string
+          created_at: string
+          destination_url: string
+          executed: boolean
+          failed_gates: string[]
+          gates: Json
+          id: string
+          idempotency_key: string | null
+          image_hash: string | null
+          pin_url: string | null
+          pinterest_pin_id: string | null
+          preflight_pass: boolean
+          product_id: string | null
+          product_slug: string
+          public_verification_detail: string | null
+          public_verified: boolean | null
+          publisher_body: Json | null
+          publisher_function: string | null
+          publisher_status: number | null
+          trace_id: string
+          verdict: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          destination_url: string
+          executed?: boolean
+          failed_gates?: string[]
+          gates?: Json
+          id?: string
+          idempotency_key?: string | null
+          image_hash?: string | null
+          pin_url?: string | null
+          pinterest_pin_id?: string | null
+          preflight_pass: boolean
+          product_id?: string | null
+          product_slug: string
+          public_verification_detail?: string | null
+          public_verified?: boolean | null
+          publisher_body?: Json | null
+          publisher_function?: string | null
+          publisher_status?: number | null
+          trace_id: string
+          verdict: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          destination_url?: string
+          executed?: boolean
+          failed_gates?: string[]
+          gates?: Json
+          id?: string
+          idempotency_key?: string | null
+          image_hash?: string | null
+          pin_url?: string | null
+          pinterest_pin_id?: string | null
+          preflight_pass?: boolean
+          product_id?: string | null
+          product_slug?: string
+          public_verification_detail?: string | null
+          public_verified?: boolean | null
+          publisher_body?: Json | null
+          publisher_function?: string | null
+          publisher_status?: number | null
+          trace_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       pinterest_publish_queue: {
         Row: {
           created_at: string | null
