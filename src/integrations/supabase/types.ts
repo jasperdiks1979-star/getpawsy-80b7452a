@@ -75400,6 +75400,204 @@ export type Database = {
         }
         Relationships: []
       }
+      commercial_country_totals_24h: {
+        Row: {
+          commercial_sessions: number | null
+          country: string | null
+          human_visitors: number | null
+        }
+        Relationships: []
+      }
+      commercial_sessions: {
+        Row: {
+          attribution_locked: boolean | null
+          attribution_snapshot_at: string | null
+          bot_confidence: number | null
+          bot_name: string | null
+          bot_reason: string | null
+          browser: string | null
+          city: string | null
+          classification_reason: string | null
+          classified_channel: string | null
+          classifier_version: string | null
+          country: string | null
+          country_display: string | null
+          device: string | null
+          engagement_ms: number | null
+          exclude_from_commercial: boolean | null
+          first_affiliate_id: string | null
+          first_email_id: string | null
+          first_fbclid: string | null
+          first_gclid: string | null
+          first_landing_path: string | null
+          first_landing_url: string | null
+          first_msclkid: string | null
+          first_pinterest_click_id: string | null
+          first_reddit_click_id: string | null
+          first_referrer: string | null
+          first_seen_at: string | null
+          first_ttclid: string | null
+          first_utm_campaign: string | null
+          first_utm_content: string | null
+          first_utm_medium: string | null
+          first_utm_source: string | null
+          first_utm_term: string | null
+          ga_client_id: string | null
+          interaction_count: number | null
+          is_bot: boolean | null
+          is_internal: boolean | null
+          landing_page: string | null
+          language: string | null
+          last_seen_at: string | null
+          last_stage: Database["public"]["Enums"]["canonical_event_name"] | null
+          order_id: string | null
+          os: string | null
+          redirect_chain: Json | null
+          referrer: string | null
+          region: string | null
+          screen_wxh: string | null
+          session_id: string | null
+          stripe_session_id: string | null
+          technical_path: boolean | null
+          timezone: string | null
+          traffic_class: string | null
+          traffic_quality: string | null
+          updated_at: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          attribution_locked?: boolean | null
+          attribution_snapshot_at?: string | null
+          bot_confidence?: number | null
+          bot_name?: string | null
+          bot_reason?: string | null
+          browser?: string | null
+          city?: string | null
+          classification_reason?: string | null
+          classified_channel?: string | null
+          classifier_version?: string | null
+          country?: string | null
+          country_display?: never
+          device?: string | null
+          engagement_ms?: number | null
+          exclude_from_commercial?: boolean | null
+          first_affiliate_id?: string | null
+          first_email_id?: string | null
+          first_fbclid?: string | null
+          first_gclid?: string | null
+          first_landing_path?: string | null
+          first_landing_url?: string | null
+          first_msclkid?: string | null
+          first_pinterest_click_id?: string | null
+          first_reddit_click_id?: string | null
+          first_referrer?: string | null
+          first_seen_at?: string | null
+          first_ttclid?: string | null
+          first_utm_campaign?: string | null
+          first_utm_content?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
+          first_utm_term?: string | null
+          ga_client_id?: string | null
+          interaction_count?: number | null
+          is_bot?: boolean | null
+          is_internal?: boolean | null
+          landing_page?: string | null
+          language?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          redirect_chain?: Json | null
+          referrer?: string | null
+          region?: string | null
+          screen_wxh?: string | null
+          session_id?: string | null
+          stripe_session_id?: string | null
+          technical_path?: boolean | null
+          timezone?: string | null
+          traffic_class?: string | null
+          traffic_quality?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          attribution_locked?: boolean | null
+          attribution_snapshot_at?: string | null
+          bot_confidence?: number | null
+          bot_name?: string | null
+          bot_reason?: string | null
+          browser?: string | null
+          city?: string | null
+          classification_reason?: string | null
+          classified_channel?: string | null
+          classifier_version?: string | null
+          country?: string | null
+          country_display?: never
+          device?: string | null
+          engagement_ms?: number | null
+          exclude_from_commercial?: boolean | null
+          first_affiliate_id?: string | null
+          first_email_id?: string | null
+          first_fbclid?: string | null
+          first_gclid?: string | null
+          first_landing_path?: string | null
+          first_landing_url?: string | null
+          first_msclkid?: string | null
+          first_pinterest_click_id?: string | null
+          first_reddit_click_id?: string | null
+          first_referrer?: string | null
+          first_seen_at?: string | null
+          first_ttclid?: string | null
+          first_utm_campaign?: string | null
+          first_utm_content?: string | null
+          first_utm_medium?: string | null
+          first_utm_source?: string | null
+          first_utm_term?: string | null
+          ga_client_id?: string | null
+          interaction_count?: number | null
+          is_bot?: boolean | null
+          is_internal?: boolean | null
+          landing_page?: string | null
+          language?: string | null
+          last_seen_at?: string | null
+          last_stage?:
+            | Database["public"]["Enums"]["canonical_event_name"]
+            | null
+          order_id?: string | null
+          os?: string | null
+          redirect_chain?: Json | null
+          referrer?: string | null
+          region?: string | null
+          screen_wxh?: string | null
+          session_id?: string | null
+          stripe_session_id?: string | null
+          technical_path?: boolean | null
+          timezone?: string | null
+          traffic_class?: string | null
+          traffic_quality?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       creative_approval_queue: {
         Row: {
           category_slug: string | null
