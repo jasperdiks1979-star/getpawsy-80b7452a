@@ -13,6 +13,26 @@ interface ProductVideo {
   source: string | null;
 }
 
+/**
+ * Product-specific video suppression list.
+ *
+ * Some SKUs only have generic AI-generated `cinematic_v3` slideshow clips
+ * attached — visually near-identical, no unique informational value beyond
+ * the hero image, and they make the PDP feel like a low-effort dropship
+ * page. For these SKUs we render no prominent video (and no "Show more
+ * clips" reveal) rather than degrade the buying experience.
+ *
+ * Add a product ID here only after a manual media audit confirms none of
+ * the attached videos meet the premium bar for that PDP. Removing a video
+ * row from `product_media` is preferable long-term; this list is the
+ * fail-safe for cases where the underlying rows are still referenced by
+ * other tooling (e.g. Pinterest cinematic pipeline).
+ */
+const SUPPRESS_VIDEO_FOR_PRODUCT_IDS = new Set<string>([
+  // GetPawsy Automatic Cat Litter Box — 2 cinematic_v3 slideshow clips only.
+  "128e0207-8a94-4d71-b428-5b7f5002528f",
+]);
+
 interface Props {
   productId: string;
   productName: string;
@@ -34,6 +54,8 @@ interface Props {
  * Google video carousel.
  */
 export function ProductVideoSection({ productId, productName, posterUrl, className, maxVisible = 1 }: Props) {
+  // Product-specific override: skip the network call entirely for suppressed SKUs.
+  const suppressed = SUPPRESS_VIDEO_FOR_PRODUCT_IDS.has(productId);
   const { data } = useQuery({
     queryKey: ["product-media-videos", productId],
     queryFn: async (): Promise<ProductVideo[]> => {
@@ -47,9 +69,11 @@ export function ProductVideoSection({ productId, productName, posterUrl, classNa
       return (data ?? []) as ProductVideo[];
     },
     staleTime: 5 * 60 * 1000,
+    enabled: !suppressed,
   });
 
   const [showAll, setShowAll] = useState(false);
+  if (suppressed) return null;
   const videos = data ?? [];
   if (videos.length === 0) return null;
 
