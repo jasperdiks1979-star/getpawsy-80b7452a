@@ -188,6 +188,18 @@ Deno.serve(async (req) => {
       if (isTestGateway) return "test";
       if (items.length === 0) return "test"; // smoke test / zero-line-item
       if (amount <= 0) return "test";
+      // Line-item level test markers. Internal/live-gateway validation
+      // orders (e.g. `TEST-PAYMENT-VALIDATION`) share real Stripe live
+      // sessions and one line item, so they slip past the gateway/empty
+      // checks. Detect them by SKU id / product name markers.
+      const TEST_RE = /(^|[-_\s])(test|smoke|canary|validation|qa|dev)(-payment|[-_\s]|$)/i;
+      const looksTest = items.some((it: any) => {
+        const id = String(it?.id ?? "");
+        const name = String(it?.name ?? "");
+        const sku = String(it?.sku ?? "");
+        return TEST_RE.test(id) || TEST_RE.test(name) || TEST_RE.test(sku);
+      });
+      if (looksTest) return "test";
       return "genuine";
     }
     const genuineOrders = purchases.filter((o: any) => classifyOrder(o) === "genuine");
