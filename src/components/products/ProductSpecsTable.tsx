@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { FREE_SHIPPING_THRESHOLD, RETURN_WINDOW_DAYS } from '@/lib/shipping-constants';
+import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface ProductSpecsTableProps {
   product: {
+    id?: string;
     name: string;
     category?: string | null;
     weight?: number | null;
@@ -84,6 +86,19 @@ function getTypeSpecs(type: ProductType): SpecRow[] {
 
 export function ProductSpecsTable({ product }: ProductSpecsTableProps) {
   const specs = useMemo(() => {
+    const override = getProductContentOverride(product.id);
+    if (override?.specs && override.specs.length > 0) {
+      const rows = [...override.specs];
+      if (product.weight && product.weight > 0) {
+        rows.push({ label: 'Product Weight', value: `${Number(product.weight).toFixed(2)} lbs` });
+      }
+      rows.push(
+        { label: 'Shipping', value: `Free shipping on eligible orders over $${FREE_SHIPPING_THRESHOLD}` },
+        { label: 'Returns', value: `${RETURN_WINDOW_DAYS}-day return policy` },
+      );
+      return rows;
+    }
+
     const type = detectType(product.name, product.category || '');
     const typeSpecs = getTypeSpecs(type);
 
@@ -110,7 +125,7 @@ export function ProductSpecsTable({ product }: ProductSpecsTableProps) {
     );
 
     return rows;
-  }, [product.name, product.category, product.weight]);
+  }, [product.id, product.name, product.category, product.weight]);
 
   return (
     <section className="mt-12">
