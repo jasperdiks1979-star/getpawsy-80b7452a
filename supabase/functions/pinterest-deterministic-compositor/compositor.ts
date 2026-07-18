@@ -601,6 +601,14 @@ export function auditLayout(L: LayoutSpec): { ok: boolean; issues: string[] } {
   if (L.headlineBox.h < needH) issues.push(`headline_box_h_${L.headlineBox.h}<${needH}`);
   const needB = Math.ceil(L.benefitMinSize * LINE_HEIGHT * L.benefitMaxLines);
   if (L.benefitBox.h < needB) issues.push(`benefit_box_h_${L.benefitBox.h}<${needB}`);
+  // Chip strip: the same reservation must fit 3 pills at CHIP_STRIP.height
+  // (vertically centered) with per-chip width ≥ enough to render maxChars at
+  // fontMin. If not, chips will overflow at compose time.
+  const chipW = Math.floor((L.benefitBox.w - CHIP_STRIP.gap * (CHIP_STRIP.count - 1)) / CHIP_STRIP.count);
+  const chipMaxTextW = chipW - CHIP_STRIP.hPad * 2;
+  const chipMinRenderW = Math.ceil(CHIP_STRIP.maxChars * CHIP_STRIP.fontMin * CHAR_W.arial_bold);
+  if (L.benefitBox.h < CHIP_STRIP.height) issues.push(`chip_strip_h_${L.benefitBox.h}<${CHIP_STRIP.height}`);
+  if (chipMaxTextW < chipMinRenderW) issues.push(`chip_width_${chipMaxTextW}<${chipMinRenderW}`);
   const occ = occupancy(L.productBox);
   if (occ < L.targetOccupancy[0] || occ > L.targetOccupancy[1]) {
     issues.push(`product_occupancy_${occ.toFixed(3)}_outside_${L.targetOccupancy.join("-")}`);
