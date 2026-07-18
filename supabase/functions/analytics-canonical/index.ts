@@ -611,6 +611,7 @@ Deno.serve(async (req) => {
       sessions: sessionsArr,
       sample_event: sample,
       diagnostics,
+      traffic_quality_breakdown,
       generated_at: new Date().toISOString(),
     };
 
