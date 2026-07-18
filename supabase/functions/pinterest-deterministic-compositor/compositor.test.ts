@@ -322,9 +322,12 @@ Deno.test("cloudinary overlays: positions are attached to fl_layer_apply", () =>
   assertMatch(url, /fl_layer_apply,g_north_west,x_210,y_500/);
   assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_120/);
   assertMatch(url, /fl_layer_apply,g_north_west,x_100,y_370/);
-  // v6 CTA: dynamically centered inside the reservation. "View Product" at
-  // 40px Arial-bold produces a pill ≈ 420 px wide, centered around x=600.
-  assertMatch(url, /fl_layer_apply,g_north_west,x_390,y_1600/);
+  // v6 CTA: the pill background is placed with g_north_west at the pill's
+  // top-left; the label is applied with g_center offsets from canvas center.
+  assertMatch(url, /b_rgb:0F0D0B,co_rgb:0F0D0B,w_420,h_110,c_pad,r_28\/fl_layer_apply,g_north_west,x_390,y_1600/);
+  // Label uses g_center with x offset = pillCenterX - canvasCenterX = 0
+  // (pill perfectly centered around canvas center x=600).
+  assertMatch(url, /Arial_40_bold:View%2520Product,co_rgb:FFFFFF\/fl_layer_apply,g_center,x_0,y_/);
   assertNotMatch(url, /g_north_west,x_100,y_120,w_1000,c_fit\/fl_layer_apply/);
 });
 
