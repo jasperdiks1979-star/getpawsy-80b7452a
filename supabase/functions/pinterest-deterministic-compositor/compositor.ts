@@ -367,14 +367,16 @@ export function buildCloudinaryUrl(inp: BuildUrlInput): string {
   const pillCenterX = pill.box.x + Math.floor(pill.box.w / 2);
   const pillCenterY = pill.box.y + Math.floor(pill.box.h / 2);
   const opticalDy = -Math.round(pill.fontSize * CTA_BUTTON.opticalLiftPct);
+  const canvasCX = Math.floor(CANVAS.w / 2);
+  const canvasCY = Math.floor(CANVAS.h / 2);
   const ctaLayer = [
     "l_text:" + ctaFont + ":" + cloudinaryTextEscape(inp.ctaText),
     "co_rgb:" + ctaText,
   ].join(",") + "/" + [
     "fl_layer_apply",
     "g_center",
-    "x_" + n(pillCenterX - CANVAS.w / 2, -CANVAS.w, CANVAS.w),
-    "y_" + n(pillCenterY - CANVAS.h / 2 + opticalDy, -CANVAS.h, CANVAS.h),
+    "x_" + n(pillCenterX - canvasCX, -CANVAS.w, CANVAS.w),
+    "y_" + n(pillCenterY - canvasCY + opticalDy, -CANVAS.h, CANVAS.h),
   ].join(",");
 
   const segs = [baseCanvas, productLayer, headline, benefit, ctaShadow, ctaBg, ctaLayer, "f_png"].join("/");
