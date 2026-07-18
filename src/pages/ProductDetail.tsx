@@ -92,6 +92,7 @@ import SlugResolverFallback from "@/components/products/SlugResolverFallback";
 // PriceAnchoringSection removed — fabricated price comparisons flagged by Google Merchant Center
 
 import { ProductFAQAccordion } from "@/components/products/ProductFAQAccordion";
+import { isSectionHiddenForProduct } from "@/config/product-content-overrides";
 import { ProductProblemSolution } from "@/components/products/ProductProblemSolution";
 
 import { FinalCtaBlock } from "@/components/products/FinalCtaBlock";
