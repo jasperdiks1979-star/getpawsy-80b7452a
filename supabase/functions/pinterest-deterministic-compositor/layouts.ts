@@ -17,6 +17,7 @@ export const MOBILE_MIN = {
   headline: 56,
   benefit: 34,
   cta: 36,
+  chip: 22,
 } as const;
 
 // Warm palette (locked; text layers only — never applied to product).
@@ -47,6 +48,24 @@ export const CTA_BUTTON = {
   shadowOpacity: 28,   // 0-100 (Cloudinary o_ token uses percentage)
   shadowGrow: 6,       // shadow rect is grown by this many px on all sides
   opticalLiftPct: 0.06, // shift text up by this fraction of font size for optical centering
+} as const;
+
+// Feature-chip strip (v7). Horizontal 3-up row that occupies the same
+// reservation as `benefitBox` when chips are provided. Chips and benefit are
+// mutually exclusive per compose call — the plan() picks chips when present.
+export const CHIP_STRIP = {
+  count: 3,             // fixed number of chips
+  gap: 20,              // horizontal gap between chips
+  height: 60,           // pill height
+  hPad: 20,             // horizontal padding inside a chip
+  radius: 22,           // corner radius
+  fontMax: 32,          // starting font size (per-chip shrink to fit)
+  fontMin: 22,          // absolute floor
+  maxChars: 22,         // hard cap per chip label
+  shadowOffsetY: 4,
+  shadowOpacity: 22,
+  shadowGrow: 4,
+  opticalLiftPct: 0.06,
 } as const;
 
 export interface Box { x: number; y: number; w: number; h: number }
