@@ -20,6 +20,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { V2EnvelopeBadge } from "./V2EnvelopeBadge";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
 import { resolveCanonicalSource, CANONICAL_SOURCES, type CanonicalSource } from "@/lib/canonicalSource";
@@ -2329,6 +2330,18 @@ export const VisitorWorldMap = ({
         : ""
     }`}>
       <CardHeader className={`pb-2 ${isFullscreen ? "shrink-0" : ""}`}>
+        <div className="mb-2">
+          <V2EnvelopeBadge
+            hours={(() => {
+              const opt = TIME_RANGE_OPTIONS.find(o => o.value === timeRange);
+              const mins = opt?.minutes ?? 15;
+              return Math.max(1, Math.round(mins / 60));
+            })()}
+            geo={usOnly ? "US" : "all"}
+            label="Traffic quality (World map)"
+            compact
+          />
+        </div>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5" />

@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, RefreshCw, ShieldCheck, AlertTriangle, ShieldAlert } from "lucide-react";
 import { CanonicalKpiStrip } from "@/components/admin/CanonicalKpiStrip";
+import { V2EnvelopeBadge } from "@/components/admin/V2EnvelopeBadge";
 import {
   CANONICAL_ECOMMERCE_EVENTS,
   REQUIRED_GA4_PARAMS,
@@ -373,6 +374,14 @@ export default function FunnelHealthCenter() {
       </header>
 
       <CanonicalKpiStrip defaultRange="24h" />
+
+      {/* Phase 4C v2 envelope indicator — bucket split for the currently
+          selected range. Additive alongside the legacy KPI strip. */}
+      <V2EnvelopeBadge
+        hours={RANGE_HOURS[filters.range]}
+        geo="all"
+        label="Traffic quality (Funnel health)"
+      />
 
       {error && (
         <Alert variant="destructive">

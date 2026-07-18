@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle, PlayCircle } from "lucide-react";
 import { useAnalyticsTruth, type TruthResponse } from "@/hooks/useAnalyticsTruth";
+import { V2EnvelopeBadge } from "@/components/admin/V2EnvelopeBadge";
 
 type Range = "24h" | "7d" | "30d";
 const RANGE_HOURS: Record<Range, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
@@ -314,9 +315,15 @@ export const CleanAnalyticsPanel = () => {
               <Metric label="Product views" value={current.product_views} />
               <Metric label="Add to cart" value={current.add_to_cart} />
               <Metric label="Checkout started" value={current.checkout_started} />
-              <Metric label="Purchases" value={current.purchases} />
+              <Metric label="Purchases (genuine)" value={current.purchases} />
               <Metric label="Conversion rate" value={`${current.conversion_rate}%`} />
             </div>
+
+            <V2EnvelopeBadge
+              hours={RANGE_HOURS[range]}
+              geo="all"
+              label="Traffic quality (Clean analytics)"
+            />
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
