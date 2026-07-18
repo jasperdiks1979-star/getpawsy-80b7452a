@@ -1361,15 +1361,15 @@ const ProductDetail = () => {
                 </h1>
               )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
-              {adIntent.headline && allowHeadlineOverride && (
-                <p className={productContentOverride?.hideAdIntentHeadline ? "sr-only" : "text-base md:text-lg font-semibold text-primary mt-1.5"}>
+              {adIntent.headline && allowHeadlineOverride && !productContentOverride?.hideAdIntentHeadline && (
+                <p className="text-base md:text-lg font-semibold text-primary mt-1.5">
                   {adIntent.headline}
                 </p>
               )}
               {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
               <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
-                {(allowHeadlineOverride && adIntent.subline) ||
-                  productContentOverride?.intro ||
+                {productContentOverride?.intro ||
+                  (allowHeadlineOverride && adIntent.subline) ||
                   generateClarityIntro(product.name, product.category || "")}
               </p>
 
