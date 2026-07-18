@@ -11,8 +11,10 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
+import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface ProductFAQAccordionProps {
+  productId?: string;
   productName: string;
   category?: string;
 }
@@ -125,8 +127,12 @@ function generateFAQs(name: string, category?: string) {
   ];
 }
 
-export function ProductFAQAccordion({ productName, category }: ProductFAQAccordionProps) {
-  const faqs = useMemo(() => generateFAQs(productName, category), [productName, category]);
+export function ProductFAQAccordion({ productId, productName, category }: ProductFAQAccordionProps) {
+  const faqs = useMemo(() => {
+    const override = getProductContentOverride(productId);
+    if (override?.faqs && override.faqs.length > 0) return override.faqs;
+    return generateFAQs(productName, category);
+  }, [productId, productName, category]);
 
   return (
     <section className="mt-12">
