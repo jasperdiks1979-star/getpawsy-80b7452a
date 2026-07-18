@@ -30,12 +30,12 @@ const APPROVED = {
   source_image_url: "https://getpawsy.pet/images/products/128e0207-8a94-4d71-b428-5b7f5002528f.png",
   expected_source_hash: "44214f159fcf0e247b3b4f022d37d8e759e933816def104ce2ce5588dfe9fde7",
   headline: "Smarter Litter Care Starts Here",
-  benefit: "Self-cleaning cycles, app schedules, 60 L capacity.",
-  cta: "See Details",
+  chips: ["Self-Cleaning", "App Control", "60 L Capacity"] as string[],
+  cta: "Explore Product",
   pin_title: "Smart Self-Cleaning Cat Litter Box – App Control",
   pin_description: "Automatic self-cleaning cycles with schedules and status in the GetPawsy app. 60 L capacity, quiet operation. See full product details.",
   destination_link: "https://getpawsy.pet/products/automatic-cat-litter-box-self-cleaning-app-control?utm_source=pinterest&utm_medium=organic&utm_campaign=golden_pin",
-  idempotency_key: "golden:128e0207:v1",
+  idempotency_key: "golden:128e0207:v2",
   run_id: "00000000-0000-4000-8000-000000000000",
 } as const;
 
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   const cReq: ComposeRequest = {
     runId: APPROVED.run_id, productId: APPROVED.product_id,
     sourceUrl: APPROVED.source_image_url, expectedSourceHash: APPROVED.expected_source_hash,
-    actualSourceHash, headline: APPROVED.headline, benefit: APPROVED.benefit, cta: APPROVED.cta,
+    actualSourceHash, headline: APPROVED.headline, chips: [...APPROVED.chips], cta: APPROVED.cta,
     layout: APPROVED.layout_variant,
   };
   const p = plan(cReq);
@@ -114,6 +114,9 @@ Deno.serve(async (req) => {
     rep.plan = { reason: p.reason, layoutAudit: p.layoutAudit, urlAudit: p.urlAudit };
     return json({ ok: false, verdict: "GOLDEN_PIN_FAILED_PLAN", counts, item: rep }, 200);
   }
+  // v2 storage suffix so we don't overwrite the v1 asset and don't collide on
+  // the by_asset duplicate check against v1's queue row.
+  p.storagePath = p.storagePath.replace(/\.png$/, "-v2.png");
   rep.plan = { layout: APPROVED.layout_variant, storage_path: p.storagePath, cloudinary_url: p.cloudinaryUrl, layout_audit_ok: p.layoutAudit?.ok, url_audit_ok: p.urlAudit?.ok };
 
   // ── Render via Cloudinary ──
@@ -170,23 +173,25 @@ Deno.serve(async (req) => {
   const nowIso = new Date().toISOString();
   const insertRow = {
     product_id: APPROVED.product_id, product_slug: APPROVED.product_slug, product_name: APPROVED.product_name,
-    pin_variant: `golden_v1_${APPROVED.layout_variant}`,
+    pin_variant: `golden_v2_${APPROVED.layout_variant}`,
     pin_title: APPROVED.pin_title.slice(0, 100), pin_description: APPROVED.pin_description.slice(0, 500),
     pin_image_url: publicUrl, destination_link: APPROVED.destination_link,
     board_name: APPROVED.board_name, board_id: APPROVED.board_id,
     priority: "high", status: "publishing",
     scheduled_at: nowIso, publishing_started_at: nowIso,
     idempotency_key: idem, image_hash: outputHash,
-    content_type: "product", creative_fingerprint: `deterministic-golden-v1:${outputHash}`,
+    content_type: "product", creative_fingerprint: `deterministic-golden-v2:${outputHash}`,
     approved_at: nowIso,
     meta: {
-      program: "golden_pin_one_run",
+      program: "golden_pin_one_run_v2",
       layout: APPROVED.layout_variant,
       output_hash: outputHash,
       source_hash: actualSourceHash,
       source_url: APPROVED.source_image_url,
       cloudinary_url: p.cloudinaryUrl,
       integrity: p.integrity,
+      chips: [...APPROVED.chips],
+      cta: APPROVED.cta,
     },
   };
   const { data: inserted, error: insErr } = await sb.from("pinterest_pin_queue").insert(insertRow).select("id").single();
