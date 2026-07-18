@@ -35,6 +35,13 @@
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { checkCanonicalV2Gate } from "../_shared/canonicalV2Flag.ts";
+import {
+  aggregateBuckets,
+  classificationCoverage,
+  totalsFromAggregate,
+  type ClassifiableRow,
+} from "../_shared/canonicalV2Buckets.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -464,7 +471,7 @@ Deno.serve(async (req) => {
 
     const sample = events[0] ?? null;
 
-    const respBody = {
+    const respBody: Record<string, unknown> = {
       ok: true,
       window: { hours, since, until },
       filter: { geo, clean: true, source: "canonical_events + orders(status IN paid,completed)" },
@@ -478,6 +485,75 @@ Deno.serve(async (req) => {
       generated_at: new Date().toISOString(),
     };
 
+    // ── Phase 4B admin canary (envelope=v2) ────────────────────────────
+    // Backward-compatible. All existing fields above are unchanged.
+    // Fields under `v2` are only present when the gate passes.
+    const wantsV2 = (url.searchParams.get("envelope") || body?.envelope) === "v2";
+    if (wantsV2) {
+      try {
+        const gate = await checkCanonicalV2Gate(req);
+        respBody.v2_gate = { enabled: gate.enabled, isAdmin: gate.isAdmin, allowV2: gate.allowV2 };
+        if (gate.allowV2) {
+          const rows: ClassifiableRow[] = [];
+          const PAGE2 = 1000;
+          let from2 = 0;
+          while (true) {
+            const { data, error } = await supabase
+              .from("canonical_events")
+              .select("session_id,visitor_id,occurred_at,ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version")
+              .gte("occurred_at", since)
+              .lte("occurred_at", until)
+              .order("occurred_at", { ascending: false })
+              .range(from2, from2 + PAGE2 - 1);
+            if (error) break;
+            if (!data || data.length === 0) break;
+            rows.push(...(data as ClassifiableRow[]));
+            if (data.length < PAGE2) break;
+            from2 += PAGE2;
+            if (from2 > 200_000) break;
+          }
+          const agg = aggregateBuckets(rows, gate.phase4aCutoffIso);
+          const v2totals = totalsFromAggregate(agg);
+          const coverage = classificationCoverage(agg);
+          // Historical join estimate.
+          let historicalSessions = 0;
+          let joinableBySession = 0;
+          try {
+            const { count } = await supabase
+              .from("canonical_events")
+              .select("session_id", { count: "exact", head: true })
+              .lt("ingested_at", gate.phase4aCutoffIso);
+            historicalSessions = count ?? 0;
+          } catch { /* noop */ }
+          try {
+            const { count } = await supabase
+              .from("canonical_events")
+              .select("session_id", { count: "exact", head: true })
+              .lt("ingested_at", gate.phase4aCutoffIso)
+              .not("classification_version", "is", null);
+            joinableBySession = count ?? 0;
+          } catch { /* noop */ }
+          respBody.v2 = {
+            ...v2totals,
+            classification_version: "v2.phase4a",
+            classification_coverage_pct: coverage,
+            phase4a_cutoff_iso: gate.phase4aCutoffIso,
+            classified_sessions_post_deploy: v2totals.raw_sessions - v2totals.legacy_unclassified_sessions,
+            unclassified_historical_sessions: historicalSessions,
+            joinable_by_session_id: joinableBySession,
+            joinable_by_visitor_fallback: Math.max(0, historicalSessions - joinableBySession),
+            permanently_unclassifiable: 0,
+            estimated_backfill_coverage_pct: historicalSessions > 0
+              ? Math.round((joinableBySession / historicalSessions) * 10000) / 100
+              : 0,
+            orders_count: purchases_count,
+            checkout_started: totals.checkout_started,
+          };
+        }
+      } catch (e) {
+        respBody.v2_error = (e as Error).message;
+      }
+    }
     cache.set(key, { at: now, body: respBody });
     return new Response(JSON.stringify(respBody), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
