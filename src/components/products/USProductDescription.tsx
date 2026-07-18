@@ -5,8 +5,10 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
+import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface USProductDescriptionProps {
+  productId?: string;
   description: string;
   productName: string;
   className?: string;
@@ -30,11 +32,19 @@ interface ParsedDescription {
  * 5. Shipping & Returns Reassurance (trust block)
  */
 const USProductDescription: React.FC<USProductDescriptionProps> = ({
+  productId,
   description,
   productName,
   className = '',
 }) => {
   const parsed = parseDescriptionToUSFormat(description, productName);
+  const override = getProductContentOverride(productId);
+  if (override?.benefits && override.benefits.length > 0) {
+    parsed.keyBenefits = override.benefits;
+  }
+  if (override?.specs && override.specs.length > 0) {
+    parsed.productDetails = override.specs.map((s) => `${s.label}: ${s.value}`);
+  }
 
   return (
     <div className={`space-y-8 ${className}`}>
