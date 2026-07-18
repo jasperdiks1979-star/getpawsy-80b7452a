@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import {
-  DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   FREE_SHIPPING_THRESHOLD,
 } from "@/lib/shipping-constants";
+import { APPROVED_SHIPPING_LINE } from "@/config/merchant-policy";
 
 interface LitterBoxConversionBoostProps {
   /** Up to 14 product images — first 4 are cycled as an autoplaying visual loop. */
@@ -125,7 +125,7 @@ export function LitterBoxConversionBoost({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
-            In stock — ships fast
+            In stock — ships to United States
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 font-semibold text-warning">
@@ -140,7 +140,7 @@ export function LitterBoxConversionBoost({
         <span className="text-muted-foreground">·</span>
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
-          Est. {DELIVERY_TIME_STANDARD}
+          {APPROVED_SHIPPING_LINE}
         </span>
       </div>
 
@@ -150,7 +150,7 @@ export function LitterBoxConversionBoost({
           { icon: Truck, label: `Free over $${FREE_SHIPPING_THRESHOLD}` },
           { icon: RotateCcw, label: `${RETURN_WINDOW_DAYS}-day returns` },
           { icon: Lock, label: "Secure checkout" },
-          { icon: ShieldCheck, label: "US support team" },
+          { icon: ShieldCheck, label: "Customer Support" },
         ].map(({ icon: Icon, label }) => (
           <li
             key={label}
