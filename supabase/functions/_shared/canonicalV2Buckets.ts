@@ -23,20 +23,57 @@ export interface ClassifiableRow {
   bot_confidence?: number | null;
   traffic_quality?: string | null;
   classification_version?: string | null;
+  // Authoritative session-level classification produced by the client
+  // classifier and persisted in `analytics_traffic_classification`.
+  // Present only when the classifier actually ran for this session.
+  atc_traffic_type?: string | null;
 }
 
+/**
+ * Classify a single row into a bucket.
+ *
+ * Source-of-truth precedence (worst signal wins at session level via
+ * aggregateBuckets):
+ *   1. is_internal=true                                        → internal
+ *   2. technical_path truthy                                   → technical
+ *   3. is_bot=true AND bot_confidence>=0.7                     → bot
+ *   4. analytics_traffic_classification hit (atc_traffic_type) → mapped
+ *   5. canonical_events with classification_version present    → traffic_quality
+ *   6. no classifier evidence at all                           → legacy_unclassified
+ *
+ * The `traffic_quality` column DEFAULT is `'uncertain'`. That default is a
+ * placeholder, NOT evidence of classification. Rows with the default and
+ * no classification_version and no ATC hit are legacy_unclassified — never
+ * counted as commercial. The phase4a cutoff parameter is retained for
+ * signature compatibility but no longer upgrades default placeholders to
+ * `uncertain`.
+ */
+// deno-lint-ignore no-unused-vars
 export function classifyRow(row: ClassifiableRow, phase4aCutoffIso: string): Bucket {
   if (row.is_internal === true) return "internal";
   if (row.technical_path === true || (typeof row.technical_path === "string" && row.technical_path.length > 0)) return "technical";
   if (row.is_bot === true && Number(row.bot_confidence ?? 0) >= 0.7) return "bot";
-  const tq = String(row.traffic_quality || "").toLowerCase();
-  if (tq === "crawler") return "crawler";
-  if (tq === "uncertain") return "uncertain";
-  if (tq === "human") return "human";
-  // No classification yet: split by cutoff.
-  const stamp = row.ingested_at || row.occurred_at;
-  if (!stamp) return "legacy_unclassified";
-  return stamp < phase4aCutoffIso ? "legacy_unclassified" : "uncertain";
+  const atc = String(row.atc_traffic_type || "").toLowerCase();
+  if (atc) {
+    if (atc === "human") return "human";
+    if (atc === "crawler") return "crawler";
+    if (atc === "bot") return "bot";
+    if (atc === "internal") return "internal";
+    // prefetch / prerender / unknown → genuinely uncertain (classifier ran).
+    return "uncertain";
+  }
+  // Only trust canonical_events.traffic_quality when the classifier
+  // actually stamped classification_version. A bare DEFAULT 'uncertain'
+  // is a placeholder and must not upgrade legacy rows into commercial.
+  if (row.classification_version && String(row.classification_version).length > 0) {
+    const tq = String(row.traffic_quality || "").toLowerCase();
+    if (tq === "human") return "human";
+    if (tq === "crawler") return "crawler";
+    if (tq === "bot") return "bot";
+    if (tq === "internal") return "internal";
+    if (tq === "uncertain") return "uncertain";
+  }
+  return "legacy_unclassified";
 }
 
 export interface BucketAggregate {
