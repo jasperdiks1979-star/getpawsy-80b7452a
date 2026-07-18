@@ -4,35 +4,51 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 const CUTOFF = "2026-07-17T23:20:00Z";
 
 Deno.test("classifyRow: internal wins over everything", () => {
-  assertEquals(classifyRow({ is_internal: true, technical_path: "/api/x", is_bot: true, traffic_quality: "human", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "internal");
+  assertEquals(classifyRow({ is_internal: true, technical_path: "/api/x", is_bot: true, traffic_quality: "human", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "internal");
 });
 
 Deno.test("classifyRow: technical route above human", () => {
-  assertEquals(classifyRow({ technical_path: "/api/health", traffic_quality: "human", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "technical");
+  assertEquals(classifyRow({ technical_path: "/api/health", traffic_quality: "human", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "technical");
 });
 
 Deno.test("classifyRow: bot only when confidence >= 0.7", () => {
-  assertEquals(classifyRow({ is_bot: true, bot_confidence: 0.6, traffic_quality: "human", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "human");
-  assertEquals(classifyRow({ is_bot: true, bot_confidence: 0.9, traffic_quality: "human", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "bot");
+  assertEquals(classifyRow({ is_bot: true, bot_confidence: 0.6, traffic_quality: "human", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "human");
+  assertEquals(classifyRow({ is_bot: true, bot_confidence: 0.9, traffic_quality: "human", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "bot");
 });
 
 Deno.test("classifyRow: crawler/uncertain/human via traffic_quality", () => {
-  assertEquals(classifyRow({ traffic_quality: "crawler", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "crawler");
-  assertEquals(classifyRow({ traffic_quality: "uncertain", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "uncertain");
-  assertEquals(classifyRow({ traffic_quality: "human", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "human");
+  assertEquals(classifyRow({ traffic_quality: "crawler", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "crawler");
+  assertEquals(classifyRow({ traffic_quality: "uncertain", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "uncertain");
+  assertEquals(classifyRow({ traffic_quality: "human", classification_version: "v2.phase4a", ingested_at: "2026-07-18T00:00:00Z" }, CUTOFF), "human");
 });
 
 Deno.test("classifyRow: pre-cutoff, no classification → legacy_unclassified", () => {
   assertEquals(classifyRow({ ingested_at: "2026-07-17T22:00:00Z" }, CUTOFF), "legacy_unclassified");
 });
 
-Deno.test("classifyRow: post-cutoff, no classification → uncertain (never human)", () => {
-  assertEquals(classifyRow({ ingested_at: "2026-07-18T01:00:00Z" }, CUTOFF), "uncertain");
+Deno.test("classifyRow: post-cutoff, DEFAULT placeholder only → legacy_unclassified (never commercial)", () => {
+  // Simulates a canonical_events row where the schema default 'uncertain'
+  // is present but the classifier never ran (classification_version NULL).
+  assertEquals(classifyRow({ ingested_at: "2026-07-18T01:00:00Z", traffic_quality: "uncertain" }, CUTOFF), "legacy_unclassified");
+});
+
+Deno.test("classifyRow: post-cutoff, classifier_executed uncertain result → uncertain", () => {
+  assertEquals(classifyRow({ ingested_at: "2026-07-18T01:00:00Z", traffic_quality: "uncertain", classification_version: "v2.phase4a" }, CUTOFF), "uncertain");
+});
+
+Deno.test("classifyRow: ATC hit overrides bare canonical placeholder", () => {
+  assertEquals(classifyRow({ traffic_quality: "uncertain", atc_traffic_type: "human", ingested_at: "2026-07-18T01:00:00Z" }, CUTOFF), "human");
+  assertEquals(classifyRow({ traffic_quality: "uncertain", atc_traffic_type: "crawler", ingested_at: "2026-07-18T01:00:00Z" }, CUTOFF), "crawler");
+  assertEquals(classifyRow({ traffic_quality: "uncertain", atc_traffic_type: "unknown", ingested_at: "2026-07-18T01:00:00Z" }, CUTOFF), "uncertain");
+});
+
+Deno.test("classifyRow: technical + ATC=human → technical still wins", () => {
+  assertEquals(classifyRow({ technical_path: true, atc_traffic_type: "human", ingested_at: "2026-07-18T01:00:00Z" }, CUTOFF), "technical");
 });
 
 Deno.test("aggregateBuckets: session worst-bucket precedence — technical hit on human session demotes to technical", () => {
   const rows = [
-    { session_id: "s1", visitor_id: "v1", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human" },
+    { session_id: "s1", visitor_id: "v1", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human", classification_version: "v2.phase4a" },
     { session_id: "s1", visitor_id: "v1", ingested_at: "2026-07-18T00:00:01Z", technical_path: "/api/img" },
   ];
   const agg = aggregateBuckets(rows, CUTOFF);
@@ -42,9 +58,9 @@ Deno.test("aggregateBuckets: session worst-bucket precedence — technical hit o
 
 Deno.test("totalsFromAggregate: raw = sum of buckets; commercial = human + uncertain", () => {
   const rows = [
-    { session_id: "h", visitor_id: "h", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human" },
-    { session_id: "u", visitor_id: "u", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "uncertain" },
-    { session_id: "c", visitor_id: "c", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "crawler" },
+    { session_id: "h", visitor_id: "h", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human", classification_version: "v2.phase4a" },
+    { session_id: "u", visitor_id: "u", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "uncertain", classification_version: "v2.phase4a" },
+    { session_id: "c", visitor_id: "c", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "crawler", classification_version: "v2.phase4a" },
     { session_id: "b", visitor_id: "b", ingested_at: "2026-07-18T00:00:00Z", is_bot: true, bot_confidence: 0.95 },
     { session_id: "t", visitor_id: "t", ingested_at: "2026-07-18T00:00:00Z", technical_path: "/api/health" },
     { session_id: "i", visitor_id: "i", ingested_at: "2026-07-18T00:00:00Z", is_internal: true },
@@ -63,7 +79,7 @@ Deno.test("totalsFromAggregate: raw = sum of buckets; commercial = human + uncer
 
 Deno.test("rollback safety: v1 numbers not mutated by v2 aggregation", () => {
   // v2 is a pure function over rows; running it does not touch source objects.
-  const rows = [{ session_id: "s", visitor_id: "v", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human" }];
+  const rows = [{ session_id: "s", visitor_id: "v", ingested_at: "2026-07-18T00:00:00Z", traffic_quality: "human", classification_version: "v2.phase4a" }];
   const before = JSON.stringify(rows);
   aggregateBuckets(rows, CUTOFF);
   assertEquals(JSON.stringify(rows), before);
@@ -74,6 +90,7 @@ Deno.test("parity: technical never appears in commercial", () => {
     session_id: `s${i}`, visitor_id: `v${i}`, ingested_at: "2026-07-18T00:00:00Z",
     technical_path: i % 2 === 0 ? "/api/x" : null,
     traffic_quality: i % 2 === 0 ? "human" : "human",
+    classification_version: "v2.phase4a",
   }));
   const t = totalsFromAggregate(aggregateBuckets(rows, CUTOFF));
   assertEquals(t.technical_sessions, 100);

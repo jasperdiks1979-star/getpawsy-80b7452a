@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     const envelope = (url.searchParams.get("envelope") || body?.envelope) === "v2" ? "v2" : "v1";
     const key = `${hours}|${geo}|${envelope}`;
     // Deploy marker to prove new bundle is live.
-    (globalThis as any).__ac_deploy_marker = "phase4b-v2-2";
+    (globalThis as any).__ac_deploy_marker = "phase4b-v2-3-atc-source";
     const now = Date.now();
     const hit = cache.get(key);
     if (hit && now - hit.at < TTL_MS) {
@@ -516,6 +516,33 @@ Deno.serve(async (req) => {
             from2 += PAGE2;
             if (from2 > 200_000) break;
           }
+          // Authoritative session-level classification lives in
+          // analytics_traffic_classification (ATC). canonical_events only
+          // carries a schema DEFAULT of 'uncertain' — no classifier has
+          // written classification_version there yet. Join ATC in per
+          // session_id and stamp `atc_traffic_type` on every event before
+          // aggregation.
+          const uniqSids = Array.from(new Set(
+            rows.map((r) => r.session_id).filter((s): s is string => !!s),
+          ));
+          const atcMap = new Map<string, string>();
+          const CHUNK_ATC = 500;
+          for (let i = 0; i < uniqSids.length; i += CHUNK_ATC) {
+            const batch = uniqSids.slice(i, i + CHUNK_ATC);
+            const { data: atc, error: atcErr } = await supabase
+              .from("analytics_traffic_classification")
+              .select("session_id,traffic_type")
+              .in("session_id", batch);
+            if (atcErr) continue;
+            for (const r of atc ?? []) {
+              if (r.session_id && r.traffic_type) atcMap.set(r.session_id, r.traffic_type as string);
+            }
+          }
+          for (const r of rows) {
+            if (r.session_id && atcMap.has(r.session_id)) {
+              (r as ClassifiableRow).atc_traffic_type = atcMap.get(r.session_id) || null;
+            }
+          }
           const agg = aggregateBuckets(rows, gate.phase4aCutoffIso);
           const v2totals = totalsFromAggregate(agg);
           const coverage = classificationCoverage(agg);
@@ -539,7 +566,8 @@ Deno.serve(async (req) => {
           } catch { /* noop */ }
           respBody.v2 = {
             ...v2totals,
-            classification_version: "v2.phase4a",
+            classification_version: "v2.phase4a+atc",
+            classification_source: "analytics_traffic_classification (authoritative) + canonical_events (fallback when classification_version present)",
             classification_coverage_pct: coverage,
             phase4a_cutoff_iso: gate.phase4aCutoffIso,
             classified_sessions_post_deploy: v2totals.raw_sessions - v2totals.legacy_unclassified_sessions,
@@ -552,6 +580,8 @@ Deno.serve(async (req) => {
               : 0,
             orders_count: purchases_count,
             checkout_started: totals.checkout_started,
+            atc_sessions_matched: atcMap.size,
+            atc_sessions_scanned: uniqSids.length,
           };
         }
       } catch (e) {
