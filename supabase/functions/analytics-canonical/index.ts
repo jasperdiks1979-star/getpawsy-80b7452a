@@ -476,6 +476,7 @@ Deno.serve(async (req) => {
 
     const respBody: Record<string, unknown> = {
       ok: true,
+      deploy_marker: (globalThis as any).__ac_deploy_marker,
       window: { hours, since, until },
       filter: { geo, clean: true, source: "canonical_events + orders(status IN paid,completed)" },
       totals,
