@@ -645,7 +645,8 @@ export interface ComposeRequest {
   expectedSourceHash: string;
   actualSourceHash: string;
   headline: string;
-  benefit: string;
+  benefit?: string;
+  chips?: string[];
   cta: string;
   layout: LayoutVariant;
 }
@@ -686,15 +687,30 @@ export function plan(req: ComposeRequest): ComposePlan {
 
   const vh = validateHeadline(req.headline);
   if (!vh.ok) return { ok: false, reason: `headline:${vh.reason}` };
-  const vb = validateBenefit(req.benefit);
-  if (!vb.ok) return { ok: false, reason: `benefit:${vb.reason}` };
+  const useChips = Array.isArray(req.chips) && req.chips.length > 0;
+  if (useChips) {
+    const vch = validateChips(req.chips!);
+    if (!vch.ok) return { ok: false, reason: `chips:${vch.reason}` };
+  } else {
+    const vb = validateBenefit(req.benefit ?? "");
+    if (!vb.ok) return { ok: false, reason: `benefit:${vb.reason}` };
+  }
   const vc = validateCta(req.cta);
   if (!vc.ok) return { ok: false, reason: `cta:${vc.reason}` };
 
   const hf = fitText(req.headline, "georgia_bold", L.headlineBox.w, L.headlineBox.h, L.headlineMaxLines, L.headlineMaxSize, L.headlineMinSize);
   if (!hf.ok) return { ok: false, reason: "headline_text_overflow" };
-  const bf = fitText(req.benefit, "arial", L.benefitBox.w, L.benefitBox.h, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
-  if (!bf.ok) return { ok: false, reason: "benefit_text_overflow" };
+  let bf: TextFit | undefined;
+  let chipStrip: ChipStrip | undefined;
+  if (useChips) {
+    chipStrip = computeChipStrip(L.benefitBox, req.chips!);
+    if (chipStrip.overflow.some(Boolean)) {
+      return { ok: false, reason: "chip_overflow", layoutAudit };
+    }
+  } else {
+    bf = fitText(req.benefit ?? "", "arial", L.benefitBox.w, L.benefitBox.h, L.benefitMaxLines, L.benefitMaxSize, L.benefitMinSize);
+    if (!bf.ok) return { ok: false, reason: "benefit_text_overflow" };
+  }
 
   const pill = computeCtaPill(L, req.cta);
 
@@ -705,8 +721,10 @@ export function plan(req: ComposeRequest): ComposePlan {
     layout: L,
     headlineLines: hf.lines,
     headlineSize: hf.fontSize,
-    benefitLines: bf.lines,
-    benefitSize: bf.fontSize,
+    benefitLines: bf?.lines,
+    benefitSize: bf?.fontSize,
+    chips: useChips ? req.chips : undefined,
+    chipStrip,
     ctaText: req.cta,
     ctaSize: pill.fontSize,
     ctaPill: pill,
@@ -726,7 +744,7 @@ export function plan(req: ComposeRequest): ComposePlan {
     storagePath,
     layoutAudit,
     urlAudit,
-    textFits: { headline: hf, benefit: bf },
+    textFits: { headline: hf, benefit: bf ?? { ok: true, lines: [], fontSize: 0 } },
     integrity: {
       source_hash: req.actualSourceHash,
       source_url: req.sourceUrl,
