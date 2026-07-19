@@ -1,66 +1,89 @@
 /**
- * getpawsy.pet — GSC Soft-404 Recovery Worker
+ * getpawsy.pet — GSC Soft-404 Recovery Worker (corrected build)
  *
- * Purpose: Emit REAL HTTP status codes (410 Gone / 301 Moved) for the exact
- * 331-URL Google Search Console "Soft 404" cohort dated 2026-07-19, while
- * leaving every other request on the origin untouched.
+ * Emits real 410/301 HTTP status codes for the exact 331-URL GSC Soft-404
+ * cohort dated 2026-07-19. Every other request is a pass-through.
  *
- * Design principles:
- *   1. EXACT-MATCH ONLY. No wildcards. No family rules. Only URLs present
- *      in data/cohort-manifest.json get intercepted. Every other URL is a
- *      pass-through to the origin.
- *   2. FAIL-OPEN. Any exception, unknown host, unknown method, or non-GET/HEAD
- *      request falls through to the origin unmodified.
- *   3. NON-DESTRUCTIVE. The worker only sets response status + headers on
- *      dead paths; it never rewrites HTML, cookies, or POST bodies.
- *   4. OBSERVABLE. Every intercepted request emits `x-gsc-recovery: <bucket>`
- *      so post-deploy verification can prove which rule fired.
- *
- * Deployment: see DEPLOYMENT.md. Rollback: see ROLLBACK.md.
+ * Safety principles:
+ *   - EXACT-MATCH ONLY. No wildcards, no family rules.
+ *   - FAIL-OPEN. Unknown host, non-GET/HEAD, or thrown error -> origin.
+ *   - NO CANONICAL on a 410 (a removed URL must not canonicalize).
+ *   - MARKETING-PARAM ALLOWLIST on 301 (utm_*, gclid, fbclid, pinclid only).
+ *   - HEAD returns identical status + headers to GET, but no body.
  */
 
 import rules from "../data/worker-rules.json";
 
 export interface Env {}
 
-const ALLOWED_HOSTS = new Set([
+export const ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   "getpawsy.pet",
   "www.getpawsy.pet",
 ]);
 
-const EXACT_410: Set<string> = new Set(rules.exact_410 as string[]);
-const EXACT_301: Record<string, string> = rules.exact_301 as Record<string, string>;
+export const EXACT_410: ReadonlySet<string> = new Set(rules.exact_410 as string[]);
+export const EXACT_301: Readonly<Record<string, string>> =
+  rules.exact_301 as Record<string, string>;
 
-function normalizePath(pathname: string): string {
-  // Collapse trailing slash (except root) so "/foo/" and "/foo" resolve alike.
-  if (pathname.length > 1 && pathname.endsWith("/")) {
-    return pathname.slice(0, -1);
+// Explicit allowlist of query parameters preserved across a 301 redirect.
+export const ALLOWED_QUERY_PARAMS: ReadonlySet<string> = new Set([
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "gclid",
+  "fbclid",
+  "pinclid",
+]);
+
+export function filterQuery(search: string): string {
+  if (!search || search === "?") return "";
+  const src = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const out = new URLSearchParams();
+  for (const key of ALLOWED_QUERY_PARAMS) {
+    for (const v of src.getAll(key)) {
+      if (v === "") continue; // drop empty allowed params
+      out.append(key, v);
+    }
   }
+  const s = out.toString();
+  return s ? `?${s}` : "";
+}
+
+export function normalizePath(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) return pathname.slice(0, -1);
   return pathname;
 }
 
-function goneResponse(path: string): Response {
-  const body =
+function goneBody(): string {
+  // NO <link rel="canonical"> — removed URLs must not canonicalize.
+  return (
     `<!doctype html><html lang="en"><head>` +
     `<meta charset="utf-8">` +
     `<title>410 Gone — getpawsy.pet</title>` +
     `<meta name="robots" content="noindex,nofollow">` +
-    `<link rel="canonical" href="https://getpawsy.pet/">` +
     `</head><body>` +
     `<h1>410 Gone</h1>` +
     `<p>This page has been permanently removed.</p>` +
     `<p><a href="https://getpawsy.pet/">Return to getpawsy.pet</a></p>` +
-    `</body></html>`;
-  return new Response(body, {
-    status: 410,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "public, max-age=3600, s-maxage=86400",
-      "x-robots-tag": "noindex, nofollow",
-      "x-gsc-recovery": "410",
-      "x-gsc-recovery-path": path,
-    },
-  });
+    `</body></html>`
+  );
+}
+
+function goneHeaders(path: string): Record<string, string> {
+  return {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "public, max-age=3600, s-maxage=86400",
+    "x-robots-tag": "noindex, nofollow",
+    "x-gsc-recovery": "410",
+    "x-gsc-recovery-path": path,
+  };
+}
+
+function goneResponse(path: string, method: string): Response {
+  const body = method === "HEAD" ? null : goneBody();
+  return new Response(body, { status: 410, headers: goneHeaders(path) });
 }
 
 function redirectResponse(from: string, to: string): Response {
@@ -85,38 +108,25 @@ export default {
       return fetch(request);
     }
 
-    // Fail-open: only act on allowed hosts + safe methods.
     if (!ALLOWED_HOSTS.has(url.hostname)) return fetch(request);
     if (request.method !== "GET" && request.method !== "HEAD") return fetch(request);
 
     const path = normalizePath(url.pathname);
 
-    // 1. Exact 301 (active PDPs behind a stale /product/<uuid> path).
+    // 1. Exact 301
     const target = EXACT_301[path] ?? EXACT_301[url.pathname];
     if (target) {
-      // Preserve marketing / tracking query string on the redirect so
-      // Pinterest / GA / UTM attribution survives the one-hop 301.
-      const location = url.search ? `${target}${url.search}` : target;
-      return redirectResponse(url.pathname + url.search, location);
+      const filtered = filterQuery(url.search);
+      const location = filtered ? `${target}${filtered}` : target;
+      return redirectResponse(url.pathname, location);
     }
 
-    // 2. Exact 410 (removed URL from the GSC cohort).
+    // 2. Exact 410
     if (EXACT_410.has(path) || EXACT_410.has(url.pathname)) {
-      // HEAD gets headers-only 410.
-      if (request.method === "HEAD") {
-        return new Response(null, {
-          status: 410,
-          headers: {
-            "x-robots-tag": "noindex, nofollow",
-            "x-gsc-recovery": "410",
-            "x-gsc-recovery-path": url.pathname,
-          },
-        });
-      }
-      return goneResponse(url.pathname);
+      return goneResponse(url.pathname, request.method);
     }
 
-    // 3. Everything else: pass through to origin unchanged.
+    // 3. Pass-through
     return fetch(request);
   },
 };
