@@ -244,41 +244,122 @@
         }
       }
 
-      // PRE-HYDRATION: Set meaningful title & description for product pages
-      // so Googlebot sees real content before React hydrates (prevents Soft 404)
-      if (p.indexOf('/product/') === 0) {
-        var slug = p.replace('/product/', '');
-        // Convert slug to readable name: "orthopedic-dog-bed" → "Orthopedic Dog Bed"
-        var productName = slug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
-        // Truncate excessively long CJ-style names
-        if (productName.length > 80) productName = productName.substring(0, 77) + '...';
-        document.title = productName + ' | GetPawsy - Premium Pet Products';
-        var descMeta = document.querySelector('meta[name="description"]');
-        if (descMeta) descMeta.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium quality pet product. Estimated delivery: 5-10 business days. 30-day returns.');
+      // ═══════════════════════════════════════════════════════════════════
+      // PRE-HYDRATION SOFT-404 RECOVERY (2026-07-19)
+      // Root cause: pre-render shell shipped one static title/description for
+      // every URL → Google fingerprinted 331 URLs as duplicates → mass Soft 404.
+      // Fix: (a) neutral brand shell (above), (b) route-specific titles below,
+      // (c) hard 404 signal for URL shapes we know are dead — so Google gets
+      // an unambiguous status BEFORE React hydrates.
+      // ═══════════════════════════════════════════════════════════════════
 
-        // Inject minimal JSON-LD skeleton so Googlebot sees structured data in raw HTML
-        // React will replace this with full data once hydrated
-        var jsonLd = {
-          '@context': 'https://schema.org',
-          '@type': 'Product',
-          '@id': ORIGIN + '/product/' + slug + '#product',
-          'name': productName,
-          'brand': { '@type': 'Brand', 'name': 'GetPawsy' },
-          'url': ORIGIN + '/product/' + slug,
-          'offers': {
-            '@type': 'Offer',
-            'url': ORIGIN + '/product/' + slug,
-            'priceCurrency': 'USD',
-            'availability': 'https://schema.org/InStock',
-            'itemCondition': 'https://schema.org/NewCondition',
-            'seller': { '@type': 'Organization', 'name': 'GetPawsy' }
+      // UUID slug shape used by legacy CJ product IDs — never a live PDP.
+      var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      function markDead(reason) {
+        var metas = document.querySelectorAll('meta[name="robots"], meta[name="googlebot"]');
+        for (var k = 0; k < metas.length; k++) metas[k].setAttribute('content', 'noindex, nofollow');
+        var pr = document.createElement('meta');
+        pr.setAttribute('name', 'prerender-status-code');
+        pr.setAttribute('content', '404');
+        document.head.appendChild(pr);
+        document.title = '404 — Page Not Found | GetPawsy';
+        var dm = document.querySelector('meta[name="description"]');
+        if (dm) dm.setAttribute('content', 'This page is no longer available on GetPawsy. Browse current pet products and guides.');
+        try { window.__GP_DEAD_URL__ = reason; } catch(_) {}
+      }
+
+      // Dead URL prefixes that don't map to any React route (from GSC export).
+      var DEAD_PREFIXES = ['/c/','/pages/','/small-pets/','/api/','/partners','/new-arrivals','/accessories'];
+      var DEAD_EXACT = ['/dogs'];
+      for (var dp = 0; dp < DEAD_PREFIXES.length; dp++) {
+        if (p.indexOf(DEAD_PREFIXES[dp]) === 0) { markDead('dead-prefix:' + DEAD_PREFIXES[dp]); break; }
+      }
+      for (var de = 0; de < DEAD_EXACT.length; de++) {
+        if (p === DEAD_EXACT[de]) { markDead('dead-exact:' + DEAD_EXACT[de]); break; }
+      }
+
+      // Product PDPs: /product/:slug and /products/:slug both exist as live
+      // routes. UUID or cj_-prefixed slugs are legacy/dead ⇒ hard 404 signal.
+      function isDeadProductSlug(s) {
+        if (!s) return true;
+        var bare = s.split('/')[0];
+        if (UUID_RE.test(bare)) return true;
+        if (bare.indexOf('cj_') === 0) return true;
+        return false;
+      }
+
+      if (p.indexOf('/product/') === 0 || p.indexOf('/products/') === 0) {
+        var prefix = p.indexOf('/products/') === 0 ? '/products/' : '/product/';
+        var slug = p.replace(prefix, '');
+        if (isDeadProductSlug(slug)) {
+          markDead('dead-product-slug');
+        } else {
+          // Convert slug to readable name and set a UNIQUE title so this URL
+          // is not fingerprinted as a duplicate of the shell.
+          var productName = slug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+          if (productName.length > 80) productName = productName.substring(0, 77) + '...';
+          document.title = productName + ' | GetPawsy';
+          var descMetaP = document.querySelector('meta[name="description"]');
+          if (descMetaP) descMetaP.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium pet product with fast US shipping and 30-day returns.');
+
+          // Inject minimal JSON-LD skeleton
+          var jsonLd = {
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            '@id': ORIGIN + prefix + slug + '#product',
+            'name': productName,
+            'brand': { '@type': 'Brand', 'name': 'GetPawsy' },
+            'url': ORIGIN + prefix + slug,
+            'offers': {
+              '@type': 'Offer',
+              'url': ORIGIN + prefix + slug,
+              'priceCurrency': 'USD',
+              'availability': 'https://schema.org/InStock',
+              'itemCondition': 'https://schema.org/NewCondition',
+              'seller': { '@type': 'Organization', 'name': 'GetPawsy' }
+            }
+          };
+          var ldScript = document.createElement('script');
+          ldScript.type = 'application/ld+json';
+          ldScript.id = 'gp-prehydration-jsonld';
+          ldScript.textContent = JSON.stringify(jsonLd);
+          document.head.appendChild(ldScript);
+        }
+      }
+
+      // Guides / editorial / landing pages — set a route-specific title so
+      // the pre-render is not duplicated across dozens of URLs.
+      function slugToName(s) {
+        var n = s.replace(/\/$/, '').replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        return n.length > 80 ? n.substring(0, 77) + '...' : n;
+      }
+      var UNIQUE_PREFIXES = [
+        { pfx: '/guides/', suf: ' Guide | GetPawsy' },
+        { pfx: '/blog/',   suf: ' | GetPawsy Blog' },
+        { pfx: '/lp/',     suf: ' | GetPawsy' },
+        { pfx: '/landing/',suf: ' | GetPawsy' },
+        { pfx: '/best-',   suf: ' | GetPawsy',   keepPrefix: true },
+      ];
+      for (var up = 0; up < UNIQUE_PREFIXES.length; up++) {
+        var cfg = UNIQUE_PREFIXES[up];
+        if (p.indexOf(cfg.pfx) === 0) {
+          var raw = cfg.keepPrefix ? p.slice(1) : p.slice(cfg.pfx.length);
+          if (raw) {
+            document.title = slugToName(raw) + cfg.suf;
+            var dmU = document.querySelector('meta[name="description"]');
+            if (dmU) dmU.setAttribute('content', slugToName(raw) + ' — expert pet care guide from GetPawsy.');
           }
-        };
-        var ldScript = document.createElement('script');
-        ldScript.type = 'application/ld+json';
-        ldScript.id = 'gp-prehydration-jsonld';
-        ldScript.textContent = JSON.stringify(jsonLd);
-        document.head.appendChild(ldScript);
+          break;
+        }
+      }
+
+      // Legacy hard-coded /product/ handling kept for backwards compat callers
+      // that referenced the old block by comment marker (no-op branch).
+      if (false && p.indexOf('/product/') === 0) {
+        var slugLegacy = p.replace('/product/', '');
+        // Convert slug to readable name: "orthopedic-dog-bed" → "Orthopedic Dog Bed"
+        void slugLegacy;
       }
 
       // Redirect /bestseller/:slug to /product/:slug (canonical URL consolidation)
