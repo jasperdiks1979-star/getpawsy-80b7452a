@@ -9,11 +9,16 @@
     "deploy:staging": "wrangler deploy --env staging",
     "deploy:production": "wrangler deploy --env production",
     "tail": "wrangler tail",
-    "verify": "bash test/smoke-test.sh"
+    "verify": "bash test/smoke-test.sh",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/worker.ts --bundle --format=esm --platform=neutral --loader:.json=json --outfile=dist/worker.js"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260101.0",
-    "typescript": "^5.5.0",
-    "wrangler": "^3.90.0"
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^3.90.0",
+    "vitest": "^2.1.9",
+    "esbuild": "^0.24.0"
   }
 }
