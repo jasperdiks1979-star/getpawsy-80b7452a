@@ -1,0 +1,19 @@
+{
+  "name": "getpawsy-gsc-recovery",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that emits real 410/301 status codes for the GSC 2026-07-19 soft-404 cohort on getpawsy.pet.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "verify": "bash test/smoke-test.sh"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.90.0"
+  }
+}
