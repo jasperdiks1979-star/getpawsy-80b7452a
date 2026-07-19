@@ -1,0 +1,167 @@
+{
+  "generated_from": "cohort-manifest.json",
+  "assertions": [
+    {
+      "path": "/c/all",
+      "expected_status": 410,
+      "reason": "collection_prefix_deprecated"
+    },
+    {
+      "path": "/c/best-sellers",
+      "expected_status": 410,
+      "reason": "collection_prefix_deprecated"
+    },
+    {
+      "path": "/products/getpawsy-2026-top-rated-fully-enclosed-cat-litter-easy-clean-design-20443125",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/product/af2f873c-e754-40d8-ab78-f77ef53eb823",
+      "expected_status": 410,
+      "reason": "uuid_orphan"
+    },
+    {
+      "path": "/products/cj_2003465547326877697",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/product/783cc4a9-d1fa-458f-b801-5eee3f886a39",
+      "expected_status": 410,
+      "reason": "uuid_orphan"
+    },
+    {
+      "path": "/products/getpawsy-all-in-one-convertible-folding-4-wheel-padded-no-pull-20424872",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-upgraded-5x2-wide-wheels-all-in-one-padded-no-pull-20424881",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-extra-large-dual-entry-cat-litter-box-convertible-easy-clean-design-20443126",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/pets-dog-cat-baby-safety-gate-mesh-fence-magic-portable-guard-net-stairs-doors",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/33in-cat-tree-multi-level-cat-tower-with-cat-scratching-post-with-curved-perch-c",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/wooden-hamster-cage-with-storage-shelf-large-rat-mouse-habitat-including-seesaw-small-animal-cage-wi",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/156e7ac6-24e2-4cfc-90fb-fad99eb0b033",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-cat-window-box-43-3-catio-outdoor-cat-interactive-play-058697502722",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-extra-wide-foldable-dog-stairs-pet-ramp-durable-chew-resistant-20417706",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-fully-enclosed-magic-cube-litter-box-top-front-easy-clean-design-20443128",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/dog-car-seat-cover-view-mesh-pet-carrier-hammock-safety-protector-car-rear-back-seat-mat-with-zipper",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/dog-training-collar-receiver-ip67-waterproof-dog-bark-shock-collar-accessories-adjustable-belt",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-156e",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/products/getpawsy-wood-pet-stairs-4-step-dog-stairs-beds-orthopedic-support-20363220",
+      "expected_status": 410,
+      "reason": "removed_pdp"
+    },
+    {
+      "path": "/product/e42efe24-988c-4581-b8e0-95efc2c5250f",
+      "expected_status": 301,
+      "expected_location": "/products/outdoor-dog-kennel-with-roof-rotating-4-level-adjustable-bowls",
+      "reason": "uuid_active_pdp"
+    },
+    {
+      "path": "/product/5a93dba6-2030-4469-b40b-2f6aa07590aa",
+      "expected_status": 301,
+      "expected_location": "/products/house-type-with-running-ladder-orange-red-wooden-chicken-rabbit-cage",
+      "reason": "uuid_active_pdp"
+    },
+    {
+      "path": "/product/getpawsy-large-folding-bike-trailer-dogs-66lb-capacity-durable-chew-resistant-20417734",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-cat-litter-box-enclosure-2-in-1-condo-cat-easy-clean-design-194578513921",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-go-cat-litter-box-enclosure-light-hidden-easy-clean-design-611683168258",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-cat-hidden-litter-box-enclosure-rgb-led-easy-clean-design-227807883266",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-61-extra-tall-cat-gate-doorway-adjustable-interactive-play-20399031",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/55-2-in-1-bird-cage-aviary-parakeet-house-for-finches-budgies-with-wheels-black",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-large-folding-bike-trailer-dogs-100lb-capacity-durable-chew-resistant-20417733",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-32-soft-dog-crates-kennel-3-door-portable-interactive-play-20417709",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/smart-bird-feeder-with-solar-powered-camera-1080p-hd-ai-identify-pir-motion-auto-capture-video-cloud",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    },
+    {
+      "path": "/product/getpawsy-all-in-one-convertible-folding-camping-wagon-durable-chew-res-902897217538",
+      "expected_status": 200,
+      "reason": "default_preserve"
+    }
+  ]
+}

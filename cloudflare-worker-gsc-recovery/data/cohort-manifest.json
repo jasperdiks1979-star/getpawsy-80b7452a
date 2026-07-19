@@ -1,0 +1,1357 @@
+{
+  "source": "https_getpawsy.pet_-Coverage-Drilldown-2026-07-19.zip",
+  "source_file": "Tabel.csv",
+  "total_rows": 331,
+  "generated_at": "2026-07-19",
+  "counts": {
+    "preserve_200": 163,
+    "redirect_301": 2,
+    "gone_410": 166
+  },
+  "buckets": {
+    "preserve_200": [
+      {
+        "path": "/product/getpawsy-large-folding-bike-trailer-dogs-66lb-capacity-durable-chew-resistant-20417734",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-cat-litter-box-enclosure-2-in-1-condo-cat-easy-clean-design-194578513921",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-go-cat-litter-box-enclosure-light-hidden-easy-clean-design-611683168258",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-cat-hidden-litter-box-enclosure-rgb-led-easy-clean-design-227807883266",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-61-extra-tall-cat-gate-doorway-adjustable-interactive-play-20399031",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/55-2-in-1-bird-cage-aviary-parakeet-house-for-finches-budgies-with-wheels-black",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-large-folding-bike-trailer-dogs-100lb-capacity-durable-chew-resistant-20417733",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-32-soft-dog-crates-kennel-3-door-portable-interactive-play-20417709",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/smart-bird-feeder-with-solar-powered-camera-1080p-hd-ai-identify-pir-motion-auto-capture-video-cloud",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-all-in-one-convertible-folding-camping-wagon-durable-chew-res-902897217538",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-all-in-one-convertible-folding-4-wheel-padded-no-pull-20424900",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-upholstered-human-dog-bed-adults-pets-foldable-orthopedic-support-20450671",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-2500ml-usb-pet-water-fountain-teardrop-shaped-automatic-slow-feed-anti--20420714",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/lp/cat-litter-box",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/getpawsy-hidden-cat-litter-box-cabinet-privacy-enclosure-easy-clean-de-585167589378",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-1-24-collapsible-travel-dog-crate-medium-weather-resistant-shelter-20417727",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/49-inches-tall-cat-tree-with-ufo-top-perch-space-capsule-and-sisal-scratching-352d",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-electric-hot-dog-roller-machine-grill-griddle-durable-chew-resistant-20420912",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-kids-piano-keyboard-25-keys-wooden-digital-interactive-play-932670554113",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/large-outdoor-cat-house-for-3-kitties",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-54-cat-tree-tower-multi-level-sisal-grab-multi-level-climbing-tower-20421267",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-2026-top-rated-cat-litter-box-pull-out-drawer-easy-clean-design-20443129",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-pet-bike-trailer-dog-cart-bicycle-suitable-small-durable-chew-517677162497",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/xl-stainless-steel-litter-box-w-flip-top-scoop-step-top-side-entry-enclosed-fe5e",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-automatic-pet-feeder-2200ml-74oz-water-fountain-1800ml-slow-feed-anti-c-20420713",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/multi-level-natural-pear-wood-cat-tree-sisal-scratching-posts-plush-balls-long-1175",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-2025-must-buy-fully-enclosed-stainless-steel-cat-easy-clean-d-108004462595",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-wood-pet-stairs-2-step-dog-stairs-beds-orthopedic-support-20363217",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-medium-sized-two-layer-sisal-cat-scratching-post-indoor-sisal-scratch-p-20421323",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/60l-automatic-cat-litter-box",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-oral-spray",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-outdoor-heavy-duty-collapsible-pet-bike-trailer-durable-chew--275215704066",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/28-elevated-cat-bed-with-sisal-scratching-post-for-indoor-kitties-modern-cat-0750",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-5core-cat-ethernet-cable-20ft-long-computer-interactive-play-20388851",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-carrier-backpack-expandable-cat-dog-carrier-with-back-extension-breathable-0381",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/lantern-music-mechanical-dog-toy",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-kids-piano-keyboard-25-keys-wooden-digital-interactive-play-495938650114",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/electric-dog-fence-system-with-collar-wire-collar-receiver-only-wire-only-wire-pro-only-options",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/wooden-pet-house-cat-litter-box-enclosure-with-drawer-side-table-indoor-pet-crate-cat-home-nightstan",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-pet-water-fountain-large-capacity-automatic-cat-slow-feed-anti-gulp-20420715",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-training-collar-receiver-ip67-waterproof-dog-bark-shock-collar-accessories-adjustable-belt",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-potty-training-artificial-grass-pad-pet-cat-toilet-trainer-mat-puppy-loo-tray-turf",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-kids-piano-keyboard-37-keys-wooden-digital-interactive-play-697936330754",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-slow-food-bowl-anti-choking-cat-bowl-3in1-interactive-dog-feeder-puzzle-lick-mat-slow-feeder-bow",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-ear-anatomical-model-canine-veterinary-clinic-teaching",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-pet-dog-bed-soft-warm-fleece-puppy-plush-cozy-retreat-20366931",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-outdoor-heavy-duty-collapsible-pet-bike-trailer-durable-chew--672620351489",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-solid-wood-paw-print-cremation-urn",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-36-inch-foldable-dog-grooming-table-home-deshedding-brush-20399020",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-transforming-remote-control-car-robot-r-c-car-interactive-play-20421244",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-modern-enclosed-cat-litter-box-built-in-scoop-easy-clean-design-20443119",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/anti-falling-cat-dog-feeding-water-bowl-1769876071718",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/35-inch-modern-cat-tree-for-indoor-adult-cats-with-wooden-scratching-posts-cat-133c",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-extra-large-dual-entry-cat-litter-box-convertible-easy-clean-design-20443126",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-large-folding-bike-trailer-dogs-66lb-capacity-durable-chew-resistant-20417741",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-large-cat-litter-box-enclosure-shelf-storage-easy-clean-desig-770047922177",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-156e",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/autumn-double-sided-fleece-hairless-cat-clothes",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-elf-cat-litter-box-dual-entry-fully-enclosed-easy-clean-design-20443127",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-2-in-1-dual-mode-large-plastic-cat-slow-interactive-play-20443125",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-aluminum-frame-foldable-dog-stairs-steps-heavy-durable-chew-r-274796294145",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-fully-enclosed-stainless-steel-cat-litter-box-easy-clean-design-20443127",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-large-folding-bike-trailer-dogs-100lb-capacity-durable-chew-resistant-20417737",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-fully-enclosed-magic-cube-litter-box-top-front-easy-clean-design-20443128",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pawhut-5-tier-hamster-cage-with-tubes-and-tunnels-small-animal-cage-rat-gerbil-cage-with-water-bottl",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-extra-wide-foldable-dog-stairs-pet-ramp-durable-chew-resistant-20417706",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pawhut-2-level-small-animal-cage-rabbit-hutch-with-wheels-removable-tray-platform-and-ramp-for-bunny",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-canvas-shoulder-bag-cute-animal-shapedcat-carrier-canvas-bags-portable-pet-canvastote-chest-bag-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/59-extra-tall-pet-gate-30-41-dog-gate-with-cat-door-1-4-narrow-gap-2-8-and-5-5-extension-for-doorway",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-bark-deterrent-device-stops-bad-behavior-professional-dog-training-tool-anti-bark-device-for-dog",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/vertical-money-tree-cat-scratching-pole-sisal-wear-resistant-cat-scratching-column-interactive-ball-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-stroller-for-dogs-and-cats-foldable-lightweight-and-durable-ideal-for-small-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/beige-33-5-multi-level-cat-tree-with-2-tier-condo-sisal-scratching-posts-anti-toppling-device-for-ca",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/1pc-smart-pet-water-fountain-automatic-cat-water-dispenser-4-5l-cordless-rechargeable-dog-water-foun",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/parrot-stand-large-bird-perch-stand-with-toy-hook-3-ladders-parrot-perch-bird-wooden-stand-gray",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/furniture-style-dog-crate-end-table-with-removable-door-panel-dog-crate-bed-with-foam-cushion-safety",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/bestseller/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cats-1768944769161",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/1pc-dog-potty-training-artificial-grass-pad-pet-cat-toilet-trainer-mat-puppy-loo-tray-turf-for-small",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-dog-ramp-car-65inchx17-2inch-large-folding-pet-orthopedic-support-20424512",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-1550w-high-velocity-pet-blow-dryer-heater-durable-chew-resistant-20439468",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/american-local-tactical-pet-boobs-service-dog-harness-vest-adjustable-reflective-dog-harness-metal-b",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/ultra-cat-nail-trimming-kit-premium-quality",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/black-and-white-cat-tin-art-wall-decoration",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/44-multi-level-cat-tree-with-spacious-top-perch-2-door-condo-hammock-for-indoor-cats-light-gray",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/blog/dog-beds-comfort-sleep-guide-2026",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/new-samoyed-dog-led-night-light-artistic-animal-figurine-resin-craftwork",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pawhut-chinchillas-small-rabbit-guinea-pig-small-animal-cage-pet-playhouse-with-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/compass-cat-scratching-post-cat-scratching-post-with-ball-interactive-training-sports-mouse-toy-with",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/premium-toys-for-birds-sku-td5082",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/small-animal-cage-with-wheels-pet-playpen-for-rat-syrian-hamster-kitten-ferrets-chinchillas-with-bot",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-pawhut-wooden-cat-run-weather-protection-connecting-interactive-play-20392388",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/collections/",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/pet-dog-rubber-ball-toys-for-dogs-resistance-to-bite-dog-chew-toys-puppy-pets-dogs-training-products",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-tiers-outdoor-cat-house-weatherproof-cat-tree-multi-level-climbing-towe-20373781",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-cat-litter-box-lid-easy-clean-design-20420715",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/wood-pet-stairspet-steps-2-in-1-foldable-wooden-dog-stair-for-beds-sofa-and-cars",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/wicker-dog-house-outdoor-with-canopy-rattan-dog-bed-with-water-resistant-cushion-raised-pet-bed-for--2",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/indoor-wooden-cat-climbing-frame-cat-tower-cat-house-with-cat-scratching-board-ramp-suitable-for-lar",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/chicken-activity-play-set-with-multiple-chicken-perches-swing-ladder-platform-for-3-4-chickens-coffe",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/89l-outdoor-rabbit-hutch-guinea-pig-cage-indoor-outdoor-wooden-bunny-hutch-with-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/youmile-hip-joint-health-supplement-for-dogs-120-chews-glucosamine-chondroitin-msm-dog-chews-with-hy",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-40-soft-dog-crates-kennel-3-door-portable-interactive-play-196112457730",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/getpawsy-transforming-car-robot-one-button-deformation-or-toy-interactive-play-20414221",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/4-wheels-pet-stroller-foldable-carrier-strolling-cart-travel-jogger-pet-stroller-with-removable-line",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/foldable-pet-swimming-pool",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/10w-12v-solar-powered-dual-fan-chicken-cooppet-house-exhaust-fan",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pawhut-wooden-dog-agility-seesaw-for-balance-training-and-exercise-platform-equipment-run-game-toy-w",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-toy-005",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/hamster-cage-3-level-habitat",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/cat-window-box-large-catio-with-shelves-bridges-outside-enclosure-for-multiple-cats-white",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-toilet-with-free-scoop-de",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cats-1768944769161",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/natural-jerky",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/4-in-1-cat-steam-brush-anti-static-shedding-spray-comb-hair-removal-mist-indoor-steamy-grooming-brus",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/41-inch-hand-woven-water-hyacinth-cat-tree-3-sisal-scratching-posts-multi-level-activity-center-for-",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/2-in-1-pet-bike-trailer-for-small-dogs",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/automatic-dog-ball-launcher-with-26-79-ft-distance-automatic-ball-launcher-for-m",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/shipping-returns",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/the-two-piece-dog-leash-set-is-made-of-wear-resistant-and-skin-friendly-materials-with-excellent-qua",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-ear-wash",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/dog-training-collar-receiver-ip67-waterproof-dog-bark-shock-vibration-beep-receiver-up-to-3280ft",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/luxury-color-gemstone-and-diamond-cat-claw-ring",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-dog-carrier-bag-carrier-for-dogs-backpack-out-double-shoulder-portable-travel-backpack-outdoor-d",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/ear-stud-female-irregular-cat",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/rat-terrier-throw-blanket-dog-lover-gift-blanket-reversible-plush-fluffy-red-heart-rescue-dog-sherpa",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/bestseller/",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/aluminum-transport-case-aluminum-car-carrier-travel-carrier-suitable-for-cats-and-dogs-black-and-sil",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/guides/best-cat-trees-maine-coons",
+        "reason": "live_content"
+      },
+      {
+        "path": "/guides/best-dog-anxiety-solutions-2026",
+        "reason": "live_content"
+      },
+      {
+        "path": "/guides/best-disposable-litter-box",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/pet-interactive-sound-ball-the-mellow-dog-cat-pet-voice-ball-interactive-pet-squeaky-toys",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/stainless-steel-pet-water-fountain-filters-pet-water-fountain-filters-8-pack-replacement-filters-wit",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/smart-pet-water-fountain-automatic-cat-water-dispenser-4-5l-cordless-rechargeable-dog-water-fountain",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/s-m-l-dog-collar-leather-dog-collar-for-small-medium-and-large-dogs-basic-f384",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/product/pet-cat-crazy-ball-disk-interactive-toys-amusement-plate-trilaminar-funny-toy",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/guides/best-litter-genie",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/55-2-in-1-bird-cage-aviary-parakeet-house-for-finches-budgies-with-wheels-light-blue",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/guides/best-chew-proof-dog-bed",
+        "reason": "live_content"
+      },
+      {
+        "path": "/guides/best-dog-beds-guide",
+        "reason": "live_content"
+      },
+      {
+        "path": "/guides/dog-enrichment-toys",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/products/24-inch-anti-slip-round-fluffy-plush-faux-fur-cat-bed-fits-up-to-25-lbs-pets",
+        "reason": "active_pdp"
+      },
+      {
+        "path": "/products/cat-hair-cleaner-cat-hair-removal-and-adsorption-artifact-hair-brush",
+        "reason": "active_pdp"
+      },
+      {
+        "path": "/dogs/harnesses",
+        "reason": "default_preserve"
+      },
+      {
+        "path": "/legal/refund",
+        "reason": "live_content"
+      },
+      {
+        "path": "/legal/ai",
+        "reason": "live_content"
+      },
+      {
+        "path": "/accessories",
+        "reason": "live_content"
+      },
+      {
+        "path": "/guides/senior-dog-care",
+        "reason": "live_content"
+      },
+      {
+        "path": "/legal/returns",
+        "reason": "live_content"
+      },
+      {
+        "path": "/bestseller/honden-autostoelhoes",
+        "reason": "live_content"
+      },
+      {
+        "path": "/legal/privacy",
+        "reason": "live_content"
+      },
+      {
+        "path": "/partners",
+        "reason": "live_content"
+      },
+      {
+        "path": "/return-policy",
+        "reason": "live_content"
+      },
+      {
+        "path": "/privacy-policy",
+        "reason": "live_content"
+      },
+      {
+        "path": "/legal/eu-gdpr",
+        "reason": "live_content"
+      },
+      {
+        "path": "/collections",
+        "reason": "live_content"
+      },
+      {
+        "path": "/collections/small-pets",
+        "reason": "live_content"
+      },
+      {
+        "path": "/legal/about",
+        "reason": "live_content"
+      },
+      {
+        "path": "/new-arrivals",
+        "reason": "live_content"
+      },
+      {
+        "path": "/blog?category=general",
+        "reason": "live_content"
+      },
+      {
+        "path": "/product/honeycomb-embossed-dual-color-pet-leash-set-is-stylish-and-fashionable-the-embos",
+        "reason": "default_preserve"
+      }
+    ],
+    "redirect_301": [
+      {
+        "path": "/product/e42efe24-988c-4581-b8e0-95efc2c5250f",
+        "target": "/products/outdoor-dog-kennel-with-roof-rotating-4-level-adjustable-bowls",
+        "reason": "uuid_active_pdp"
+      },
+      {
+        "path": "/product/5a93dba6-2030-4469-b40b-2f6aa07590aa",
+        "target": "/products/house-type-with-running-ladder-orange-red-wooden-chicken-rabbit-cage",
+        "reason": "uuid_active_pdp"
+      }
+    ],
+    "gone_410": [
+      {
+        "path": "/c/all",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/c/best-sellers",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/getpawsy-2026-top-rated-fully-enclosed-cat-litter-easy-clean-design-20443125",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/af2f873c-e754-40d8-ab78-f77ef53eb823",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/cj_2003465547326877697",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/783cc4a9-d1fa-458f-b801-5eee3f886a39",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/getpawsy-all-in-one-convertible-folding-4-wheel-padded-no-pull-20424872",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-upgraded-5x2-wide-wheels-all-in-one-padded-no-pull-20424881",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-extra-large-dual-entry-cat-litter-box-convertible-easy-clean-design-20443126",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/pets-dog-cat-baby-safety-gate-mesh-fence-magic-portable-guard-net-stairs-doors",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/33in-cat-tree-multi-level-cat-tower-with-cat-scratching-post-with-curved-perch-c",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/wooden-hamster-cage-with-storage-shelf-large-rat-mouse-habitat-including-seesaw-small-animal-cage-wi",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/156e7ac6-24e2-4cfc-90fb-fad99eb0b033",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-cat-window-box-43-3-catio-outdoor-cat-interactive-play-058697502722",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-extra-wide-foldable-dog-stairs-pet-ramp-durable-chew-resistant-20417706",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-fully-enclosed-magic-cube-litter-box-top-front-easy-clean-design-20443128",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-car-seat-cover-view-mesh-pet-carrier-hammock-safety-protector-car-rear-back-seat-mat-with-zipper",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-training-collar-receiver-ip67-waterproof-dog-bark-shock-collar-accessories-adjustable-belt",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/extra-large-fully-enclosed-flip-top-cat-litter-box-anti-splash-anti-tracking-156e",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-wood-pet-stairs-4-step-dog-stairs-beds-orthopedic-support-20363220",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-32-soft-dog-crates-kennel-3-door-portable-interactive-play-20417709",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/pet-stroller-4-wheels-dog-stroller-rotate-with-brakes-66-lbs-weight-capacity-puppy-stroller-with-det",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/getpawsy-outdoor-heavy-duty-collapsible-pet-bike-trailer-durable-chew--275215704066",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-agility-equipment-ramp-with-safety-bar-non-slip-surface-for-walk-and-pause-training-gray",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/59-extra-tall-pet-gate-30-41-dog-gate-with-cat-door-1-4-narrow-gap-2-8-and-5-5-extension-for-doorway",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/parrot-stand-large-bird-perch-stand-with-toy-hook-3-ladders-parrot-perch-bird-wooden-stand-gray",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cats-1768944769161",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/dogs/health",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/dog-toilet-training-spray",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/2001526910270021634",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/dog-bark-deterrent-device-stops-bad-behavior-professional-dog-training-tool-anti-bark-device-for-dog",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/dogs/sleep",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/product/55437c66-e849-49ad-b3e3-2cc66e576f5d",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/0d294b14-13ce-4e75-a8e4-5b4d27c7e261",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/1991249014612287489",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/hamster-cage-3-level-habitat",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/small-pets/accessories",
+        "reason": "small_pets_legacy"
+      },
+      {
+        "path": "/product/9a72f697-74c8-4758-9950-b2ace1b8fef6",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/1993916062320009218",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/74ec7174-551a-43e0-b18e-765ef09657e1",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/hoopsy-leash",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/natural-jerky",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/1991251206486396930",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/pet-ear-wash",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-toys-for-birds-sku-td5082",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/138b0ed1-d184-4b26-afa2-9704ef9cbbbd",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/food-bowl",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/small-pets/grooming",
+        "reason": "small_pets_legacy"
+      },
+      {
+        "path": "/products/hamster-cage",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/ole-miss-pet-jersey",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/733df0c9-af99-4d53-bb87-bd3269973a15",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/automatic-cat-feeder-smart",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/complete-food-kit-for-birds",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/product/ae33680e-87e0-48af-96d9-f4ce13ae55fa",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/0405cf9a-c96c-46bd-bbb4-f66768564290",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/product/2001621689229033473",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/pages/contact",
+        "reason": "shopify_pages_legacy"
+      },
+      {
+        "path": "/c/dogs/grooming",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/product/1806928748680728576",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/nala-pet-dog-collar-traction-rope",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/dogs/toys",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/hot-dogs",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-bed",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/comfortable-cat-corner-scratching-post-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/bow-pet-collar-large-and-small-pet-traction-collar-dog-chain",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/cats/bowls-feeders",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/premium-essential-dog-automatic-water-fountain",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-pro-dog-car-safety-harness",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-eco-friendly-dog-squeaky-plush-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/hills-science-diet-adult",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/cats/food-treats",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/premium-eco-friendly-dog-orthopedic-bed",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/organic-cat-window-hammock-bed-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/cats/beds-furniture",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/premium-advanced-dog-retractable-walking-leash",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/probiotic-soothing-drops-for-dogs",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/petal-large-grip-updo-hair-accessories-hair-accessories",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-comfortable-dog-stainless-steel-food-bowl-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/cats/litter",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/dog-rain-jacket",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-eco-friendly-dog-clicker-training-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/round-tunnel-cat-nest-detachable-s-type",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/bpa-free-cat-tower-medium",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/advanced-accessories-for-birds",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/pro-cat-organic-catnip-treats-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-durable-dog-leather-collar-with-id-tag",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/liquid-probiotic-drops-for-dogs-and-cats",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/anti-spill-water-bowl",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/ultra-cat-odor-control-litter-box-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-organic-dog-natural-dental-chews",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/cat-claws-mat-cat-scratch-board",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/pet-cat-and-dog-melatonin",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-toy-interactive-game-toy-the-new-pet-toy-little-monster-series-vocal-dog-toys-are-bite-resistant-and-easy-to-clean",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/inductive-magpie-cat-self-entertaining-plush-smart-toy",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/pet-dog-toy-cotton-rope-double-knot-ball-bite-resistant-tooth-cleaning-toy-ball-pet-supplies",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-cat-heated-sleeping-pad-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-super-dog-natural-dental-chews",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/color-diamond-light-luxury-winter-rabbit-hair-knitted-hat-personality-colorful",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-super-dog-de-shedding-brush-tool",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/elevated-pet-feeder-stand",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/200-pcs-artificial-silk-rose-petals",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/comfortable-cat-catnip-mouse-collection-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/durable-cat-self-cleaning-litter-system-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/comfortable-cat-nail-trimming-kit-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/natural-cat-salmon-training-bites-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/professional-pet-grooming-kit-deluxe",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-dog-training-clicker-with-wrist-strap",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-elite-dog-agility-training-kit",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-luxury-dog-squeaky-plush-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/cat-scratching-post-with-sisal-rope",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/automatic-pet-water-fountain-2l",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-melatonin-soft-granules",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/professional-pet-microchip-scanner",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-elite-dog-puzzle-treat-dispenser",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-melatonin-support-soft-particles",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-heavy-duty-dog-orthopedic-bed",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/natural-straw-mat",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/interactive-dog-puzzle-toy-treat-dispenser",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/wall-perch-x-large-blue",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/heated-bed-small-pink",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-ultra-dog-airline-approved-carrier",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-slow-feeder-bowl-silicone-lick-mat-toy",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/mouth-cover-to-prevent-eating-indiscriminately-large-labrador-dog",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-natural-dog-interactive-ball-launcher",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/small-pets/beds",
+        "reason": "small_pets_legacy"
+      },
+      {
+        "path": "/products/waterproof-dog-car-seat-cover",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/classic-cat-corner-scratching-post-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/pages/returns",
+        "reason": "shopify_pages_legacy"
+      },
+      {
+        "path": "/c/cats/toys",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/pet-supplies-fitness-sports-running-hand-holding-rope-multifunctional-traction-belt-dog-traction",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-diapers-and-diapers-sanitary-pads",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/reflective-dog-collar-with-safety-buckle",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-organic-dog-leather-collar-with-id-tag",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-heavy-duty-dog-grain-free-training-treats",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-natural-dog-no-pull-training-harness",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/cats/grooming",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/14-pack-reflective-breakaway-cat-collars-with-bells-safety-buckle-kitten-collar-with-name-tag-adjustable-ideal-for-girl-cats-male-cats-pet-supplies-stuff-accessories12-colors-2-id-tags",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/interactive-pet-football-toys-with-grab-tabs-dog-bite-chew-balls-pets-accessories-puppy-outdoor-training-soccer-5-91-7-48in",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/dogs/clothing",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/c/cats/health",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/cat-toy-suction-cup-spring-rabbit-fur-ball-retractable-elastic-rope-bite-resistant-self-entertainment-interactive-cat-teaser-pet-supplies",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/c/dogs/feeding",
+        "reason": "collection_prefix_deprecated"
+      },
+      {
+        "path": "/products/pawprint-commercial-grade-vitamins-for-dogs",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/5",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/sleep-support-melatonin-drops-for-cats",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-essential-dog-stainless-steel-food-bowl-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-advanced-dog-no-pull-training-harness",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/flat-slicker-brush",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-beds-for-cats",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/reflective-leash-collar-set",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-car-seat-cover-waterproof",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/dog-immune-digestive-support-soft-granules",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/cat-and-dog-snack-feeder",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-modern-dog-car-safety-harness",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-waterproof-dog-grain-free-training-treats",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/premium-pro-dog-de-shedding-brush-tool",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/comfortable-cat-multi-level-cat-tree-premium-quality",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/3-in-1-portable-pet-bottle",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/9",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/api/version",
+        "reason": "api_removed"
+      },
+      {
+        "path": "/product/c0edc331-3781-48a1-ac8c-7fbc5ec12f99",
+        "reason": "uuid_orphan"
+      },
+      {
+        "path": "/products/cat-window-hammock-perch-foldable",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/donut-bed-blue",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/wood-shavings-1",
+        "reason": "removed_pdp"
+      },
+      {
+        "path": "/products/gerbil-habitat",
+        "reason": "removed_pdp"
+      }
+    ]
+  },
+  "identity_resolution": {
+    "active_slugs": {
+      "24-inch-anti-slip-round-fluffy-plush-faux-fur-cat-bed-fits-up-to-25-lbs-pets": "d3898f50-8438-4531-bcb2-130bddbcd3be",
+      "cat-hair-cleaner-cat-hair-removal-and-adsorption-artifact-hair-brush": "a39468a8-6360-46b6-961b-85eaf278a53e",
+      "pet-cat-crazy-ball-disk-interactive-toys-amusement-plate-trilaminar-funny-toy": "d28c3521-f841-4862-bc08-3472a25e2eb4",
+      "s-m-l-dog-collar-leather-dog-collar-for-small-medium-and-large-dogs-basic-f384": "f384c82f-b049-48c2-a769-b6ec96bf3ca5"
+    },
+    "active_uuids": {
+      "5a93dba6-2030-4469-b40b-2f6aa07590aa": "house-type-with-running-ladder-orange-red-wooden-chicken-rabbit-cage",
+      "e42efe24-988c-4581-b8e0-95efc2c5250f": "outdoor-dog-kennel-with-roof-rotating-4-level-adjustable-bowls"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+# Cloudflare Worker: getpawsy-gsc-recovery
+# Purpose: Emit real 410/301 HTTP status codes for the 331-URL GSC soft-404 cohort.
+# Deployment mode: Route-scoped worker on getpawsy.pet zone (orange-cloud proxied).
+
+name = "getpawsy-gsc-recovery"
+main = "src/worker.ts"
+compatibility_date = "2026-07-01"
+workers_dev = false
+
+# IMPORTANT: fill in your Cloudflare account_id before `wrangler deploy`.
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+
+# Route the worker on the getpawsy.pet zone (apex + www).
+# Worker source (worker.ts) fails open on any host outside ALLOWED_HOSTS.
+[[routes]]
+pattern = "getpawsy.pet/*"
+zone_name = "getpawsy.pet"
+
+[[routes]]
+pattern = "www.getpawsy.pet/*"
+zone_name = "getpawsy.pet"
+
+[observability]
+enabled = true
+
+# ── Staging environment ──────────────────────────────────────────────────────
+# Deploy with:   wrangler deploy --env staging
+# Recommended flow: staging -> smoke-test.sh -> production.
+[env.staging]
+name = "getpawsy-gsc-recovery-staging"
+# Narrow staging route: only intercepts /c/* (deprecated collection prefix) so
+# a regression cannot affect commerce URLs.
+routes = [
+  { pattern = "getpawsy.pet/c/*", zone_name = "getpawsy.pet" },
+]
+
+[env.production]
+name = "getpawsy-gsc-recovery"
+routes = [
+  { pattern = "getpawsy.pet/*", zone_name = "getpawsy.pet" },
+  { pattern = "www.getpawsy.pet/*", zone_name = "getpawsy.pet" },
+]
