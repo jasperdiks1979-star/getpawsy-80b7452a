@@ -270,8 +270,11 @@
       }
 
       // Dead URL prefixes that don't map to any React route (from GSC export).
-      var DEAD_PREFIXES = ['/c/','/pages/','/small-pets/','/api/','/partners','/new-arrivals','/accessories'];
-      var DEAD_EXACT = ['/dogs'];
+      // Safety-validated dead prefixes (2026-07-19): none of these resolve to
+      // a live React route. `/dogs` was REMOVED from this list because it is
+      // an intentional 301 → /collections/dog (see App.tsx).
+      var DEAD_PREFIXES = ['/c/','/pages/','/small-pets/','/api/'];
+      var DEAD_EXACT = ['/partners','/new-arrivals','/accessories'];
       for (var dp = 0; dp < DEAD_PREFIXES.length; dp++) {
         if (p.indexOf(DEAD_PREFIXES[dp]) === 0) { markDead('dead-prefix:' + DEAD_PREFIXES[dp]); break; }
       }
