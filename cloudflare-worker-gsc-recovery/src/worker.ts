@@ -93,7 +93,12 @@ export default {
 
     // 1. Exact 301 (active PDPs behind a stale /product/<uuid> path).
     const target = EXACT_301[path] ?? EXACT_301[url.pathname];
-    if (target) return redirectResponse(url.pathname, target);
+    if (target) {
+      // Preserve marketing / tracking query string on the redirect so
+      // Pinterest / GA / UTM attribution survives the one-hop 301.
+      const location = url.search ? `${target}${url.search}` : target;
+      return redirectResponse(url.pathname + url.search, location);
+    }
 
     // 2. Exact 410 (removed URL from the GSC cohort).
     if (EXACT_410.has(path) || EXACT_410.has(url.pathname)) {
