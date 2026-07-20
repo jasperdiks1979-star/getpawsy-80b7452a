@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
+import { MerchantApiProbePanel } from '@/components/admin/MerchantApiProbePanel';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
 import { ReleaseTimelineCard } from '@/components/admin/ReleaseTimelineCard';
@@ -410,6 +411,7 @@ export default function MerchantIntegrationPage() {
       </Helmet>
 
       <div className="p-6 space-y-6 max-w-4xl">
+        <MerchantApiProbePanel />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Google Merchant Center</h1>

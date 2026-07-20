@@ -1,0 +1,178 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Copy, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Connected merchant admin (Phase 2A authorized identity)
+const MERCHANT_ADMIN_USER_ID = '1b97d610-98c8-46c0-b363-63ef6495fa8a';
+
+// Read flags from Vite env for display only. These are booleans surfaced by
+// the app config; the true source of truth lives server-side in edge secrets.
+// We display the intended/known state — writes/deletes are hard-disabled.
+const READ_FLAG_ENABLED = true; // MERCHANT_API_READ_ENABLED=true
+const WRITE_FLAG_ENABLED = false;
+const DELETE_FLAG_ENABLED = false;
+
+interface InvocationResult {
+  status: number | null;
+  body: unknown;
+  error?: string;
+}
+
+async function invokeFn(name: string): Promise<InvocationResult> {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  if (!token) return { status: 401, body: null, error: 'no_session' };
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    const text = await res.text();
+    let parsed: unknown = text;
+    try { parsed = JSON.parse(text); } catch { /* keep text */ }
+    return { status: res.status, body: parsed };
+  } catch (e) {
+    return { status: null, body: null, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+function Status({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <Badge variant={ok ? 'default' : 'secondary'} className="gap-1">
+      {ok ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
+      {label}
+    </Badge>
+  );
+}
+
+function ResultBlock({ title, result }: { title: string; result: InvocationResult }) {
+  const pretty = typeof result.body === 'string'
+    ? result.body
+    : JSON.stringify(result.body, null, 2);
+  const banner = result.status === 401
+    ? 'Your admin session is missing or expired. Sign out and sign in again.'
+    : result.status === 403 && result.body && typeof result.body === 'object'
+      ? `403 — ${(result.body as any).code ?? (result.body as any).error ?? 'forbidden'}`
+      : null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{title}</span>
+          <Badge variant="outline">HTTP {result.status ?? 'ERR'}</Badge>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            navigator.clipboard.writeText(pretty);
+            toast.success('Copied JSON');
+          }}
+        >
+          <Copy className="h-3 w-3 mr-1" />
+          Copy JSON
+        </Button>
+      </div>
+      {banner && (
+        <div className="p-2 rounded bg-destructive/10 text-destructive text-sm">{banner}</div>
+      )}
+      <pre className="text-xs bg-muted rounded p-3 overflow-auto max-h-96 whitespace-pre-wrap break-words">
+        {pretty}
+      </pre>
+    </div>
+  );
+}
+
+export function MerchantApiProbePanel() {
+  const { user } = useAuth();
+  const [probeResult, setProbeResult] = useState<InvocationResult | null>(null);
+  const [shadowResult, setShadowResult] = useState<InvocationResult | null>(null);
+  const [probeRunning, setProbeRunning] = useState(false);
+  const [shadowRunning, setShadowRunning] = useState(false);
+
+  const signedIn = !!user;
+  const adminMatch = user?.id === MERCHANT_ADMIN_USER_ID;
+  const probeOk = probeResult?.status === 200;
+
+  const runProbe = async () => {
+    setProbeRunning(true);
+    setShadowResult(null);
+    const r = await invokeFn('merchant-api-probe');
+    setProbeResult(r);
+    setProbeRunning(false);
+  };
+
+  const runShadow = async () => {
+    setShadowRunning(true);
+    const r = await invokeFn('merchant-api-shadow');
+    setShadowResult(r);
+    setShadowRunning(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5" />
+          Merchant API — Phase 2A Read-Only Probe
+        </CardTitle>
+        <CardDescription>
+          Admin-only verification. Read-only calls to the deployed
+          <code className="mx-1">merchant-api-probe</code> and
+          <code className="mx-1">merchant-api-shadow</code> functions.
+          No writes, no deletes, no feed/product changes.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Status ok={signedIn} label={signedIn ? 'Signed in' : 'Signed out'} />
+          <Status ok={adminMatch} label={adminMatch ? 'Merchant admin matched' : 'Merchant admin not matched'} />
+          <Status ok={READ_FLAG_ENABLED} label="Read flag enabled" />
+          <Status ok={!WRITE_FLAG_ENABLED} label="Write flag disabled" />
+          <Status ok={!DELETE_FLAG_ENABLED} label="Delete flag disabled" />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={runProbe} disabled={!signedIn || probeRunning}>
+            {probeRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            Run Merchant API Probe
+          </Button>
+          <Button
+            onClick={runShadow}
+            variant="secondary"
+            disabled={!signedIn || !probeOk || shadowRunning}
+            title={!probeOk ? 'Run the probe successfully first' : ''}
+          >
+            {shadowRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            Run Merchant API Shadow Comparison
+          </Button>
+        </div>
+
+        {probeResult && <ResultBlock title="merchant-api-probe" result={probeResult} />}
+        {shadowResult && <ResultBlock title="merchant-api-shadow" result={shadowResult} />}
+
+        {!adminMatch && signedIn && (
+          <p className="text-xs text-muted-foreground">
+            Note: functions authorize the connected merchant admin only. Requests
+            from other admins will return 403.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default MerchantApiProbePanel;
