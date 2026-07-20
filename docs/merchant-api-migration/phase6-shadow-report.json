@@ -1,0 +1,11 @@
+{
+  "status": "PENDING_LIVE_EXECUTION",
+  "reason": "Phase 6 shadow diff requires a fresh OAuth access token. The stored access token expired 2026-07-06. Invoke merchant-api-shadow from the admin UI once, and this file will be overwritten with the diff report.",
+  "generated_at": null,
+  "sample_size": 0,
+  "diffs": [],
+  "notes": [
+    "Shadow function uses GET only; no writes.",
+    "Compares DB row and Merchant API v1 processed product for the same offerId."
+  ]
+}
