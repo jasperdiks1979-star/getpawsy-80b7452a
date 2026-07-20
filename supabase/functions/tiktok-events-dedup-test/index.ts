@@ -3,7 +3,7 @@
 // an identical event_id. TikTok's Events API deduplicates by (pixel_id,
 // event_name, event_id), so identical IDs across submits = no duplicates
 // counted in TikTok Events Manager.
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
 
