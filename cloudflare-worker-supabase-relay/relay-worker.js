@@ -74,7 +74,10 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204 });
     }
-    if (request.method !== "POST" && request.method !== "GET") {
+    // POST-only per Phase 2 safety spec. GET (and everything else) → 405.
+    // The panel only ever POSTs; rejecting GET here also satisfies the
+    // Phase 5C wrong-method verification.
+    if (request.method !== "POST") {
       return jsonResponse(405, { ok: false, error: "method_not_allowed" });
     }
 
@@ -95,9 +98,9 @@ export default {
     let upstream;
     try {
       upstream = await fetch(upstreamUrl, {
-        method: request.method,
+        method: "POST",
         headers: upstreamHeaders,
-        body: request.method === "GET" ? undefined : request.body,
+        body: request.body,
       });
     } catch (e) {
       return jsonResponse(502, {
