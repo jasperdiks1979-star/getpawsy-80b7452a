@@ -7,7 +7,7 @@
 // classifier. It cross-references the edge country header, the IP forwarding
 // chain length, and the user-agent (crawlers/headless => bot_like).
 // Never touches checkout, Stripe, or auth. Anonymous, JWT not required.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const TIER_1 = new Set(['US', 'CA', 'GB', 'AU', 'NZ', 'IE']);
 const TIER_2 = new Set([

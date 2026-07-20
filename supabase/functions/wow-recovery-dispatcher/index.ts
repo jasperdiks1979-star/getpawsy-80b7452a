@@ -2,7 +2,7 @@
 // Discovers active, explicitly registered WOW batches and invokes
 // wow-batch-recovery in "cron" mode for each. Never invokes without a
 // wow_batch_id. Never modifies certified safeguards.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;

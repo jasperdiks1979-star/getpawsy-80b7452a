@@ -12,7 +12,7 @@
  *
  * DOES NOT touch Stripe, checkout, webhooks, or any existing tables.
  */
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
