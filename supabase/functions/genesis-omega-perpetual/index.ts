@@ -1,6 +1,6 @@
 // GENESIS Ω∞.1 — Perpetual Company
 // Runs the perpetual loop (observe → learn → improve) and issues Perpetual Certification.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { requireInternalOrAdmin } from '../_shared/admin-guard.ts';
 
