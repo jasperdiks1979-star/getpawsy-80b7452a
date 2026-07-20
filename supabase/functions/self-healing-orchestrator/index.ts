@@ -252,7 +252,7 @@ const probes: Record<string, () => Promise<ProbeResult>> = {
     const { count } = await db
       .from("cj_media_asset_registry")
       .select("id", { count: "exact", head: true })
-      .eq("status", "missing")
+      .eq("metadata->>status", "missing")
       .gte("updated_at", dayAgo);
     if ((count ?? 0) > 20)
       return { status: "yellow", symptom: "media_asset_missing_batch", evidence: { missing: count } };
@@ -301,15 +301,15 @@ const probes: Record<string, () => Promise<ProbeResult>> = {
     const db = admin();
     const { data } = await db
       .from("guardian_status")
-      .select("verdict, updated_at")
+      .select("color, updated_at")
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (data && data.verdict && String(data.verdict).toUpperCase().includes("RED"))
+    if (data && data.color && String(data.color).toLowerCase() === "red")
       return {
         status: "red",
-        symptom: "guardian_verdict_red",
-        evidence: { verdict: data.verdict, at: data.updated_at },
+        symptom: "guardian_color_red",
+        evidence: { color: data.color, at: data.updated_at },
       };
     return { status: "green" };
   },
