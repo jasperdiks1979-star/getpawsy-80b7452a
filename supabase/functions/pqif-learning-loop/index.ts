@@ -3,7 +3,7 @@
 // updates frequency_multiplier (boost winners, throttle losers),
 // queues retirement for chronically underperforming pins.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { getServiceClient, loadSettings } from "../_shared/pinterest-quality-firewall-v2.ts";
 
 Deno.serve(async (req) => {

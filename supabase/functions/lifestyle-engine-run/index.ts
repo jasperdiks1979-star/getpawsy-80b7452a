@@ -2,7 +2,7 @@
 // Gated behind pinterest_lifestyle_engine_config.enabled. Returns {killed:true}
 // when the master flag is off so no AI credits are ever consumed by accident.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

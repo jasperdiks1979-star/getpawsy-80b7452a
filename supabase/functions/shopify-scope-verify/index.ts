@@ -1,6 +1,6 @@
 // Shopify scope re-verification (READ-ONLY).
 // Queries currentAppInstallation.accessScopes and diffs against the required set.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
 
 // Required Admin API scopes for full Wave 7.2 remediation coverage.

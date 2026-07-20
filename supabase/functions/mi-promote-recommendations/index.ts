@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // === Inline compliance gate (mirrored from mi-compliance-gate) ===
 const BANNED_TERMS: RegExp[] = [

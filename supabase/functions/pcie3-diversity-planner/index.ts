@@ -4,7 +4,7 @@
 // and returns an ordered plan. NEVER writes. NEVER publishes.
 // PCIE2 remains the sole certified publisher.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type WhatIf = {

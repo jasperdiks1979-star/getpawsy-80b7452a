@@ -4,7 +4,7 @@
 // analyze    : cache a story profile in DB
 // score      : score an existing creative concept on demand
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   buildStoryProfile,
   pickRotatingBadge,

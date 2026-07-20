@@ -4,7 +4,7 @@
 // private repos. Designed to be invoked by pg_cron every 15 min.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 type Branch = { name: string; commit: { sha: string } };
 type CompareResp = { ahead_by: number; behind_by: number; status: string };

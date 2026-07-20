@@ -1,7 +1,7 @@
 // Phase 8c: aggregate Pinterest / TikTok / Google Trends keyword signals
 // into raw rows for clustering. External APIs are optional — when keys are
 // missing we fall back to internal signals already in the project.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;

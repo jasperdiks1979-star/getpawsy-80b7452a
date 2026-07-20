@@ -1,4 +1,4 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Diagnostic-only. Returns a NON-REVERSIBLE fingerprint of the
 // RENDER_WORKER_SECRET configured on the Lovable Cloud side so it can be

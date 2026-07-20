@@ -3,7 +3,7 @@
 // computes per-axis similarity against the last 90 published creatives and
 // returns { decision: 'pass' | 'regenerate' | 'reject', max_axis, overall,
 // suggested_world }.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { getFirstSaleStatus } from "../_shared/first-sale-mode.ts";

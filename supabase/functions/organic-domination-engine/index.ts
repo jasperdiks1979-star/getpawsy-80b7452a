@@ -1,7 +1,7 @@
 // Phase 13 — Organic Domination Engine (ODE)
 // Reasoning layer on top of OIE/PMIN/Competitor/PCIE2. Organic-only.
 // Actions: harvest | dna | gaps | score | evolve | full
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

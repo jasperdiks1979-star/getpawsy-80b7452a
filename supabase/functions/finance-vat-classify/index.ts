@@ -1,7 +1,7 @@
 // Wave D1 — Dutch VAT classification. Deterministic rules first; escalates to AI only when ambiguous.
 // Buckets: standard_21 | reduced_9 | zero | reverse_charge | import | oss | outside_eu | mixed | private | no_vat
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

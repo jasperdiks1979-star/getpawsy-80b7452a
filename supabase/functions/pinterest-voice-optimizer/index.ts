@@ -2,7 +2,7 @@
 // Aggregates voice performance per category over last 30d.
 // After ≥50 pins in a category, learned weights are applied via
 // pinterest_voice_performance.conversion_score.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { VOICE_POOL } from "../_shared/voice-pool.ts";
 

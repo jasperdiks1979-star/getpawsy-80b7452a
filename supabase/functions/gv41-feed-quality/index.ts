@@ -7,7 +7,7 @@
 //   - Top repetitive dimensions + suggested corrections
 //   - Follow / Save / Session-depth probabilities derived from REAL performance
 // No new tables. Audit via pcie_v2_events.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 
 const DIMENSIONS = [

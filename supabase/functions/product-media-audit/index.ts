@@ -1,7 +1,7 @@
 // Product Media Audit — uses Lovable AI Gateway (Gemini vision) to classify the
 // primary product image and compare it against the product title. Runs in the
 // background via EdgeRuntime.waitUntil so a single POST kicks off the full sweep.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

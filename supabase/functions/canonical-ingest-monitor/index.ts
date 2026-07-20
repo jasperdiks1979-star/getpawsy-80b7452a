@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Monitors the canonical-ingest-recent cron. Alerts when the job goes stale
 // (no run in >10 min) or when recent runs are failing.

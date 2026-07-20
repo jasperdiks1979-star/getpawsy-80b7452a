@@ -18,7 +18,7 @@
 // Admin-only (JWT + has_role('admin') required).
 // ------------------------------------------------------------------
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { isAiGenerationPaused } from "../_shared/pinterest-credit-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

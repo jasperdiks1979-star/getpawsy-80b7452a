@@ -1,7 +1,7 @@
 // Product Intelligence Engine — orchestrator
 // DORMANT BY DEFAULT. Exits before any AI call unless product_intelligence_config.enabled = true.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   classifyGoogleProductCategory,
 } from "../_shared/google-product-category.ts";

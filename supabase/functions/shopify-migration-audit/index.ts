@@ -3,7 +3,7 @@
 // framework: wave roster completeness, mapping-rule coverage per entity,
 // unresolved conflicts, and orphan id_map rows. Returns a JSON health
 // report the admin dashboard can render.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

@@ -7,7 +7,7 @@
 //   reports converge without duplicating rows.
 // - Preserves ALL human-accepted / human-rejected matches (never overwrites reviewed_at IS NOT NULL).
 // - Never fabricates payments, invoices or VAT.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

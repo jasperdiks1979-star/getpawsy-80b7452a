@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Triggers the external render-worker host's Deploy Hook and logs the result
 // to `render_worker_deploys` so the admin dashboard can show the last status.

@@ -10,7 +10,7 @@
 //
 // Auth: client_credentials only (via _shared/shopify-token-provider.ts).
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyTokenMeta } from "../_shared/shopify-token-provider.ts";
 

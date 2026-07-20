@@ -2,7 +2,7 @@
 // Builds personas from existing mi_audience_clusters + gcp_concepts(customer_segments) + canonical conversions.
 // No placeholder AI. Wilson-bounded confidence. Never overwrites human_locked.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SEED_PERSONAS: Array<{ slug: string; name: string; intent: string; emotion: string; lifestyle: string; budget: string }> = [
   { slug: "busy_cat_mom", name: "Busy Cat Mom", intent: "save time on cat care", emotion: "convenience", lifestyle: "working professional, 1-2 cats", budget: "mid" },

@@ -8,7 +8,7 @@
 // This is the single source of truth for the Production Safety Constitution.
 // Extends production-validation-runner — does not replace it.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PROD_URL = "https://getpawsy.pet";

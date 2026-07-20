@@ -1,6 +1,6 @@
 // Phase 8c: cluster keyword snapshots from the last 14d into trend clusters
 // per source. Uses a simple co-occurrence + token-prefix grouping (no external NLP).
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;

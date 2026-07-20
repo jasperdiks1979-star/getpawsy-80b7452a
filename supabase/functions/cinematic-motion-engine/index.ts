@@ -5,7 +5,7 @@
 //   * >=3 distinct shot distances (wide / medium / close_up / extreme_close_up)
 //   * Must include 1 lifestyle + 1 product-demonstration scene
 // Reads story_arc when present and maps each beat to a camera/distance/grade.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 type CameraMove =

@@ -2,7 +2,7 @@
 // For every pcie2_creatives row with an image_url but no gcd_visual_dna entry,
 // run a vision pass via the Lovable AI Gateway and persist the 40+ trait DNA.
 // Idempotent, batched, hourly cron-safe.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

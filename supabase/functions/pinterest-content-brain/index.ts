@@ -13,7 +13,7 @@
 //     → executive snapshot: diversity / variety / rotation / revenue
 //       readiness scores + top-N lists.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

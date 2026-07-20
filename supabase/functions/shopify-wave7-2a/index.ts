@@ -14,7 +14,7 @@
 // the mutations. Every mutation ALWAYS writes to shopify_migration_audit_log
 // (including dry_run rows); if the audit insert fails, mutations are aborted.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 

@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { getPreset, trimVoScriptToFit, HARD_MAX_DURATION_SEC } from "../_shared/cinematic-presets.ts";
 

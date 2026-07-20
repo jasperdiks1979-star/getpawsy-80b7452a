@@ -4,7 +4,7 @@
 // can display exactly what is Recoverable now vs. Potential (blocked by evidence gaps)
 // vs. Blocked (structural: reverse-charge/no-VAT/outside-EU) vs. Missing Evidence.
 // Never fabricates values — every euro is traced back to an evidence_document.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

@@ -20,7 +20,7 @@
 // NEVER modifies the recovery pipeline, cron, workers, or gates.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { computeUsAudienceScore, hasUSIntentKeyword } from "../_shared/pinterest-copy.ts";
 
 const FLAGSHIP_SLUG = "automatic-cat-litter-box-self-cleaning-app-control";

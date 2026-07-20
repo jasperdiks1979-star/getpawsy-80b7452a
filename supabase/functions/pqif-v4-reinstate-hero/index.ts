@@ -14,7 +14,7 @@
 // }
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { evaluate, type FirewallInput } from "../_shared/pinterest-quality-firewall-v2.ts";
 
 const HERO_PRODUCT_ID = "128e0207-8a94-4d71-b428-5b7f5002528f";

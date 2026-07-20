@@ -1,6 +1,6 @@
 // Phase 8c: take top rising trend clusters and seed Creative DNA genes
 // (hook / angle) for the autonomous mutator. Drafts only — testing status.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;

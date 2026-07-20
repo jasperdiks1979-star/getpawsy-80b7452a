@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { computeHealthScore } from "../_shared/pipeline-health.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

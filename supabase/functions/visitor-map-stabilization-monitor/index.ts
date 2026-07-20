@@ -2,7 +2,7 @@
 // Runs a battery of read-only checks and appends one row to
 // public.stabilization_runs. Never mutates KPI definitions or map behavior.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 type CheckResult = {
   name: string;

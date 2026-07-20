@@ -2,7 +2,7 @@
 // Reads existing tables ONLY. Never fabricates invoices/payments/VAT.
 // Produces per-connector: last invoice observed, expected next invoice window,
 // missing-invoice PREDICTIONS (always labelled Estimated), and a health verdict.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

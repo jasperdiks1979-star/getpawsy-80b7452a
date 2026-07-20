@@ -12,7 +12,7 @@
 // (CI) or an admin-role Supabase JWT.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const RENDER_API = "https://api.render.com/v1";
 const KEY = Deno.env.get("RENDER_API_KEY") ?? "";

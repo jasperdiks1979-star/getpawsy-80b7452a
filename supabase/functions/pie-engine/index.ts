@@ -3,7 +3,7 @@
 // promotion decisions, populates rolling marketing calendar, runs the
 // "daily AI meeting", and exposes admin actions.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { aosHeartbeat, aosEvent, aosKnowledge, aosTask } from "../_shared/aos-bus.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

@@ -1,7 +1,7 @@
 // finance-subscription-intel — Wave D2
 // Detects recurring cycles, price trends, duplicates, unused subscriptions,
 // annualized forecast and renewal risk. Additive on finance_subscriptions.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

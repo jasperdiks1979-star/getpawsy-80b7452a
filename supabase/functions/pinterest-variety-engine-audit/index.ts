@@ -11,7 +11,7 @@
 // Response: full Creative Variety Report (see README in chat).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   DiversityGuard,
   normaliseCategoryKey,

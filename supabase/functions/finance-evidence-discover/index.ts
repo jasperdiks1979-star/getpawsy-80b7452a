@@ -4,7 +4,7 @@
 // Never fabricates financial values. Never overwrites human-corrected assignments.
 // Only auto-assigns supplier_id when confidence >= AUTO_ASSIGN_THRESHOLD; otherwise
 // stores predictions in evidence_documents.metadata.likely_supplier.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

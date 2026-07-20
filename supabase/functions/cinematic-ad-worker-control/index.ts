@@ -17,7 +17,7 @@
  *               [pinterest-publish-success] [pinterest-publish-error]
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import sodium from "https://esm.sh/libsodium-wrappers-sumo@0.7.15";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";

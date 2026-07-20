@@ -1,7 +1,7 @@
 // Genesis V3.5 — Audience Evaluator
 // Updates daily audience signals from canonical events joined via pcie2_creatives.persona_id.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 function wilsonLower(succ: number, trials: number, z = 1.645): number {
   if (trials <= 0) return 0;

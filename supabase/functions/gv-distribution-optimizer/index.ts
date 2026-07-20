@@ -2,7 +2,7 @@
 // Ranks draft pins in pinterest_pin_queue against rolling novelty, board
 // diversity, CTR-intent, save-intent and landing-page match, then promotes
 // the top N to status='queued' so the existing publisher picks them up.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 import { getFirstSaleStatus } from "../_shared/first-sale-mode.ts";
 

@@ -3,7 +3,7 @@
 // - Compares with linked GetPawsy product
 // - Updates title / description / alt_text via PATCH (image, link, pin_id preserved)
 // - Verifies via re-read and logs everything to pinterest_metadata_repair_log
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

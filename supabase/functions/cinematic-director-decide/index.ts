@@ -4,7 +4,7 @@
 // category × archetype + Pinterest historical performance. Creates a
 // director_run row so all 4 concepts can be tracked end-to-end through the
 // feedback loop.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type ArchetypeId = "problem_solution" | "emotional" | "premium_lifestyle" | "viral_interrupt";

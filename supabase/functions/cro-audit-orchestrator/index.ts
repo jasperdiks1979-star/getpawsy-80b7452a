@@ -8,7 +8,7 @@
  * (sticky ATC, trust strip, UX signal capture, footer key fix) and recorded
  * as `auto_fixed = true` in this run.
  */
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

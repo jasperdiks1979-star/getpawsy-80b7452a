@@ -2,7 +2,7 @@
 // Enqueues persona×product opportunities into existing autopilot_actions (action_kind='audience_target').
 // Dedupe via dedupe_hash = sha1(persona_id|product_id|YYYY-MM-DD).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 async function sha1Hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);

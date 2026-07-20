@@ -7,7 +7,7 @@
 // POST { action: "run", limit?: number }
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -41,11 +41,11 @@ async function loadImageQuality(productIds: string[]): Promise<Record<string, nu
     const ids = productIds.slice(i, i + chunk);
     const { data } = await supa
       .from("cj_media_asset_registry")
-      .select("product_id, width, height, status")
+      .select("product_id, width, height, public_url")
       .in("product_id", ids);
     for (const r of (data ?? []) as any[]) {
       const wh = Math.min(Number(r.width ?? 0), Number(r.height ?? 0));
-      const ok = r.status === "ok" || r.status === "active" || r.status === null;
+      const ok = !!r.public_url;
       const s = clamp((ok ? 60 : 30) + (wh >= 1200 ? 40 : wh >= 800 ? 25 : wh >= 500 ? 10 : 0));
       out[r.product_id] = Math.max(out[r.product_id] ?? 0, s);
     }

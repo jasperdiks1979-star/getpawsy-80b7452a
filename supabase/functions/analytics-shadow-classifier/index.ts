@@ -6,7 +6,7 @@
 // Auth: verify_jwt=false by platform default; requires a shared token header.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   classifyTraffic,
   aggregateSessionQuality,

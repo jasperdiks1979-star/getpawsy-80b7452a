@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Wipes rejected pinterest_pin_queue rows whose rejection_reason is a
 // generic_cta_phrase / banned_phrase / content_refresh_banned_overlay finding,

@@ -11,7 +11,7 @@
 // For every successful Pinterest DELETE we mark the queue row status='deleted'
 // and the linked asset is_active=false so the autopublisher never resurfaces it.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

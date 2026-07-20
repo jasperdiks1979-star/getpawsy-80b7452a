@@ -1,7 +1,7 @@
 // PCIE-V2 Creative Director — config-driven pipeline orchestrator.
 // Every stage reads its catalog from the database. No hardcoded limits.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   buildStoryProfile,
   pickRotatingBadge,

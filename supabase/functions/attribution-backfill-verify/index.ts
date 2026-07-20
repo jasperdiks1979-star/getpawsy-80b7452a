@@ -6,7 +6,7 @@
 // Flags a regression when literal `direct/(none)` fallback sessions
 // re-appear after the 2026-07 attribution cleanup hotfix.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
