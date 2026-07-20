@@ -8,6 +8,7 @@ const ROOTS = ["supabase/functions", "src", "docs", "scripts"];
 const HOST = "shoppingcontent.googleapis.com";
 
 const EXPECTED = new Set([
+  "scripts/merchant-api-residual-scan.mjs",
   "supabase/functions/merchant-sync/index.ts",
   "supabase/functions/merchant-cleanup/index.ts",
   "supabase/functions/geip-sync-merchant/index.ts",
