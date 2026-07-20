@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
+import { MerchantApiProbePanel } from '@/components/admin/MerchantApiProbePanel';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
 import { ReleaseTimelineCard } from '@/components/admin/ReleaseTimelineCard';
