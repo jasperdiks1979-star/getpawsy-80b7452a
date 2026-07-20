@@ -1,0 +1,23 @@
+# Cloudflare Worker: getpawsy-supabase-relay
+# Same-origin authenticated relay for Supabase Edge Functions.
+#
+# Route pattern is scoped strictly to /api/edge/* so it never
+# intercepts any other traffic on getpawsy.pet.
+
+name = "getpawsy-supabase-relay"
+main = "relay-worker.js"
+compatibility_date = "2026-07-01"
+workers_dev = false
+
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+
+[observability]
+enabled = true
+
+[env.production]
+name = "getpawsy-supabase-relay"
+workers_dev = false
+routes = [
+  { pattern = "getpawsy.pet/api/edge/*", zone_name = "getpawsy.pet" },
+  { pattern = "www.getpawsy.pet/api/edge/*", zone_name = "getpawsy.pet" },
+]
