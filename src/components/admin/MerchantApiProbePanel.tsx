@@ -29,6 +29,10 @@ async function invokeFn(name: string): Promise<InvocationResult> {
   if (!token) return { status: 401, body: null, error: 'no_session' };
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+  // Diagnostic: log the exact call so failures are debuggable in browser console.
+  // Never log the token or apikey values.
+  // eslint-disable-next-line no-console
+  console.info('[MerchantApiProbe] invoking', { name, url, hasToken: !!token });
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -44,7 +48,25 @@ async function invokeFn(name: string): Promise<InvocationResult> {
     try { parsed = JSON.parse(text); } catch { /* keep text */ }
     return { status: res.status, body: parsed };
   } catch (e) {
-    return { status: null, body: null, error: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    // eslint-disable-next-line no-console
+    console.error('[MerchantApiProbe] fetch failed', { name, url, error: msg, raw: e });
+    // Fallback via supabase-js which uses its own transport (helps when a
+    // service worker or ad-blocker breaks the raw cross-origin fetch).
+    try {
+      const { data, error } = await supabase.functions.invoke(name, { body: {} });
+      if (error) {
+        return {
+          status: (error as { context?: { status?: number } }).context?.status ?? null,
+          body: data ?? null,
+          error: `${msg} | fallback: ${error.message}`,
+        };
+      }
+      return { status: 200, body: data };
+    } catch (fallbackErr) {
+      const fmsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+      return { status: null, body: null, error: `${msg} | fallback: ${fmsg}` };
+    }
   }
 }
 
@@ -65,7 +87,9 @@ function ResultBlock({ title, result }: { title: string; result: InvocationResul
     ? 'Your admin session is missing or expired. Sign out and sign in again.'
     : result.status === 403 && result.body && typeof result.body === 'object'
       ? `403 — ${(result.body as any).code ?? (result.body as any).error ?? 'forbidden'}`
-      : null;
+      : result.status === null
+        ? `Network/CORS error — ${result.error ?? 'fetch failed before reaching the function'}`
+        : null;
 
   return (
     <div className="space-y-2">
@@ -88,6 +112,11 @@ function ResultBlock({ title, result }: { title: string; result: InvocationResul
       </div>
       {banner && (
         <div className="p-2 rounded bg-destructive/10 text-destructive text-sm">{banner}</div>
+      )}
+      {result.error && result.status !== null && (
+        <div className="p-2 rounded bg-muted text-xs text-muted-foreground break-words">
+          {result.error}
+        </div>
       )}
       <pre className="text-xs bg-muted rounded p-3 overflow-auto max-h-96 whitespace-pre-wrap break-words">
         {pretty}
