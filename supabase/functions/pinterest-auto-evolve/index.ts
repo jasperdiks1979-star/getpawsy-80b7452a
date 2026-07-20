@@ -4,7 +4,7 @@
 // hook boosts) within safe bounds. Every change is journaled to
 // pinterest_evolution_log with rationale and metrics.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "jsr:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

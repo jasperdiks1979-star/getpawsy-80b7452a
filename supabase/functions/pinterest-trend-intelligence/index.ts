@@ -2,7 +2,7 @@
 // Maintains seasonal + US-ecommerce trend signals per niche/pin_mode and exposes
 // a `bias` payload that the creative director merges into its planner.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "jsr:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
