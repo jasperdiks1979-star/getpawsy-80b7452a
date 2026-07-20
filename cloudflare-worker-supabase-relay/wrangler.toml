@@ -9,7 +9,7 @@ main = "relay-worker.js"
 compatibility_date = "2026-07-01"
 workers_dev = false
 
-account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+account_id = "332e207c010c6b67f45c1be7e5ff87b2"
 
 [observability]
 enabled = true
