@@ -1,6 +1,6 @@
 // Pinterest Performance Engine — predicts ad performance before render.
 // Scores stop-scroll, retention, save-rate, CTR. Informational only — does NOT add reject rules.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, Math.round(n)));

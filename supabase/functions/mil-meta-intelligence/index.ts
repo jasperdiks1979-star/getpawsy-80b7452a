@@ -2,7 +2,7 @@
 // Reviews every registered AI engine: scores decisions, calibrates confidence,
 // updates a leaderboard, and writes a strategic briefing. Read-only by default;
 // weight adjustments require mil_settings.autonomy.auto_adjust_weights = true.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

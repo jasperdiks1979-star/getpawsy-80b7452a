@@ -8,7 +8,7 @@
 // and use an EWMA-style update so the system keeps adapting.
 //
 // Idempotent: safe to run on a cron every hour.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const W_MIN = 0.25;

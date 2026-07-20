@@ -5,7 +5,7 @@
 //   1) Internal call from cinematic-ad-render-webhook (x-render-secret).
 //   2) Admin-triggered re-validate (Bearer token + admin role).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { getPreset } from "../_shared/cinematic-presets.ts";
 import { validateCategoryMatch, validateTextSafeArea } from "../_shared/pinterest-video-meta.ts";
 import { evaluateV7, type V7Thresholds, DEFAULT_V7_THRESHOLDS } from "../_shared/cinematic-v7-eval.ts";

@@ -3,7 +3,7 @@
 // Safe-by-default: only updates DB; does NOT call Pinterest write endpoints
 // unless ENABLE_PIN_DELETE=true is explicitly set.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { getServiceClient } from "../_shared/pinterest-quality-firewall-v2.ts";
 
 Deno.serve(async (req) => {

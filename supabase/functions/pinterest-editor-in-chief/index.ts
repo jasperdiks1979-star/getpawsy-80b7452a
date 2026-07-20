@@ -17,7 +17,7 @@
 // Body: { dryRun?: boolean, limit?: number, minScore?: number, maxIterations?: number }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { scoreAxes, expectedLifts, decideEditorAction, type Draft } from "./scoring.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

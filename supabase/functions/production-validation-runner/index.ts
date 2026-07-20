@@ -2,7 +2,7 @@
 // the live production deployment only (https://getpawsy.pet) and writes
 // results to production_validation_runs + production_validation_checks.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const PROD_URL = "https://getpawsy.pet";
 const ANALYTICS_VERSION = "phase3.v1";

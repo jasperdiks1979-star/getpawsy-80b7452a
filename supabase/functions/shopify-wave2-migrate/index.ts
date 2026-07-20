@@ -12,7 +12,7 @@
 // - Failure classification: retryable (429/5xx/THROTTLED) vs permanent.
 // - Chunked per invocation via ?limit=N so caller can drive full run.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 

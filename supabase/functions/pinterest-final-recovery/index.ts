@@ -7,7 +7,7 @@
 // 5. Returns a single report. Never returns "unknown" — every field is
 //    deterministically derived from API/db evidence.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const REQUIRED_SCOPES = [
   "boards:read","boards:write","pins:read","pins:write","user_accounts:read",

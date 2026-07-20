@@ -1,7 +1,7 @@
 // Phase 8d: AI Recommendations Synthesizer.
 // Fuses today's top priority products, open gaps, and rising trend clusters
 // into ranked actionable recommendations stored in market_ai_recommendations.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;

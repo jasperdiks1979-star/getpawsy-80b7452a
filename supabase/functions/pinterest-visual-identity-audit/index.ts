@@ -24,7 +24,7 @@
 //   and Layer A still runs so operators keep the audit trail.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   cachedVisualIdentity,
   evaluateVisualIdentity,

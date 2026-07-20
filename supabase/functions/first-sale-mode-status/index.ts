@@ -1,7 +1,7 @@
 // Public read-only report for the First Sale Mode adaptive layer.
 // Returns: counters, active flag, reasons, current vs temporary thresholds,
 // and the diversity overrides. No writes; safe to call from the admin UI.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { getFirstSaleStatus, FIRST_SALE_TRIGGERS } from "../_shared/first-sale-mode.ts";
 
 Deno.serve(async (req) => {

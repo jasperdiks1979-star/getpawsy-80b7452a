@@ -5,7 +5,7 @@
 // Safety locks (pinterest_publishing_global_stop / pcie2_publish_enabled)
 // remain authoritative — this function only reports.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const BANNED_PHRASES = [
   "wait", "i wish", "you're doing it wrong", "you are doing it wrong",

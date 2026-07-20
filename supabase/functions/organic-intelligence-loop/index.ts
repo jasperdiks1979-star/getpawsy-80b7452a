@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { filterOrganicOrders, fetchOrganicProductRanking } from "../_shared/organic-ranking.ts";
 
 // Organic Intelligence Loop — 10-step learning cycle for verified ORGANIC sales.

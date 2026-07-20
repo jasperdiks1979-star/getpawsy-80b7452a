@@ -9,7 +9,7 @@
 //     perform (theme install, sandbox purchase, refund, CJ app install,
 //     pixel firing from a real browser) is marked FAIL with a remediation.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
 

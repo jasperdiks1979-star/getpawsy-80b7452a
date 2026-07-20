@@ -11,7 +11,7 @@
 //   { checked, verified, mismatched, missing_hash, missing_payload,
 //     errors, results: [...] }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 type DocRow = {
   id: string;

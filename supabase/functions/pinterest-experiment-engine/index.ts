@@ -17,7 +17,7 @@
 // Safe: only writes to the tables above. No publishing, no Pinterest API.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { fetchOrganicPinRanking } from "../_shared/organic-ranking.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

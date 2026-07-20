@@ -1,6 +1,6 @@
 // Premium Voice Selector — picks best US-native voice per product
 // based on niche, demographic, emotion, and purchase intent.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import {
   pickVoice,

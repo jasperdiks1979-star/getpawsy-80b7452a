@@ -1,7 +1,7 @@
 // Genesis V3.5 — Product x Audience Matcher
 // Reuses gv3_pi_scores + gv3_pin_growth_scores + canonical signals.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const RANKS = ["best", "second", "emerging", "wrong", "lost", "untapped"] as const;
 

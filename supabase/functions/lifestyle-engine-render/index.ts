@@ -17,7 +17,7 @@
 // While the master flag is off this function exits with {killed:true,
 // reason:'engine_disabled'} and consumes ZERO credits.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

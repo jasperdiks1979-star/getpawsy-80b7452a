@@ -1,7 +1,7 @@
 // Phase 8d: autonomous product prioritization. Fuses today's
 // market_product_scores with open opportunity gaps and rising trend clusters
 // into a ranked daily priority list with recommended channels.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;

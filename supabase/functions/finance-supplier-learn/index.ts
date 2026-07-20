@@ -2,7 +2,7 @@
 // Recomputes supplier profile 2.0 from historical evidence_documents + finance_supplier_memory.
 // Additive: only fills expected_* fields when NULL, or updates learned aggregates (avg, yoy, counts).
 // Never overwrites values a human corrected (source='human' rules in supplier_memory always win).
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

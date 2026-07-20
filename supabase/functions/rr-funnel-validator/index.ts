@@ -2,7 +2,7 @@
 // Pulls real metrics from the database for the last 7d/30d and writes
 // per-step status rows to public.rr_funnel_checks. NEVER reports a step
 // "green" without evidence.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Status = "green" | "yellow" | "red" | "skip";

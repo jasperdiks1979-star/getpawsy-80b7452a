@@ -9,7 +9,7 @@
 // - Bounded concurrency = sequential with 120ms pacing.
 // - Phases invoked by ?phase=... Chunked with ?limit=N.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 

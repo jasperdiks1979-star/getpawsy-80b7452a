@@ -5,7 +5,7 @@
 // - Reports missing / unexpected scopes vs the W1/W2 required set
 // - Never returns token material, client secret, or auth headers
 // - Performs ZERO mutations
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import {
   getShopifyConfig,
   getShopifyTokenMeta,

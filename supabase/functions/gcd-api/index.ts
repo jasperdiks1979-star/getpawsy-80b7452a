@@ -1,7 +1,7 @@
 // Genesis Creative DNA — unified intelligence API
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const supabase = createClient(

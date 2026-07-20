@@ -5,7 +5,7 @@
 // or is marked NOT_VERIFIABLE with the exact reason (missing scope vs
 // missing resource vs unsupported API version).
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 

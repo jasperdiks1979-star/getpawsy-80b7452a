@@ -1,6 +1,6 @@
 // Wave D1 — 15-check forensic invoice quality score.
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 

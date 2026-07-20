@@ -2,7 +2,7 @@
 // Pulls the most recent recovery run, projects safe-velocity for the next
 // 24h, and records a learning event. Read-only: never publishes.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

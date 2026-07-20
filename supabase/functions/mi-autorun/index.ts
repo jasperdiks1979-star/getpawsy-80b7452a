@@ -1,4 +1,4 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Orchestrator: runs ingest -> detect -> forecast in sequence.
 Deno.serve(async (req) => {

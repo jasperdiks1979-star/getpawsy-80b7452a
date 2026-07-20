@@ -1,4 +1,4 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "./cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 export { corsHeaders };

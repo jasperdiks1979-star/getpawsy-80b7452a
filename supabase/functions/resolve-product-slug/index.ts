@@ -10,7 +10,7 @@
  * window.location.search to the returned slug.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { resolveDestination } from "../_shared/pinterest-url-resolver.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

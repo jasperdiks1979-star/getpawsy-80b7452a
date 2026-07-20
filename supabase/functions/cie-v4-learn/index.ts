@@ -4,7 +4,7 @@
 // 3) Snapshots top weights to pei_weight_snapshots for the evolution timeline.
 // 4) Writes gcd_learnings evidence rows for material deltas.
 // 5) Predicts winners/failures for current pinterest_pin_queue drafts into gcd_predictions.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.3";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

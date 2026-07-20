@@ -21,7 +21,7 @@
  * Render.com worker's startup log fingerprint without ever exposing the
  * raw value.
  */
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const ANON_KEY =
