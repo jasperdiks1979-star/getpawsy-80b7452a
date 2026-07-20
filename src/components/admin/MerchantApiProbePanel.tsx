@@ -28,19 +28,29 @@ async function invokeFn(name: string): Promise<InvocationResult> {
   const token = sess.session?.access_token;
   if (!token) return { status: 401, body: null, error: 'no_session' };
 
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
-  // Diagnostic: log the exact call so failures are debuggable in browser console.
-  // Never log the token or apikey values.
+  // Prefer the same-origin Cloudflare Worker relay when running on the
+  // production apex — this eliminates the cross-origin preflighted POST
+  // that iPhone Safari refuses against *.supabase.co for this surface.
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const useRelay = host === 'getpawsy.pet' || host === 'www.getpawsy.pet';
+  const url = useRelay
+    ? `${window.location.origin}/api/edge/${name}`
+    : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
   // eslint-disable-next-line no-console
-  console.info('[MerchantApiProbe] invoking', { name, url, hasToken: !!token });
+  console.info('[MerchantApiProbe] invoking', { name, url, useRelay, hasToken: !!token });
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+    // apikey is required by the Supabase Functions gateway on the direct
+    // path; the relay attaches it server-side, so we omit it there.
+    if (!useRelay) {
+      headers.apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    }
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({}),
     });
     const text = await res.text();
