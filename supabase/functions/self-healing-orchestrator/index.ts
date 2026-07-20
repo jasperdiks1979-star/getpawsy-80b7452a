@@ -252,7 +252,7 @@ const probes: Record<string, () => Promise<ProbeResult>> = {
     const { count } = await db
       .from("cj_media_asset_registry")
       .select("id", { count: "exact", head: true })
-      .eq("metadata->>status", "missing")
+      .is("public_url", null)
       .gte("updated_at", dayAgo);
     if ((count ?? 0) > 20)
       return { status: "yellow", symptom: "media_asset_missing_batch", evidence: { missing: count } };
