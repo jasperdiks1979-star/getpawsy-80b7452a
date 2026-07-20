@@ -1,7 +1,7 @@
 // Manual test runner: fires server-side InitiateCheckout + Purchase events
 // against the TikTok Events API so we can confirm end-to-end delivery.
 // Each call is logged in public.tiktok_server_events.
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
 
 Deno.serve(async (req) => {
