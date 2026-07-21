@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
     const { data: products } = await supabase
       .from("products")
-      .select("id, effective_stock, media_score, avg_rating, review_count")
+      .select("id, effective_stock, media_score:content_readiness_score")
       .limit(5000);
 
     const updates: any[] = [];
