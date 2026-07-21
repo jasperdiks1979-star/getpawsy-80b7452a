@@ -1,33 +1,38 @@
-// Read-only transport diagnostics for Merchant API probes.
-// Purpose: reconcile whether direct cross-origin fetch, supabase.functions.invoke,
-// and unauthenticated GET reachability differ at transport level across
-// iPhone Safari, desktop Chrome/Edge on getpawsy.pet, and the Lovable preview.
+// Read-only iPhone-safe transport diagnostics for Merchant API probes.
 // Never modifies infrastructure, never publishes, never displays secrets.
+// One-tap sequential runner: A → B → C.
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FlaskConical, Trash2 } from 'lucide-react';
+import { Loader2, FlaskConical, Trash2, Play, Copy, Download, RotateCw } from 'lucide-react';
 
-type Method = 'direct_fetch' | 'supabase_invoke' | 'unauth_get' | 'same_origin_relay';
+export type Method =
+  | 'direct_fetch'
+  | 'supabase_invoke'
+  | 'unauth_get'
+  | 'same_origin_relay';
 
-type Classification =
-  | 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED'
-  | 'RELAY_REACHED_AUTH_MISSING'
-  | 'RELAY_EXECUTED'
-  | 'EDGE_FUNCTION_REACHED'
-  | 'RELAY_NETWORK_FAILURE'
-  | 'RELAY_EXECUTED_ALLOWLIST_REJECTED'
-  | 'RELAY_EXECUTED_WRONG_METHOD';
+export type Classification =
+  | 'AUTHENTICATED_EDGE_SUCCESS'
+  | 'AUTHENTICATED_HTTP_ERROR'
+  | 'UNAUTHENTICATED_EDGE_REACHABLE'
+  | 'PREFLIGHT_OR_BROWSER_TRANSPORT_FAILURE'
+  | 'REQUEST_TIMEOUT'
+  | 'SESSION_MISSING'
+  | 'STOREFRONT_HTML_INTERCEPTION'
+  | 'UNKNOWN_FAILURE';
 
-interface Attempt {
+export interface Attempt {
   id: string;
   probeId: string;
   method: Method;
+  label: string;
   url: string;
+  httpMethod: 'GET' | 'POST';
   userAgent: string;
   origin: string;
   crossOrigin: boolean;
@@ -39,16 +44,17 @@ interface Attempt {
   bodyPreview?: string;
   parsedJson?: unknown;
   echoedProbeId?: string | null;
+  echoedProbeIdMatches?: boolean;
   reachedEdge?: boolean;
   errorName?: string;
   errorMessage?: string;
   hasSession: boolean;
   hasBearer: boolean;
-  classification?: Classification;
-  relayUpstreamStatus?: string | null;
+  classification: Classification;
 }
 
 const FN_NAME = 'merchant-api-probe';
+const REQUEST_TIMEOUT_MS = 20_000;
 
 function randomProbeId(): string {
   const bytes = new Uint8Array(8);
@@ -82,324 +88,443 @@ function extractEchoedProbeId(headers: Headers | null, parsed: unknown): string 
   return null;
 }
 
+/** Classify a completed attempt. Exported for tests. */
+export function classifyAttempt(input: {
+  method: Method;
+  httpStatus?: number | null;
+  contentType?: string | null;
+  bodyPreview?: string;
+  parsedJson?: unknown;
+  errorName?: string;
+  errorMessage?: string;
+  hasBearer: boolean;
+  requiresAuth: boolean;
+}): Classification {
+  const { method, httpStatus, contentType, bodyPreview, parsedJson, errorName, errorMessage, hasBearer, requiresAuth } = input;
+  const ct = (contentType || '').toLowerCase();
+  const body = bodyPreview || '';
+  const looksHtml = ct.startsWith('text/html') || /^\s*<!doctype html/i.test(body);
+
+  if (errorName === 'AbortError' || /timeout|timed out/i.test(errorMessage || '')) {
+    return 'REQUEST_TIMEOUT';
+  }
+  if (requiresAuth && !hasBearer) return 'SESSION_MISSING';
+
+  if (method === 'same_origin_relay' && looksHtml) return 'STOREFRONT_HTML_INTERCEPTION';
+  if (looksHtml && method !== 'unauth_get') return 'STOREFRONT_HTML_INTERCEPTION';
+
+  if (httpStatus == null) {
+    return errorMessage ? 'PREFLIGHT_OR_BROWSER_TRANSPORT_FAILURE' : 'UNKNOWN_FAILURE';
+  }
+
+  if (method === 'unauth_get') {
+    if (httpStatus === 401) return 'UNAUTHENTICATED_EDGE_REACHABLE';
+    if (httpStatus >= 200 && httpStatus < 500) return 'UNAUTHENTICATED_EDGE_REACHABLE';
+    return 'AUTHENTICATED_HTTP_ERROR';
+  }
+
+  if (httpStatus >= 200 && httpStatus < 300) {
+    const ok = parsedJson && typeof parsedJson === 'object' && (parsedJson as { ok?: boolean }).ok === true;
+    return ok ? 'AUTHENTICATED_EDGE_SUCCESS' : 'AUTHENTICATED_HTTP_ERROR';
+  }
+  return 'AUTHENTICATED_HTTP_ERROR';
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, controller: AbortController): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => {
+      controller.abort();
+      const e = new Error(`Request timed out after ${ms}ms`);
+      e.name = 'AbortError';
+      reject(e);
+    }, ms);
+    promise.then((v) => { clearTimeout(t); resolve(v); }, (err) => { clearTimeout(t); reject(err); });
+  });
+}
+
+/** Clipboard write with iPhone-safe textarea fallback. Exported for tests. */
+export async function copyToClipboardSafe(text: string): Promise<boolean> {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch { /* fall through */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function MerchantApiTransportDiagnostics() {
   const { user } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [running, setRunning] = useState<Method | null>(null);
+  const [progress, setProgress] = useState<{ index: number; total: number; label: string } | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [completedOnce, setCompletedOnce] = useState(false);
+  const wakeLockRef = useRef<{ release?: () => Promise<void> } | null>(null);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
   const directUrl = `${supabaseUrl}/functions/v1/${FN_NAME}`;
-  const invokeInternalUrl = directUrl; // supabase-js constructs the same URL under the hood
-  const relayUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/api/edge/${FN_NAME}`
-    : `/api/edge/${FN_NAME}`;
+  const invokeInternalUrl = directUrl;
 
-  const push = (a: Attempt) => setAttempts((prev) => [a, ...prev].slice(0, 20));
+  const push = useCallback((a: Attempt) => setAttempts((prev) => [a, ...prev].slice(0, 20)), []);
 
   const baseMeta = useMemo(() => ({
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a',
     origin: typeof window !== 'undefined' ? window.location.origin : 'n/a',
   }), []);
 
-  async function getSessionSafe() {
+  const getSessionSafe = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token || null;
     return { hasSession: !!data.session, hasBearer: !!token, token };
-  }
+  }, []);
 
-  async function runDirectFetch() {
+  const buildBase = useCallback((method: Method, label: string, url: string, httpMethod: 'GET' | 'POST', probeId: string, hasSession: boolean, hasBearer: boolean): Attempt => ({
+    id: probeId,
+    probeId,
+    method,
+    label,
+    url,
+    httpMethod,
+    userAgent: baseMeta.userAgent,
+    origin: baseMeta.origin,
+    crossOrigin: isCrossOrigin(url),
+    startedAt: new Date().toISOString(),
+    hasSession,
+    hasBearer,
+    classification: 'UNKNOWN_FAILURE',
+  }), [baseMeta]);
+
+  const runDirectFetch = useCallback(async (): Promise<Attempt> => {
     setRunning('direct_fetch');
     const probeId = randomProbeId();
-    const startedAt = new Date().toISOString();
     const t0 = performance.now();
     const { hasSession, hasBearer, token } = await getSessionSafe();
-    const url = directUrl;
-    const attempt: Attempt = {
-      id: probeId, probeId, method: 'direct_fetch', url,
-      userAgent: baseMeta.userAgent, origin: baseMeta.origin,
-      crossOrigin: isCrossOrigin(url), startedAt, hasSession, hasBearer,
-    };
+    const base = buildBase('direct_fetch', 'A. Direct authenticated fetch', directUrl, 'POST', probeId, hasSession, hasBearer);
+    const controller = new AbortController();
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'x-client-probe-id': probeId,
       };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      headers['apikey'] = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-      const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ probeId }) });
+      headers['apikey'] = publishableKey;
+      const res = await withTimeout(fetch(directUrl, { method: 'POST', headers, body: JSON.stringify({}), signal: controller.signal }), REQUEST_TIMEOUT_MS, controller);
       const { text, json } = await safeText(res);
       const echoed = extractEchoedProbeId(res.headers, json);
-      push({
-        ...attempt,
+      const contentType = res.headers.get('content-type');
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: res.status,
-        contentType: res.headers.get('content-type'),
-        bodyPreview: text.slice(0, 500),
+        contentType,
+        bodyPreview: text.slice(0, 1000),
         parsedJson: json,
         echoedProbeId: echoed,
-        reachedEdge: echoed === probeId || (res.status > 0 && res.status !== 0),
-      });
+        echoedProbeIdMatches: echoed === probeId,
+        reachedEdge: res.status > 0,
+        classification: classifyAttempt({ method: 'direct_fetch', httpStatus: res.status, contentType, bodyPreview: text, parsedJson: json, hasBearer, requiresAuth: true }),
+      };
+      push(result); return result;
     } catch (e) {
       const err = e as Error;
-      push({
-        ...attempt,
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: null,
         errorName: err.name,
         errorMessage: err.message,
         reachedEdge: false,
-      });
+        classification: classifyAttempt({ method: 'direct_fetch', httpStatus: null, errorName: err.name, errorMessage: err.message, hasBearer, requiresAuth: true }),
+      };
+      push(result); return result;
     } finally {
       setRunning(null);
     }
-  }
+  }, [buildBase, directUrl, publishableKey, getSessionSafe, push]);
 
-  async function runSupabaseInvoke() {
+  const runSupabaseInvoke = useCallback(async (): Promise<Attempt> => {
     setRunning('supabase_invoke');
     const probeId = randomProbeId();
-    const startedAt = new Date().toISOString();
     const t0 = performance.now();
     const { hasSession, hasBearer } = await getSessionSafe();
-    const url = invokeInternalUrl;
-    const attempt: Attempt = {
-      id: probeId, probeId, method: 'supabase_invoke', url,
-      userAgent: baseMeta.userAgent, origin: baseMeta.origin,
-      crossOrigin: isCrossOrigin(url), startedAt, hasSession, hasBearer,
-    };
+    const base = buildBase('supabase_invoke', 'B. supabase.functions.invoke', invokeInternalUrl, 'POST', probeId, hasSession, hasBearer);
     try {
-      const { data, error } = await supabase.functions.invoke(FN_NAME, {
+      const invokeCall = supabase.functions.invoke(FN_NAME, {
         body: { probeId },
         headers: { 'x-client-probe-id': probeId },
       });
+      // supabase-js does not accept AbortSignal; wrap with Promise.race timeout.
+      let timedOut = false;
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => { timedOut = true; const e = new Error(`Request timed out after ${REQUEST_TIMEOUT_MS}ms`); e.name = 'AbortError'; reject(e); }, REQUEST_TIMEOUT_MS);
+      });
+      const { data, error } = await Promise.race([invokeCall, timeout]) as Awaited<typeof invokeCall>;
+      if (timedOut) throw Object.assign(new Error('Request timed out'), { name: 'AbortError' });
       const parsed = data ?? null;
       const status = (error as { context?: { status?: number } } | null)?.context?.status ?? (error ? null : 200);
       const echoed = extractEchoedProbeId(null, parsed);
       const preview = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
-      push({
-        ...attempt,
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: status ?? null,
         contentType: 'application/json (via supabase-js)',
-        bodyPreview: (preview || '').slice(0, 500),
+        bodyPreview: (preview || '').slice(0, 1000),
         parsedJson: parsed,
         echoedProbeId: echoed,
-        reachedEdge: echoed === probeId,
+        echoedProbeIdMatches: echoed === probeId,
+        reachedEdge: echoed === probeId || (status != null && status > 0),
         errorName: error ? 'FunctionsFetchError' : undefined,
         errorMessage: error?.message,
-      });
+        classification: classifyAttempt({ method: 'supabase_invoke', httpStatus: status ?? null, parsedJson: parsed, errorName: error ? 'FunctionsFetchError' : undefined, errorMessage: error?.message, hasBearer, requiresAuth: true }),
+      };
+      push(result); return result;
     } catch (e) {
       const err = e as Error;
-      push({
-        ...attempt,
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: null,
         errorName: err.name,
         errorMessage: err.message,
         reachedEdge: false,
-      });
+        classification: classifyAttempt({ method: 'supabase_invoke', httpStatus: null, errorName: err.name, errorMessage: err.message, hasBearer, requiresAuth: true }),
+      };
+      push(result); return result;
     } finally {
       setRunning(null);
     }
-  }
+  }, [buildBase, invokeInternalUrl, getSessionSafe, push]);
 
-  async function runUnauthGet() {
+  const runUnauthGet = useCallback(async (): Promise<Attempt> => {
     setRunning('unauth_get');
     const probeId = randomProbeId();
-    const startedAt = new Date().toISOString();
     const t0 = performance.now();
-    const url = directUrl;
-    const attempt: Attempt = {
-      id: probeId, probeId, method: 'unauth_get', url,
-      userAgent: baseMeta.userAgent, origin: baseMeta.origin,
-      crossOrigin: isCrossOrigin(url), startedAt, hasSession: false, hasBearer: false,
-    };
+    const base = buildBase('unauth_get', 'C. Unauthenticated reachability (GET)', directUrl, 'GET', probeId, false, false);
+    const controller = new AbortController();
     try {
-      // No Authorization, no apikey, no preflight-triggering custom headers.
-      const res = await fetch(url, { method: 'GET' });
+      const res = await withTimeout(fetch(directUrl, { method: 'GET', signal: controller.signal }), REQUEST_TIMEOUT_MS, controller);
       const { text, json } = await safeText(res);
-      push({
-        ...attempt,
+      const contentType = res.headers.get('content-type');
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: res.status,
-        contentType: res.headers.get('content-type'),
-        bodyPreview: text.slice(0, 500),
+        contentType,
+        bodyPreview: text.slice(0, 1000),
         parsedJson: json,
         echoedProbeId: null,
-        // Reaching a 401 "missing_auth" still proves TCP + TLS + edge boot.
+        echoedProbeIdMatches: false,
         reachedEdge: res.status > 0,
-      });
-    } catch (e) {
-      const err = e as Error;
-      push({
-        ...attempt,
-        finishedAt: new Date().toISOString(),
-        elapsedMs: Math.round(performance.now() - t0),
-        httpStatus: null,
-        errorName: err.name,
-        errorMessage: err.message,
-        reachedEdge: false,
-      });
-    } finally {
-      setRunning(null);
-    }
-  }
-
-  async function runSameOriginRelay() {
-    setRunning('same_origin_relay');
-    const probeId = randomProbeId();
-    const startedAt = new Date().toISOString();
-    const t0 = performance.now();
-    const { hasSession, hasBearer, token } = await getSessionSafe();
-    const url = relayUrl;
-    const attempt: Attempt = {
-      id: probeId, probeId, method: 'same_origin_relay', url,
-      userAgent: baseMeta.userAgent, origin: baseMeta.origin,
-      crossOrigin: isCrossOrigin(url), startedAt, hasSession, hasBearer,
-    };
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'x-client-probe-id': probeId,
+        classification: classifyAttempt({ method: 'unauth_get', httpStatus: res.status, contentType, bodyPreview: text, parsedJson: json, hasBearer: false, requiresAuth: false }),
       };
-      // Bearer only. The relay attaches apikey server-side; browser MUST NOT send it.
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ probeId }),
-      });
-      const ct = res.headers.get('content-type') || '';
-      const upstream = res.headers.get('x-relay-upstream-status');
-      const { text, json } = await safeText(res);
-      const echoed = extractEchoedProbeId(res.headers, json);
-
-      // Classification per spec — order matters.
-      let classification: Classification;
-      const looksHtml = /^text\/html/i.test(ct) || /^\s*<!doctype html/i.test(text);
-      if (looksHtml) {
-        classification = 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED';
-      } else if (res.status === 401 && /missing_auth/i.test(text)) {
-        classification = 'RELAY_REACHED_AUTH_MISSING';
-      } else if (res.status === 404 && /function_not_allowed/i.test(text)) {
-        classification = 'RELAY_EXECUTED_ALLOWLIST_REJECTED';
-      } else if (res.status === 405) {
-        classification = 'RELAY_EXECUTED_WRONG_METHOD';
-      } else if (echoed && echoed === probeId) {
-        classification = 'EDGE_FUNCTION_REACHED';
-      } else if (upstream) {
-        classification = 'RELAY_EXECUTED';
-      } else {
-        classification = 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED';
-      }
-
-      push({
-        ...attempt,
-        finishedAt: new Date().toISOString(),
-        elapsedMs: Math.round(performance.now() - t0),
-        httpStatus: res.status,
-        contentType: ct || null,
-        bodyPreview: text.slice(0, 500),
-        parsedJson: json,
-        echoedProbeId: echoed,
-        reachedEdge: classification === 'EDGE_FUNCTION_REACHED' || classification === 'RELAY_EXECUTED',
-        relayUpstreamStatus: upstream,
-        classification,
-      });
+      push(result); return result;
     } catch (e) {
       const err = e as Error;
-      push({
-        ...attempt,
+      const result: Attempt = {
+        ...base,
         finishedAt: new Date().toISOString(),
         elapsedMs: Math.round(performance.now() - t0),
         httpStatus: null,
         errorName: err.name,
         errorMessage: err.message,
         reachedEdge: false,
-        classification: 'RELAY_NETWORK_FAILURE',
-      });
+        classification: classifyAttempt({ method: 'unauth_get', httpStatus: null, errorName: err.name, errorMessage: err.message, hasBearer: false, requiresAuth: false }),
+      };
+      push(result); return result;
     } finally {
       setRunning(null);
     }
-  }
+  }, [buildBase, directUrl, push]);
+
+  const requestWakeLock = useCallback(async () => {
+    try {
+      const anyNav = navigator as unknown as { wakeLock?: { request: (t: string) => Promise<{ release: () => Promise<void> }> } };
+      if (anyNav.wakeLock?.request) {
+        wakeLockRef.current = await anyNav.wakeLock.request('screen');
+      }
+    } catch { /* unsupported */ }
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    try { await wakeLockRef.current?.release?.(); } catch { /* ignore */ }
+    wakeLockRef.current = null;
+  }, []);
+
+  const runAllSafe = useCallback(async () => {
+    if (running) return;
+    setCompletedOnce(false);
+    await requestWakeLock();
+    try {
+      setProgress({ index: 1, total: 3, label: 'Running A of 3 — Direct authenticated fetch' });
+      await runDirectFetch();
+      setProgress({ index: 2, total: 3, label: 'Running B of 3 — supabase.functions.invoke' });
+      await runSupabaseInvoke();
+      setProgress({ index: 3, total: 3, label: 'Running C of 3 — Unauthenticated reachability' });
+      await runUnauthGet();
+    } finally {
+      setProgress(null);
+      setCompletedOnce(true);
+      await releaseWakeLock();
+    }
+  }, [running, runDirectFetch, runSupabaseInvoke, runUnauthGet, requestWakeLock, releaseWakeLock]);
+
+  const retryFailed = useCallback(async () => {
+    if (running) return;
+    const failedMethods = new Set(attempts.filter((a) => a.classification !== 'AUTHENTICATED_EDGE_SUCCESS' && a.classification !== 'UNAUTHENTICATED_EDGE_REACHABLE').map((a) => a.method));
+    if (failedMethods.has('direct_fetch')) await runDirectFetch();
+    if (failedMethods.has('supabase_invoke')) await runSupabaseInvoke();
+    if (failedMethods.has('unauth_get')) await runUnauthGet();
+  }, [attempts, running, runDirectFetch, runSupabaseInvoke, runUnauthGet]);
+
+  const diagnosticsJson = useMemo(() => {
+    // Never include any secret material. Attempts already exclude token bodies.
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      origin: baseMeta.origin,
+      userAgent: baseMeta.userAgent,
+      canonicalAdminRoute: '/admin/integrations/merchant',
+      attempts,
+    };
+    return JSON.stringify(payload, null, 2);
+  }, [attempts, baseMeta]);
+
+  const copyJson = useCallback(async () => {
+    const ok = await copyToClipboardSafe(diagnosticsJson);
+    setCopyState(ok ? 'copied' : 'failed');
+    setTimeout(() => setCopyState('idle'), 2500);
+  }, [diagnosticsJson]);
+
+  const downloadJson = useCallback(() => {
+    const blob = new Blob([diagnosticsJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `merchant-api-diagnostics-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [diagnosticsJson]);
 
   return (
     <Card className="border-dashed border-amber-500/60">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
           <FlaskConical className="h-5 w-5" />
-          Merchant API — Transport Reconciliation (Read-Only Diagnostics)
+          Merchant API — iPhone One-Tap Transport Diagnostics
         </CardTitle>
         <CardDescription>
-          Temporary admin-only diagnostic. Compares direct cross-origin{' '}
-          <code>fetch</code>, <code>supabase.functions.invoke</code>, and
-          unauthenticated GET reachability. No writes. No infrastructure
-          changes. Never displays JWTs, apikey, or refresh tokens.
+          Admin-only read-only diagnostic. Runs A → B → C sequentially.
+          Never displays JWTs, apikey, or refresh tokens. No writes, no
+          infrastructure changes.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2 text-xs">
-          <Badge variant="outline">origin: {baseMeta.origin}</Badge>
+          <Badge variant="outline" className="break-all max-w-full">origin: {baseMeta.origin}</Badge>
           <Badge variant="outline">signedIn: {String(!!user)}</Badge>
-          <Badge variant="outline">direct URL cross-origin: {String(isCrossOrigin(directUrl))}</Badge>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={runDirectFetch} disabled={running !== null}>
-            {running === 'direct_fetch' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            A. Test direct fetch
-          </Button>
-          <Button size="sm" variant="secondary" onClick={runSupabaseInvoke} disabled={running !== null}>
-            {running === 'supabase_invoke' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            B. Test supabase.functions.invoke
-          </Button>
-          <Button size="sm" variant="secondary" onClick={runUnauthGet} disabled={running !== null}>
-            {running === 'unauth_get' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            C. Test unauthenticated GET reachability
-          </Button>
-          <Button size="sm" onClick={runSameOriginRelay} disabled={running !== null}>
-            {running === 'same_origin_relay' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            D. Test same-origin relay
+        <Button
+          size="lg"
+          onClick={runAllSafe}
+          disabled={running !== null}
+          className="w-full min-h-[52px] text-base"
+          data-testid="run-all-diagnostics"
+        >
+          {running !== null ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Play className="h-5 w-5 mr-2" />}
+          Run all safe diagnostics
+        </Button>
+
+        {progress && (
+          <div className="rounded-md bg-amber-500/10 border border-amber-500/40 p-3 text-sm">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{progress.label}</span>
+            </div>
+          </div>
+        )}
+
+        {completedOnce && !progress && (
+          <div className="rounded-md bg-emerald-500/10 border border-emerald-500/40 p-3 text-sm">
+            Diagnostics completed — copy the JSON and return it to ChatGPT.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={copyJson}
+            disabled={attempts.length === 0}
+            className="w-full min-h-[48px]"
+            data-testid="copy-diagnostics"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            {copyState === 'copied' ? 'Copied ✓' : copyState === 'failed' ? 'Copy failed' : 'Copy full diagnostics JSON'}
           </Button>
           <Button
-            size="sm"
             variant="outline"
-            onClick={() => {
-              const safe = attempts.map((a) => ({ ...a }));
-              try {
-                navigator.clipboard?.writeText(JSON.stringify(safe, null, 2));
-              } catch { /* ignore */ }
-            }}
+            onClick={downloadJson}
             disabled={attempts.length === 0}
+            className="w-full min-h-[48px]"
           >
-            Copy full diagnostics JSON
+            <Download className="h-4 w-4 mr-2" />
+            Download diagnostics JSON
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setAttempts([])} disabled={attempts.length === 0}>
-            <Trash2 className="h-4 w-4 mr-1" />
+          <Button
+            variant="outline"
+            onClick={retryFailed}
+            disabled={running !== null || attempts.length === 0}
+            className="w-full min-h-[48px]"
+          >
+            <RotateCw className="h-4 w-4 mr-2" />
+            Retry failed tests
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => { setAttempts([]); setCompletedOnce(false); }}
+            disabled={attempts.length === 0 || running !== null}
+            className="w-full min-h-[48px]"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
             Clear results
           </Button>
         </div>
 
-        {attempts.length === 0 && (
+        {attempts.length === 0 && !progress && (
           <p className="text-xs text-muted-foreground">
-            No attempts yet. Run A/B/C/D on each target environment
-            (iPhone Safari on getpawsy.pet, desktop Chrome/Edge on
-            getpawsy.pet, Lovable preview). A + B are cross-origin and
-            preflighted; B is still <code>fetch</code> under the hood;
-            C proves only DNS/TLS/function reachability; D is the actual
-            production same-origin transport. Results stack newest-first.
+            Tap “Run all safe diagnostics” to sequentially execute A → B → C.
+            Results stack newest-first. The relay path is disabled as an
+            active transport (see historical note below).
           </p>
         )}
 
         <div className="space-y-3">
           {attempts.map((a) => (
-            <div key={a.id} className="rounded border p-3 space-y-2 text-xs">
+            <div key={a.id + a.startedAt} className="rounded border p-3 space-y-2 text-xs">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>{a.method}</Badge>
+                <Badge className="whitespace-normal text-left">{a.label}</Badge>
                 <Badge variant="outline">HTTP {a.httpStatus ?? 'ERR'}</Badge>
                 <Badge variant="outline">{a.elapsedMs ?? '?'} ms</Badge>
                 <Badge variant={a.crossOrigin ? 'destructive' : 'default'}>
@@ -410,21 +535,18 @@ export function MerchantApiTransportDiagnostics() {
                 </Badge>
                 <Badge variant="outline">hasSession={String(a.hasSession)}</Badge>
                 <Badge variant="outline">hasBearer={String(a.hasBearer)}</Badge>
-                {a.classification && (
-                  <Badge variant="secondary">{a.classification}</Badge>
-                )}
-                {a.relayUpstreamStatus && (
-                  <Badge variant="outline">x-relay-upstream-status={a.relayUpstreamStatus}</Badge>
-                )}
+                <Badge variant="secondary">{a.classification}</Badge>
               </div>
               <div className="grid gap-1 sm:grid-cols-2">
-                <div><span className="text-muted-foreground">url:</span> <code className="break-all">{a.url}</code></div>
+                <div><span className="text-muted-foreground">method:</span> <code>{a.httpMethod}</code></div>
+                <div className="sm:col-span-2 break-all"><span className="text-muted-foreground">url:</span> <code>{a.url}</code></div>
                 <div><span className="text-muted-foreground">probeId:</span> <code>{a.probeId}</code></div>
-                <div><span className="text-muted-foreground">echoed:</span> <code>{a.echoedProbeId ?? '—'}</code></div>
+                <div><span className="text-muted-foreground">echoed:</span> <code>{a.echoedProbeId ?? '—'}</code>{a.echoedProbeIdMatches ? ' ✓' : ''}</div>
                 <div><span className="text-muted-foreground">content-type:</span> <code>{a.contentType ?? '—'}</code></div>
+                <div><span className="text-muted-foreground">elapsed:</span> {a.elapsedMs ?? '—'} ms</div>
                 <div><span className="text-muted-foreground">started:</span> {a.startedAt}</div>
                 <div><span className="text-muted-foreground">finished:</span> {a.finishedAt ?? '—'}</div>
-                <div className="sm:col-span-2"><span className="text-muted-foreground">userAgent:</span> <code className="break-all">{a.userAgent}</code></div>
+                <div className="sm:col-span-2 break-all"><span className="text-muted-foreground">userAgent:</span> <code>{a.userAgent}</code></div>
               </div>
               {a.errorMessage && (
                 <div className="p-2 rounded bg-destructive/10 text-destructive break-words">
@@ -439,6 +561,19 @@ export function MerchantApiTransportDiagnostics() {
             </div>
           ))}
         </div>
+
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none">
+            D. Relay check — known storefront interception (historical, disabled)
+          </summary>
+          <p className="mt-2">
+            The same-origin path <code>/api/edge/*</code> is intercepted by
+            Lovable’s storefront shell and never reaches the Cloudflare
+            Worker. It is therefore not a viable transport and is excluded
+            from the active diagnostic flow. Kept here as historical
+            reference only.
+          </p>
+        </details>
       </CardContent>
     </Card>
   );

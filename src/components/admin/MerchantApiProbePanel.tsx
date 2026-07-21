@@ -28,54 +28,36 @@ async function invokeFn(name: string): Promise<InvocationResult> {
   const token = sess.session?.access_token;
   if (!token) return { status: 401, body: null, error: 'no_session' };
 
-  // Prefer the same-origin Cloudflare Worker relay when running on the
-  // production apex — this eliminates the cross-origin preflighted POST
-  // that iPhone Safari refuses against *.supabase.co for this surface.
-  const host = typeof window !== 'undefined' ? window.location.hostname : '';
-  const useRelay = host === 'getpawsy.pet' || host === 'www.getpawsy.pet';
-  const url = useRelay
-    ? `${window.location.origin}/api/edge/${name}`
-    : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
-  // eslint-disable-next-line no-console
-  console.info('[MerchantApiProbe] invoking', { name, url, useRelay, hasToken: !!token });
+  // Primary: supabase.functions.invoke (do NOT use the same-origin /api/edge/*
+  // relay — it is intercepted by Lovable's storefront shell and never reaches
+  // the Cloudflare Worker). Fallback once to an explicit direct fetch if the
+  // invoke transport throws.
   try {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-    // apikey is required by the Supabase Functions gateway on the direct
-    // path; the relay attaches it server-side, so we omit it there.
-    if (!useRelay) {
-      headers.apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    }
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({}),
-    });
-    const text = await res.text();
-    let parsed: unknown = text;
-    try { parsed = JSON.parse(text); } catch { /* keep text */ }
-    return { status: res.status, body: parsed };
-  } catch (e) {
-    const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    // eslint-disable-next-line no-console
-    console.error('[MerchantApiProbe] fetch failed', { name, url, error: msg, raw: e });
-    // Fallback via supabase-js which uses its own transport (helps when a
-    // service worker or ad-blocker breaks the raw cross-origin fetch).
+    const { data, error } = await supabase.functions.invoke(name, { body: {} });
+    if (!error) return { status: 200, body: data };
+    const status = (error as { context?: { status?: number } }).context?.status ?? null;
+    return { status, body: data ?? null, error: error.message };
+  } catch (invokeErr) {
+    const imsg = invokeErr instanceof Error ? `${invokeErr.name}: ${invokeErr.message}` : String(invokeErr);
+    // One-shot direct fetch fallback. No infinite retry loops.
     try {
-      const { data, error } = await supabase.functions.invoke(name, { body: {} });
-      if (error) {
-        return {
-          status: (error as { context?: { status?: number } }).context?.status ?? null,
-          body: data ?? null,
-          error: `${msg} | fallback: ${error.message}`,
-        };
-      }
-      return { status: 200, body: data };
-    } catch (fallbackErr) {
-      const fmsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-      return { status: null, body: null, error: `${msg} | fallback: ${fmsg}` };
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const text = await res.text();
+      let parsed: unknown = text;
+      try { parsed = JSON.parse(text); } catch { /* keep text */ }
+      return { status: res.status, body: parsed };
+    } catch (directErr) {
+      const dmsg = directErr instanceof Error ? `${directErr.name}: ${directErr.message}` : String(directErr);
+      return { status: null, body: null, error: `invoke: ${imsg} | direct: ${dmsg}` };
     }
   }
 }
