@@ -952,6 +952,28 @@ export default function LinkInBio() {
           />
         </div>
       </div>
+      {debugMode && (
+        <pre
+          data-testid="go-attribution-debug"
+          className="mx-4 my-4 max-w-full overflow-x-auto rounded-md border border-border/60 bg-muted/60 p-3 text-[10px] leading-tight text-foreground"
+        >
+{JSON.stringify(
+  {
+    initial_url: initialUrlRef.current,
+    final_url: typeof window !== 'undefined' ? window.location.href : '',
+    parsed_attribution: attribution,
+    secondary_cta_visible: secondaryVisible,
+    sticky_cta_visible: showSticky,
+    // Only one sticky bar is mounted (this component owns it), so on
+    // mobile the visible fixed-bottom CTA count is exactly 1 when
+    // showSticky === true, else 0.
+    mobile_sticky_cta_count: showSticky ? 1 : 0,
+  },
+  null,
+  2,
+)}
+        </pre>
+      )}
     </main>
   );
 }
