@@ -126,7 +126,15 @@ export function MerchantApiProbePanel() {
 
   const signedIn = !!user;
   const adminMatch = user?.id === MERCHANT_ADMIN_USER_ID;
-  const iphoneBlocked = isIphoneSafari();
+
+  // Probe allowed when: signed in, merchant admin matched, read flag enabled,
+  // write flag disabled, delete flag disabled.
+  const probeAllowed =
+    signedIn &&
+    adminMatch &&
+    READ_FLAG_ENABLED &&
+    !WRITE_FLAG_ENABLED &&
+    !DELETE_FLAG_ENABLED;
 
   // Genuine probe success: HTTP 200 + parsed JSON object + ok === true.
   // HTML shells, nulls, transport errors and 200-with-invalid-JSON do NOT
@@ -138,7 +146,7 @@ export function MerchantApiProbePanel() {
     (probeResult.body as { ok?: unknown }).ok === true;
 
   const runProbe = async () => {
-    if (iphoneBlocked) return;
+    if (!probeAllowed) return;
     setProbeRunning(true);
     setShadowResult(null);
     const r = await invokeFn('merchant-api-probe');
@@ -147,7 +155,7 @@ export function MerchantApiProbePanel() {
   };
 
   const runShadow = async () => {
-    if (iphoneBlocked) return;
+    if (!probeAllowed || !probeOk) return;
     setShadowRunning(true);
     const r = await invokeFn('merchant-api-shadow');
     setShadowResult(r);
