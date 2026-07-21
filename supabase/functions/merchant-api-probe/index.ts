@@ -7,8 +7,14 @@ import { MerchantApiClient, readEnabled, mlog } from "../_shared/merchant-api.ts
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const json = (b: unknown, s = 200) =>
-    new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  // Safe correlation: pass-through-only, non-sensitive.
+  const probeId = (req.headers.get("x-client-probe-id") || "").slice(0, 64);
+  const echoHeaders: Record<string, string> = { ...corsHeaders, "Content-Type": "application/json" };
+  if (probeId) echoHeaders["x-echo-probe-id"] = probeId;
+  const json = (b: unknown, s = 200) => {
+    const body = probeId && b && typeof b === "object" ? { ...(b as object), probeId } : b;
+    return new Response(JSON.stringify(body), { status: s, headers: echoHeaders });
+  };
 
   if (!readEnabled()) return json({ ok: false, error: "MERCHANT_API_READ_ENABLED_false" }, 403);
 
