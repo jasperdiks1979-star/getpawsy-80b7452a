@@ -16,20 +16,32 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify(body), { status: s, headers: echoHeaders });
   };
 
-  if (!readEnabled()) return json({ ok: false, error: "MERCHANT_API_READ_ENABLED_false" }, 403);
-
-  const authz = req.headers.get("Authorization");
-  if (!authz) return json({ ok: false, error: "missing_auth" }, 401);
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: claims, error: cerr } = await supabase.auth.getClaims(authz.replace("Bearer ", ""));
-  if (cerr || !claims?.claims?.sub) return json({ ok: false, error: "invalid_auth" }, 401);
-  const userId = claims.claims.sub as string;
-
-  const { data: token } = await supabase
-    .from("merchant_oauth_tokens").select("id").eq("user_id", userId).eq("is_connected", true).maybeSingle();
-  if (!token) return json({ ok: false, error: "not_connected" }, 403);
-
+  // Correlation ID for server-side logs only; never returned to client.
+  const corrId = crypto.randomUUID();
   try {
+    if (!readEnabled()) return json({ ok: false, error: "MERCHANT_API_READ_ENABLED_false" }, 403);
+
+    const authz = req.headers.get("Authorization");
+    if (!authz) return json({ ok: false, error: "missing_auth" }, 401);
+    const bearer = authz.startsWith("Bearer ") ? authz.slice(7).trim() : "";
+    if (!bearer) return json({ ok: false, error: "invalid_auth" }, 401);
+
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    let userId: string;
+    try {
+      const { data: claims, error: cerr } = await supabase.auth.getClaims(bearer);
+      if (cerr || !claims?.claims?.sub) return json({ ok: false, error: "invalid_auth" }, 401);
+      userId = claims.claims.sub as string;
+    } catch (authErr) {
+      mlog("probe_auth_exception", { corrId, message: (authErr as Error)?.message });
+      return json({ ok: false, error: "invalid_auth" }, 401);
+    }
+
+    const { data: token } = await supabase
+      .from("merchant_oauth_tokens").select("id").eq("user_id", userId).eq("is_connected", true).maybeSingle();
+    if (!token) return json({ ok: false, error: "not_connected" }, 403);
+
     const client = new MerchantApiClient({ supabase });
     const account = await client.resolveAccount();
     const ds = await client.listDataSources();
@@ -55,7 +67,12 @@ Deno.serve(async (req) => {
     return json({ ok: true, account, dataSources: classified, apiOwnedCandidates: apiOwned.map((c) => c.name), xmlFeedDataSource: xmlFeed?.name ?? null, verdict });
   } catch (e) {
     const err = e as Error & { status?: number };
-    mlog("probe_failed", { status: err.status, message: err.message });
-    return json({ ok: false, error: err.message, status: err.status ?? 500 }, 502);
+    // Preserve prior 502 branch for Merchant API downstream failures that carry a status.
+    if (err && typeof err.status === "number") {
+      mlog("probe_failed", { corrId, status: err.status, message: err.message });
+      return json({ ok: false, error: "merchant_api_error", status: err.status }, 502);
+    }
+    mlog("probe_unexpected_exception", { corrId, message: err?.message, stack: err?.stack });
+    return json({ ok: false, error: "internal_error" }, 500);
   }
 });
