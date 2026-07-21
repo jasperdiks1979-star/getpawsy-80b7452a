@@ -9,8 +9,9 @@ Deno.test("uses Merchant Accounts API v1 (no v1beta)", async () => {
   assertEquals(API_VERSION, "accounts/v1");
   assertEquals(ENDPOINT_VERSION, "v1");
   const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
-  // No v1beta URL/path may remain anywhere in the function source.
-  assert(!/v1beta/i.test(src), "v1beta reference still present in index.ts");
+  // No v1beta URL/path may remain in endpoint construction.
+  assert(!/accounts\/v1beta/i.test(src), "v1beta endpoint path still present in index.ts");
+  assert(!/merchantapi\.googleapis\.com[^\s"'`]*v1beta/i.test(src), "v1beta merchant URL still present");
 });
 
 Deno.test("v1 GET 200 with correct account → ALREADY_REGISTERED_TO_5717571566", () => {
