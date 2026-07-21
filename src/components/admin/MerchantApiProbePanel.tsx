@@ -198,7 +198,11 @@ export function MerchantApiProbePanel() {
   const runShadow = async () => {
     if (!probeAllowed || !probeOk) return;
     setShadowRunning(true);
-    const r = await invokeFn('merchant-api-shadow');
+    // Shadow uses the direct authenticated fetch transport (same as the
+    // working probe direct path). This avoids the supabase.functions.invoke
+    // failure mode on iPhone Safari where non-2xx JSON bodies are surfaced
+    // as `null`. Read-only: no writes, no retries, 20s timeout.
+    const r = await directFetchFn('merchant-api-shadow');
     setShadowResult(r);
     setShadowRunning(false);
   };
