@@ -86,6 +86,15 @@ const URGENCY_REVEAL_THRESHOLD = 25;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Snapshot the exact URL the user landed on BEFORE any React/router or
+  // effect can mutate it. Powers the ?debug=1 diagnostic panel below so
+  // we can prove that no paid UTM was overwritten by a fallback.
+  const initialUrlRef = useRef<string>(
+    typeof window !== 'undefined' ? window.location.href : '',
+  );
+  const debugMode =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('debug') === '1';
   // Runtime-controlled CTA variant. The auto-rollback edge function flips
   // this to the baseline if CTR drops below the configured floor. Falls
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
