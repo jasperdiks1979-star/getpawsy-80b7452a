@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     // Only the connected merchant admin who owns the OAuth token may proceed.
     const { data: token } = await supabase
       .from("merchant_oauth_tokens")
-      .select("id, merchant_center_id, is_connected, scopes, google_email")
+      .select("id, merchant_center_id, is_connected, scopes")
       .eq("user_id", userId).eq("is_connected", true).maybeSingle();
     if (!token) return json({ ok: false, error: "not_connected_or_not_merchant_admin", stage }, 403);
     if (String(token.merchant_center_id) !== "5717571566") {
@@ -135,9 +135,6 @@ Deno.serve(async (req) => {
       scopes: token.scopes,
       connectedIdentityRedacted: userEmail
         ? userEmail.replace(/^(.).*(@.*)$/, "$1***$2")
-        : null,
-      googleIdentityRedacted: (token as { google_email?: string | null }).google_email
-        ? String((token as { google_email?: string | null }).google_email).replace(/^(.).*(@.*)$/, "$1***$2")
         : null,
     };
 
