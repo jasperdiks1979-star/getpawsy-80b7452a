@@ -50,17 +50,20 @@ export type MerchantApiError = {
   code?: string;
   message: string;
   retriable: boolean;
+  stage?: string;
 };
 
 export class MerchantApiClientError extends Error {
   status: number;
   code?: string;
   retriable: boolean;
+  stage?: string;
   constructor(err: MerchantApiError) {
     super(err.message);
     this.status = err.status;
     this.code = err.code;
     this.retriable = err.retriable;
+    this.stage = err.stage;
   }
 }
 
@@ -155,8 +158,23 @@ export class MerchantApiClient {
     });
     if (!resp.ok) {
       const body = await resp.text();
-      mlog("token_refresh_failed", { status: resp.status, body: redact(body) });
-      throw new MerchantApiClientError({ status: resp.status, message: "token_refresh_failed", retriable: false });
+      let googleErr = "";
+      try { googleErr = String((JSON.parse(body) as { error?: string })?.error ?? ""); } catch { /* ignore */ }
+      mlog("token_refresh_failed", { status: resp.status, googleError: googleErr });
+      // invalid_grant / unauthorized_client / invalid_request → refresh token no longer valid
+      const reauth = /invalid_grant|unauthorized_client|invalid_request/i.test(googleErr);
+      await this.supabase.from("merchant_oauth_tokens").update({
+        last_error: reauth ? "reauth_required" : "token_refresh_failed",
+        last_error_at: new Date().toISOString(),
+        ...(reauth ? { is_connected: false } : {}),
+      }).eq("id", data.id);
+      throw new MerchantApiClientError({
+        status: resp.status,
+        message: reauth ? "merchant_reauth_required" : "token_refresh_failed",
+        code: reauth ? "reauth_required" : "token_refresh_failed",
+        stage: "token_refresh",
+        retriable: false,
+      });
     }
     const j = await resp.json() as { access_token: string; expires_in?: number };
     const expiresAt = this.now() + (j.expires_in ?? 3600) * 1000;
@@ -235,6 +253,16 @@ export class MerchantApiClient {
         refreshed = true;
         attempt++;
         continue;
+      }
+      if (status === 401 && refreshed) {
+        mlog("upstream_401_after_refresh", { method, path });
+        throw new MerchantApiClientError({
+          status: 401,
+          message: "merchant_api_unauthorized_after_refresh",
+          code: "unauthorized_after_refresh",
+          stage: "upstream_call",
+          retriable: false,
+        });
       }
       const retriable = status === 429 || status >= 500;
       lastErr = new MerchantApiClientError({ status, message: `merchant_api_${status}: ${redact(body)}`, retriable });
