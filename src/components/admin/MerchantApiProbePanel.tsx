@@ -177,44 +177,6 @@ export function MerchantApiProbePanel() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {iphoneBlocked && (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-3">
-            <p className="text-sm text-foreground">
-              This authenticated Merchant API verification cannot be completed
-              from this iPhone Safari session. Open this admin page in desktop
-              Chrome or Edge to continue. This does not affect the storefront
-              or the server-side Merchant API migration.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    if (navigator.clipboard?.writeText) {
-                      await navigator.clipboard.writeText(DESKTOP_VERIFICATION_URL);
-                    } else {
-                      const ta = document.createElement('textarea');
-                      ta.value = DESKTOP_VERIFICATION_URL;
-                      document.body.appendChild(ta);
-                      ta.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(ta);
-                    }
-                    toast.success('Desktop verification link copied');
-                  } catch {
-                    toast.error('Copy failed — long-press the link to copy');
-                  }
-                }}
-              >
-                <Copy className="h-3 w-3 mr-1" />
-                Copy desktop verification link
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground break-all">{DESKTOP_VERIFICATION_URL}</p>
-          </div>
-        )}
-
         <div className="flex flex-wrap gap-2">
           <Status ok={signedIn} label={signedIn ? 'Signed in' : 'Signed out'} />
           <Status ok={adminMatch} label={adminMatch ? 'Merchant admin matched' : 'Merchant admin not matched'} />
