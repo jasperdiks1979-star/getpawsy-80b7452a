@@ -26,17 +26,31 @@ Deno.serve(async (req) => {
     const bearer = authz.startsWith("Bearer ") ? authz.slice(7).trim() : "";
     if (!bearer) return json({ ok: false, error: "invalid_auth" }, 401);
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Auth: use the anon client scoped by the caller's Authorization header
+    // and validate the token server-side via supabase.auth.getUser(jwt).
+    // This matches the known-working pattern used by admin-payments and
+    // admin-bulk-seo-update. The service-role client is used only for the
+    // subsequent read (merchant token lookup) after auth+authorization pass.
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authz } } },
+    );
 
     let userId: string;
     try {
-      const { data: claims, error: cerr } = await supabase.auth.getClaims(bearer);
-      if (cerr || !claims?.claims?.sub) return json({ ok: false, error: "invalid_auth" }, 401);
-      userId = claims.claims.sub as string;
+      const { data: userData, error: uerr } = await authClient.auth.getUser(bearer);
+      if (uerr || !userData?.user?.id) {
+        mlog("probe_auth_invalid", { corrId, message: uerr?.message });
+        return json({ ok: false, error: "invalid_auth" }, 401);
+      }
+      userId = userData.user.id;
     } catch (authErr) {
       mlog("probe_auth_exception", { corrId, message: (authErr as Error)?.message });
       return json({ ok: false, error: "invalid_auth" }, 401);
     }
+
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { data: token } = await supabase
       .from("merchant_oauth_tokens").select("id").eq("user_id", userId).eq("is_connected", true).maybeSingle();
