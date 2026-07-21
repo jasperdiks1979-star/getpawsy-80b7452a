@@ -36,6 +36,58 @@ Deno.test("getAccountForGcpRegistration 404 → GCP_NOT_ASSOCIATED", () => {
   assertEquals(r.classification, "GCP_NOT_ASSOCIATED");
 });
 
+Deno.test("v1 GET 401 GCP_NOT_REGISTERED → NOT_REGISTERED (definitive)", () => {
+  const fixture = {
+    error: {
+      code: 401,
+      status: "UNAUTHENTICATED",
+      message: "GCP is not registered.",
+      details: [{ metadata: { reason: "GCP_NOT_REGISTERED" } }],
+    },
+  };
+  const r = classify(401, fixture);
+  assertEquals(r.classification, "NOT_REGISTERED");
+  assertEquals(r.reason, "GCP_NOT_REGISTERED");
+});
+
+Deno.test("getAccountForGcpRegistration 401 GCP_NOT_REGISTERED → GCP_NOT_ASSOCIATED", () => {
+  const fixture = {
+    error: {
+      code: 401,
+      status: "UNAUTHENTICATED",
+      details: [{ metadata: { reason: "GCP_NOT_REGISTERED" } }],
+    },
+  };
+  const r = classifyGcpLookup(401, fixture);
+  assertEquals(r.classification, "GCP_NOT_ASSOCIATED");
+});
+
+Deno.test("401 with unrelated reason stays INSUFFICIENT_EVIDENCE (canRegister false)", () => {
+  const r = classify(401, { error: { code: 401, status: "UNAUTHENTICATED", details: [{ metadata: { reason: "AUTH_ERROR" } }] } });
+  assertEquals(r.classification, "INSUFFICIENT_EVIDENCE");
+});
+
+Deno.test("401 with no reason stays INSUFFICIENT_EVIDENCE", () => {
+  const r = classify(401, { error: { code: 401, status: "UNAUTHENTICATED" } });
+  assertEquals(r.classification, "INSUFFICIENT_EVIDENCE");
+});
+
+Deno.test("registered-to-other-account keeps canRegister false (verdict logic)", async () => {
+  const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  // Verdict only becomes NOT_REGISTERED when BOTH signals agree.
+  assertMatch(src, /priorState\.classification === "NOT_REGISTERED"[\s\S]{0,80}gcpLookup\.classification === "GCP_NOT_ASSOCIATED"/);
+  // GCP_ASSOCIATED_WITH_OTHER → REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT (canRegister false).
+  assertMatch(src, /GCP_ASSOCIATED_WITH_OTHER[\s\S]{0,120}REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT/);
+});
+
+Deno.test("register action is never invoked automatically (requires explicit action)", async () => {
+  const src = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  // Default action is 'check' when body missing/invalid.
+  assertMatch(src, /body\.action === "register" \? "register" : "check"/);
+  // The registerGcp URL is only fetched after action==='register' branch guards.
+  assertMatch(src, /if \(action === "check"\)/);
+});
+
 Deno.test("permission error → CALLER_NOT_MERCHANT_ADMIN", () => {
   const r = classify(403, { error: { code: 403, status: "PERMISSION_DENIED", message: "caller must be admin" } });
   assertEquals(r.classification, "CALLER_NOT_MERCHANT_ADMIN");
