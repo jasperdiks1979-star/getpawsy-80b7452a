@@ -188,8 +188,12 @@ export function MerchantApiProbePanel() {
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={runProbe}
-            disabled={!signedIn || probeRunning || iphoneBlocked}
-            title={iphoneBlocked ? 'Open in desktop Chrome or Edge' : ''}
+            disabled={!probeAllowed || probeRunning}
+            title={
+              !probeAllowed
+                ? 'Requires signed-in merchant admin with read flag enabled and write/delete disabled'
+                : ''
+            }
           >
             {probeRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             Run Merchant API Probe
@@ -197,10 +201,10 @@ export function MerchantApiProbePanel() {
           <Button
             onClick={runShadow}
             variant="secondary"
-            disabled={!signedIn || !probeOk || shadowRunning || iphoneBlocked}
+            disabled={!probeAllowed || !probeOk || shadowRunning}
             title={
-              iphoneBlocked
-                ? 'Open in desktop Chrome or Edge'
+              !probeAllowed
+                ? 'Requires signed-in merchant admin with read flag enabled and write/delete disabled'
                 : !probeOk
                   ? 'Run the probe successfully first (HTTP 200 + ok:true JSON)'
                   : ''
