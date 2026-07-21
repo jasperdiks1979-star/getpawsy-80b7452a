@@ -507,7 +507,10 @@ export default function LinkInBio() {
         ...attribution,
       });
     }
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      stickyIo?.disconnect();
+    };
   }, [attribution]);
 
   // FUNNEL STEP 4 — CTA click. Bubble-capture click on the CTA wrapper so we
