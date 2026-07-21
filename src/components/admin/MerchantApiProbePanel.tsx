@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,19 +9,6 @@ import { toast } from 'sonner';
 
 // Connected merchant admin (Phase 2A authorized identity)
 const MERCHANT_ADMIN_USER_ID = '1b97d610-98c8-46c0-b363-63ef6495fa8a';
-
-const DESKTOP_VERIFICATION_URL = 'https://getpawsy.pet/admin/integrations/merchant';
-
-// iPhone Safari detection. iPadOS Safari reports as Mac desktop, so we only
-// gate on genuine iPhone Safari where the authenticated Edge POST transport
-// is proven blocked (IPHONE_SAFARI_AUTHENTICATED_EDGE_POST_TRANSPORT_BLOCKED).
-function isIphoneSafari(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  const isIphone = /iPhone/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
-  return isIphone && isSafari;
-}
 
 // Read flags from Vite env for display only. These are booleans surfaced by
 // the app config; the true source of truth lives server-side in edge secrets.
@@ -139,7 +126,15 @@ export function MerchantApiProbePanel() {
 
   const signedIn = !!user;
   const adminMatch = user?.id === MERCHANT_ADMIN_USER_ID;
-  const iphoneBlocked = isIphoneSafari();
+
+  // Probe allowed when: signed in, merchant admin matched, read flag enabled,
+  // write flag disabled, delete flag disabled.
+  const probeAllowed =
+    signedIn &&
+    adminMatch &&
+    READ_FLAG_ENABLED &&
+    !WRITE_FLAG_ENABLED &&
+    !DELETE_FLAG_ENABLED;
 
   // Genuine probe success: HTTP 200 + parsed JSON object + ok === true.
   // HTML shells, nulls, transport errors and 200-with-invalid-JSON do NOT
@@ -151,7 +146,7 @@ export function MerchantApiProbePanel() {
     (probeResult.body as { ok?: unknown }).ok === true;
 
   const runProbe = async () => {
-    if (iphoneBlocked) return;
+    if (!probeAllowed) return;
     setProbeRunning(true);
     setShadowResult(null);
     const r = await invokeFn('merchant-api-probe');
@@ -160,7 +155,7 @@ export function MerchantApiProbePanel() {
   };
 
   const runShadow = async () => {
-    if (iphoneBlocked) return;
+    if (!probeAllowed || !probeOk) return;
     setShadowRunning(true);
     const r = await invokeFn('merchant-api-shadow');
     setShadowResult(r);
@@ -182,44 +177,6 @@ export function MerchantApiProbePanel() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {iphoneBlocked && (
-          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-3">
-            <p className="text-sm text-foreground">
-              This authenticated Merchant API verification cannot be completed
-              from this iPhone Safari session. Open this admin page in desktop
-              Chrome or Edge to continue. This does not affect the storefront
-              or the server-side Merchant API migration.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    if (navigator.clipboard?.writeText) {
-                      await navigator.clipboard.writeText(DESKTOP_VERIFICATION_URL);
-                    } else {
-                      const ta = document.createElement('textarea');
-                      ta.value = DESKTOP_VERIFICATION_URL;
-                      document.body.appendChild(ta);
-                      ta.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(ta);
-                    }
-                    toast.success('Desktop verification link copied');
-                  } catch {
-                    toast.error('Copy failed — long-press the link to copy');
-                  }
-                }}
-              >
-                <Copy className="h-3 w-3 mr-1" />
-                Copy desktop verification link
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground break-all">{DESKTOP_VERIFICATION_URL}</p>
-          </div>
-        )}
-
         <div className="flex flex-wrap gap-2">
           <Status ok={signedIn} label={signedIn ? 'Signed in' : 'Signed out'} />
           <Status ok={adminMatch} label={adminMatch ? 'Merchant admin matched' : 'Merchant admin not matched'} />
@@ -231,8 +188,12 @@ export function MerchantApiProbePanel() {
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={runProbe}
-            disabled={!signedIn || probeRunning || iphoneBlocked}
-            title={iphoneBlocked ? 'Open in desktop Chrome or Edge' : ''}
+            disabled={!probeAllowed || probeRunning}
+            title={
+              !probeAllowed
+                ? 'Requires signed-in merchant admin with read flag enabled and write/delete disabled'
+                : ''
+            }
           >
             {probeRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             Run Merchant API Probe
@@ -240,10 +201,10 @@ export function MerchantApiProbePanel() {
           <Button
             onClick={runShadow}
             variant="secondary"
-            disabled={!signedIn || !probeOk || shadowRunning || iphoneBlocked}
+            disabled={!probeAllowed || !probeOk || shadowRunning}
             title={
-              iphoneBlocked
-                ? 'Open in desktop Chrome or Edge'
+              !probeAllowed
+                ? 'Requires signed-in merchant admin with read flag enabled and write/delete disabled'
                 : !probeOk
                   ? 'Run the probe successfully first (HTTP 200 + ok:true JSON)'
                   : ''
