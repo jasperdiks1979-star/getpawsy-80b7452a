@@ -53,11 +53,13 @@ export function MerchantDeveloperRegistrationPanel() {
   const signedIn = !!user;
   const adminMatch = user?.id === MERCHANT_ADMIN_USER_ID;
 
-  const priorVerdict =
+  const priorBody =
     checkResult?.status === 200 && checkResult.body && typeof checkResult.body === 'object'
-      ? ((checkResult.body as { verdict?: string }).verdict ?? null)
+      ? (checkResult.body as { verdict?: string; canRegister?: boolean; endpointVersion?: string })
       : null;
-  const canRegister = priorVerdict === 'NOT_REGISTERED' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const priorVerdict = priorBody?.verdict ?? null;
+  const serverAllowsRegister = priorBody?.canRegister === true;
+  const canRegister = serverAllowsRegister && priorVerdict === 'NOT_REGISTERED' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const runCheck = async () => {
     setChecking(true);
@@ -142,6 +144,27 @@ export function MerchantDeveloperRegistrationPanel() {
           <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
             The GCP project is already registered to a different Merchant account.
             Manual review required in Google Cloud Console. Do NOT re-register.
+          </div>
+        )}
+
+        {priorVerdict === 'MERCHANT_API_NOT_ENABLED' && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            Merchant API is not enabled in the Google Cloud project owning the OAuth client.
+            Enable it in Google Cloud Console and retry the check.
+          </div>
+        )}
+
+        {priorVerdict === 'ENDPOINT_VERSION_OBSOLETE' && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            The Merchant API endpoint version in use has been discontinued. This is a code defect —
+            not a registration state. Do not attempt to register.
+          </div>
+        )}
+
+        {priorVerdict === 'CALLER_NOT_MERCHANT_ADMIN' && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            The connected Google identity is not a Merchant Center admin for 5717571566.
+            Grant admin access under Merchant Center → Users &amp; access, then retry.
           </div>
         )}
 

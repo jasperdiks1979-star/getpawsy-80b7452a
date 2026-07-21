@@ -13,7 +13,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { MerchantApiClient, MerchantApiClientError, mlog, redact, MERCHANT_API_HOST } from "../_shared/merchant-api.ts";
 
-const API_VERSION = "accounts/v1beta";
+const API_VERSION = "accounts/v1";
+const ENDPOINT_VERSION = "v1";
 
 type Action = "check" | "register";
 
@@ -29,6 +30,8 @@ function classify(status: number, body: unknown): {
     | "NOT_REGISTERED"
     | "REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT"
     | "CALLER_NOT_MERCHANT_ADMIN"
+    | "MERCHANT_API_NOT_ENABLED"
+    | "ENDPOINT_VERSION_OBSOLETE"
     | "INSUFFICIENT_EVIDENCE";
   reason?: string;
   gcpIds?: string[];
@@ -42,6 +45,22 @@ function classify(status: number, body: unknown): {
     const md = (d.metadata && typeof d.metadata === "object" ? d.metadata : {}) as Record<string, unknown>;
     if (typeof md.reason === "string") reason = md.reason;
     if (typeof md.REASON === "string") reason = md.REASON as string;
+  }
+  const errMsg = typeof err?.message === "string" ? (err!.message as string) : "";
+  const errStatus = typeof err?.status === "string" ? (err!.status as string) : "";
+  // Detect v1beta ramp-down markers regardless of HTTP status.
+  if (
+    reason === "V1BETA_RAMP_DOWN" ||
+    /v1beta.*ramp[- ]?down|discontinued|deprecated/i.test(errMsg)
+  ) {
+    return { classification: "ENDPOINT_VERSION_OBSOLETE", reason: reason ?? "v1beta_ramp_down" };
+  }
+  // Detect Merchant API disabled.
+  if (
+    reason === "SERVICE_DISABLED" ||
+    /merchantapi\.googleapis\.com.*disabled|API has not been used/i.test(errMsg)
+  ) {
+    return { classification: "MERCHANT_API_NOT_ENABLED", reason: reason ?? "service_disabled" };
   }
   if (status === 200) {
     const name = typeof b.name === "string" ? b.name : "";
@@ -62,6 +81,40 @@ function classify(status: number, body: unknown): {
   if (status === 404) return { classification: "NOT_REGISTERED", reason: reason ?? "not_found" };
   return { classification: "INSUFFICIENT_EVIDENCE", reason: reason ?? `http_${status}` };
 }
+
+// Classify accounts:getAccountForGcpRegistration response.
+// 200 with { account: "accounts/<id>" } → registered to that account.
+// 404 / NOT_FOUND → no association.
+function classifyGcpLookup(status: number, body: unknown): {
+  classification:
+    | "GCP_ASSOCIATED_WITH_5717571566"
+    | "GCP_ASSOCIATED_WITH_OTHER"
+    | "GCP_NOT_ASSOCIATED"
+    | "ENDPOINT_VERSION_OBSOLETE"
+    | "MERCHANT_API_NOT_ENABLED"
+    | "CALLER_NOT_MERCHANT_ADMIN"
+    | "INSUFFICIENT_EVIDENCE";
+  associatedAccount?: string;
+  reason?: string;
+} {
+  const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+  const base = classify(status, body);
+  if (base.classification === "ENDPOINT_VERSION_OBSOLETE" || base.classification === "MERCHANT_API_NOT_ENABLED") {
+    return { classification: base.classification, reason: base.reason };
+  }
+  if (status === 200) {
+    const name = typeof b.account === "string" ? b.account : (typeof b.name === "string" ? b.name : "");
+    const m = name.match(/^accounts\/(\d+)/);
+    if (m && m[1] === "5717571566") return { classification: "GCP_ASSOCIATED_WITH_5717571566", associatedAccount: m[1] };
+    if (m) return { classification: "GCP_ASSOCIATED_WITH_OTHER", associatedAccount: m[1] };
+    return { classification: "INSUFFICIENT_EVIDENCE", reason: "no_account_in_body" };
+  }
+  if (status === 404) return { classification: "GCP_NOT_ASSOCIATED", reason: base.reason ?? "not_found" };
+  if (status === 403) return { classification: "CALLER_NOT_MERCHANT_ADMIN", reason: base.reason };
+  return { classification: "INSUFFICIENT_EVIDENCE", reason: base.reason ?? `http_${status}` };
+}
+
+export const __test = { classify, classifyGcpLookup, API_VERSION, ENDPOINT_VERSION };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -159,54 +212,135 @@ Deno.serve(async (req) => {
       preview: typeof checkBody === "object" && checkBody
         ? Object.keys(checkBody as object).slice(0, 12)
         : null,
+      endpointVersion: ENDPOINT_VERSION,
     };
+
+    // Secondary lookup: which Merchant account is this GCP project registered to (if any)?
+    stage = "get_account_for_gcp";
+    const lookupUrl = `${MERCHANT_API_HOST}/${API_VERSION}/accounts:getAccountForGcpRegistration`;
+    const lookupResp = await fetch(lookupUrl, {
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    });
+    const lookupBodyText = await lookupResp.text();
+    let lookupBody: unknown = null;
+    try { lookupBody = lookupBodyText ? JSON.parse(lookupBodyText) : null; } catch { /* keep null */ }
+    const gcpLookup = classifyGcpLookup(lookupResp.status, lookupBody);
+    mlog("dev_reg_gcp_lookup", { corrId, status: lookupResp.status, classification: gcpLookup.classification });
+    const safeLookup = {
+      status: lookupResp.status,
+      classification: gcpLookup.classification,
+      associatedAccount: gcpLookup.associatedAccount,
+      reason: gcpLookup.reason,
+      endpointVersion: ENDPOINT_VERSION,
+    };
+
+    // Combine both v1 signals into a definitive verdict.
+    let verdict: string = priorState.classification;
+    if (
+      priorState.classification === "ENDPOINT_VERSION_OBSOLETE" ||
+      gcpLookup.classification === "ENDPOINT_VERSION_OBSOLETE"
+    ) {
+      verdict = "ENDPOINT_VERSION_OBSOLETE";
+    } else if (
+      priorState.classification === "MERCHANT_API_NOT_ENABLED" ||
+      gcpLookup.classification === "MERCHANT_API_NOT_ENABLED"
+    ) {
+      verdict = "MERCHANT_API_NOT_ENABLED";
+    } else if (gcpLookup.classification === "GCP_ASSOCIATED_WITH_OTHER") {
+      verdict = "REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT";
+    } else if (priorState.classification === "ALREADY_REGISTERED_TO_5717571566") {
+      verdict = "ALREADY_REGISTERED_TO_5717571566";
+    } else if (
+      priorState.classification === "NOT_REGISTERED" &&
+      gcpLookup.classification === "GCP_NOT_ASSOCIATED"
+    ) {
+      verdict = "NOT_REGISTERED";
+    } else if (priorState.classification === "CALLER_NOT_MERCHANT_ADMIN") {
+      verdict = "CALLER_NOT_MERCHANT_ADMIN";
+    } else {
+      verdict = "INSUFFICIENT_EVIDENCE";
+    }
 
     // Phase 2 stops here on check.
     if (action === "check") {
       return json({
         ok: true,
         stage: "check_done",
+        endpointVersion: ENDPOINT_VERSION,
         inventory,
         priorRegistration: safeCheck,
-        verdict: priorState.classification,
+        gcpLookup: safeLookup,
+        verdict,
+        canRegister: verdict === "NOT_REGISTERED",
       });
     }
 
-    // ── Phase 3: registerGcp (mandatory one-time). Requires NOT_REGISTERED. ──
+    // ── Phase 3: registerGcp (mandatory one-time). Requires definitive NOT_REGISTERED. ──
     stage = "register_gcp";
-    if (priorState.classification === "ALREADY_REGISTERED_TO_5717571566") {
+    if (verdict === "ALREADY_REGISTERED_TO_5717571566") {
       return json({
         ok: true,
         stage: "no_action_needed",
+        endpointVersion: ENDPOINT_VERSION,
         inventory,
         priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
         verdict: "ALREADY_REGISTERED_TO_5717571566",
       });
     }
-    if (priorState.classification === "REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT") {
+    if (verdict === "REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT") {
       return json({
         ok: false,
         stage: "blocked_registered_elsewhere",
+        endpointVersion: ENDPOINT_VERSION,
         inventory,
         priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
         verdict: "REGISTERED_TO_DIFFERENT_MERCHANT_ACCOUNT",
       }, 409);
     }
-    if (priorState.classification === "CALLER_NOT_MERCHANT_ADMIN") {
+    if (verdict === "CALLER_NOT_MERCHANT_ADMIN") {
       return json({
         ok: false,
         stage: "blocked_admin_required",
+        endpointVersion: ENDPOINT_VERSION,
         inventory,
         priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
         verdict: "CALLER_NOT_MERCHANT_ADMIN",
       }, 403);
     }
-    if (priorState.classification !== "NOT_REGISTERED") {
+    if (verdict === "MERCHANT_API_NOT_ENABLED") {
+      return json({
+        ok: false,
+        stage: "blocked_api_disabled",
+        endpointVersion: ENDPOINT_VERSION,
+        inventory,
+        priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
+        verdict: "MERCHANT_API_NOT_ENABLED",
+      }, 409);
+    }
+    if (verdict === "ENDPOINT_VERSION_OBSOLETE") {
+      // Should not happen with v1 endpoints; guard defensively.
+      return json({
+        ok: false,
+        stage: "blocked_endpoint_obsolete",
+        endpointVersion: ENDPOINT_VERSION,
+        inventory,
+        priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
+        verdict: "ENDPOINT_VERSION_OBSOLETE",
+      }, 409);
+    }
+    if (verdict !== "NOT_REGISTERED") {
       return json({
         ok: false,
         stage: "insufficient_evidence",
+        endpointVersion: ENDPOINT_VERSION,
         inventory,
         priorRegistration: safeCheck,
+        gcpLookup: safeLookup,
         verdict: "INSUFFICIENT_EVIDENCE",
       }, 409);
     }
