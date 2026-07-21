@@ -11,6 +11,20 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 
 export const MERCHANT_API_HOST = "https://merchantapi.googleapis.com";
 
+// Merchant API v1 processed-product identifier: `contentLanguage~feedLabel~offerId`.
+// `~` is an unreserved character in RFC 3986, so a plain identifier does NOT need
+// percent-encoding. Only encode components that themselves contain `/`, `%`, or
+// `~` — Merchant API also accepts unpadded base64url as an alternative.
+export function buildProductIdSegment(contentLanguage: string, feedLabel: string, offerId: string): string {
+  const parts = [contentLanguage, feedLabel, offerId];
+  const hasReserved = parts.some((p) => /[/%~]/.test(p));
+  const raw = parts.join("~");
+  if (!hasReserved) return raw;
+  // Unpadded base64url fallback for identifiers containing reserved characters.
+  const b64 = btoa(unescape(encodeURIComponent(raw)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export type Money = { amountMicros: string; currencyCode: string };
 
 export type ProductInputAttributes = Record<string, unknown> & {
