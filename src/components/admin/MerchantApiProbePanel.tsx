@@ -62,6 +62,47 @@ async function invokeFn(name: string): Promise<InvocationResult> {
   }
 }
 
+/**
+ * Direct authenticated fetch transport (primary for merchant-api-shadow).
+ *
+ * Mirrors the working probe direct-fetch path: POST to
+ * `${VITE_SUPABASE_URL}/functions/v1/<name>` with Authorization bearer,
+ * apikey and Content-Type. 20s abort timeout, no retries. Non-2xx JSON
+ * bodies are parsed and returned so the UI can render them instead of
+ * showing "null".
+ */
+async function directFetchFn(name: string): Promise<InvocationResult> {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  if (!token) return { status: 401, body: null, error: 'no_session' };
+
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    let parsed: unknown = text;
+    try { parsed = text ? JSON.parse(text) : null; } catch { /* keep raw text */ }
+    return { status: res.status, body: parsed };
+  } catch (err) {
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const aborted = err instanceof Error && err.name === 'AbortError';
+    return { status: null, body: null, error: aborted ? 'timeout_20s' : `direct: ${msg}` };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function Status({ ok, label }: { ok: boolean; label: string }) {
   return (
     <Badge variant={ok ? 'default' : 'secondary'} className="gap-1">
@@ -157,7 +198,11 @@ export function MerchantApiProbePanel() {
   const runShadow = async () => {
     if (!probeAllowed || !probeOk) return;
     setShadowRunning(true);
-    const r = await invokeFn('merchant-api-shadow');
+    // Shadow uses the direct authenticated fetch transport (same as the
+    // working probe direct path). This avoids the supabase.functions.invoke
+    // failure mode on iPhone Safari where non-2xx JSON bodies are surfaced
+    // as `null`. Read-only: no writes, no retries, 20s timeout.
+    const r = await directFetchFn('merchant-api-shadow');
     setShadowResult(r);
     setShadowRunning(false);
   };
