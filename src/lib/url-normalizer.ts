@@ -13,9 +13,13 @@
  */
 
 const STRIP_PARAMS = new Set([
-  'gclid', 'fbclid', 'ref', 'session', 'sort', 'filter', 'variant',
+  // NOTE: gclid, fbclid, ttclid, click_id and utm_* are PRESERVED —
+  // they are the attribution surface for paid ads (Google, Meta, TikTok)
+  // and stripping them silently reroutes ad traffic into the
+  // organic/fallback bucket. Only strip UI/session noise.
+  'session', 'sort', 'filter', 'variant',
 ]);
-const STRIP_PREFIXES = ['utm_'];
+const STRIP_PREFIXES: string[] = [];
 
 function shouldStripParam(key: string): boolean {
   if (STRIP_PARAMS.has(key)) return true;
