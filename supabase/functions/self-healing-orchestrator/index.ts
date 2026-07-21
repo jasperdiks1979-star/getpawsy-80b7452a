@@ -264,8 +264,8 @@ const probes: Record<string, () => Promise<ProbeResult>> = {
     const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data } = await db
       .from("cinematic_worker_heartbeats")
-      .select("last_seen_at")
-      .order("last_seen_at", { ascending: false })
+      .select("last_seen_at:last_poll_at")
+      .order("last_poll_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (!data) return { status: "green" };

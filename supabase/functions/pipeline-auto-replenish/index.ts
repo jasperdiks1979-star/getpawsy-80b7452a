@@ -16,11 +16,11 @@ serve(async (req) => {
 
     const { data: products, error } = await sb
       .from("products")
-      .select("id, slug, name, effective_stock, inventory_priority, media_score")
+      .select("id, slug, name, effective_stock, inventory_priority, media_score:content_readiness_score")
       .gt("effective_stock", 0)
       .eq("is_active", true)
       .order("inventory_priority", { ascending: false, nullsFirst: false })
-      .order("media_score", { ascending: false, nullsFirst: false })
+      .order("content_readiness_score", { ascending: false, nullsFirst: false })
       .limit(target * 3);
     if (error) throw error;
 
