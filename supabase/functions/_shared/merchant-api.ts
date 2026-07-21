@@ -300,10 +300,27 @@ export class MerchantApiClient {
     return this.request("GET", `/products/v1/${account}/productInputs`, { query });
   }
 
+  // Read-only list of processed products. Returns each product's Google-issued
+  // resource name so callers can map offerId → exact name without inferring
+  // contentLanguage/feedLabel locally.
+  async listProducts(pageSize = 250, pageToken?: string): Promise<{ products?: Array<Record<string, unknown>>; nextPageToken?: string }> {
+    const account = await this.resolveAccount();
+    const query: Record<string, string> = { pageSize: String(pageSize) };
+    if (pageToken) query.pageToken = pageToken;
+    return this.request("GET", `/products/v1/${account}/products`, { query });
+  }
+
+  async getProductByResourceName(name: string): Promise<unknown> {
+    if (!/^accounts\/\d+\/products\/[^/]+$/.test(name)) {
+      throw new MerchantApiClientError({ status: 0, message: "product_resource_name_invalid", retriable: false });
+    }
+    return this.request("GET", `/products/v1/${name}`);
+  }
+
   async getProduct(input: Pick<ProductInput, "contentLanguage" | "feedLabel" | "offerId">): Promise<unknown> {
     const account = await this.resolveAccount();
-    const id = `${input.contentLanguage}~${input.feedLabel}~${input.offerId}`;
-    return this.request("GET", `/products/v1/${account}/products/${encodeURIComponent(id)}`);
+    const id = buildProductIdSegment(input.contentLanguage, input.feedLabel, input.offerId);
+    return this.request("GET", `/products/v1/${account}/products/${id}`);
   }
 
   async listDataSources(): Promise<{ dataSources?: unknown[]; nextPageToken?: string }> {
