@@ -3,6 +3,7 @@
 // auth, probeId echo, and no secret leakage on any error path.
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { buildProductIdSegment } from "../_shared/merchant-api.ts";
 
 const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL");
 const ANON = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
@@ -128,4 +129,37 @@ Deno.test("Structurally-valid but unverifiable JWT returns 401 invalid_auth (no 
   assertEquals(parsed.ok, false);
   assertEquals(parsed.error, "invalid_auth");
   noSensitive(body);
+});
+
+// ─── Offline unit tests: resource-name construction ────────────────────────
+
+Deno.test("buildProductIdSegment produces plain en~US~offerId for safe IDs", () => {
+  const offerId = "getpawsy_1a2b3c4d-5e6f-7890-abcd-ef1234567890";
+  const seg = buildProductIdSegment("en", "US", offerId);
+  assertEquals(seg, `en~US~${offerId}`);
+  assert(!/[+/=]/.test(seg), "plain identifier must not be base64url-encoded");
+});
+
+Deno.test("buildProductIdSegment falls back to unpadded base64url when component contains reserved chars", () => {
+  // Contains '~' inside offerId component → forces base64url encoding.
+  const offerId = "getpawsy~weird";
+  const seg = buildProductIdSegment("en", "US", offerId);
+  assert(!seg.includes("~"), "encoded segment must not contain raw ~");
+  assert(!seg.endsWith("="), "base64url must be unpadded");
+  assert(!seg.includes("+") && !seg.includes("/"), "must be base64url alphabet");
+  // Decode round-trip
+  const b64 = seg.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b64 + "=".repeat((4 - b64.length % 4) % 4);
+  assertEquals(atob(pad), "en~US~getpawsy~weird");
+});
+
+Deno.test("buildProductIdSegment encodes when offerId contains '/' or '%'", () => {
+  assert(!buildProductIdSegment("en", "US", "a/b").includes("/"));
+  assert(!buildProductIdSegment("en", "US", "a%b").includes("%"));
+});
+
+Deno.test("buildProductIdSegment result composes into expected resource name shape", () => {
+  const seg = buildProductIdSegment("en", "US", "getpawsy_abc");
+  const name = `accounts/5717571566/products/${seg}`;
+  assert(/^accounts\/\d+\/products\/[^/]+$/.test(name), "resource name matches Merchant API v1 shape");
 });
