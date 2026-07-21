@@ -11,8 +11,8 @@ const getSessionMock = vi.fn(async () => ({ data: { session: { access_token: 't'
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    auth: { getSession: (...a: unknown[]) => getSessionMock(...a) },
-    functions: { invoke: (...a: unknown[]) => invokeMock(...a) },
+    auth: { getSession: () => getSessionMock() },
+    functions: { invoke: (name: string, opts?: unknown) => invokeMock(name, opts) },
   },
 }));
 
