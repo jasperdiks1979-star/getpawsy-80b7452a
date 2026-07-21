@@ -3,6 +3,7 @@ import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
 import { MerchantApiProbePanel } from '@/components/admin/MerchantApiProbePanel';
+import { MerchantDeveloperRegistrationPanel } from '@/components/admin/MerchantDeveloperRegistrationPanel';
 import { MerchantApiTransportDiagnostics } from '@/components/admin/MerchantApiTransportDiagnostics';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
@@ -414,6 +415,7 @@ export default function MerchantIntegrationPage() {
       <div className="p-6 space-y-6 max-w-4xl">
         <MerchantApiTransportDiagnostics />
         <MerchantApiProbePanel />
+        <MerchantDeveloperRegistrationPanel />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Google Merchant Center</h1>
