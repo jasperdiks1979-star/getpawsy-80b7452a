@@ -10,19 +10,6 @@ import { toast } from 'sonner';
 // Connected merchant admin (Phase 2A authorized identity)
 const MERCHANT_ADMIN_USER_ID = '1b97d610-98c8-46c0-b363-63ef6495fa8a';
 
-const DESKTOP_VERIFICATION_URL = 'https://getpawsy.pet/admin/integrations/merchant';
-
-// iPhone Safari detection. iPadOS Safari reports as Mac desktop, so we only
-// gate on genuine iPhone Safari where the authenticated Edge POST transport
-// is proven blocked (IPHONE_SAFARI_AUTHENTICATED_EDGE_POST_TRANSPORT_BLOCKED).
-function isIphoneSafari(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  const isIphone = /iPhone/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
-  return isIphone && isSafari;
-}
-
 // Read flags from Vite env for display only. These are booleans surfaced by
 // the app config; the true source of truth lives server-side in edge secrets.
 // We display the intended/known state — writes/deletes are hard-disabled.
