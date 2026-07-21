@@ -412,6 +412,7 @@ export default function MerchantIntegrationPage() {
       </Helmet>
 
       <div className="p-6 space-y-6 max-w-4xl">
+        <MerchantApiTransportDiagnostics />
         <MerchantApiProbePanel />
         <div className="flex items-center justify-between">
           <div>
