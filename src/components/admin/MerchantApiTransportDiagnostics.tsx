@@ -12,7 +12,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, FlaskConical, Trash2 } from 'lucide-react';
 
-type Method = 'direct_fetch' | 'supabase_invoke' | 'unauth_get';
+type Method = 'direct_fetch' | 'supabase_invoke' | 'unauth_get' | 'same_origin_relay';
+
+type Classification =
+  | 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED'
+  | 'RELAY_REACHED_AUTH_MISSING'
+  | 'RELAY_EXECUTED'
+  | 'EDGE_FUNCTION_REACHED'
+  | 'RELAY_NETWORK_FAILURE'
+  | 'RELAY_EXECUTED_ALLOWLIST_REJECTED'
+  | 'RELAY_EXECUTED_WRONG_METHOD';
 
 interface Attempt {
   id: string;
@@ -35,6 +44,8 @@ interface Attempt {
   errorMessage?: string;
   hasSession: boolean;
   hasBearer: boolean;
+  classification?: Classification;
+  relayUpstreamStatus?: string | null;
 }
 
 const FN_NAME = 'merchant-api-probe';
@@ -79,6 +90,9 @@ export function MerchantApiTransportDiagnostics() {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
   const directUrl = `${supabaseUrl}/functions/v1/${FN_NAME}`;
   const invokeInternalUrl = directUrl; // supabase-js constructs the same URL under the hood
+  const relayUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/api/edge/${FN_NAME}`
+    : `/api/edge/${FN_NAME}`;
 
   const push = (a: Attempt) => setAttempts((prev) => [a, ...prev].slice(0, 20));
 
@@ -235,6 +249,84 @@ export function MerchantApiTransportDiagnostics() {
     }
   }
 
+  async function runSameOriginRelay() {
+    setRunning('same_origin_relay');
+    const probeId = randomProbeId();
+    const startedAt = new Date().toISOString();
+    const t0 = performance.now();
+    const { hasSession, hasBearer, token } = await getSessionSafe();
+    const url = relayUrl;
+    const attempt: Attempt = {
+      id: probeId, probeId, method: 'same_origin_relay', url,
+      userAgent: baseMeta.userAgent, origin: baseMeta.origin,
+      crossOrigin: isCrossOrigin(url), startedAt, hasSession, hasBearer,
+    };
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-client-probe-id': probeId,
+      };
+      // Bearer only. The relay attaches apikey server-side; browser MUST NOT send it.
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ probeId }),
+      });
+      const ct = res.headers.get('content-type') || '';
+      const upstream = res.headers.get('x-relay-upstream-status');
+      const { text, json } = await safeText(res);
+      const echoed = extractEchoedProbeId(res.headers, json);
+
+      // Classification per spec — order matters.
+      let classification: Classification;
+      const looksHtml = /^text\/html/i.test(ct) || /^\s*<!doctype html/i.test(text);
+      if (looksHtml) {
+        classification = 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED';
+      } else if (res.status === 401 && /missing_auth/i.test(text)) {
+        classification = 'RELAY_REACHED_AUTH_MISSING';
+      } else if (res.status === 404 && /function_not_allowed/i.test(text)) {
+        classification = 'RELAY_EXECUTED_ALLOWLIST_REJECTED';
+      } else if (res.status === 405) {
+        classification = 'RELAY_EXECUTED_WRONG_METHOD';
+      } else if (echoed && echoed === probeId) {
+        classification = 'EDGE_FUNCTION_REACHED';
+      } else if (upstream) {
+        classification = 'RELAY_EXECUTED';
+      } else {
+        classification = 'RELAY_NOT_EXECUTING_STOREFRONT_INTERCEPTED';
+      }
+
+      push({
+        ...attempt,
+        finishedAt: new Date().toISOString(),
+        elapsedMs: Math.round(performance.now() - t0),
+        httpStatus: res.status,
+        contentType: ct || null,
+        bodyPreview: text.slice(0, 500),
+        parsedJson: json,
+        echoedProbeId: echoed,
+        reachedEdge: classification === 'EDGE_FUNCTION_REACHED' || classification === 'RELAY_EXECUTED',
+        relayUpstreamStatus: upstream,
+        classification,
+      });
+    } catch (e) {
+      const err = e as Error;
+      push({
+        ...attempt,
+        finishedAt: new Date().toISOString(),
+        elapsedMs: Math.round(performance.now() - t0),
+        httpStatus: null,
+        errorName: err.name,
+        errorMessage: err.message,
+        reachedEdge: false,
+        classification: 'RELAY_NETWORK_FAILURE',
+      });
+    } finally {
+      setRunning(null);
+    }
+  }
+
   return (
     <Card className="border-dashed border-amber-500/60">
       <CardHeader>
@@ -269,17 +361,37 @@ export function MerchantApiTransportDiagnostics() {
             {running === 'unauth_get' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             C. Test unauthenticated GET reachability
           </Button>
+          <Button size="sm" onClick={runSameOriginRelay} disabled={running !== null}>
+            {running === 'same_origin_relay' && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            D. Test same-origin relay
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const safe = attempts.map((a) => ({ ...a }));
+              try {
+                navigator.clipboard?.writeText(JSON.stringify(safe, null, 2));
+              } catch { /* ignore */ }
+            }}
+            disabled={attempts.length === 0}
+          >
+            Copy full diagnostics JSON
+          </Button>
           <Button size="sm" variant="ghost" onClick={() => setAttempts([])} disabled={attempts.length === 0}>
             <Trash2 className="h-4 w-4 mr-1" />
-            D. Clear results
+            Clear results
           </Button>
         </div>
 
         {attempts.length === 0 && (
           <p className="text-xs text-muted-foreground">
-            No attempts yet. Run A/B/C on the environment you want to reconcile
+            No attempts yet. Run A/B/C/D on each target environment
             (iPhone Safari on getpawsy.pet, desktop Chrome/Edge on
-            getpawsy.pet, Lovable preview). Results stack newest-first.
+            getpawsy.pet, Lovable preview). A + B are cross-origin and
+            preflighted; B is still <code>fetch</code> under the hood;
+            C proves only DNS/TLS/function reachability; D is the actual
+            production same-origin transport. Results stack newest-first.
           </p>
         )}
 
@@ -298,6 +410,12 @@ export function MerchantApiTransportDiagnostics() {
                 </Badge>
                 <Badge variant="outline">hasSession={String(a.hasSession)}</Badge>
                 <Badge variant="outline">hasBearer={String(a.hasBearer)}</Badge>
+                {a.classification && (
+                  <Badge variant="secondary">{a.classification}</Badge>
+                )}
+                {a.relayUpstreamStatus && (
+                  <Badge variant="outline">x-relay-upstream-status={a.relayUpstreamStatus}</Badge>
+                )}
               </div>
               <div className="grid gap-1 sm:grid-cols-2">
                 <div><span className="text-muted-foreground">url:</span> <code className="break-all">{a.url}</code></div>
