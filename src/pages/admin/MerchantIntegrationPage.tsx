@@ -3,6 +3,7 @@ import { SeoUrlChecker } from '@/components/admin/SeoUrlChecker';
 import { MerchantCleanupDiagnostics } from '@/components/admin/MerchantCleanupDiagnostics';
 import { RefreshFeedAfterPublishCard } from '@/components/admin/RefreshFeedAfterPublishCard';
 import { MerchantApiProbePanel } from '@/components/admin/MerchantApiProbePanel';
+import { MerchantDeveloperRegistrationPanel } from '@/components/admin/MerchantDeveloperRegistrationPanel';
 import { MerchantApiTransportDiagnostics } from '@/components/admin/MerchantApiTransportDiagnostics';
 import { FeedStatusCard } from '@/components/admin/FeedStatusCard';
 import { ReportReleaseCard } from '@/components/admin/ReportReleaseCard';
