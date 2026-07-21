@@ -364,6 +364,34 @@ export default function LinkInBio() {
 
   // FUNNEL STEP 3 — CTA impressions (fires once per CTA when ≥50% visible)
   useEffect(() => {
+    // Sticky visibility gate: only show the sticky CTA once the user has
+    // scrolled past the above-the-fold primary CTA, AND hide it whenever
+    // the in-content secondary CTA is on screen. Prevents the two orange
+    // "Get Yours Now" buttons from overlapping at the bottom of /go on
+    // mobile Safari.
+    const primaryEl = primaryCtaRef.current;
+    const secondaryEl = secondaryCtaRef.current;
+    let primaryOnScreen = true;
+    let secondaryOnScreen = false;
+    const stickyIo =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (entry.target === primaryEl) {
+                  primaryOnScreen = entry.isIntersecting;
+                } else if (entry.target === secondaryEl) {
+                  secondaryOnScreen = entry.isIntersecting;
+                  setSecondaryVisible(entry.isIntersecting);
+                }
+              }
+              setShowSticky(!primaryOnScreen && !secondaryOnScreen);
+            },
+            { threshold: [0, 0.25, 1] },
+          )
+        : null;
+    if (stickyIo && primaryEl) stickyIo.observe(primaryEl);
+    if (stickyIo && secondaryEl) stickyIo.observe(secondaryEl);
     const targets: Array<{ el: HTMLElement | null; placement: string }> = [
       { el: primaryCtaRef.current, placement: 'bio_primary' },
       { el: secondaryCtaRef.current, placement: 'bio_secondary' },
