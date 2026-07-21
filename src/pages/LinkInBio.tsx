@@ -95,8 +95,13 @@ export default function LinkInBio() {
   // so it always runs in the same order; the actual `copyMode` resolution
   // happens AFTER `urgencyVisible` is declared below.
   const { pickCopy, hook: visitorHook } = useCtaCopyWinner();
-  // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
-  const showSticky = true;
+  // Sticky CTA visibility. Hidden by default while the primary above-the-fold
+  // CTA is on screen, and hidden again whenever the in-content secondary CTA
+  // (bio_secondary) enters the viewport — that CTA lives at the bottom of the
+  // page and if the sticky stays visible the two orange buttons overlap on
+  // mobile (observed on iPhone Safari). One sticky bar, no duplicate.
+  const [showSticky, setShowSticky] = useState(false);
+  const [secondaryVisible, setSecondaryVisible] = useState(false);
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
