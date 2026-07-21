@@ -86,6 +86,15 @@ const URGENCY_REVEAL_THRESHOLD = 25;
 
 export default function LinkInBio() {
   const [searchParams, setSearchParams] = useSearchParams();
+  // Snapshot the exact URL the user landed on BEFORE any React/router or
+  // effect can mutate it. Powers the ?debug=1 diagnostic panel below so
+  // we can prove that no paid UTM was overwritten by a fallback.
+  const initialUrlRef = useRef<string>(
+    typeof window !== 'undefined' ? window.location.href : '',
+  );
+  const debugMode =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('debug') === '1';
   // Runtime-controlled CTA variant. The auto-rollback edge function flips
   // this to the baseline if CTR drops below the configured floor. Falls
   // back to CTA_VARIANT_DEFAULT while the network round-trip is in flight
@@ -95,8 +104,13 @@ export default function LinkInBio() {
   // so it always runs in the same order; the actual `copyMode` resolution
   // happens AFTER `urgencyVisible` is declared below.
   const { pickCopy, hook: visitorHook } = useCtaCopyWinner();
-  // Sticky CTA is always visible on /go for maximum conversion (TikTok cold traffic).
-  const showSticky = true;
+  // Sticky CTA visibility. Hidden by default while the primary above-the-fold
+  // CTA is on screen, and hidden again whenever the in-content secondary CTA
+  // (bio_secondary) enters the viewport — that CTA lives at the bottom of the
+  // page and if the sticky stays visible the two orange buttons overlap on
+  // mobile (observed on iPhone Safari). One sticky bar, no duplicate.
+  const [showSticky, setShowSticky] = useState(false);
+  const [secondaryVisible, setSecondaryVisible] = useState(false);
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   const secondaryCtaRef = useRef<HTMLDivElement>(null);
   const stickyCtaRef = useRef<HTMLDivElement>(null);
@@ -359,6 +373,34 @@ export default function LinkInBio() {
 
   // FUNNEL STEP 3 — CTA impressions (fires once per CTA when ≥50% visible)
   useEffect(() => {
+    // Sticky visibility gate: only show the sticky CTA once the user has
+    // scrolled past the above-the-fold primary CTA, AND hide it whenever
+    // the in-content secondary CTA is on screen. Prevents the two orange
+    // "Get Yours Now" buttons from overlapping at the bottom of /go on
+    // mobile Safari.
+    const primaryEl = primaryCtaRef.current;
+    const secondaryEl = secondaryCtaRef.current;
+    let primaryOnScreen = true;
+    let secondaryOnScreen = false;
+    const stickyIo =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (entry.target === primaryEl) {
+                  primaryOnScreen = entry.isIntersecting;
+                } else if (entry.target === secondaryEl) {
+                  secondaryOnScreen = entry.isIntersecting;
+                  setSecondaryVisible(entry.isIntersecting);
+                }
+              }
+              setShowSticky(!primaryOnScreen && !secondaryOnScreen);
+            },
+            { threshold: [0, 0.25, 1] },
+          )
+        : null;
+    if (stickyIo && primaryEl) stickyIo.observe(primaryEl);
+    if (stickyIo && secondaryEl) stickyIo.observe(secondaryEl);
     const targets: Array<{ el: HTMLElement | null; placement: string }> = [
       { el: primaryCtaRef.current, placement: 'bio_primary' },
       { el: secondaryCtaRef.current, placement: 'bio_secondary' },
@@ -474,7 +516,10 @@ export default function LinkInBio() {
         ...attribution,
       });
     }
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      stickyIo?.disconnect();
+    };
   }, [attribution]);
 
   // FUNNEL STEP 4 — CTA click. Bubble-capture click on the CTA wrapper so we
@@ -907,6 +952,28 @@ export default function LinkInBio() {
           />
         </div>
       </div>
+      {debugMode && (
+        <pre
+          data-testid="go-attribution-debug"
+          className="mx-4 my-4 max-w-full overflow-x-auto rounded-md border border-border/60 bg-muted/60 p-3 text-[10px] leading-tight text-foreground"
+        >
+{JSON.stringify(
+  {
+    initial_url: initialUrlRef.current,
+    final_url: typeof window !== 'undefined' ? window.location.href : '',
+    parsed_attribution: attribution,
+    secondary_cta_visible: secondaryVisible,
+    sticky_cta_visible: showSticky,
+    // Only one sticky bar is mounted (this component owns it), so on
+    // mobile the visible fixed-bottom CTA count is exactly 1 when
+    // showSticky === true, else 0.
+    mobile_sticky_cta_count: showSticky ? 1 : 0,
+  },
+  null,
+  2,
+)}
+        </pre>
+      )}
     </main>
   );
 }
