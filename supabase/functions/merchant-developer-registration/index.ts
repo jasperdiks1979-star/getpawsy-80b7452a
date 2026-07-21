@@ -79,6 +79,12 @@ function classify(status: number, body: unknown): {
     return { classification: "CALLER_NOT_MERCHANT_ADMIN", reason: reason ?? "permission_denied" };
   }
   if (status === 404) return { classification: "NOT_REGISTERED", reason: reason ?? "not_found" };
+  // Merchant API v1 returns HTTP 401 with reason=GCP_NOT_REGISTERED when the
+  // calling GCP project is not registered with the Merchant account. This is
+  // definitive registration-state evidence per official docs — NOT auth failure.
+  if (status === 401 && reason === "GCP_NOT_REGISTERED") {
+    return { classification: "NOT_REGISTERED", reason };
+  }
   return { classification: "INSUFFICIENT_EVIDENCE", reason: reason ?? `http_${status}` };
 }
 
@@ -110,6 +116,9 @@ function classifyGcpLookup(status: number, body: unknown): {
     return { classification: "INSUFFICIENT_EVIDENCE", reason: "no_account_in_body" };
   }
   if (status === 404) return { classification: "GCP_NOT_ASSOCIATED", reason: base.reason ?? "not_found" };
+  if (status === 401 && base.reason === "GCP_NOT_REGISTERED") {
+    return { classification: "GCP_NOT_ASSOCIATED", reason: base.reason };
+  }
   if (status === 403) return { classification: "CALLER_NOT_MERCHANT_ADMIN", reason: base.reason };
   return { classification: "INSUFFICIENT_EVIDENCE", reason: base.reason ?? `http_${status}` };
 }
