@@ -21,7 +21,12 @@
 // Success verdicts (mode=execute):
 //   MERCHANT_V1_CANARY_WRITE_PASSED
 //   MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED
-//   MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE
+//   MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING
+//     (upstream productInputs.insert accepted; processed Product may take
+//      several minutes to appear. No rollback is performed. Use the
+//      merchant-api-canary-verify function to continue read-only polling.)
+//   MERCHANT_V1_CANARY_WRITE_UPSTREAM_FAILED
+//     (upstream rejected the insert — no ProductInput was created.)
 //   MERCHANT_V1_CANARY_ABORTED_SAFETY_GATE
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -44,7 +49,8 @@ type Mode = "preview" | "validate" | "execute";
 type Verdict =
   | "MERCHANT_V1_CANARY_WRITE_PASSED"
   | "MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED"
-  | "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE"
+  | "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
+  | "MERCHANT_V1_CANARY_WRITE_UPSTREAM_FAILED"
   | "MERCHANT_V1_CANARY_ABORTED_SAFETY_GATE"
   | "MERCHANT_V1_CANARY_PREVIEW_OK"
   | "MERCHANT_V1_CANARY_VALIDATION_OK"
