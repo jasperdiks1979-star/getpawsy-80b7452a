@@ -164,8 +164,10 @@ export function MerchantApiProbePanel() {
   const [shadowResult, setShadowResult] = useState<InvocationResult | null>(null);
   const [reconResult, setReconResult] = useState<InvocationResult | null>(null);
   const [previewResult, setPreviewResult] = useState<InvocationResult | null>(null);
+  const [validateResult, setValidateResult] = useState<InvocationResult | null>(null);
   const [writeResult, setWriteResult] = useState<InvocationResult | null>(null);
   const [previewRunning, setPreviewRunning] = useState(false);
+  const [validateRunning, setValidateRunning] = useState(false);
   const [writeRunning, setWriteRunning] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState('');
   const [probeRunning, setProbeRunning] = useState(false);
@@ -254,6 +256,7 @@ export function MerchantApiProbePanel() {
   const runCanaryPreview = async () => {
     if (!probeAllowed) return;
     setPreviewRunning(true);
+    setValidateResult(null);
     setWriteResult(null);
     const r = await directPost('merchant-api-write-canary', { mode: 'preview' });
     setPreviewResult(r);
@@ -266,8 +269,32 @@ export function MerchantApiProbePanel() {
     typeof previewResult.body === 'object' &&
     (previewResult.body as { ok?: unknown }).ok === true;
 
+  const runCanaryValidate = async () => {
+    if (!probeAllowed || !previewOk) return;
+    setValidateRunning(true);
+    setWriteResult(null);
+    const r = await directPost('merchant-api-write-canary', { mode: 'validate' });
+    setValidateResult(r);
+    setValidateRunning(false);
+  };
+
+  const validateBody =
+    validateResult?.body && typeof validateResult.body === 'object'
+      ? (validateResult.body as Record<string, unknown>)
+      : null;
+  const validateVerdict = validateBody?.verdict as string | undefined;
+  const validateOk =
+    validateResult?.status === 200 &&
+    !!validateBody &&
+    validateBody.ok === true &&
+    (validateVerdict === undefined ||
+      /^(SAFE|VALID|OK|PASS)/i.test(validateVerdict));
+
   const canExecuteCanary =
-    probeAllowed && previewOk && confirmPhrase === 'WRITE ONE MERCHANT CANARY';
+    probeAllowed &&
+    previewOk &&
+    validateOk &&
+    confirmPhrase === 'WRITE ONE MERCHANT CANARY';
 
   const runCanaryWrite = async () => {
     if (!canExecuteCanary) return;
@@ -376,6 +403,60 @@ export function MerchantApiProbePanel() {
             </Button>
           </div>
           {previewResult && <ResultBlock title="canary preview" result={previewResult} />}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={runCanaryValidate}
+              variant="secondary"
+              disabled={!probeAllowed || !previewOk || validateRunning}
+              title={!previewOk ? 'Run preview successfully first' : ''}
+            >
+              {validateRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Validate canary request
+            </Button>
+          </div>
+          {validateResult && (
+            <>
+              <ResultBlock title="canary validate" result={validateResult} />
+              {validateBody && (
+                <div className="space-y-2 text-xs bg-muted/50 rounded p-3">
+                  {typeof validateBody.sanitizedUrl === 'string' && (
+                    <div>
+                      <div className="font-semibold">Sanitized URL</div>
+                      <code className="break-all">{validateBody.sanitizedUrl as string}</code>
+                    </div>
+                  )}
+                  {validateBody.sanitizedRequestBody !== undefined && (
+                    <div>
+                      <div className="font-semibold">Sanitized request body</div>
+                      <pre className="whitespace-pre-wrap break-words">
+                        {JSON.stringify(validateBody.sanitizedRequestBody, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {validateBody.schemaFindings !== undefined && (
+                    <div>
+                      <div className="font-semibold">Schema findings</div>
+                      <pre className="whitespace-pre-wrap break-words">
+                        {JSON.stringify(validateBody.schemaFindings, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {typeof validateBody.likelyCause === 'string' && (
+                    <div>
+                      <div className="font-semibold">Likely cause</div>
+                      <div>{validateBody.likelyCause as string}</div>
+                    </div>
+                  )}
+                  {validateVerdict && (
+                    <div>
+                      <div className="font-semibold">Verdict</div>
+                      <div>{validateVerdict}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
           <div className="space-y-2">
             <label htmlFor="canary-confirm" className="text-xs font-medium">
               Type exactly <code>WRITE ONE MERCHANT CANARY</code> to enable the write button.
@@ -389,7 +470,7 @@ export function MerchantApiProbePanel() {
               onChange={(e) => setConfirmPhrase(e.target.value)}
               className="w-full px-3 py-2 text-sm border rounded bg-background font-mono"
               placeholder="WRITE ONE MERCHANT CANARY"
-              disabled={!previewOk}
+              disabled={!previewOk || !validateOk}
             />
             <Button
               onClick={runCanaryWrite}
@@ -398,7 +479,9 @@ export function MerchantApiProbePanel() {
               title={
                 !previewOk
                   ? 'Run preview successfully first'
-                  : confirmPhrase !== 'WRITE ONE MERCHANT CANARY'
+                  : !validateOk
+                    ? 'Run validate successfully first'
+                    : confirmPhrase !== 'WRITE ONE MERCHANT CANARY'
                     ? 'Type the exact confirmation phrase'
                     : ''
               }
