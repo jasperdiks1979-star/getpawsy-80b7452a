@@ -166,9 +166,11 @@ export function MerchantApiProbePanel() {
   const [previewResult, setPreviewResult] = useState<InvocationResult | null>(null);
   const [validateResult, setValidateResult] = useState<InvocationResult | null>(null);
   const [writeResult, setWriteResult] = useState<InvocationResult | null>(null);
+  const [verifyResult, setVerifyResult] = useState<InvocationResult | null>(null);
   const [previewRunning, setPreviewRunning] = useState(false);
   const [validateRunning, setValidateRunning] = useState(false);
   const [writeRunning, setWriteRunning] = useState(false);
+  const [verifyRunning, setVerifyRunning] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState('');
   const [probeRunning, setProbeRunning] = useState(false);
   const [shadowRunning, setShadowRunning] = useState(false);
@@ -313,6 +315,16 @@ export function MerchantApiProbePanel() {
     });
     setWriteResult(r);
     setWriteRunning(false);
+  };
+
+  // READ-ONLY: polls Merchant API for the processed Product of the existing
+  // canary offer. Never invokes productInputs.insert / delete / update.
+  const runCanaryVerify = async () => {
+    if (!probeAllowed) return;
+    setVerifyRunning(true);
+    const r = await directPost('merchant-api-canary-verify', {});
+    setVerifyResult(r);
+    setVerifyRunning(false);
   };
 
   return (
@@ -499,6 +511,25 @@ export function MerchantApiProbePanel() {
             </Button>
           </div>
           {writeResult && <ResultBlock title="canary write" result={writeResult} />}
+
+          <div className="border-t pt-3 mt-3 space-y-2">
+            <div className="text-xs text-muted-foreground">
+              Read-only verification for an already-accepted canary
+              <code className="mx-1">productInputs.insert</code>. Polls the
+              processed Product with GET calls only. No inserts, no updates,
+              no deletes. Safe to click at any time.
+            </div>
+            <Button
+              onClick={runCanaryVerify}
+              variant="outline"
+              disabled={!probeAllowed || verifyRunning}
+              title={!probeAllowed ? 'Requires signed-in merchant admin with read flag enabled' : ''}
+            >
+              {verifyRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Verify existing canary processing
+            </Button>
+            {verifyResult && <ResultBlock title="canary verify (read-only)" result={verifyResult} />}
+          </div>
         </div>
 
         {!adminMatch && signedIn && (
