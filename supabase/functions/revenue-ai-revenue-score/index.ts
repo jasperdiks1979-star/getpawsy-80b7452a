@@ -35,13 +35,19 @@ Deno.serve(async (req) => {
     const stockArr = (products ?? []).map((p: any) => Number(p.effective_stock || 0));
     const stockMax = Math.max(1, ...stockArr);
     const revMax = Math.max(1, ...[...byProd.values()].map(v => v.rev));
+    // `products` no longer carries `ctr_30d`/`total_sold_30d` (columns don't
+    // exist on the table). Derive ctr and sales signals from the 30d
+    // pin-performance aggregate we already collected above so the composite
+    // score can actually reach the hero/winner tiers.
+    const clicksMax = Math.max(1, ...[...byProd.values()].map(v => v.clicks));
+    const purMax = Math.max(1, ...[...byProd.values()].map(v => v.pur));
 
     const rows: any[] = [];
     for (const p of (products ?? []) as any[]) {
       const meta = byProd.get(p.id) ?? { rev: 0, clicks: 0, pur: 0 };
       const stock = Math.min(100, (Number(p.effective_stock || 0) / stockMax) * 100);
-      const ctr = Math.min(100, Number(p.ctr_30d || 0) * 1000);
-      const sales = Math.min(100, Number(p.total_sold_30d || 0) * 5);
+      const ctr = Math.min(100, (meta.clicks / clicksMax) * 100);
+      const sales = Math.min(100, (meta.pur / purMax) * 100);
       const media = Math.min(100, Number(p.media_score || 0));
       const pinterest = Math.min(100, (meta.rev / revMax) * 100);
       const composite = composeRevenueScore({ stock, ctr, sales, media, pinterest });
