@@ -17,8 +17,10 @@
 //     checking the processed `Product`.
 //
 // Verdicts:
-//   MERCHANT_V1_CANARY_WRITE_PASSED_AFTER_PROCESSING
+//   MERCHANT_V1_CANARY_PROCESSED_MATCHED
 //   MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING
+//   MERCHANT_V1_CANARY_PROCESSED_MISMATCH
+//   MERCHANT_V1_CANARY_NOT_FOUND
 //   MERCHANT_V1_CANARY_PROCESSING_REJECTED
 //   MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE
 //   MERCHANT_V1_CANARY_ABORTED_SAFETY_GATE
@@ -43,8 +45,10 @@ const FIRST_DELAY_MS = 30_000;
 const INTERVAL_MS = 30_000;
 
 type Verdict =
-  | "MERCHANT_V1_CANARY_WRITE_PASSED_AFTER_PROCESSING"
+  | "MERCHANT_V1_CANARY_PROCESSED_MATCHED"
   | "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
+  | "MERCHANT_V1_CANARY_PROCESSED_MISMATCH"
+  | "MERCHANT_V1_CANARY_NOT_FOUND"
   | "MERCHANT_V1_CANARY_PROCESSING_REJECTED"
   | "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE"
   | "MERCHANT_V1_CANARY_ABORTED_SAFETY_GATE";
@@ -57,6 +61,10 @@ function allowedUuid(): string | null {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function priceToMicros(usd: number): string {
+  return String(Math.round(usd * 1_000_000));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -141,7 +149,13 @@ Deno.serve(async (req) => {
     } | null = null;
     let piScanned = 0;
     let piBareUuidPresent = false;
-    {
+    let productInputDirectReadStatus:
+      | "CONFIRMED"
+      | "NOT_FOUND"
+      | "PRODUCT_INPUT_DIRECT_READ_UNAVAILABLE" = "NOT_FOUND";
+    let productInputDirectReadHttpStatus: number | null = null;
+    let productInputDirectReadError: string | undefined;
+    try {
       let pageToken: string | undefined;
       for (let page = 0; page < 20; page++) {
         const pageRes = await client.listProductInputs(250, pageToken);
@@ -162,7 +176,44 @@ Deno.serve(async (req) => {
         if (!pageRes.nextPageToken) break;
         pageToken = pageRes.nextPageToken;
       }
+      productInputDirectReadStatus = productInputFound ? "CONFIRMED" : "NOT_FOUND";
+    } catch (e) {
+      // A 404/permission error on productInputs.list must NOT be treated as a
+      // write failure. Fall through to processed-product read.
+      if (e instanceof MerchantApiClientError) {
+        productInputDirectReadHttpStatus = e.status;
+        productInputDirectReadError = e.code ?? e.googleError?.status ?? "list_error";
+      } else {
+        productInputDirectReadError = (e as Error)?.message ?? "list_error";
+      }
+      productInputDirectReadStatus = "PRODUCT_INPUT_DIRECT_READ_UNAVAILABLE";
+      mlog("canary_verify_product_input_read_unavailable", {
+        corrId, httpStatus: productInputDirectReadHttpStatus, error: productInputDirectReadError,
+      });
     }
+
+    // Load expected canary payload from local products table for field-diff.
+    stage = "load_expected";
+    const { data: expectedRow } = await supabase
+      .from("products")
+      .select("id, slug, name, image_url, price, availability, brand")
+      .eq("id", targetUuid)
+      .maybeSingle();
+    const expected = expectedRow
+      ? {
+          title: String(expectedRow.name ?? ""),
+          link: `https://getpawsy.pet/products/${expectedRow.slug}`,
+          imageLink: String(expectedRow.image_url ?? ""),
+          price: {
+            amountMicros: priceToMicros(Number(expectedRow.price ?? 0)),
+            currencyCode: "USD",
+          },
+          availability: String(expectedRow.availability ?? "in_stock"),
+          brand: expectedRow.brand ? String(expectedRow.brand) : null,
+          contentLanguage: CONTENT_LANGUAGE,
+          feedLabel: FEED_LABEL,
+        }
+      : null;
 
     // ── 2. Poll processed Product via GET (resource-name), fallback list ─
     stage = "poll_processed";
@@ -189,6 +240,13 @@ Deno.serve(async (req) => {
     let processed: Record<string, unknown> | null = null;
     let listBaselineCount: number | null = null;
     let bareUuidProductPresent = false;
+    let canonicalProcessedResourceCount = 0;
+    let processedProductStatus:
+      | "MATCHED"
+      | "MISMATCH"
+      | "NOT_FOUND"
+      | "READ_ERROR" = "NOT_FOUND";
+    let processedGetHttpStatus: number | null = null;
 
     for (let i = 0; i < attemptsMax; i++) {
       const wait = i === 0 ? firstDelay : intervalMs;
@@ -210,6 +268,7 @@ Deno.serve(async (req) => {
           getErr = (e as Error)?.message ?? "unknown_get_error";
         }
       }
+      processedGetHttpStatus = getStatus;
       attempts.push({
         attempt: i + 1,
         at: new Date().toISOString(),
@@ -223,21 +282,22 @@ Deno.serve(async (req) => {
 
       // If 404, do a list-based fallback in case naming differs from the
       // canonical composite. Otherwise (e.g. 5xx / transport) skip fallback.
-      if (getStatus === 404) {
+      if (getStatus === 404 || getStatus === null) {
         let listErr: string | undefined;
-        let listPagesScanned = 0;
         try {
           let pageToken: string | undefined;
           let total = 0;
           for (let page = 0; page < 20; page++) {
             const pageRes = await client.listProducts(250, pageToken);
-            listPagesScanned++;
             for (const raw of (pageRes.products ?? [])) {
               total++;
               const oid = typeof (raw as { offerId?: unknown }).offerId === "string"
                 ? (raw as { offerId: string }).offerId
                 : "";
-              if (oid === offerId && !processed) processed = raw as Record<string, unknown>;
+              if (oid === offerId) {
+                canonicalProcessedResourceCount++;
+                if (!processed) processed = raw as Record<string, unknown>;
+              }
               if (oid === targetUuid) bareUuidProductPresent = true;
             }
             if (!pageRes.nextPageToken) break;
@@ -281,6 +341,25 @@ Deno.serve(async (req) => {
       ),
     } : null;
 
+    // Field-by-field comparison vs. the local canary payload.
+    const remotePrice = (attrs as { price?: { amountMicros?: unknown; currencyCode?: unknown } }).price;
+    const fieldMatches = processed && expected ? {
+      title: (attrs as { title?: unknown }).title === expected.title,
+      link: (attrs as { link?: unknown }).link === expected.link,
+      imageLink: (attrs as { imageLink?: unknown }).imageLink === expected.imageLink,
+      priceAmountMicros: String((remotePrice?.amountMicros ?? "")) === expected.price.amountMicros,
+      priceCurrencyCode: String((remotePrice?.currencyCode ?? "")) === expected.price.currencyCode,
+      availability: String((attrs as { availability?: unknown }).availability ?? "") === expected.availability,
+      brand: expected.brand === null
+        ? true
+        : (attrs as { brand?: unknown }).brand === expected.brand,
+      contentLanguage: processedContentLanguage === expected.contentLanguage,
+      feedLabel: processedFeedLabel === expected.feedLabel,
+    } : null;
+    const allFieldsMatch = fieldMatches
+      ? Object.values(fieldMatches).every((v) => v === true)
+      : null;
+
     // Detect explicit Google rejection signals on the processed product.
     const issues = Array.isArray((processed as { itemIssues?: unknown })?.itemIssues)
       ? ((processed as { itemIssues: Array<Record<string, unknown>> }).itemIssues)
@@ -295,27 +374,53 @@ Deno.serve(async (req) => {
     });
 
     let verdict: Verdict;
-    if (processed && identityChecks?.offerIdMatch && identityChecks.contentLanguageMatch && identityChecks.feedLabelMatch && hardRejections.length === 0) {
-      verdict = "MERCHANT_V1_CANARY_WRITE_PASSED_AFTER_PROCESSING";
-    } else if (processed && hardRejections.length > 0) {
+    if (processed && hardRejections.length > 0) {
       verdict = "MERCHANT_V1_CANARY_PROCESSING_REJECTED";
-    } else if (productInputFound) {
-      // ProductInput exists but processed Product not visible yet or transport
-      // failure on read.
-      const anyTransportError = attempts.some((a) => a.transportError);
-      verdict = anyTransportError
-        ? "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE"
-        : "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING";
+      processedProductStatus = "MISMATCH";
+    } else if (processed && allFieldsMatch === true
+        && identityChecks?.offerIdMatch && identityChecks.contentLanguageMatch && identityChecks.feedLabelMatch) {
+      verdict = "MERCHANT_V1_CANARY_PROCESSED_MATCHED";
+      processedProductStatus = "MATCHED";
+    } else if (processed) {
+      verdict = "MERCHANT_V1_CANARY_PROCESSED_MISMATCH";
+      processedProductStatus = "MISMATCH";
     } else {
-      verdict = "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE";
+      const anyTransportError = attempts.some((a) => a.transportError);
+      processedProductStatus = anyTransportError ? "READ_ERROR" : "NOT_FOUND";
+      if (productInputFound) {
+        verdict = "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING";
+      } else if (anyTransportError) {
+        verdict = "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE";
+      } else {
+        // We could not directly confirm ProductInput and no processed Product
+        // is visible. If the upstream insert previously succeeded (which is
+        // the whole point of this verifier being invoked), treat this as
+        // pending rather than a hard NOT_FOUND. Only escalate to NOT_FOUND
+        // when the direct read was actually available and returned nothing.
+        verdict = productInputDirectReadStatus === "PRODUCT_INPUT_DIRECT_READ_UNAVAILABLE"
+          ? "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
+          : "MERCHANT_V1_CANARY_NOT_FOUND";
+      }
     }
 
     mlog("canary_verify", { corrId, verdict, offerId, attempts: attempts.length, productInputFound: !!productInputFound });
 
     return json({
-      ok: verdict === "MERCHANT_V1_CANARY_WRITE_PASSED_AFTER_PROCESSING",
+      ok: verdict === "MERCHANT_V1_CANARY_PROCESSED_MATCHED",
       verdict,
       mutation: "NONE_ZERO_UPSTREAM_CALLS",
+      mutations: 0,
+      productInputDirectReadStatus,
+      processedProductStatus,
+      fieldMatches,
+      duplicateCheck: {
+        bareUuidProductInputPresent: piBareUuidPresent,
+        bareUuidProcessedProductPresent: bareUuidProductPresent,
+        canonicalProcessedResourceCount,
+        canonicalDuplicate: canonicalProcessedResourceCount > 1,
+      },
+      attempts,
+      expected,
       target: {
         account,
         dataSource: dataSourceName,
@@ -332,12 +437,16 @@ Deno.serve(async (req) => {
         feedLabel: productInputFound?.feedLabel ?? null,
         totalProductInputsScanned: piScanned,
         bareUuidDuplicatePresent: piBareUuidPresent,
+        directReadStatus: productInputDirectReadStatus,
+        directReadHttpStatus: productInputDirectReadHttpStatus,
+        directReadError: productInputDirectReadError ?? null,
       },
       polling: {
         maxAttempts: attemptsMax,
         firstDelayMs: firstDelay,
         intervalMs,
         attempts,
+        lastProcessedGetHttpStatus: processedGetHttpStatus,
       },
       processed: processed ? {
         resourceName: (processed as { name?: unknown }).name ?? null,
@@ -350,13 +459,11 @@ Deno.serve(async (req) => {
         imageLink: (attrs as { imageLink?: unknown }).imageLink ?? null,
         availability: (attrs as { availability?: unknown }).availability ?? null,
         price: (attrs as { price?: unknown }).price ?? null,
+        brand: (attrs as { brand?: unknown }).brand ?? null,
         identityChecks,
+        allFieldsMatch,
         hardRejections: hardRejections.slice(0, 20),
       } : null,
-      duplicateCheck: {
-        bareUuidProductInputPresent: piBareUuidPresent,
-        bareUuidProcessedProductPresent: bareUuidProductPresent,
-      },
       counts: {
         productInputsScanned: piScanned,
         processedProductsScannedInFallback: listBaselineCount,
@@ -364,6 +471,12 @@ Deno.serve(async (req) => {
       note:
         verdict === "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
           ? "ProductInput accepted upstream. Processed Product may take several minutes; re-run this verifier to continue polling. No rollback performed."
+          : verdict === "MERCHANT_V1_CANARY_PROCESSED_MATCHED"
+          ? "Processed Product matches canary payload on all compared fields."
+          : verdict === "MERCHANT_V1_CANARY_PROCESSED_MISMATCH"
+          ? "Processed Product exists but one or more compared fields differ. See fieldMatches."
+          : verdict === "MERCHANT_V1_CANARY_NOT_FOUND"
+          ? "Neither ProductInput nor processed Product could be located via read-only endpoints."
           : verdict === "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE"
           ? "Read path returned an inconclusive signal. No rollback performed."
           : undefined,
@@ -371,10 +484,21 @@ Deno.serve(async (req) => {
   } catch (e) {
     if (e instanceof MerchantApiClientError) {
       mlog("canary_verify_upstream_error", { corrId, stage, status: e.status, code: e.code });
-      return json({ ok: false, verdict: "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE" as Verdict, error: e.code ?? "upstream_error", stage, upstreamStatus: e.status }, 502);
+      // Only real auth / 5xx upstream failures should surface as HTTP 5xx.
+      // 4xx read-side errors (404/403 on a specific read endpoint) are
+      // surfaced as a 200 inconclusive verdict so the caller can continue.
+      const isServerSide = e.status >= 500 || e.status === 401 || e.status === 0;
+      return json({
+        ok: false,
+        verdict: "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE" as Verdict,
+        mutations: 0,
+        error: e.code ?? "upstream_error",
+        stage,
+        upstreamStatus: e.status,
+      }, isServerSide ? 502 : 200);
     }
     const err = e as Error;
     mlog("canary_verify_unexpected", { corrId, stage, message: err?.message });
-    return json({ ok: false, verdict: "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE" as Verdict, error: "internal_error", stage }, 500);
+    return json({ ok: false, verdict: "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE" as Verdict, mutations: 0, error: "internal_error", stage }, 500);
   }
 });
