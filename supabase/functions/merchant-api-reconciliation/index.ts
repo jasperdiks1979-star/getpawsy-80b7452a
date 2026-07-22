@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       const raw = row.offerId ?? "";
       const normalized = normalizeLocalUuid(raw);
       const hasPrefix = raw.startsWith("getpawsy_");
-      const type = (row.dataSource ? dataSourceMeta.get(row.dataSource)?.type : "UNKNOWN") ?? "UNKNOWN";
+      const type = ((row.dataSource ? dataSourceMeta.get(row.dataSource)?.type : "UNKNOWN") ?? "UNKNOWN") as Annot["dataSourceType"];
       return {
         row,
         rawOfferId: raw,
