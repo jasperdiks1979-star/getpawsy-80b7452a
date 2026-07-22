@@ -1,20 +1,17 @@
-// Merchant API v1 single-product canary — READ-ONLY verification.
+// Merchant API v1 single-product canary — READ-ONLY, SINGLE-PASS verification.
 //
 // Purpose:
 //   Verify that a previously-accepted `productInputs.insert` for the canary
-//   offer has finished processing into a retrievable `Product`. The prior
-//   write returned a `ProductInput` resource name; the processed `Product`
-//   can take several minutes to appear. An immediate readback is NOT a valid
-//   failure criterion.
+//   offer has finished processing into a retrievable `Product`. Called
+//   manually by the admin; the client re-invokes at its own cadence.
 //
 // Guarantees:
-//   * Zero mutations. This function issues ONLY GET requests to Merchant API.
+//   * Zero mutations. GET only.
 //   * Never invokes productInputs.insert / delete / update.
-//   * Polls with GET at ~30s intervals, max 10 attempts / 5 minutes; a lower
-//     server-side cap is applied to stay within the edge function wall-time
-//     budget. Callers can re-invoke to continue polling.
-//   * Confirms `ProductInput` existence via `productInputs.list` before
-//     checking the processed `Product`.
+//   * SINGLE-PASS: no sleep, no setTimeout, no polling loop, no delayed
+//     retries. At most one productInputs read attempt, one products.get
+//     attempt, and one products.list fallback. Returns within ~10s under
+//     normal upstream latency.
 //
 // Verdicts:
 //   MERCHANT_V1_CANARY_PROCESSED_MATCHED
@@ -37,12 +34,7 @@ import {
 const CONTENT_LANGUAGE = "en";
 const FEED_LABEL = "US";
 
-// Server-side polling cap. Spec allows up to 10 attempts / 5 minutes; we
-// stay under the edge wall-time budget with a conservative default. The
-// client may re-invoke to continue polling if the verdict is PENDING.
-const MAX_ATTEMPTS = 5;
-const FIRST_DELAY_MS = 30_000;
-const INTERVAL_MS = 30_000;
+// SINGLE-PASS verifier. No server-side polling. Client re-invokes on demand.
 
 type Verdict =
   | "MERCHANT_V1_CANARY_PROCESSED_MATCHED"
@@ -60,8 +52,6 @@ function allowedUuid(): string | null {
     : null;
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 function priceToMicros(usd: number): string {
   return String(Math.round(usd * 1_000_000));
 }
@@ -78,14 +68,9 @@ Deno.serve(async (req) => {
 
   let stage = "init";
   try {
-    // Parse optional overrides. All fields are optional; defaults derive
-    // from the deployed canary secrets.
-    let overrides: {
-      offerId?: string;
-      maxAttempts?: number;
-      firstDelayMs?: number;
-      intervalMs?: number;
-    } = {};
+    // Parse optional overrides. Only `offerId` is honored; legacy polling
+    // knobs are ignored — this verifier is strictly single-pass.
+    let overrides: { offerId?: string } = {};
     if (req.method === "POST") {
       try { overrides = (await req.json()) as typeof overrides; } catch { /* ignore */ }
     }
@@ -156,25 +141,21 @@ Deno.serve(async (req) => {
     let productInputDirectReadHttpStatus: number | null = null;
     let productInputDirectReadError: string | undefined;
     try {
-      let pageToken: string | undefined;
-      for (let page = 0; page < 20; page++) {
-        const pageRes = await client.listProductInputs(250, pageToken);
-        const items = (pageRes.productInputs ?? []) as Array<Record<string, unknown>>;
-        for (const raw of items) {
-          piScanned++;
-          const oid = typeof raw.offerId === "string" ? raw.offerId : "";
-          if (oid === offerId) {
-            productInputFound = {
-              name: String(raw.name ?? ""),
-              dataSource: typeof raw.dataSource === "string" ? raw.dataSource : undefined,
-              contentLanguage: typeof raw.contentLanguage === "string" ? raw.contentLanguage : undefined,
-              feedLabel: typeof raw.feedLabel === "string" ? raw.feedLabel : undefined,
-            };
-          }
-          if (oid === targetUuid) piBareUuidPresent = true;
+      // SINGLE productInputs read attempt (one page, up to 250).
+      const pageRes = await client.listProductInputs(250);
+      const items = (pageRes.productInputs ?? []) as Array<Record<string, unknown>>;
+      for (const raw of items) {
+        piScanned++;
+        const oid = typeof raw.offerId === "string" ? raw.offerId : "";
+        if (oid === offerId) {
+          productInputFound = {
+            name: String(raw.name ?? ""),
+            dataSource: typeof raw.dataSource === "string" ? raw.dataSource : undefined,
+            contentLanguage: typeof raw.contentLanguage === "string" ? raw.contentLanguage : undefined,
+            feedLabel: typeof raw.feedLabel === "string" ? raw.feedLabel : undefined,
+          };
         }
-        if (!pageRes.nextPageToken) break;
-        pageToken = pageRes.nextPageToken;
+        if (oid === targetUuid) piBareUuidPresent = true;
       }
       productInputDirectReadStatus = productInputFound ? "CONFIRMED" : "NOT_FOUND";
     } catch (e) {
@@ -215,15 +196,8 @@ Deno.serve(async (req) => {
         }
       : null;
 
-    // ── 2. Poll processed Product via GET (resource-name), fallback list ─
-    stage = "poll_processed";
-    const attemptsMax = Math.min(
-      Math.max(1, Number(overrides.maxAttempts) || MAX_ATTEMPTS),
-      10,
-    );
-    const firstDelay = Math.max(0, Number(overrides.firstDelayMs) || FIRST_DELAY_MS);
-    const intervalMs = Math.max(1_000, Number(overrides.intervalMs) || INTERVAL_MS);
-
+    // ── 2. SINGLE-PASS processed Product read: GET, then optional list ───
+    stage = "read_processed";
     // Exact processed resource name (v1: contentLanguage~feedLabel~offerId).
     const processedName = `${account}/products/${CONTENT_LANGUAGE}~${FEED_LABEL}~${offerId}`;
 
@@ -248,11 +222,8 @@ Deno.serve(async (req) => {
       | "READ_ERROR" = "NOT_FOUND";
     let processedGetHttpStatus: number | null = null;
 
-    for (let i = 0; i < attemptsMax; i++) {
-      const wait = i === 0 ? firstDelay : intervalMs;
-      if (wait > 0) await sleep(wait);
-
-      // Attempt 1: exact GET on the processed resource name.
+    // Single GET attempt on the exact processed resource name.
+    {
       let getStatus: number | null = null;
       let getCode: string | undefined;
       let getErr: string | undefined;
@@ -270,7 +241,7 @@ Deno.serve(async (req) => {
       }
       processedGetHttpStatus = getStatus;
       attempts.push({
-        attempt: i + 1,
+        attempt: 1,
         at: new Date().toISOString(),
         method: "GET_processed",
         httpStatus: getStatus,
@@ -278,45 +249,38 @@ Deno.serve(async (req) => {
         found: !!processed,
         transportError: getErr,
       });
-      if (processed) break;
+    }
 
-      // If 404, do a list-based fallback in case naming differs from the
-      // canonical composite. Otherwise (e.g. 5xx / transport) skip fallback.
-      if (getStatus === 404 || getStatus === null) {
-        let listErr: string | undefined;
-        try {
-          let pageToken: string | undefined;
-          let total = 0;
-          for (let page = 0; page < 20; page++) {
-            const pageRes = await client.listProducts(250, pageToken);
-            for (const raw of (pageRes.products ?? [])) {
-              total++;
-              const oid = typeof (raw as { offerId?: unknown }).offerId === "string"
-                ? (raw as { offerId: string }).offerId
-                : "";
-              if (oid === offerId) {
-                canonicalProcessedResourceCount++;
-                if (!processed) processed = raw as Record<string, unknown>;
-              }
-              if (oid === targetUuid) bareUuidProductPresent = true;
-            }
-            if (!pageRes.nextPageToken) break;
-            pageToken = pageRes.nextPageToken;
+    // Single products.list fallback (one page) — only if GET returned
+    // 404 or a transport error and we still have no processed product.
+    if (!processed && (processedGetHttpStatus === 404 || processedGetHttpStatus === null)) {
+      let listErr: string | undefined;
+      try {
+        const pageRes = await client.listProducts(250);
+        let total = 0;
+        for (const raw of (pageRes.products ?? [])) {
+          total++;
+          const oid = typeof (raw as { offerId?: unknown }).offerId === "string"
+            ? (raw as { offerId: string }).offerId
+            : "";
+          if (oid === offerId) {
+            canonicalProcessedResourceCount++;
+            if (!processed) processed = raw as Record<string, unknown>;
           }
-          listBaselineCount = total;
-        } catch (e) {
-          listErr = e instanceof Error ? e.message : String(e);
+          if (oid === targetUuid) bareUuidProductPresent = true;
         }
-        attempts.push({
-          attempt: i + 1,
-          at: new Date().toISOString(),
-          method: "LIST_processed_fallback",
-          httpStatus: listErr ? null : 200,
-          found: !!processed,
-          transportError: listErr,
-        });
-        if (processed) break;
+        listBaselineCount = total;
+      } catch (e) {
+        listErr = e instanceof Error ? e.message : String(e);
       }
+      attempts.push({
+        attempt: 1,
+        at: new Date().toISOString(),
+        method: "LIST_processed_fallback",
+        httpStatus: listErr ? null : 200,
+        found: !!processed,
+        transportError: listErr,
+      });
     }
 
     // ── 3. Score result ──────────────────────────────────────────────────
@@ -410,6 +374,8 @@ Deno.serve(async (req) => {
       verdict,
       mutation: "NONE_ZERO_UPSTREAM_CALLS",
       mutations: 0,
+      checkedAt: new Date().toISOString(),
+      singlePass: true,
       productInputDirectReadStatus,
       processedProductStatus,
       fieldMatches,
@@ -442,9 +408,8 @@ Deno.serve(async (req) => {
         directReadError: productInputDirectReadError ?? null,
       },
       polling: {
-        maxAttempts: attemptsMax,
-        firstDelayMs: firstDelay,
-        intervalMs,
+        mode: "SINGLE_PASS",
+        maxAttempts: 1,
         attempts,
         lastProcessedGetHttpStatus: processedGetHttpStatus,
       },
@@ -470,7 +435,7 @@ Deno.serve(async (req) => {
       },
       note:
         verdict === "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
-          ? "ProductInput accepted upstream. Processed Product may take several minutes; re-run this verifier to continue polling. No rollback performed."
+          ? "ProductInput accepted upstream. Processed Product not yet retrievable — wait ~30 seconds and click Verify again. No re-insert performed."
           : verdict === "MERCHANT_V1_CANARY_PROCESSED_MATCHED"
           ? "Processed Product matches canary payload on all compared fields."
           : verdict === "MERCHANT_V1_CANARY_PROCESSED_MISMATCH"
@@ -478,7 +443,7 @@ Deno.serve(async (req) => {
           : verdict === "MERCHANT_V1_CANARY_NOT_FOUND"
           ? "Neither ProductInput nor processed Product could be located via read-only endpoints."
           : verdict === "MERCHANT_V1_CANARY_READBACK_INCONCLUSIVE"
-          ? "Read path returned an inconclusive signal. No rollback performed."
+          ? "Read path returned an inconclusive signal. No re-insert performed."
           : undefined,
     });
   } catch (e) {
