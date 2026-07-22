@@ -35,6 +35,32 @@ type LegacyRow = {
   availability: string | null;
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Strip exactly one leading `getpawsy_` prefix only when the remainder is a
+ *  valid UUID. Bare UUID offerIds are returned verbatim. Anything else → null. */
+export function normalizeLocalUuid(rawOfferId: string): string | null {
+  if (!rawOfferId) return null;
+  if (UUID_RE.test(rawOfferId)) return rawOfferId.toLowerCase();
+  const PREFIX = "getpawsy_";
+  if (rawOfferId.startsWith(PREFIX)) {
+    const rest = rawOfferId.slice(PREFIX.length);
+    if (UUID_RE.test(rest)) return rest.toLowerCase();
+  }
+  return null;
+}
+
+/** Classify a Merchant API dataSource resource using its authoritative shape.
+ *  Never infer API as AUTOFEED from `defaultRule` alone. */
+export function classifyDataSource(d: Record<string, unknown>): "FILE" | "API" | "AUTOFEED" | "UI" | "UNKNOWN" {
+  if (d.fileInput) return "FILE";
+  const primary = d.primaryProductDataSource as Record<string, unknown> | undefined;
+  if (!primary) return "UNKNOWN";
+  const input = typeof primary.input === "string" ? (primary.input as string).toUpperCase() : "";
+  if (input === "API" || input === "FILE" || input === "AUTOFEED" || input === "UI") return input;
+  return "UNKNOWN";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -121,9 +147,7 @@ Deno.serve(async (req) => {
         const d = raw as Record<string, unknown>;
         const name = String(d.name ?? "");
         if (!name) continue;
-        const type = d.fileInput ? "FILE"
-          : d.primaryProductDataSource ? (typeof (d.primaryProductDataSource as Record<string, unknown>).defaultRule === "object" ? "AUTOFEED" : "API")
-          : "UNKNOWN";
+        const type = classifyDataSource(d);
         dataSourceMeta.set(name, {
           name,
           type,
@@ -186,111 +210,186 @@ Deno.serve(async (req) => {
     const localById = new Map<string, { id: string; slug: string; name: string }>();
     for (const p of (localProducts ?? [])) localById.set(p.id, { id: p.id, slug: p.slug, name: p.name });
 
-    // ── 5. Compute overlap totals ────────────────────────────────────────
+    // ── 5. Reconcile identity with corrected semantics ───────────────────
     stage = "reconcile";
-    const merchantOfferIds = new Set(merchantRows.map((r) => r.offerId).filter(Boolean));
+
+    // Derive per-merchant identity annotations.
+    type Annot = {
+      row: MerchantRow;
+      rawOfferId: string;
+      normalizedLocalUuid: string | null;
+      hasGetpawsyPrefix: boolean;
+      exactLocalProductExists: boolean;
+      dataSourceType: "FILE" | "API" | "AUTOFEED" | "UI" | "UNKNOWN";
+    };
+    const annotated: Annot[] = merchantRows.map((row) => {
+      const raw = row.offerId ?? "";
+      const normalized = normalizeLocalUuid(raw);
+      const hasPrefix = raw.startsWith("getpawsy_");
+      const type = ((row.dataSource ? dataSourceMeta.get(row.dataSource)?.type : "UNKNOWN") ?? "UNKNOWN") as Annot["dataSourceType"];
+      return {
+        row,
+        rawOfferId: raw,
+        normalizedLocalUuid: normalized,
+        hasGetpawsyPrefix: hasPrefix,
+        exactLocalProductExists: normalized ? localById.has(normalized) : false,
+        dataSourceType: type,
+      };
+    });
+
+    const legacyByRawOffer = new Map<string, LegacyRow>();
+    for (const l of legacyRows) if (l.offerId) legacyByRawOffer.set(l.offerId, l);
     const legacyOfferIds = new Set(legacyRows.map((r) => r.offerId).filter(Boolean));
 
-    // 1. Exact offerId match between Content API v2.1 and Merchant API v1
-    let exactOfferMatch = 0;
-    for (const oid of legacyOfferIds) if (merchantOfferIds.has(oid)) exactOfferMatch++;
+    // Mutually exclusive identity buckets (per Merchant row).
+    const identity = {
+      EXACT_RAW_OFFER_ID_MATCH: 0,          // legacy has identical raw offerId
+      SAME_LOCAL_UUID_DIFFERENT_PREFIX: 0,  // same local UUID present in legacy but under differing raw form
+      MERCHANT_LOCAL_UUID_MATCH_FILE_BARE: 0,   // bare UUID + FILE + local exists
+      MERCHANT_LOCAL_UUID_MATCH_API_PREFIXED: 0,// getpawsy_uuid + API + local exists
+      MERCHANT_NO_LOCAL_MAPPING: 0,         // no local product for this identity
+      OTHER_LOCAL_UUID_MATCH: 0,            // local exists but doesn't fit the two canonical patterns above
+    } as Record<string, number>;
 
-    // 2. Same local product matched through a different offerId.
-    //    Local offerIds follow the `getpawsy_<uuid>` convention. Count local
-    //    products whose canonical offerId is missing from Merchant, but where
-    //    at least one Merchant offerId contains the local UUID (indirect match).
-    let sameLocalDifferentOfferId = 0;
-    for (const local of localById.values()) {
-      const canonical = `getpawsy_${local.id}`;
-      if (merchantOfferIds.has(canonical)) continue;
-      const alt = merchantRows.find((m) => m.offerId.includes(local.id));
-      if (alt) sameLocalDifferentOfferId++;
+    for (const a of annotated) {
+      if (legacyByRawOffer.has(a.rawOfferId)) { identity.EXACT_RAW_OFFER_ID_MATCH++; continue; }
+      if (a.normalizedLocalUuid) {
+        // Legacy contains same local UUID under differing raw offerId form?
+        const altPrefixed = `getpawsy_${a.normalizedLocalUuid}`;
+        const legacyHasSameLocal = legacyByRawOffer.has(a.normalizedLocalUuid) || legacyByRawOffer.has(altPrefixed);
+        if (legacyHasSameLocal) { identity.SAME_LOCAL_UUID_DIFFERENT_PREFIX++; continue; }
+      }
+      if (a.exactLocalProductExists) {
+        if (!a.hasGetpawsyPrefix && a.dataSourceType === "FILE") { identity.MERCHANT_LOCAL_UUID_MATCH_FILE_BARE++; continue; }
+        if (a.hasGetpawsyPrefix && a.dataSourceType === "API") { identity.MERCHANT_LOCAL_UUID_MATCH_API_PREFIXED++; continue; }
+        identity.OTHER_LOCAL_UUID_MATCH++; continue;
+      }
+      identity.MERCHANT_NO_LOCAL_MAPPING++;
     }
 
-    // 3-5. Merchant API attribution by data-source type.
-    const attribution = { AUTOFEED: 0, FILE: 0, API: 0, UNKNOWN: 0 } as Record<string, number>;
+    // Legacy Content API v2.1 products with no corresponding Merchant identity.
+    const merchantRawOfferIds = new Set(annotated.map((a) => a.rawOfferId));
+    const merchantLocalUuids = new Set(annotated.map((a) => a.normalizedLocalUuid).filter((u): u is string => !!u));
+    let LEGACY_NO_MERCHANT_MAPPING = 0;
+    for (const l of legacyRows) {
+      if (merchantRawOfferIds.has(l.offerId)) continue;
+      const localUuid = normalizeLocalUuid(l.offerId);
+      if (localUuid && merchantLocalUuids.has(localUuid)) continue;
+      LEGACY_NO_MERCHANT_MAPPING++;
+    }
+
+    // Semantic duplicates: same normalizedLocalUuid across ≥2 Merchant resources.
+    const localUuidToResources = new Map<string, string[]>();
+    for (const a of annotated) {
+      if (!a.normalizedLocalUuid) continue;
+      const arr = localUuidToResources.get(a.normalizedLocalUuid) ?? [];
+      arr.push(a.row.resourceName);
+      localUuidToResources.set(a.normalizedLocalUuid, arr);
+    }
+    const semanticDuplicates: Array<{ localUuid: string; resources: string[] }> = [];
+    for (const [uuid, resources] of localUuidToResources) {
+      if (resources.length > 1) semanticDuplicates.push({ localUuid: uuid, resources });
+    }
+
+    // Attribution by data-source (authoritative).
+    const attribution: Record<string, number> = { AUTOFEED: 0, FILE: 0, API: 0, UI: 0, UNKNOWN: 0 };
     const dsBreakdown = new Map<string, { type: string; displayName: string; count: number }>();
-    for (const m of merchantRows) {
-      const meta = m.dataSource ? dataSourceMeta.get(m.dataSource) : undefined;
-      const t = meta?.type ?? "UNKNOWN";
-      attribution[t] = (attribution[t] ?? 0) + 1;
-      const key = m.dataSource ?? "unknown";
-      const cur = dsBreakdown.get(key) ?? { type: t, displayName: meta?.displayName ?? "", count: 0 };
+    for (const a of annotated) {
+      attribution[a.dataSourceType] = (attribution[a.dataSourceType] ?? 0) + 1;
+      const key = a.row.dataSource ?? "unknown";
+      const meta = a.row.dataSource ? dataSourceMeta.get(a.row.dataSource) : undefined;
+      const cur = dsBreakdown.get(key) ?? { type: a.dataSourceType, displayName: meta?.displayName ?? "", count: 0 };
       cur.count++;
       dsBreakdown.set(key, cur);
     }
 
-    // 6. Legacy Content API product absent from Merchant API.
-    let legacyMissingFromMerchant = 0;
-    for (const oid of legacyOfferIds) if (!merchantOfferIds.has(oid)) legacyMissingFromMerchant++;
-
-    // 7. Merchant API product with no local mapping.
-    let merchantNoLocalMapping = 0;
-    for (const m of merchantRows) {
-      const uuidMatch = m.offerId.startsWith("getpawsy_") ? m.offerId.slice("getpawsy_".length) : "";
-      if (!uuidMatch || !localById.has(uuidMatch)) merchantNoLocalMapping++;
+    // Source-pair matrix by normalizedLocalUuid.
+    const uuidToSourceTypes = new Map<string, Set<string>>();
+    for (const a of annotated) {
+      if (!a.normalizedLocalUuid) continue;
+      const s = uuidToSourceTypes.get(a.normalizedLocalUuid) ?? new Set<string>();
+      s.add(a.dataSourceType);
+      uuidToSourceTypes.set(a.normalizedLocalUuid, s);
+    }
+    const sourcePairMatrix = {
+      FILE_only: 0, API_only: 0, AUTOFEED_only: 0,
+      FILE_API: 0, FILE_AUTOFEED: 0, API_AUTOFEED: 0,
+      ALL_THREE: 0, OTHER: 0,
+    } as Record<string, number>;
+    for (const s of uuidToSourceTypes.values()) {
+      const has = (t: string) => s.has(t);
+      const total = (has("FILE") ? 1 : 0) + (has("API") ? 1 : 0) + (has("AUTOFEED") ? 1 : 0);
+      if (total === 3) sourcePairMatrix.ALL_THREE++;
+      else if (has("FILE") && has("API") && !has("AUTOFEED")) sourcePairMatrix.FILE_API++;
+      else if (has("FILE") && has("AUTOFEED") && !has("API")) sourcePairMatrix.FILE_AUTOFEED++;
+      else if (has("API") && has("AUTOFEED") && !has("FILE")) sourcePairMatrix.API_AUTOFEED++;
+      else if (has("FILE") && s.size === 1) sourcePairMatrix.FILE_only++;
+      else if (has("API") && s.size === 1) sourcePairMatrix.API_only++;
+      else if (has("AUTOFEED") && s.size === 1) sourcePairMatrix.AUTOFEED_only++;
+      else sourcePairMatrix.OTHER++;
     }
 
-    // 8. Duplicate products across data sources (same offerId, ≥2 dataSource).
-    const offerToSources = new Map<string, Set<string>>();
-    for (const m of merchantRows) {
-      if (!m.offerId) continue;
-      const s = offerToSources.get(m.offerId) ?? new Set<string>();
-      s.add(m.dataSource ?? "unknown");
-      offerToSources.set(m.offerId, s);
-    }
-    let duplicatesAcrossSources = 0;
-    for (const s of offerToSources.values()) if (s.size > 1) duplicatesAcrossSources++;
+    // Diagnose the prior 10/10 shadow miss:
+    // For each requested `getpawsy_<uuid>`, check whether Merchant actually holds
+    // the bare `<uuid>` variant (via annotated rows).
+    const shadowSampleOfferIds = legacyRows
+      .filter((l) => l.offerId.startsWith("getpawsy_"))
+      .slice(0, 10)
+      .map((l) => l.offerId);
+    const shadowMissExplanation = shadowSampleOfferIds.map((rawOffer) => {
+      const uuid = normalizeLocalUuid(rawOffer);
+      const bareInMerchant = uuid
+        ? annotated.find((a) => a.rawOfferId === uuid) ?? null
+        : null;
+      const prefixedInMerchant = annotated.find((a) => a.rawOfferId === rawOffer) ?? null;
+      return {
+        requestedOfferId: rawOffer,
+        normalizedLocalUuid: uuid,
+        prefixedFoundInMerchant: !!prefixedInMerchant,
+        bareUuidFoundInMerchant: !!bareInMerchant,
+        merchantResourceForBare: bareInMerchant?.row.resourceName ?? null,
+        merchantDataSourceTypeForBare: bareInMerchant?.dataSourceType ?? null,
+      };
+    });
 
-    // 9. Differences in language/feedLabel (per shared offerId).
-    let langOrFeedLabelDivergence = 0;
-    const merchantByOffer = new Map<string, MerchantRow>();
-    for (const m of merchantRows) if (m.offerId && !merchantByOffer.has(m.offerId)) merchantByOffer.set(m.offerId, m);
-    for (const l of legacyRows) {
-      const m = merchantByOffer.get(l.offerId);
-      if (!m) continue;
-      const langDiff = l.contentLanguage && m.contentLanguage && l.contentLanguage !== m.contentLanguage;
-      const feedDiff = l.targetCountry && m.feedLabel && l.targetCountry !== m.feedLabel;
-      if (langDiff || feedDiff) langOrFeedLabelDivergence++;
-    }
-
-    // 10. Differences caused by obsolete slugs or URLs.
-    let obsoleteLinkDivergence = 0;
-    for (const m of merchantRows) {
-      const uuid = m.offerId.startsWith("getpawsy_") ? m.offerId.slice("getpawsy_".length) : "";
-      const local = uuid ? localById.get(uuid) : undefined;
-      if (!local || !m.link) continue;
-      if (!m.link.includes(`/${local.slug}`)) obsoleteLinkDivergence++;
-    }
+    // Totals.
+    const uniqueMerchantResources = new Set(annotated.map((a) => a.row.resourceName)).size;
+    const uniqueLocalUuidsRepresentedInMerchant = merchantLocalUuids.size;
+    const uniqueLocalProductsRepresented = Array.from(merchantLocalUuids).filter((u) => localById.has(u)).length;
+    const trueUnmappedMerchant = identity.MERCHANT_NO_LOCAL_MAPPING;
 
     const summary = {
       merchantApiV1Count: merchantRows.length,
       contentApiV21Count: legacyRows.length,
       localActiveCount: localById.size,
-      counts: {
-        exactOfferMatch,
-        sameLocalDifferentOfferId,
-        attribution,
-        legacyMissingFromMerchant,
-        merchantNoLocalMapping,
-        duplicatesAcrossSources,
-        langOrFeedLabelDivergence,
-        obsoleteLinkDivergence,
+      identityBuckets: identity,
+      legacyNoMerchantMapping: LEGACY_NO_MERCHANT_MAPPING,
+      attribution,
+      sourcePairMatrix,
+      totals: {
+        uniqueMerchantResources,
+        uniqueLocalUuidsRepresentedInMerchant,
+        uniqueLocalProductsRepresented,
+        duplicateLocalIdentities: semanticDuplicates.length,
+        trueUnmappedMerchant,
       },
     };
 
     // Trim per-product samples to keep payload safe (< ~200 KB).
-    const merchantSample = merchantRows.slice(0, 200).map((m) => ({
-      resourceName: m.resourceName,
-      offerId: m.offerId,
-      contentLanguage: m.contentLanguage,
-      feedLabel: m.feedLabel,
-      dataSource: m.dataSource,
-      dataSourceType: (m.dataSource ? dataSourceMeta.get(m.dataSource)?.type : null) ?? null,
-      title: m.title?.slice(0, 120) ?? null,
-      link: m.link,
-      availability: m.availability,
-      channel: m.channel,
+    const merchantSample = annotated.slice(0, 200).map((a) => ({
+      resourceName: a.row.resourceName,
+      rawOfferId: a.rawOfferId,
+      normalizedLocalUuid: a.normalizedLocalUuid,
+      hasGetpawsyPrefix: a.hasGetpawsyPrefix,
+      exactLocalProductExists: a.exactLocalProductExists,
+      contentLanguage: a.row.contentLanguage,
+      feedLabel: a.row.feedLabel,
+      dataSource: a.row.dataSource,
+      dataSourceType: a.dataSourceType,
+      title: a.row.title?.slice(0, 120) ?? null,
+      link: a.row.link,
+      availability: a.row.availability,
+      channel: a.row.channel,
     }));
 
     mlog("recon_ok", { corrId, ...summary });
@@ -302,6 +401,8 @@ Deno.serve(async (req) => {
       summary,
       dataSources: Array.from(dsBreakdown.entries()).map(([name, v]) => ({ name, ...v })),
       merchantProductsSample: merchantSample,
+      semanticDuplicates: semanticDuplicates.slice(0, 100),
+      shadowMissExplanation,
       legacyEnumError,
       readOnly: true,
       mutations: 0,
