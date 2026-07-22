@@ -75,6 +75,57 @@ function isTestish(name: string, slug: string): boolean {
   return /(test|stripe|internal_qa|__internal|qa[-_ ])/i.test(s);
 }
 
+type SchemaFindings = { errors: string[]; warnings: string[] };
+
+export function validateWireBody(
+  wire: Record<string, unknown>,
+  original: Record<string, unknown>,
+): SchemaFindings {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Required top-level identifiers
+  for (const k of ["offerId", "contentLanguage", "feedLabel", "productAttributes"]) {
+    if (!(k in wire)) errors.push(`missing_required_top_level_field:${k}`);
+  }
+  if (typeof wire.offerId === "string") {
+    if (!/^[a-zA-Z0-9._~-]{1,150}$/.test(wire.offerId)) {
+      errors.push("offerId_charset_or_length_invalid");
+    }
+  }
+  if (wire.contentLanguage !== "en") warnings.push("contentLanguage_not_en");
+  if (wire.feedLabel !== "US") warnings.push("feedLabel_not_US");
+
+  // Forbidden legacy fields must NOT appear on wire body
+  for (const k of FORBIDDEN_PRODUCT_INPUT_KEYS) {
+    if (k in wire) errors.push(`forbidden_legacy_field_on_wire:${k}`);
+    if (k in original && k !== "attributes") warnings.push(`forbidden_legacy_field_stripped:${k}`);
+  }
+
+  const pa = (wire.productAttributes ?? {}) as Record<string, unknown>;
+  for (const k of ["title", "description", "link", "imageLink", "availability", "condition", "price"]) {
+    if (!(k in pa)) errors.push(`missing_required_productAttribute:${k}`);
+  }
+  if (typeof pa.link === "string" && !/^https:\/\//i.test(pa.link)) errors.push("link_not_https");
+  if (typeof pa.imageLink === "string" && !/^https:\/\//i.test(pa.imageLink)) errors.push("imageLink_not_https");
+  const allowedAvailability = ["in_stock", "out_of_stock", "preorder", "backorder"];
+  if (typeof pa.availability === "string" && !allowedAvailability.includes(pa.availability)) {
+    errors.push(`availability_enum_invalid:${pa.availability}`);
+  }
+  const allowedCondition = ["new", "refurbished", "used"];
+  if (typeof pa.condition === "string" && !allowedCondition.includes(pa.condition)) {
+    errors.push(`condition_enum_invalid:${pa.condition}`);
+  }
+  const price = pa.price as { amountMicros?: unknown; currencyCode?: unknown } | undefined;
+  if (price) {
+    if (typeof price.amountMicros !== "string" || !/^-?\d+$/.test(price.amountMicros)) {
+      errors.push("price_amountMicros_not_string_integer");
+    }
+    if (price.currencyCode !== "USD") errors.push("price_currencyCode_not_USD");
+  }
+  return { errors, warnings };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
