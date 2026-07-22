@@ -121,7 +121,9 @@ function ResultBlock({ title, result }: { title: string; result: InvocationResul
     : result.status === 403 && result.body && typeof result.body === 'object'
       ? `403 — ${(result.body as any).code ?? (result.body as any).error ?? 'forbidden'}`
       : result.status === null
-        ? `Network/CORS error — ${result.error ?? 'fetch failed before reaching the function'}`
+        ? (result.error?.startsWith('client_timeout') || result.error?.includes('AbortError'))
+          ? `Client timeout — the request was aborted before the server responded (${result.error}). Wait ~30 seconds and try again.`
+          : `Network error — ${result.error ?? 'fetch failed before reaching the function'}`
         : null;
 
   return (
@@ -250,8 +252,9 @@ export function MerchantApiProbePanel() {
       try { parsed = text ? JSON.parse(text) : null; } catch { /* keep text */ }
       return { status: res.status, body: parsed };
     } catch (err) {
+      const aborted = err instanceof Error && err.name === 'AbortError';
       const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      return { status: null, body: null, error: msg };
+      return { status: null, body: null, error: aborted ? 'client_timeout_30s' : msg };
     } finally { clearTimeout(timeout); }
   };
 
@@ -320,11 +323,14 @@ export function MerchantApiProbePanel() {
   // READ-ONLY: polls Merchant API for the processed Product of the existing
   // canary offer. Never invokes productInputs.insert / delete / update.
   const runCanaryVerify = async () => {
-    if (!probeAllowed) return;
+    if (!probeAllowed || verifyRunning) return; // prevent concurrent clicks
     setVerifyRunning(true);
-    const r = await directPost('merchant-api-canary-verify', {});
-    setVerifyResult(r);
-    setVerifyRunning(false);
+    try {
+      const r = await directPost('merchant-api-canary-verify', {});
+      setVerifyResult(r);
+    } finally {
+      setVerifyRunning(false);
+    }
   };
 
   return (
