@@ -162,8 +162,10 @@ export function MerchantApiProbePanel() {
   const { user } = useAuth();
   const [probeResult, setProbeResult] = useState<InvocationResult | null>(null);
   const [shadowResult, setShadowResult] = useState<InvocationResult | null>(null);
+  const [reconResult, setReconResult] = useState<InvocationResult | null>(null);
   const [probeRunning, setProbeRunning] = useState(false);
   const [shadowRunning, setShadowRunning] = useState(false);
+  const [reconRunning, setReconRunning] = useState(false);
 
   const signedIn = !!user;
   const adminMatch = user?.id === MERCHANT_ADMIN_USER_ID;
@@ -205,6 +207,14 @@ export function MerchantApiProbePanel() {
     const r = await directFetchFn('merchant-api-shadow');
     setShadowResult(r);
     setShadowRunning(false);
+  };
+
+  const runRecon = async () => {
+    if (!probeAllowed || !probeOk) return;
+    setReconRunning(true);
+    const r = await directFetchFn('merchant-api-reconciliation');
+    setReconResult(r);
+    setReconRunning(false);
   };
 
   return (
@@ -258,10 +268,26 @@ export function MerchantApiProbePanel() {
             {shadowRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             Run Merchant API Shadow Comparison
           </Button>
+          <Button
+            onClick={runRecon}
+            variant="secondary"
+            disabled={!probeAllowed || !probeOk || reconRunning}
+            title={
+              !probeAllowed
+                ? 'Requires signed-in merchant admin with read flag enabled and write/delete disabled'
+                : !probeOk
+                  ? 'Run the probe successfully first (HTTP 200 + ok:true JSON)'
+                  : ''
+            }
+          >
+            {reconRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+            Run Full Product ID Reconciliation
+          </Button>
         </div>
 
         {probeResult && <ResultBlock title="merchant-api-probe" result={probeResult} />}
         {shadowResult && <ResultBlock title="merchant-api-shadow" result={shadowResult} />}
+        {reconResult && <ResultBlock title="merchant-api-reconciliation" result={reconResult} />}
 
         {!adminMatch && signedIn && (
           <p className="text-xs text-muted-foreground">
