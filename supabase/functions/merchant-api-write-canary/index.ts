@@ -46,7 +46,9 @@ type Verdict =
   | "MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED"
   | "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE"
   | "MERCHANT_V1_CANARY_ABORTED_SAFETY_GATE"
-  | "MERCHANT_V1_CANARY_PREVIEW_OK";
+  | "MERCHANT_V1_CANARY_PREVIEW_OK"
+  | "MERCHANT_V1_CANARY_VALIDATION_OK"
+  | "MERCHANT_V1_CANARY_VALIDATION_FAILED";
 
 function canaryEnabled(): boolean {
   return Deno.env.get("MERCHANT_API_WRITE_CANARY_ENABLED") === "true";
@@ -307,15 +309,20 @@ Deno.serve(async (req) => {
     };
 
     if (mode === "validate") {
+      const safe = schemaFindings.errors.length === 0;
       return json({
-        ok: schemaFindings.errors.length === 0,
-        verdict: "MERCHANT_V1_CANARY_PREVIEW_OK" as Verdict,
+        ok: safe,
+        verdict: (safe
+          ? "MERCHANT_V1_CANARY_VALIDATION_OK"
+          : "MERCHANT_V1_CANARY_VALIDATION_FAILED") as Verdict,
+        mutation: "NONE_ZERO_UPSTREAM_CALLS",
         validation: {
           endpoint: "POST /products/v1/{parent=accounts/*}/productInputs:insert",
           sanitizedUrl,
           method: "POST",
           sanitizedRequestBody: wireBody,
-          schemaFindings,
+          safe,
+          schemaFindings: safe ? [] : schemaFindings.errors,
           likelyCause: schemaFindings.errors[0] ?? "no_local_schema_violations_detected",
           mutation: "NONE_ZERO_UPSTREAM_CALLS",
         },

@@ -283,12 +283,20 @@ export function MerchantApiProbePanel() {
       ? (validateResult.body as Record<string, unknown>)
       : null;
   const validateVerdict = validateBody?.verdict as string | undefined;
+  const validationObj =
+    validateBody && typeof validateBody.validation === 'object' && validateBody.validation !== null
+      ? (validateBody.validation as Record<string, unknown>)
+      : null;
+  const validationSafe = validationObj?.safe === true;
+  const validationFindings = Array.isArray(validationObj?.schemaFindings)
+    ? (validationObj!.schemaFindings as unknown[])
+    : [];
   const validateOk =
     validateResult?.status === 200 &&
     !!validateBody &&
-    validateBody.ok === true &&
-    (validateVerdict === undefined ||
-      /^(SAFE|VALID|OK|PASS)/i.test(validateVerdict));
+    validateVerdict === 'MERCHANT_V1_CANARY_VALIDATION_OK' &&
+    validationSafe &&
+    validationFindings.length === 0;
 
   const canExecuteCanary =
     probeAllowed &&
