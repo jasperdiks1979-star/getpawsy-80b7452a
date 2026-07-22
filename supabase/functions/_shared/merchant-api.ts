@@ -393,3 +393,33 @@ export class MerchantApiClient {
 export function readEnabled(): boolean { return Deno.env.get("MERCHANT_API_READ_ENABLED") === "true"; }
 export function writeEnabled(): boolean { return Deno.env.get("MERCHANT_API_WRITE_ENABLED") === "true"; }
 export function deleteEnabled(): boolean { return Deno.env.get("MERCHANT_API_DELETE_ENABLED") === "true"; }
+
+// Forbidden legacy / unsupported keys on the v1 ProductInput body.
+export const FORBIDDEN_PRODUCT_INPUT_KEYS = [
+  "channel",       // legacy Content API — v1 hoists channel into resource, defaults to ONLINE
+  "targetCountry", // legacy Content API — replaced by feedLabel
+  "attributes",    // v1beta name — replaced by productAttributes on the wire
+] as const;
+
+export type ProductInputWireBody = {
+  name?: string;
+  offerId: string;
+  contentLanguage: string;
+  feedLabel: string;
+  productAttributes: ProductInputAttributes;
+};
+
+// Build the exact v1 wire body. Strips forbidden legacy keys and moves
+// `attributes` → `productAttributes`. Extra unknown top-level keys are
+// dropped defensively so a stray field cannot trigger a 400.
+export function buildProductInputWireBody(input: ProductInput & Record<string, unknown>): ProductInputWireBody {
+  const attrs = (input.attributes ?? {}) as ProductInputAttributes;
+  const out: ProductInputWireBody = {
+    offerId: String(input.offerId),
+    contentLanguage: String(input.contentLanguage),
+    feedLabel: String(input.feedLabel),
+    productAttributes: attrs,
+  };
+  if (typeof input.name === "string" && input.name) out.name = input.name;
+  return out;
+}
