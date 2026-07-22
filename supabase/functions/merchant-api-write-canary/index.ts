@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
         mlog("canary_write_failed", { corrId, status: writeErr.status, code: writeErr.code, googleStatus: writeErr.googleError?.status });
         return json({
           ok: false,
-          verdict: "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE" as Verdict,
+          verdict: "MERCHANT_V1_CANARY_WRITE_UPSTREAM_FAILED" as Verdict,
           manifest,
           write: {
             startedAt,
@@ -362,6 +362,8 @@ Deno.serve(async (req) => {
             upstreamStatus: writeErr.status,
             upstreamCode: writeErr.code ?? null,
             googleError: writeErr.googleError ?? null,
+            mutation: "NONE_ZERO_UPSTREAM_STATE_CHANGES",
+            rollback: "NOT_PERFORMED_NO_RESOURCE_CREATED",
           },
         }, 502);
       }
@@ -419,11 +421,17 @@ Deno.serve(async (req) => {
         ? "MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED"
         : "MERCHANT_V1_CANARY_WRITE_PASSED";
     } else {
-      verdict = "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE";
+      // Upstream productInputs.insert was accepted (we have the returned
+      // resource name). Absence of the processed Product in an immediate
+      // list scan is NOT a failure — processing can take several minutes.
+      // No rollback is performed; use merchant-api-canary-verify to poll.
+      verdict = "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING";
     }
 
     return json({
-      ok: verdict !== "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE",
+      ok: verdict === "MERCHANT_V1_CANARY_WRITE_PASSED"
+        || verdict === "MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED"
+        || verdict === "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING",
       verdict,
       manifest,
       write: {
@@ -431,6 +439,10 @@ Deno.serve(async (req) => {
         insertedResourceName: inserted.name,
         startedAt,
         finishedAt,
+        rollback: "NOT_PERFORMED",
+        note: verdict === "MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING"
+          ? "productInputs.insert accepted upstream. Processed Product may take several minutes to appear. Run 'Verify existing canary processing' to poll (read-only)."
+          : undefined,
       },
       readback,
       counts: { before: baselineCount, after: postCount, delta },
