@@ -65,6 +65,7 @@ export type MerchantApiError = {
   message: string;
   retriable: boolean;
   stage?: string;
+  googleError?: GoogleApiErrorPayload;
 };
 
 export class MerchantApiClientError extends Error {
@@ -72,13 +73,40 @@ export class MerchantApiClientError extends Error {
   code?: string;
   retriable: boolean;
   stage?: string;
+  googleError?: GoogleApiErrorPayload;
   constructor(err: MerchantApiError) {
     super(err.message);
     this.status = err.status;
     this.code = err.code;
     this.retriable = err.retriable;
     this.stage = err.stage;
+    this.googleError = err.googleError;
   }
+}
+
+// Structured Google API error (google.rpc.Status shape returned as
+// `{ error: { code, message, status, details: [...] } }`).
+export type GoogleApiErrorPayload = {
+  code?: number;
+  status?: string;
+  message?: string;
+  details?: Array<Record<string, unknown>>;
+};
+
+export function parseGoogleError(body: string): GoogleApiErrorPayload | undefined {
+  try {
+    const j = JSON.parse(body) as { error?: GoogleApiErrorPayload };
+    if (j && typeof j === "object" && j.error && typeof j.error === "object") {
+      const e = j.error;
+      return {
+        code: typeof e.code === "number" ? e.code : undefined,
+        status: typeof e.status === "string" ? e.status : undefined,
+        message: typeof e.message === "string" ? redact(e.message) : undefined,
+        details: Array.isArray(e.details) ? e.details.slice(0, 20) : undefined,
+      };
+    }
+  } catch { /* not JSON */ }
+  return undefined;
 }
 
 // ── AES-GCM decrypt for stored refresh token (mirrors merchant-sync) ──
@@ -279,8 +307,14 @@ export class MerchantApiClient {
         });
       }
       const retriable = status === 429 || status >= 500;
-      lastErr = new MerchantApiClientError({ status, message: `merchant_api_${status}: ${redact(body)}`, retriable });
-      mlog("request_failed", { method, path, status, retriable });
+      const googleError = parseGoogleError(body);
+      lastErr = new MerchantApiClientError({
+        status,
+        message: `merchant_api_${status}: ${redact(body)}`,
+        retriable,
+        googleError,
+      });
+      mlog("request_failed", { method, path, status, retriable, googleStatus: googleError?.status, googleCode: googleError?.code });
       if (!retriable) throw lastErr;
       const base = 500 * Math.pow(2, attempt);
       const jitter = Math.floor(Math.random() * 250);
@@ -293,10 +327,14 @@ export class MerchantApiClient {
   async insertProductInput(input: ProductInput): Promise<{ name: string }> {
     const account = await this.resolveAccount();
     const dataSource = this.resolveDataSourceName();
+    // Merchant API v1 ProductInput body uses `productAttributes` (renamed from
+    // v1beta `attributes`). We also strip any legacy Content API `channel` /
+    // `targetCountry` keys that may be present on the input.
+    const body = buildProductInputWireBody(input);
     return this.request<{ name: string }>(
       "POST",
       `/products/v1/${account}/productInputs:insert`,
-      { query: { dataSource }, body: input, allowMutation: true },
+      { query: { dataSource }, body, allowMutation: true },
     );
   }
 
@@ -355,3 +393,33 @@ export class MerchantApiClient {
 export function readEnabled(): boolean { return Deno.env.get("MERCHANT_API_READ_ENABLED") === "true"; }
 export function writeEnabled(): boolean { return Deno.env.get("MERCHANT_API_WRITE_ENABLED") === "true"; }
 export function deleteEnabled(): boolean { return Deno.env.get("MERCHANT_API_DELETE_ENABLED") === "true"; }
+
+// Forbidden legacy / unsupported keys on the v1 ProductInput body.
+export const FORBIDDEN_PRODUCT_INPUT_KEYS = [
+  "channel",       // legacy Content API — v1 hoists channel into resource, defaults to ONLINE
+  "targetCountry", // legacy Content API — replaced by feedLabel
+  "attributes",    // v1beta name — replaced by productAttributes on the wire
+] as const;
+
+export type ProductInputWireBody = {
+  name?: string;
+  offerId: string;
+  contentLanguage: string;
+  feedLabel: string;
+  productAttributes: ProductInputAttributes;
+};
+
+// Build the exact v1 wire body. Strips forbidden legacy keys and moves
+// `attributes` → `productAttributes`. Extra unknown top-level keys are
+// dropped defensively so a stray field cannot trigger a 400.
+export function buildProductInputWireBody(input: ProductInput & Record<string, unknown>): ProductInputWireBody {
+  const attrs = (input.attributes ?? {}) as ProductInputAttributes;
+  const out: ProductInputWireBody = {
+    offerId: String(input.offerId),
+    contentLanguage: String(input.contentLanguage),
+    feedLabel: String(input.feedLabel),
+    productAttributes: attrs,
+  };
+  if (typeof input.name === "string" && input.name) out.name = input.name;
+  return out;
+}
