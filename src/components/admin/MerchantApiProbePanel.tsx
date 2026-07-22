@@ -163,6 +163,11 @@ export function MerchantApiProbePanel() {
   const [probeResult, setProbeResult] = useState<InvocationResult | null>(null);
   const [shadowResult, setShadowResult] = useState<InvocationResult | null>(null);
   const [reconResult, setReconResult] = useState<InvocationResult | null>(null);
+  const [previewResult, setPreviewResult] = useState<InvocationResult | null>(null);
+  const [writeResult, setWriteResult] = useState<InvocationResult | null>(null);
+  const [previewRunning, setPreviewRunning] = useState(false);
+  const [writeRunning, setWriteRunning] = useState(false);
+  const [confirmPhrase, setConfirmPhrase] = useState('');
   const [probeRunning, setProbeRunning] = useState(false);
   const [shadowRunning, setShadowRunning] = useState(false);
   const [reconRunning, setReconRunning] = useState(false);
@@ -215,6 +220,64 @@ export function MerchantApiProbePanel() {
     const r = await directFetchFn('merchant-api-reconciliation');
     setReconResult(r);
     setReconRunning(false);
+  };
+
+  // Dedicated direct fetch with JSON body (canary needs mode + confirm).
+  const directPost = async (name: string, body: Record<string, unknown>): Promise<InvocationResult> => {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) return { status: 401, body: null, error: 'no_session' };
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const text = await res.text();
+      let parsed: unknown = text;
+      try { parsed = text ? JSON.parse(text) : null; } catch { /* keep text */ }
+      return { status: res.status, body: parsed };
+    } catch (err) {
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      return { status: null, body: null, error: msg };
+    } finally { clearTimeout(timeout); }
+  };
+
+  const runCanaryPreview = async () => {
+    if (!probeAllowed) return;
+    setPreviewRunning(true);
+    setWriteResult(null);
+    const r = await directPost('merchant-api-write-canary', { mode: 'preview' });
+    setPreviewResult(r);
+    setPreviewRunning(false);
+  };
+
+  const previewOk =
+    previewResult?.status === 200 &&
+    !!previewResult.body &&
+    typeof previewResult.body === 'object' &&
+    (previewResult.body as { ok?: unknown }).ok === true;
+
+  const canExecuteCanary =
+    probeAllowed && previewOk && confirmPhrase === 'WRITE ONE MERCHANT CANARY';
+
+  const runCanaryWrite = async () => {
+    if (!canExecuteCanary) return;
+    setWriteRunning(true);
+    const r = await directPost('merchant-api-write-canary', {
+      mode: 'execute',
+      confirm: 'WRITE ONE MERCHANT CANARY',
+    });
+    setWriteResult(r);
+    setWriteRunning(false);
   };
 
   return (
@@ -288,6 +351,64 @@ export function MerchantApiProbePanel() {
         {probeResult && <ResultBlock title="merchant-api-probe" result={probeResult} />}
         {shadowResult && <ResultBlock title="merchant-api-shadow" result={shadowResult} />}
         {reconResult && <ResultBlock title="merchant-api-reconciliation" result={reconResult} />}
+
+        {/* ── Merchant API v1 Single-Product Write Canary ─────────────── */}
+        <div className="border-t pt-4 mt-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-semibold">
+              Merchant API v1 — Single-Product Write Canary
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Isolated, one-product write. Bulk migration is not available here.
+            Preview first; the write button unlocks only after a successful
+            preview AND the exact confirmation phrase is typed below.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={runCanaryPreview}
+              variant="secondary"
+              disabled={!probeAllowed || previewRunning}
+            >
+              {previewRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Preview canary candidate
+            </Button>
+          </div>
+          {previewResult && <ResultBlock title="canary preview" result={previewResult} />}
+          <div className="space-y-2">
+            <label htmlFor="canary-confirm" className="text-xs font-medium">
+              Type exactly <code>WRITE ONE MERCHANT CANARY</code> to enable the write button.
+            </label>
+            <input
+              id="canary-confirm"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={confirmPhrase}
+              onChange={(e) => setConfirmPhrase(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded bg-background font-mono"
+              placeholder="WRITE ONE MERCHANT CANARY"
+              disabled={!previewOk}
+            />
+            <Button
+              onClick={runCanaryWrite}
+              variant="destructive"
+              disabled={!canExecuteCanary || writeRunning}
+              title={
+                !previewOk
+                  ? 'Run preview successfully first'
+                  : confirmPhrase !== 'WRITE ONE MERCHANT CANARY'
+                    ? 'Type the exact confirmation phrase'
+                    : ''
+              }
+            >
+              {writeRunning && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Run Merchant API Single Product Write Canary
+            </Button>
+          </div>
+          {writeResult && <ResultBlock title="canary write" result={writeResult} />}
+        </div>
 
         {!adminMatch && signedIn && (
           <p className="text-xs text-muted-foreground">
