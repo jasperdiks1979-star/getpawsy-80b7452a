@@ -535,6 +535,12 @@ export function MerchantApiProbePanel() {
               Verify existing canary processing
             </Button>
             {verifyResult && <ResultBlock title="canary verify (read-only)" result={verifyResult} />}
+            {verifyResult?.body && typeof verifyResult.body === 'object' &&
+              (verifyResult.body as { verdict?: string }).verdict === 'MERCHANT_V1_CANARY_ACCEPTED_PROCESSING_PENDING' && (
+                <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  Still processing — wait 30 seconds and verify again. No re-insert is performed.
+                </div>
+              )}
           </div>
         </div>
 
