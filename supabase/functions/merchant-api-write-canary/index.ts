@@ -31,14 +31,16 @@ import {
   MerchantApiClientError,
   readEnabled,
   mlog,
+  buildProductInputWireBody,
+  FORBIDDEN_PRODUCT_INPUT_KEYS,
+  MERCHANT_API_HOST,
 } from "../_shared/merchant-api.ts";
 
 const CONTENT_LANGUAGE = "en";
 const FEED_LABEL = "US";
-const CHANNEL = "ONLINE";
 const CONFIRM_PHRASE = "WRITE ONE MERCHANT CANARY";
 
-type Mode = "preview" | "execute";
+type Mode = "preview" | "validate" | "execute";
 type Verdict =
   | "MERCHANT_V1_CANARY_WRITE_PASSED"
   | "MERCHANT_V1_CANARY_SAFE_UPDATE_PASSED"
@@ -92,6 +94,7 @@ Deno.serve(async (req) => {
       try {
         const body = (await req.json()) as { mode?: string; confirm?: string };
         if (body?.mode === "execute") mode = "execute";
+        else if (body?.mode === "validate") mode = "validate";
         confirm = typeof body?.confirm === "string" ? body.confirm : "";
       } catch { /* empty body → preview */ }
     }
@@ -218,11 +221,16 @@ Deno.serve(async (req) => {
       offerId,
       contentLanguage: CONTENT_LANGUAGE,
       feedLabel: FEED_LABEL,
-      channel: CHANNEL,
       attributes,
     };
+    const wireBody = buildProductInputWireBody(productInput);
+    // Sanitized URL exactly as the client will call it (no token in URL).
+    const sanitizedUrl =
+      `${MERCHANT_API_HOST}/products/v1/${account}/productInputs:insert` +
+      `?dataSource=${encodeURIComponent(dataSource)}`;
+    const schemaFindings = validateWireBody(wireBody, productInput);
 
-    const payloadFingerprint = await sha256(JSON.stringify(productInput));
+    const payloadFingerprint = await sha256(JSON.stringify(wireBody));
     const preWriteVerdict = canonicalPresent ? "SAFE_UPDATE" : "SAFE_INSERT";
 
     const manifest = {
@@ -233,7 +241,6 @@ Deno.serve(async (req) => {
       offerId,
       contentLanguage: CONTENT_LANGUAGE,
       feedLabel: FEED_LABEL,
-      channel: CHANNEL,
       localProduct: {
         id: prod.id, slug: prod.slug, name: prod.name, price: prod.price,
         stock: prod.stock, availability: prod.availability, brand: prod.brand,
@@ -248,6 +255,23 @@ Deno.serve(async (req) => {
       preWriteVerdict,
     };
 
+    if (mode === "validate") {
+      return json({
+        ok: schemaFindings.errors.length === 0,
+        verdict: "MERCHANT_V1_CANARY_PREVIEW_OK" as Verdict,
+        validation: {
+          endpoint: "POST /products/v1/{parent=accounts/*}/productInputs:insert",
+          sanitizedUrl,
+          method: "POST",
+          sanitizedRequestBody: wireBody,
+          schemaFindings,
+          likelyCause: schemaFindings.errors[0] ?? "no_local_schema_violations_detected",
+          mutation: "NONE_ZERO_UPSTREAM_CALLS",
+        },
+        manifest,
+      });
+    }
+
     if (mode === "preview") {
       return json({ ok: true, verdict: "MERCHANT_V1_CANARY_PREVIEW_OK" as Verdict, manifest });
     }
@@ -261,12 +285,20 @@ Deno.serve(async (req) => {
     } catch (writeErr) {
       const finishedAt = new Date().toISOString();
       if (writeErr instanceof MerchantApiClientError) {
-        mlog("canary_write_failed", { corrId, status: writeErr.status, code: writeErr.code });
+        mlog("canary_write_failed", { corrId, status: writeErr.status, code: writeErr.code, googleStatus: writeErr.googleError?.status });
         return json({
           ok: false,
           verdict: "MERCHANT_V1_CANARY_WRITE_FAILED_ROLLED_BACK_OR_NO_CHANGE" as Verdict,
           manifest,
-          write: { startedAt, finishedAt, upstreamStatus: writeErr.status, upstreamCode: writeErr.code ?? null },
+          write: {
+            startedAt,
+            finishedAt,
+            sanitizedUrl,
+            sanitizedRequestBody: wireBody,
+            upstreamStatus: writeErr.status,
+            upstreamCode: writeErr.code ?? null,
+            googleError: writeErr.googleError ?? null,
+          },
         }, 502);
       }
       throw writeErr;
