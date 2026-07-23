@@ -29,6 +29,10 @@ function sanitize(body: any) {
     total: body?.data?.total ?? (Array.isArray(list) ? list.length : null),
     resultCount: Array.isArray(list) ? list.length : (body?.data ? 1 : 0),
   };
+  // Preserve raw data for stock/freight-style responses whose shape isn't list/variants.
+  if (body?.data && !Array.isArray(list) && !Array.isArray(body?.data?.variants)) {
+    summary.rawData = body.data;
+  }
   if (Array.isArray(list)) {
     summary.sample = list.slice(0, 5).map((r: any) => ({
       pid: r?.pid ?? r?.productId ?? null,
