@@ -116,6 +116,21 @@ Deno.serve(async (req) => {
       "B6_product/stock/queryBySku",
       `/product/stock/queryBySku?sku=${encodeURIComponent(TARGET_SKU)}`,
     );
+    // B7 product/query by productSku
+    await attempt(
+      "B7_product/query?productSku",
+      `/product/query?productSku=${encodeURIComponent(TARGET_SKU)}`,
+    );
+    // B8 parent-SKU derivation: strip trailing 2 digits + 2 letters (e.g. 01AZ)
+    const parentSku = TARGET_SKU.replace(/\d{2}[A-Z]{2}$/i, "");
+    await attempt(
+      `B8_product/list?productSku=parent(${parentSku})`,
+      `/product/list?productSku=${encodeURIComponent(parentSku)}&pageNum=1&pageSize=30`,
+    );
+    await attempt(
+      `B9_product/query?productSku=parent(${parentSku})`,
+      `/product/query?productSku=${encodeURIComponent(parentSku)}`,
+    );
 
     // Iterate any candidate pids discovered in any attempt, byte-equal match variantSku
     const candidatePids = new Set<string>();
