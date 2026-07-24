@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
     const phase1 = await shopifyPhase1();
     const shop = phase1.response?.data?.shop;
     const product = phase1.response?.data?.product;
-    const variant = phase1.response?.data?.variant;
+    const variant = phase1.response?.data?.productVariant;
 
     const marketDetail = await shopifyUsMarketDetail();
 
