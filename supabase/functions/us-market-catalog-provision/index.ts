@@ -192,8 +192,7 @@ async function createCatalog() {
     title: CATALOG_TITLE,
     status: "ACTIVE",
     context: {
-      contextType: "MARKET",
-      marketsIds: [US_MARKET_GID],
+      marketIds: [US_MARKET_GID],
     },
   };
   return await shopifyAdminFetch<any>(q, { input });
@@ -366,7 +365,7 @@ Deno.serve(async (req) => {
       checks: pf.checks,
       allGatesPass: pf.allGatesPass,
       plannedMutations: [
-        "catalogCreate(input: {title, status: ACTIVE, context: {contextType: MARKET, marketsIds: [US_MARKET_GID]}})",
+        "catalogCreate(input: {title, status: ACTIVE, context: {marketIds: [US_MARKET_GID]}})  // MarketCatalog",
         "priceListCreate(input: {name, currency: USD, catalogId, parent: {adjustment: {type: PERCENTAGE_INCREASE, value: 0}}})",
         "priceListFixedPricesAdd(priceListId, prices: [{variantId, price:{amount:99.00, currencyCode:USD}}])  // compareAtPrice omitted",
       ],
@@ -375,7 +374,7 @@ Deno.serve(async (req) => {
         "No publicationCreate / publishablePublish → product remains DRAFT, publications=0",
         "No inventoryAdjustQuantities / inventorySetOnHandQuantities → quantity 0 / DENY preserved",
         "priceListFixedPricesAdd targets exactly ONE variantId → no other products, no other markets",
-        "catalogCreate context is scoped to marketsIds=[US_MARKET_GID] only",
+        "catalogCreate context is scoped to marketIds=[US_MARKET_GID] only",
         "No CJ mutations; no catalog_recovery_mappings writes",
       ],
       rawShopErrors: pf.rawErrors,
