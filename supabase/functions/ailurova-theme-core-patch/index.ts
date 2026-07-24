@@ -108,8 +108,11 @@ async function readThemeFiles(themeGid: string, filenames: readonly string[]) {
 }
 
 async function themeMeta(themeGid: string) {
-  const q = `query($id: ID!) { theme(id: $id) { id role name updatedAt previewable } }`;
-  return await shopifyAdminFetch<any>(q, { id: themeGid });
+  const numeric = themeGid.split("/").pop();
+  const r = await shopifyAdminRest<{ theme: any }>(`themes/${numeric}.json`);
+  const t = r.data?.theme;
+  const norm = t ? { id: `gid://shopify/OnlineStoreTheme/${t.id}`, role: String(t.role ?? "").toUpperCase(), name: t.name, updatedAt: t.updated_at, previewable: t.previewable } : null;
+  return { data: { theme: norm }, status: r.status };
 }
 
 function decodeBody(body: any): string | null {
