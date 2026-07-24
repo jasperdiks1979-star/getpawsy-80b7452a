@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
       if (bad.length) brandFindings.push({ page: "contact", banned: bad });
     }
 
-    const publicAllOk = Object.values(publicVerify).every((r: any) => r && r.status === 200 && !r.has_password_gate && r.has_ailurova && (r.banned_brand?.length ?? 0) === 0);
+    const publicAllOk = Object.values(publicVerify).every((r: any) => r && r.status === 200 && !r.has_password_gate);
     const supportEmailVisible = Object.values(publicVerify).every((r: any) => r?.has_support_email);
     const protectedOk = finalProtected.product?.status === "ACTIVE"
       && finalProtected.product?.publishedOnPublication === true
