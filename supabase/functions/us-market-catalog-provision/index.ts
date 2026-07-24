@@ -448,6 +448,10 @@ Deno.serve(async (req) => {
           : "BLOCKED_NO_MUTATION",
         phase3: readbackReport,
         phase4: presentment,
+        debug: {
+          rawPriceListPrices: allPriceNodes,
+          fixedNodes,
+        },
         mutations,
       }), { status: 200, headers: jsonHeaders });
     }
