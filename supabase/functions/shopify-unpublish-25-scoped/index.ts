@@ -150,8 +150,8 @@ Deno.serve(async (req) => {
         });
       }
       // Loose title guard: expected hint substring must appear.
-      const hint = t.expectedTitleHint.replace(/"/g, "").toLowerCase();
-      const gotTitle = snap.title.toLowerCase();
+      const hint = t.expectedTitleHint.replace(/["']/g, "").toLowerCase();
+      const gotTitle = snap.title.replace(/["']/g, "").toLowerCase();
       const titleOk = gotTitle.includes(hint.split(" ").slice(0, 3).join(" "));
       preflight[t.gid] = {
         id: snap.id,
