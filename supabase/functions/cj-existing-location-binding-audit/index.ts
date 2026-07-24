@@ -25,7 +25,7 @@ async function phase1_locations() {
       edges { node {
         id name isActive legacyResourceId fulfillsOnlineOrders
         address { country countryCode }
-        fulfillmentService { handle serviceName type inventoryManagement permitsSkuSharing }
+        fulfillmentService { handle serviceName type inventoryManagement }
         localPickupSettingsV2 { instructions }
       } }
     }
