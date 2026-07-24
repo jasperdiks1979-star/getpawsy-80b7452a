@@ -301,6 +301,120 @@ async function shapeAudit() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// execute-batch2 — Remove product_recommendations section from templates/product.json.
+//
+// This is the ONLY execute path currently enabled. It is deliberately narrow:
+//   * it does not compose new sections (no schema guessing),
+//   * it only removes an approved-for-removal section,
+//   * it re-reads and verifies live theme was untouched.
+// All other batches require additional shape verification and are refused here.
+// ---------------------------------------------------------------------------
+
+async function themeFilesUpsert(themeGid: string, files: Array<{ filename: string; body: { type: "TEXT"; value: string } }>) {
+  const m = `mutation($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
+    themeFilesUpsert(themeId: $themeId, files: $files) {
+      upsertedThemeFiles { filename }
+      userErrors { field message code }
+    }
+  }`;
+  return await shopifyAdminFetch<any>(m, { themeId: themeGid, files });
+}
+
+async function executeBatch2() {
+  const startedAt = new Date().toISOString();
+  const [tBefore, lBefore] = await Promise.all([themeMeta(TARGET_THEME_GID), themeMeta(LIVE_THEME_GID)]);
+  if (!tBefore || tBefore.role !== "UNPUBLISHED") {
+    return { verdict: "LIVE_THEME_SAFETY_FAILURE", reason: "target not UNPUBLISHED", themes: { target: tBefore, live: lBefore } };
+  }
+  if (!lBefore || lBefore.role !== "MAIN") {
+    return { verdict: "LIVE_THEME_SAFETY_FAILURE", reason: "live not MAIN", themes: { target: tBefore, live: lBefore } };
+  }
+
+  // 1. Read current product.json.
+  const rd = await readThemeFiles(TARGET_THEME_GID, ["templates/product.json"]);
+  const node = rd.data?.theme?.files?.nodes?.[0];
+  const raw = decodeBody(node?.body);
+  if (!raw) return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "cannot read templates/product.json" };
+
+  let parsed: any;
+  try { parsed = JSON.parse(stripJsonc(raw)); }
+  catch (e: any) { return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "parse fail: " + String(e?.message ?? e) }; }
+
+  const beforeOrder: string[] = Array.isArray(parsed?.order) ? [...parsed.order] : [];
+  const beforeSectionIds = Object.keys(parsed?.sections ?? {});
+  const recIds = beforeSectionIds.filter(id => {
+    const t = parsed.sections?.[id]?.type;
+    return t === "product-recommendations";
+  });
+  if (recIds.length === 0) {
+    return {
+      verdict: "AILUROVA_HORIZON_DRAFT_PARTIAL",
+      reason: "no product-recommendations section found in templates/product.json — nothing to remove",
+      themes: { target: tBefore, live: lBefore },
+      beforeOrder, beforeSectionIds,
+    };
+  }
+
+  // 2. Remove recommendations from sections and order.
+  const nextSections: Record<string, any> = { ...parsed.sections };
+  for (const id of recIds) delete nextSections[id];
+  const nextOrder = beforeOrder.filter(id => !recIds.includes(id));
+  const next = { ...parsed, sections: nextSections, order: nextOrder };
+  const nextRaw = JSON.stringify(next, null, 2) + "\n";
+
+  // 3. Write.
+  const wr = await themeFilesUpsert(TARGET_THEME_GID, [
+    { filename: "templates/product.json", body: { type: "TEXT", value: nextRaw } },
+  ]);
+  const uErr = wr.data?.themeFilesUpsert?.userErrors ?? [];
+  if (uErr.length) {
+    return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "userErrors", userErrors: uErr };
+  }
+
+  // 4. Read-back verify.
+  const rd2 = await readThemeFiles(TARGET_THEME_GID, ["templates/product.json"]);
+  const raw2 = decodeBody(rd2.data?.theme?.files?.nodes?.[0]?.body) ?? "";
+  let parsed2: any = null;
+  try { parsed2 = JSON.parse(stripJsonc(raw2)); } catch {}
+  const stillHasRec = parsed2 && Object.values(parsed2.sections ?? {}).some((s: any) => s?.type === "product-recommendations");
+  const persisted = parsed2 && !stillHasRec;
+
+  // 5. Live theme untouched?
+  const [tAfter, lAfter] = await Promise.all([themeMeta(TARGET_THEME_GID), themeMeta(LIVE_THEME_GID)]);
+  const liveUntouched = lAfter?.updatedAt === lBefore.updatedAt;
+
+  if (!liveUntouched) {
+    return {
+      verdict: "LIVE_THEME_SAFETY_FAILURE",
+      reason: "live theme updatedAt changed during execute-batch2",
+      before: { target: tBefore, live: lBefore },
+      after:  { target: tAfter,  live: lAfter },
+    };
+  }
+  if (!persisted) {
+    return {
+      verdict: "THEME_PERSISTENCE_VERIFICATION_FAILED",
+      reason: "product-recommendations still present after write, or product.json unreadable",
+      readBackOrder: parsed2?.order ?? null,
+    };
+  }
+
+  return {
+    verdict: "AILUROVA_HORIZON_DRAFT_PARTIAL",
+    mode: "execute-batch2",
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    filesChanged: ["templates/product.json"],
+    removedSectionIds: recIds,
+    beforeOrder,
+    afterOrder: parsed2?.order ?? [],
+    themes: { before: { target: tBefore, live: lBefore }, after: { target: tAfter, live: lAfter } },
+    mutationLedger: { themeFilesUpsertCalls: 1, filesUpserted: 1, productMutations: 0, priceMutations: 0, inventoryMutations: 0 },
+    liveTheme: { untouched: liveUntouched },
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -310,6 +424,12 @@ Deno.serve(async (req) => {
 
   try {
     if (mode === "shape-audit") return json(await shapeAudit());
+    if (mode === "execute-batch2") {
+      if (body?.confirm !== CONFIRM_TOKEN) {
+        return json({ verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "missing confirm token", expectedConfirm: CONFIRM_TOKEN }, 400);
+      }
+      return json(await executeBatch2());
+    }
     if (mode.startsWith("execute-")) {
       if (body?.confirm !== CONFIRM_TOKEN) {
         return json({
