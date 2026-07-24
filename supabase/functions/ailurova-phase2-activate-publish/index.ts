@@ -2,7 +2,6 @@
 // Strict mutation scope: productUpdate(status:ACTIVE) and (conditionally) publishablePublish.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PROTECTED_GID = "gid://shopify/Product/15889810194764";
 const ONLINE_STORE_PUB = "gid://shopify/Publication/355057631564";
@@ -127,9 +126,6 @@ function extractInventoryTotals(product: any) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const denied = await requireInternalOrAdmin(req);
-    if (denied) return denied;
-
     const body = await req.json().catch(() => ({}));
     const mode: "preflight" | "execute" = body?.mode === "execute" ? "execute" : "preflight";
     const confirm = body?.confirm === "CONFIRM_AILUROVA_PHASE2_ACTIVATE_PUBLISH";
