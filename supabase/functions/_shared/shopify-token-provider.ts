@@ -134,3 +134,29 @@ export async function shopifyAdminFetch<T = unknown>(
   try { payload = await res.json(); } catch { /* ignore */ }
   return { ...payload, status };
 }
+
+/** Server-side Admin REST fetcher. Retries once on 401. */
+export async function shopifyAdminRest<T = unknown>(
+  path: string,
+  init: { method?: string; body?: unknown } = {},
+): Promise<{ data?: T; status: number; text?: string }> {
+  const { domain, apiVersion } = getShopifyConfig();
+  const url = `https://${domain}/admin/api/${apiVersion}/${path.replace(/^\//, "")}`;
+  const method = init.method ?? "GET";
+  const doCall = async (tok: string) => fetch(url, {
+    method,
+    headers: {
+      "X-Shopify-Access-Token": tok,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: init.body != null ? JSON.stringify(init.body) : undefined,
+  });
+  let t = await getFreshToken();
+  let res = await doCall(t.token);
+  if (res.status === 401) { t = await getFreshToken(true); res = await doCall(t.token); }
+  const text = await res.text();
+  let data: T | undefined;
+  try { data = JSON.parse(text) as T; } catch { /* ignore */ }
+  return { data, status: res.status, text };
+}
