@@ -18,8 +18,6 @@ const Q_PRODUCT = `query($id: ID!) {
   product(id: $id) {
     id title handle status vendor productType tags totalInventory tracksInventory
     onlineStoreUrl onlineStorePreviewUrl
-    publishedOnCurrentPublication
-    resourcePublicationsCount { count }
     resourcePublications(first: 25) {
       edges { node { publication { id name } isPublished publishDate } }
     }
@@ -47,19 +45,18 @@ const Q_CTX = `query($id: ID!) {
 }`;
 
 const Q_SHOP = `{ shop { name primaryDomain { url host } currencyCode myshopifyDomain
-  paymentSettings { supportedDigitalWallets acceptedCardBrands countryCode currencyCode }
+  paymentSettings { supportedDigitalWallets }
   contactEmail email }
   markets(first: 20) { edges { node { id name enabled primary regions(first:5){edges{node{name}}}
     webPresence { rootUrls { url locale } } } } }
   locations(first: 25) { edges { node { id name isActive fulfillsOnlineOrders shipsInventory
     fulfillmentService { serviceName handle type } address { country city } } } }
   publications: publications(first: 20) { edges { node { id name } } }
-  fulfillmentServices { serviceName handle type location { id name } }
 }`;
 
 const Q_PUBLISHED = `{
   products(first: 25, query: "status:active") {
-    edges { node { id title handle status publishedOnCurrentPublication } }
+    edges { node { id title handle status } }
   }
 }`;
 
@@ -131,6 +128,7 @@ Deno.serve(async (req) => {
 
     // -- Phase 2 Checkout --
     const ctx = cRes.data?.productVariant?.contextualPricing;
+    const pubEdges = product?.resourcePublications?.edges ?? [];
     report.phase2_checkout = {
       us_price: ctx?.price ?? null,
       us_compare_at: ctx?.compareAtPrice ?? null,
@@ -144,12 +142,12 @@ Deno.serve(async (req) => {
       us_market_web_presence: usMarket?.webPresence ?? null,
       us_market_enabled: usMarket?.enabled ?? null,
       product_status: product?.status,
-      product_published_on_current: product?.publishedOnCurrentPublication,
-      publication_count: product?.resourcePublicationsCount?.count ?? 0,
-      publications_of_product: (product?.resourcePublications?.edges ?? []).map((e: any) => ({
+      publication_count: pubEdges.filter((e: any) => e.node.isPublished).length,
+      publications_of_product: pubEdges.map((e: any) => ({
         publication: e.node.publication?.name, id: e.node.publication?.id,
         is_published: e.node.isPublished, publish_date: e.node.publishDate,
       })),
+      all_publications: publications,
     };
 
     // -- Phase 3 Fulfillment --
