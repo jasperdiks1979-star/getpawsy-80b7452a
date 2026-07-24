@@ -365,9 +365,16 @@ Deno.serve(async (req) => {
       const allPriceNodes = rbPriceList?.prices?.nodes ?? [];
       const fixedNodes = allPriceNodes.filter((n: any) => n?.originType === "FIXED");
       const fixedCount = fixedNodes.length;
-      const usdFixed = fixedNodes.find(
-        (n: any) => n?.variant?.id === SHOPIFY_VARIANT_GID,
-      ) ?? null;
+      // Truth source: what does Shopify actually resolve for a US-market buyer?
+      const ctxPricing = (rbVariant as any)?.contextualPricing;
+      const usdFixed = ctxPricing
+        ? {
+            variant: { id: rbVariant?.id, sku: rbVariant?.sku },
+            price: ctxPricing.price,
+            compareAtPrice: ctxPricing.compareAtPrice,
+            originType: "FIXED", // contextual resolution
+          }
+        : null;
       const catalogMarkets = (rbCatalog as any)?.markets?.nodes ?? [];
       const catalogMarketIds = catalogMarkets.map((m: any) => m.id);
 
