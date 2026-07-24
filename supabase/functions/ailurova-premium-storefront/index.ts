@@ -563,10 +563,20 @@ Deno.serve(async (req) => {
       assets_count: assets.length,
       section_types_present: sectionTypesPresent,
       section_types_missing: sectionTypesMissing,
+      all_section_types: assets
+        .filter(a => a.startsWith("sections/") && a.endsWith(".liquid"))
+        .map(a => a.replace(/^sections\//, "").replace(/\.liquid$/, "")),
+      all_block_types: assets
+        .filter(a => a.startsWith("blocks/") && a.endsWith(".liquid"))
+        .map(a => a.replace(/^blocks\//, "").replace(/\.liquid$/, "")),
       files_read: Object.fromEntries(Object.entries(filesRead).map(([k, v]) => [k, { found: v.found, size: v.raw?.length ?? 0, parseable: v.parsed !== null }])),
       current_index_sections: idxSectionsBefore,
       current_product_sections: productSectionsBefore,
       legacy_brand_hits: legacyHits,
+      current_index_json: filesRead["templates/index.json"].parsed,
+      current_product_json: filesRead["templates/product.json"].parsed,
+      current_header_group_json: filesRead["sections/header-group.json"].parsed,
+      current_footer_group_json: filesRead["sections/footer-group.json"].parsed,
     };
 
     if (mode === "audit") { report.verdict = "AILUROVA_PREMIUM_DRAFT_AUDIT_ONLY"; return json(report); }
