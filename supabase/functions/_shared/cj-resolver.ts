@@ -9,7 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const CJ_RESOLVER_VERSION = "cj-resolver@1.0.0-canonical";
+export const CJ_RESOLVER_VERSION = "cj-resolver@1.1.0-parent-fallback";
 export const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -50,9 +50,28 @@ export interface CjResolveResult {
   http: Record<string, number>;
   codes: Record<string, unknown>;
   requests: number;
+  parentSkuUsed?: string | null;
 }
 
 export interface CjBudget { reqs: number; max: number }
+
+/**
+ * Conservative CJ variant-suffix → parent SKU derivation.
+ *
+ * Only matches CJ SKUs of the form:
+ *   <ALPHA prefix><digits><two-digit variant index><two uppercase letters>
+ * e.g. CJFT268927601AZ → parent CJFT2689276 (strips "01AZ").
+ *
+ * Returns null if the SKU does not confidently match a CJ variant pattern.
+ * Never strips arbitrary characters.
+ */
+export function deriveParentSkuFromVariant(sku: string): string | null {
+  if (!sku) return null;
+  const trimmed = sku.trim();
+  const m = trimmed.match(/^([A-Z]{2,}\d{5,})(\d{2}[A-Z]{2})$/);
+  if (!m) return null;
+  return m[1];
+}
 
 export async function getCjAccessToken(): Promise<{ token: string; status: number }> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
