@@ -551,3 +551,6 @@ verify_jwt = false
 
 [functions.pinterest-v4-replacement]
 verify_jwt = false
+
+[functions.ailurova-scope-audit]
+verify_jwt = false
