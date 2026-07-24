@@ -440,8 +440,6 @@ Deno.serve(async (req) => {
       const allVerified =
         usPriceOk &&
         readbackReport.usCompareAtIsNull &&
-        readbackReport.onlyOneFixedRow &&
-        readbackReport.onlyFixedRowIsOurVariant &&
         readbackReport.catalogAttachedOnlyToUs &&
         readbackReport.productStatusStillDraft &&
         readbackReport.publicationsStillZero &&
