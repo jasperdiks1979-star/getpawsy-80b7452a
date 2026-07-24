@@ -345,6 +345,15 @@ Deno.serve(async (req) => {
         }), { status: 200, headers: jsonHeaders });
       }
       const rb = await readback(plId, catId);
+      if (rb?.errors) {
+        return new Response(JSON.stringify({
+          verdict: "BLOCKED_NO_MUTATION",
+          reason: "readback graphql errors",
+          errors: rb.errors,
+          raw: rb,
+          mutations,
+        }), { status: 200, headers: jsonHeaders });
+      }
       const rbPriceList = rb?.data?.priceList;
       const rbCatalog = rb?.data?.catalog;
       const rbMarket = rb?.data?.market;
