@@ -113,6 +113,12 @@ Deno.serve(async (req) => {
     report.api_version = apiVersion;
     report.store_domain = domain;
 
+    // List all themes to diagnose ID/role and confirm both target and live exist.
+    const themesQ = `query { themes(first: 50) { nodes { id role name updatedAt previewable } } }`;
+    const themesR = await shopifyAdminFetch<any>(themesQ);
+    const allThemes = themesR.data?.themes?.nodes ?? [];
+    report.all_themes = allThemes;
+
     // -------- PHASE 1: capability check --------
     const scopesQ = `query { currentAppInstallation { accessScopes { handle } } }`;
     const scopesR = await shopifyAdminFetch<any>(scopesQ);
@@ -123,8 +129,8 @@ Deno.serve(async (req) => {
 
     const tgtMeta = await themeMeta(TARGET_THEME_GID);
     const liveMeta = await themeMeta(LIVE_THEME_GID);
-    const tgt = tgtMeta.data?.theme;
-    const live = liveMeta.data?.theme;
+    const tgt = tgtMeta.data?.theme ?? allThemes.find((t: any) => t.id === TARGET_THEME_GID);
+    const live = liveMeta.data?.theme ?? allThemes.find((t: any) => t.id === LIVE_THEME_GID) ?? allThemes.find((t: any) => t.role === "MAIN");
 
     report.phases.phase1 = {
       granted_theme_scopes: themeScopes,
