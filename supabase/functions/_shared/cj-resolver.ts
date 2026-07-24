@@ -9,7 +9,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-export const CJ_RESOLVER_VERSION = "cj-resolver@1.0.0-canonical";
+export const CJ_RESOLVER_VERSION = "cj-resolver@1.1.0-parent-fallback";
 export const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -50,9 +50,28 @@ export interface CjResolveResult {
   http: Record<string, number>;
   codes: Record<string, unknown>;
   requests: number;
+  parentSkuUsed?: string | null;
 }
 
 export interface CjBudget { reqs: number; max: number }
+
+/**
+ * Conservative CJ variant-suffix → parent SKU derivation.
+ *
+ * Only matches CJ SKUs of the form:
+ *   <ALPHA prefix><digits><two-digit variant index><two uppercase letters>
+ * e.g. CJFT268927601AZ → parent CJFT2689276 (strips "01AZ").
+ *
+ * Returns null if the SKU does not confidently match a CJ variant pattern.
+ * Never strips arbitrary characters.
+ */
+export function deriveParentSkuFromVariant(sku: string): string | null {
+  if (!sku) return null;
+  const trimmed = sku.trim();
+  const m = trimmed.match(/^([A-Z]{2,}\d{5,})(\d{2}[A-Z]{2})$/);
+  if (!m) return null;
+  return m[1];
+}
 
 export async function getCjAccessToken(): Promise<{ token: string; status: number }> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -121,6 +140,7 @@ export async function resolveCjVariant(
   const candidatePids = new Set<string>();
   const skuNorm = sku.trim().toLowerCase();
   const startReqs = budget.reqs;
+  let parentSkuUsed: string | null = null;
 
   if (budget.reqs >= budget.max) {
     return { sku, classification: "SKIPPED_BUDGET", candidatePids: [], exact: [], warehouses: [], usStock: 0, totalStock: 0, http, codes, requests: 0 };
@@ -134,6 +154,29 @@ export async function resolveCjVariant(
   for (const r of (q1.body?.data?.list ?? [])) {
     const pid = r?.pid ?? r?.productId;
     if (pid) candidatePids.add(String(pid));
+  }
+
+  // Step 1b: variant-suffix parent fallback.
+  // Only when the exact-SKU lookup succeeded (HTTP 200 + CJ code=success)
+  // AND returned zero results AND the input SKU confidently matches the
+  // CJ variant-suffix pattern. Never triggered on API errors — those must
+  // propagate as UPSTREAM_ERROR, not NOT_FOUND-with-fallback.
+  const q1Total = Number(q1.body?.data?.total ?? (q1.body?.data?.list?.length ?? 0));
+  const q1Ok = q1.status === 200 && (q1.body?.code === 200 || q1.body?.result === true);
+  if (candidatePids.size === 0 && q1Ok && q1Total === 0) {
+    const parentSku = deriveParentSkuFromVariant(sku);
+    if (parentSku && parentSku !== sku && budget.reqs < budget.max) {
+      parentSkuUsed = parentSku;
+      await sleep(600);
+      const q1p = await cjGet(`/product/list?productSku=${encodeURIComponent(parentSku)}&pageNum=1&pageSize=30`, token);
+      budget.reqs += 1;
+      http["product/list?productSku:parent"] = q1p.status;
+      codes["product/list?productSku:parent"] = q1p.body?.code ?? null;
+      for (const r of (q1p.body?.data?.list ?? [])) {
+        const pid = r?.pid ?? r?.productId;
+        if (pid) candidatePids.add(String(pid));
+      }
+    }
   }
 
   // Step 2: iterate pids, byte-equal variantSku match
@@ -205,5 +248,6 @@ export async function resolveCjVariant(
     http,
     codes,
     requests: budget.reqs - startReqs,
+    parentSkuUsed,
   };
 }
