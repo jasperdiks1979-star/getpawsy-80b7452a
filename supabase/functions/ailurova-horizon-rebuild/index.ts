@@ -36,6 +36,7 @@ const APPROVED_SECTION_TYPES = [
   "email-signup",
   "header",
   "footer",
+  "product-list",
 ] as const;
 
 const APPROVED_BLOCK_TYPES = [
@@ -44,6 +45,8 @@ const APPROVED_BLOCK_TYPES = [
   "product-details", "disclosures", "product-media-gallery",
   "header-announcements", "footer-utilities", "footer-copyright",
   "footer-policy-list", "social-links",
+  "_product-list-content", "_product-card", "_product-list-text",
+  "_product-list-button", "_product-card-gallery",
 ] as const;
 
 function json(payload: unknown, status = 200) {
