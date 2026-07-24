@@ -298,15 +298,10 @@ Deno.serve(async (req) => {
         domainMatchesTarget: phase1.domainOk,
         plan: shop?.plan,
         currencyCode: shop?.currencyCode,
-        paymentSettings: shop?.paymentSettings,
       },
+      shopGraphqlErrors: phase1.response?.errors ?? null,
       paymentProvider: {
         note: "Shopify Admin API does not expose enabled gateways verbatim; Shopify Payments is inferred from acceptedCardBrands + supportedDigitalWallets.",
-        acceptedCardBrands: shop?.paymentSettings?.acceptedCardBrands,
-        supportedDigitalWallets: shop?.paymentSettings?.supportedDigitalWallets,
-        shopifyPaymentsInferred:
-          Array.isArray(shop?.paymentSettings?.acceptedCardBrands) &&
-          shop.paymentSettings.acceptedCardBrands.length > 0,
         onlineFeePercent: null,
         onlineFeeFixed: null,
         additionalTransactionFeePercent: null,
@@ -315,6 +310,11 @@ Deno.serve(async (req) => {
       usMarket: marketDetail.usMarket,
       usPriceList: marketDetail.priceList,
       usFixedPriceForVariant: marketDetail.fixedPrice,
+      catalogsSummary: (marketDetail as any).catalogs?.map((c: any) => ({
+        id: c.id, title: c.title, status: c.status,
+        priceListCurrency: c.priceList?.currency,
+      })) ?? [],
+      allUsdPriceLists: (marketDetail as any).allUsdPriceLists ?? [],
       usPresentmentCurrencyIsUsd: usPresentmentCurrency,
       productSnapshot: {
         id: product?.id,
