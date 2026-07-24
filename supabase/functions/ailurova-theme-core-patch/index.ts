@@ -15,19 +15,48 @@ type FileName = typeof ALLOWED_FILES[number];
 
 const EXPECTED_BEFORE = {
   "sections/header-group.json": [
-    { path: ["sections","header_announcements_9jGBFp","blocks","announcement_BxgCk9","settings","text"], value: "Welcome to our store", newValue: "Designed for a cleaner, easier litter routine." },
+    { key: "text", path: ["sections","header_announcements_9jGBFp","blocks","announcement_BxgCk9","settings","text"], value: "Welcome to our store", newValue: "Designed for a cleaner, easier litter routine." },
   ],
   "templates/index.json": [
-    { path: ["sections","hero_jVaWmY","blocks","text_YLPk4p","settings","text"], value: "<p>Browse our latest products</p>", newValue: "<p>A Cleaner, Smarter Litter Setup</p>" },
-    { path: ["sections","hero_jVaWmY","blocks","button_H9gpTf","settings","label"], value: "Shop all", newValue: "Explore the Litter Box" },
-    { path: ["sections","hero_jVaWmY","blocks","button_H9gpTf","settings","link"], value: "shopify://collections/all", newValue: "/products/ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats" },
-    { path: ["sections","product_list_fa6P9H","settings","max_products"], value: 8, newValue: 1 },
+    { key: "text",  path: ["sections","hero_jVaWmY","blocks","text_YLPk4p","settings","text"], value: "<p>Browse our latest products</p>", newValue: "<p>A Cleaner, Smarter Litter Setup</p>" },
+    { key: "label", path: ["sections","hero_jVaWmY","blocks","button_H9gpTf","settings","label"], value: "Shop all", newValue: "Explore the Litter Box" },
+    { key: "link",  path: ["sections","hero_jVaWmY","blocks","button_H9gpTf","settings","link"], value: "shopify://collections/all", newValue: "/products/ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats" },
+    { key: "max_products", path: ["sections","product_list_fa6P9H","settings","max_products"], value: 8, newValue: 1 },
   ],
   "sections/footer-group.json": [
-    { path: ["sections","footer_m9NzUG","blocks","group_H6VpwJ","blocks","text_LWt8Pz","settings","text"], value: "<h2>Join our email list</h2>", newValue: "<h2>Join the Ailurova List</h2>" },
-    { path: ["sections","footer_m9NzUG","blocks","group_H6VpwJ","blocks","text_f9CFLH","settings","text"], value: "<p>Get exclusive deals and early access to new products.</p>", newValue: "<p>Get product updates, care tips and occasional offers.</p>" },
+    { key: "text", path: ["sections","footer_m9NzUG","blocks","group_H6VpwJ","blocks","text_LWt8Pz","settings","text"], value: "<h2>Join our email list</h2>", newValue: "<h2>Join the Ailurova List</h2>" },
+    { key: "text", path: ["sections","footer_m9NzUG","blocks","group_H6VpwJ","blocks","text_f9CFLH","settings","text"], value: "<p>Get exclusive deals and early access to new products.</p>", newValue: "<p>Get product updates, care tips and occasional offers.</p>" },
   ],
 } as const;
+// Strip JSONC comments so we can structurally validate Shopify JSON-with-comments theme files.
+function stripJsonc(src: string): string {
+  let out = "";
+  let i = 0;
+  const n = src.length;
+  let inStr = false;
+  let strCh = "";
+  while (i < n) {
+    const c = src[i], c2 = src[i+1];
+    if (inStr) {
+      out += c;
+      if (c === "\\" && i+1 < n) { out += c2; i += 2; continue; }
+      if (c === strCh) inStr = false;
+      i++; continue;
+    }
+    if (c === '"' || c === "'") { inStr = true; strCh = c; out += c; i++; continue; }
+    if (c === "/" && c2 === "/") { while (i < n && src[i] !== "\n") i++; continue; }
+    if (c === "/" && c2 === "*") { i += 2; while (i < n && !(src[i] === "*" && src[i+1] === "/")) i++; i += 2; continue; }
+    out += c; i++;
+  }
+  return out;
+}
+
+function jsonEscape(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+function regexEscape(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function getAt(obj: any, path: readonly string[]): any {
   let cur = obj;
@@ -167,7 +196,7 @@ Deno.serve(async (req) => {
       const raw = decodeBody(node.body);
       if (raw == null) { report.verdict = "THEME_FILE_STRUCTURE_MISMATCH"; report.error = `undecodable ${fn}`; return json(report); }
       let parsed: any;
-      try { parsed = JSON.parse(raw); } catch (e) { report.verdict = "THEME_FILE_STRUCTURE_MISMATCH"; report.error = `parse ${fn}: ${e}`; return json(report); }
+      try { parsed = JSON.parse(stripJsonc(raw)); } catch (e) { report.verdict = "THEME_FILE_STRUCTURE_MISMATCH"; report.error = `parse ${fn}: ${e}`; return json(report); }
       byName[fn] = { raw, json: parsed };
     }
 
@@ -188,23 +217,39 @@ Deno.serve(async (req) => {
     }
     report.phases.phase2 = { files_read: ALLOWED_FILES, before_after_planned: beforeAfter };
 
-    // -------- PHASE 3: patch in-memory --------
+    // -------- PHASE 3+4: surgical raw-text patch, preserving comments/formatting exactly --------
     const patchedRaw: Record<FileName, string> = {} as any;
+    const perFilePatchCounts: any[] = [];
     for (const [fn, patches] of Object.entries(EXPECTED_BEFORE)) {
-      const obj = byName[fn].json;
+      let src = byName[fn].raw;
       for (const p of patches) {
-        const resolved = resolvePath(obj, p.path)!;
-        const ok = setAt(obj, resolved, p.newValue);
-        if (!ok) { report.verdict = "UNEXPECTED_THEME_DIFF"; report.error = `setAt failed ${fn} ${resolved.join(".")}`; return json(report); }
+        let re: RegExp;
+        let replacement: string;
+        if (typeof p.value === "string") {
+          re = new RegExp(`("${regexEscape(p.key)}"\\s*:\\s*)"${regexEscape(jsonEscape(p.value as string))}"`, "g");
+          replacement = `$1"${jsonEscape(p.newValue as string)}"`;
+        } else {
+          re = new RegExp(`("${regexEscape(p.key)}"\\s*:\\s*)${p.value}\\b`, "g");
+          replacement = `$1${p.newValue}`;
+        }
+        const matches = src.match(re) || [];
+        if (matches.length !== 1) {
+          report.verdict = "UNEXPECTED_THEME_DIFF";
+          report.error = `expected exactly 1 occurrence of ${p.key}=${JSON.stringify(p.value)} in ${fn}, found ${matches.length}`;
+          return json(report);
+        }
+        src = src.replace(re, replacement);
       }
-      patchedRaw[fn as FileName] = JSON.stringify(obj, null, 2);
+      patchedRaw[fn as FileName] = src;
+      perFilePatchCounts.push({ file: fn, patches: patches.length });
     }
 
-    // -------- PHASE 4: diff validation --------
+    // Structural diff: reparse patched and compare tree — expect exactly 7 leaf changes, zero adds/removes.
     const diffs: any[] = [];
     for (const fn of ALLOWED_FILES) {
-      const before = JSON.parse(byName[fn].raw);
-      const after = JSON.parse(patchedRaw[fn]);
+      let before: any, after: any;
+      try { before = JSON.parse(stripJsonc(byName[fn].raw)); after = JSON.parse(stripJsonc(patchedRaw[fn])); }
+      catch (e) { report.verdict = "UNEXPECTED_THEME_DIFF"; report.error = `post-patch parse ${fn}: ${e}`; return json(report); }
       const fileDiffs = deepDiff(before, after, []);
       diffs.push(...fileDiffs.map(d => ({ file: fn, ...d })));
     }
@@ -212,10 +257,10 @@ Deno.serve(async (req) => {
     const structural = diffs.filter(d => d.kind !== "change");
     if (structural.length !== 0 || valueChanges.length !== 7) {
       report.verdict = "UNEXPECTED_THEME_DIFF";
-      report.phases.phase4 = { total_diffs: diffs.length, value_changes: valueChanges.length, structural: structural, all: diffs };
+      report.phases.phase4 = { total_diffs: diffs.length, value_changes: valueChanges.length, structural, all: diffs };
       return json(report);
     }
-    report.phases.phase4 = { total_value_changes: valueChanges.length, structural_changes: 0, diffs: valueChanges };
+    report.phases.phase4 = { total_value_changes: valueChanges.length, structural_changes: 0, diffs: valueChanges, patch_counts: perFilePatchCounts };
 
     // -------- PHASE 5: themeFilesUpsert --------
     const mutation = `mutation($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
@@ -254,7 +299,7 @@ Deno.serve(async (req) => {
       const node = rbNodes.find(n => n.filename === fn);
       const raw = node ? decodeBody(node.body) : null;
       let parsed: any = null;
-      try { parsed = raw ? JSON.parse(raw) : null; } catch { /**/ }
+      try { parsed = raw ? JSON.parse(stripJsonc(raw)) : null; } catch { /**/ }
       for (const p of patches) {
         const resolved = parsed ? resolvePath(parsed, p.path) : null;
         const actual = resolved ? getAt(parsed, resolved) : undefined;
