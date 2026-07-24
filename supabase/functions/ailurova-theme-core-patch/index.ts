@@ -1,6 +1,6 @@
 // AILUROVA CORE THEME FILE PATCH — surgical themeFilesUpsert to the UNPUBLISHED draft only.
 // Live theme is protected. Only 3 files, only 7 values. Read-back + preview verification.
-import { getShopifyConfig, shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { getShopifyConfig, shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const TARGET_THEME_GID = "gid://shopify/OnlineStoreTheme/202425401676";
@@ -113,10 +113,16 @@ Deno.serve(async (req) => {
     report.api_version = apiVersion;
     report.store_domain = domain;
 
-    // List all themes to diagnose ID/role and confirm both target and live exist.
-    const themesQ = `query { themes(first: 50) { nodes { id role name updatedAt previewable } } }`;
-    const themesR = await shopifyAdminFetch<any>(themesQ);
-    const allThemes = themesR.data?.themes?.nodes ?? [];
+    // GraphQL "themes" is not exposed; enumerate via REST and normalize to GID form.
+    const themesRest = await shopifyAdminRest<{ themes: any[] }>("themes.json");
+    const allThemes = (themesRest.data?.themes ?? []).map((t: any) => ({
+      id: `gid://shopify/OnlineStoreTheme/${t.id}`,
+      role: String(t.role ?? "").toUpperCase(),
+      name: t.name,
+      updatedAt: t.updated_at,
+      previewable: t.previewable,
+      processing: t.processing,
+    }));
     report.all_themes = allThemes;
 
     // -------- PHASE 1: capability check --------
