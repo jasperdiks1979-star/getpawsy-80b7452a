@@ -119,14 +119,8 @@ async function shopifyPhase1() {
       shop {
         name
         myshopifyDomain
-        plan { displayName partnerDevelopment shopifyPlus }
+        plan { displayName }
         currencyCode
-        paymentSettings {
-          currencyCode
-          supportedDigitalWallets
-          acceptedCardBrands
-          countryCode
-        }
       }
       product(id: $id) {
         id
