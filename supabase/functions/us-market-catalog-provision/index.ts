@@ -358,9 +358,12 @@ Deno.serve(async (req) => {
       const rbMarket = rb?.data?.market;
       const rbProduct = rb?.data?.product;
       const rbVariant = rb?.data?.productVariant;
-      const usdFixed = rbPriceList?.price;
-      const fixedNodes = rbPriceList?.fixedPricesOnly?.nodes ?? [];
+      const allPriceNodes = rbPriceList?.prices?.nodes ?? [];
+      const fixedNodes = allPriceNodes.filter((n: any) => n?.originType === "FIXED");
       const fixedCount = fixedNodes.length;
+      const usdFixed = fixedNodes.find(
+        (n: any) => n?.variant?.id === SHOPIFY_VARIANT_GID,
+      ) ?? null;
       const catalogMarkets = (rbCatalog as any)?.markets?.nodes ?? [];
       const catalogMarketIds = catalogMarkets.map((m: any) => m.id);
 
