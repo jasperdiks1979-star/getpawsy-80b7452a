@@ -418,6 +418,113 @@ async function executeBatch2() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// execute-marker-block — Add a single Horizon `text` block containing the
+// marker string into the empty Custom section `section_bxMENG` in
+// templates/index.json on the draft theme only.
+// ---------------------------------------------------------------------------
+
+const MARKER_TEXT = "TEST — AILUROVA CONTENT SHAPE";
+const TARGET_SECTION_ID = "section_bxMENG";
+
+async function executeMarkerBlock() {
+  const startedAt = new Date().toISOString();
+  const [tBefore, lBefore] = await Promise.all([themeMeta(TARGET_THEME_GID), themeMeta(LIVE_THEME_GID)]);
+  if (!tBefore || tBefore.role !== "UNPUBLISHED") {
+    return { verdict: "LIVE_THEME_SAFETY_FAILURE", reason: "target not UNPUBLISHED", themes: { target: tBefore, live: lBefore } };
+  }
+  if (!lBefore || lBefore.role !== "MAIN") {
+    return { verdict: "LIVE_THEME_SAFETY_FAILURE", reason: "live not MAIN", themes: { target: tBefore, live: lBefore } };
+  }
+
+  const rd = await readThemeFiles(TARGET_THEME_GID, ["templates/index.json"]);
+  const node = rd.data?.theme?.files?.nodes?.[0];
+  const raw = decodeBody(node?.body);
+  if (!raw) return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "cannot read templates/index.json" };
+
+  let parsed: any;
+  try { parsed = JSON.parse(stripJsonc(raw)); }
+  catch (e: any) { return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "parse fail: " + String(e?.message ?? e) }; }
+
+  const section = parsed?.sections?.[TARGET_SECTION_ID];
+  if (!section) {
+    return {
+      verdict: "HORIZON_TEMPLATE_MUTATION_FAILED",
+      reason: `section ${TARGET_SECTION_ID} not found in templates/index.json`,
+      presentSectionIds: Object.keys(parsed?.sections ?? {}),
+    };
+  }
+
+  const blockId = "text_marker_ct01";
+  const nextBlocks = { ...(section.blocks ?? {}) };
+  if (nextBlocks[blockId]) {
+    return {
+      verdict: "AILUROVA_HORIZON_DRAFT_PARTIAL",
+      reason: `marker block ${blockId} already present — no write performed`,
+      existingBlock: nextBlocks[blockId],
+    };
+  }
+  nextBlocks[blockId] = {
+    type: "text",
+    settings: { text: `<p>${MARKER_TEXT}</p>` },
+  };
+  const prevOrder: string[] = Array.isArray(section.block_order) ? [...section.block_order] : [];
+  const nextSection = { ...section, blocks: nextBlocks, block_order: [...prevOrder, blockId] };
+  const nextParsed = { ...parsed, sections: { ...parsed.sections, [TARGET_SECTION_ID]: nextSection } };
+  const nextRaw = JSON.stringify(nextParsed, null, 2) + "\n";
+
+  const wr = await themeFilesUpsert(TARGET_THEME_GID, [
+    { filename: "templates/index.json", body: { type: "TEXT", value: nextRaw } },
+  ]);
+  const uErr = wr.data?.themeFilesUpsert?.userErrors ?? [];
+  if (uErr.length) {
+    return { verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "userErrors", userErrors: uErr };
+  }
+
+  // Read-back verify.
+  const rd2 = await readThemeFiles(TARGET_THEME_GID, ["templates/index.json"]);
+  const raw2 = decodeBody(rd2.data?.theme?.files?.nodes?.[0]?.body) ?? "";
+  let parsed2: any = null;
+  try { parsed2 = JSON.parse(stripJsonc(raw2)); } catch {}
+  const readBackBlock = parsed2?.sections?.[TARGET_SECTION_ID]?.blocks?.[blockId] ?? null;
+  const markerFound = raw2.includes(MARKER_TEXT);
+
+  const [tAfter, lAfter] = await Promise.all([themeMeta(TARGET_THEME_GID), themeMeta(LIVE_THEME_GID)]);
+  const liveUntouched = lAfter?.updatedAt === lBefore.updatedAt;
+
+  if (!liveUntouched) {
+    return {
+      verdict: "LIVE_THEME_SAFETY_FAILURE",
+      reason: "live theme updatedAt changed during execute-marker-block",
+      before: { target: tBefore, live: lBefore },
+      after:  { target: tAfter,  live: lAfter },
+    };
+  }
+  if (!readBackBlock || !markerFound) {
+    return {
+      verdict: "THEME_PERSISTENCE_VERIFICATION_FAILED",
+      reason: "marker block not present after write",
+      readBackBlock,
+      markerFound,
+    };
+  }
+
+  return {
+    verdict: "HORIZON_EDITORIAL_MARKER_WRITTEN",
+    mode: "execute-marker-block",
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    filesChanged: ["templates/index.json"],
+    sectionId: TARGET_SECTION_ID,
+    blockId,
+    marker: MARKER_TEXT,
+    readBackBlock,
+    themes: { before: { target: tBefore, live: lBefore }, after: { target: tAfter, live: lAfter } },
+    mutationLedger: { themeFilesUpsertCalls: 1, filesUpserted: 1, productMutations: 0, priceMutations: 0, inventoryMutations: 0 },
+    liveTheme: { untouched: liveUntouched },
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -432,6 +539,12 @@ Deno.serve(async (req) => {
         return json({ verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "missing confirm token", expectedConfirm: CONFIRM_TOKEN }, 400);
       }
       return json(await executeBatch2());
+    }
+    if (mode === "execute-marker-block") {
+      if (body?.confirm !== CONFIRM_TOKEN) {
+        return json({ verdict: "HORIZON_TEMPLATE_MUTATION_FAILED", reason: "missing confirm token", expectedConfirm: CONFIRM_TOKEN }, 400);
+      }
+      return json(await executeMarkerBlock());
     }
     if (mode.startsWith("execute-")) {
       if (body?.confirm !== CONFIRM_TOKEN) {
