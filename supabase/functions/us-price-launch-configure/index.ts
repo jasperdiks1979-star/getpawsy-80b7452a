@@ -119,7 +119,6 @@ async function shopifyPhase1() {
       shop {
         name
         myshopifyDomain
-        primaryDomain { url }
         plan { displayName partnerDevelopment shopifyPlus }
         currencyCode
         paymentSettings {
@@ -129,45 +128,14 @@ async function shopifyPhase1() {
           countryCode
         }
       }
-      markets(first: 50) {
-        nodes {
-          id
-          name
-          handle
-          enabled
-          primary
-          regions(first: 25) { nodes { ... on MarketRegionCountry { code name } } }
-          currencySettings {
-            baseCurrency { currencyCode }
-            localCurrencies
-          }
-          catalogs(first: 5) {
-            nodes {
-              id
-              title
-              status
-              priceList {
-                id
-                name
-                currency
-                parent { adjustment { type value } }
-                fixedPricesCount
-              }
-            }
-          }
-        }
-      }
       product(id: $id) {
         id
         title
         handle
         status
         vendor
-        publishedOnCurrentPublication
-        publications: resourcePublicationsCount { count }
-        media(first: 1) { nodes { id } }
       }
-      variant: productVariant(id: $vid) {
+      productVariant(id: $vid) {
         id
         sku
         price
@@ -182,74 +150,68 @@ async function shopifyPhase1() {
 }
 
 async function shopifyUsMarketDetail() {
-  // Find the US market and inspect its price list fixed price for our variant.
+  // Try a minimal, forward-compatible query. If any sub-field is unsupported
+  // in the active API version we still surface the raw response for diagnostics.
   const q = `
-    query FindUsMarket { markets(first: 50) { nodes {
-      id name handle enabled primary
-      regions(first: 50) { nodes { ... on MarketRegionCountry { code } } }
-      currencySettings { baseCurrency { currencyCode } localCurrencies }
-      catalogs(first: 10) { nodes { id title status
-        priceList { id name currency }
-      } }
-    } } }
-  `;
-  const r = await shopifyAdminFetch<any>(q, {});
-  const nodes = r?.data?.markets?.nodes ?? [];
-  const usMarket = nodes.find((m: any) =>
-    (m?.regions?.nodes ?? []).some((rg: any) => rg?.code === "US")
-  );
-  if (!usMarket) return { usMarket: null, priceList: null, fixedPrice: null, listResponse: r };
-
-  const priceListNode = usMarket.catalogs?.nodes?.[0]?.priceList ?? null;
-  if (!priceListNode) return { usMarket, priceList: null, fixedPrice: null };
-
-  const q2 = `
-    query PL($id: ID!, $vid: ID!) {
-      priceList(id: $id) {
-        id name currency
-        prices(first: 5, originType: FIXED, query: "variant_id:$vid") {
-          nodes { price { amount currencyCode } compareAtPrice { amount currencyCode } variant { id sku } }
+    query FindUsMarket {
+      markets(first: 50) {
+        nodes {
+          id name handle enabled
+          regions(first: 50) { nodes { ... on MarketRegionCountry { code } } }
+          currencySettings { baseCurrency { currencyCode } }
+        }
+      }
+      priceLists(first: 50) {
+        nodes { id name currency }
+      }
+      catalogs(first: 50) {
+        nodes { id title status
+          priceList { id name currency }
         }
       }
     }
   `;
-  // Shopify query filter uses variant id numeric; also just fetch by variant lookup via all fixed prices scan (small set)
-  const r2 = await shopifyAdminFetch<any>(
-    `query PL2($id: ID!) { priceList(id: $id) { id name currency
-       fixedPricesCount
-     } }`,
-    { id: priceListNode.id },
+  const r = await shopifyAdminFetch<any>(q, {});
+  const marketNodes = r?.data?.markets?.nodes ?? [];
+  const usMarket = marketNodes.find((m: any) =>
+    (m?.regions?.nodes ?? []).some((rg: any) => rg?.code === "US")
   );
-  // Directly query the fixed price for our specific variant:
-  const r3 = await shopifyAdminFetch<any>(
-    `query PLPrice($id: ID!, $vid: ID!) {
-       priceList(id: $id) {
-         id currency
-         price(variantId: $vid) {
-           price { amount currencyCode }
-           compareAtPrice { amount currencyCode }
-           originType
+  const usdPriceLists = (r?.data?.priceLists?.nodes ?? []).filter(
+    (pl: any) => pl?.currency === "USD",
+  );
+  const priceListNode = usdPriceLists[0] ?? null;
+
+  let fixedPrice: any = null;
+  if (priceListNode?.id) {
+    const r3 = await shopifyAdminFetch<any>(
+      `query PLPrice($id: ID!, $vid: ID!) {
+         priceList(id: $id) {
+           id currency
+           price(variantId: $vid) {
+             price { amount currencyCode }
+             compareAtPrice { amount currencyCode }
+             originType
+           }
          }
-       }
-     }`,
-    { id: priceListNode.id, vid: SHOPIFY_VARIANT_GID },
-  );
+       }`,
+      { id: priceListNode.id, vid: SHOPIFY_VARIANT_GID },
+    );
+    fixedPrice = r3?.data?.priceList?.price ?? null;
+  }
 
   return {
-    usMarket: {
+    usMarket: usMarket ? {
       id: usMarket.id, name: usMarket.name, handle: usMarket.handle,
-      enabled: usMarket.enabled, primary: usMarket.primary,
+      enabled: usMarket.enabled,
       baseCurrency: usMarket.currencySettings?.baseCurrency?.currencyCode,
-      localCurrencies: usMarket.currencySettings?.localCurrencies,
-    },
-    priceList: {
-      id: priceListNode.id,
-      name: priceListNode.name,
-      currency: priceListNode.currency,
-      fixedPricesCount: r2?.data?.priceList?.fixedPricesCount ?? null,
-    },
-    fixedPrice: r3?.data?.priceList?.price ?? null,
-    rawPriceLookup: r3,
+    } : null,
+    priceList: priceListNode
+      ? { id: priceListNode.id, name: priceListNode.name, currency: priceListNode.currency }
+      : null,
+    fixedPrice,
+    allUsdPriceLists: usdPriceLists,
+    catalogs: r?.data?.catalogs?.nodes ?? [],
+    rawErrors: r?.errors ?? null,
   };
 }
 
@@ -330,7 +292,7 @@ Deno.serve(async (req) => {
     const usMarketActive =
       !!marketDetail.usMarket && marketDetail.usMarket.enabled === true;
     const usPresentmentCurrency =
-      marketDetail.usMarket?.localCurrencies?.includes?.("USD") ||
+      marketDetail.usMarket?.baseCurrency === "USD" ||
       marketDetail.priceList?.currency === "USD" ||
       shop?.currencyCode === "USD";
     const fixedUsPriceConfigured = !!marketDetail.fixedPrice;
