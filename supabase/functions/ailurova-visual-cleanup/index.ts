@@ -34,24 +34,22 @@ const RAW_SUBS: Array<[RegExp, string]> = [
   [/Uitverkocht/gi, "Sold out"],
 ];
 
-// Compact editorial HTML (mobile-first, constrained heading sizes).
-const H2 = "font-size:1.25rem;line-height:1.3;margin:0 0 .5rem;font-weight:600";
-const H3 = "font-size:1rem;line-height:1.35;margin:.75rem 0 .25rem;font-weight:600";
-const P  = "font-size:.95rem;line-height:1.55;margin:0 0 .75rem";
-
+// Compact editorial HTML — no inline styles (Shopify Horizon strips them).
+// Restrained section headings use <h3>; FAQ question headings use <h4> so they
+// remain smaller than the section headings on every theme stylesheet.
 const EDITORIAL_BLOCKS: Array<{ id: string; html: string }> = [
-  { id: "text_intro",     html: `<h2 style="${H2}">A Cleaner, Smarter Litter Setup</h2><p style="${P}">An XL enclosed litter box with a stainless steel base, flip-top access and a removable litter-filter step.</p>` },
-  { id: "text_benefits_h", html: `<h2 style="${H2}">Why Ailurova</h2>` },
-  { id: "text_benefit_1", html: `<h3 style="${H3}">Flexible Setup</h3><p style="${P}">Use it as an open, semi-enclosed or fully enclosed litter box.</p>` },
-  { id: "text_benefit_2", html: `<h3 style="${H3}">Stainless Steel Base</h3><p style="${P}">Designed for straightforward wiping and routine cleaning.</p>` },
-  { id: "text_benefit_3", html: `<h3 style="${H3}">Flip-Top Access</h3><p style="${P}">Open the lid for easier scooping and daily care.</p>` },
-  { id: "text_faq_h",     html: `<h2 style="${H2}">FAQ</h2>` },
-  { id: "text_faq_q1",    html: `<h3 style="${H3}">Is this litter box suitable for larger cats?</h3><p style="${P}">The XL enclosed format provides more room than a compact litter box. Compare the product dimensions with your cat's current box before ordering.</p>` },
-  { id: "text_faq_q2",    html: `<h3 style="${H3}">Can it be used without the full enclosure?</h3><p style="${P}">Yes. The product media shows open, semi-enclosed and fully enclosed configurations.</p>` },
-  { id: "text_faq_q3",    html: `<h3 style="${H3}">How do I clean the stainless steel base?</h3><p style="${P}">Remove loose litter, wipe the base with a soft damp cloth and allow it to dry fully before reassembly.</p>` },
-  { id: "text_faq_q4",    html: `<h3 style="${H3}">What is included?</h3><p style="${P}">The XL enclosed litter box, stainless steel base, lid and removable litter-filter step.</p>` },
-  { id: "text_support",   html: `<h2 style="${H2}">Support</h2><p style="${P}">Questions? Email us at <a href="mailto:support@ailurova.com">support@ailurova.com</a>.</p>` },
-  { id: "text_final_cta_h", html: `<h2 style="${H2}">A Cleaner Litter Routine Starts Here</h2>` },
+  { id: "text_intro",       html: `<h3>A Cleaner, Smarter Litter Setup</h3><p>An XL enclosed litter box with a stainless steel base, flip-top access and a removable litter-filter step.</p>` },
+  { id: "text_benefits_h",  html: `<h3>Why Ailurova</h3>` },
+  { id: "text_benefit_1",   html: `<h4>Flexible Setup</h4><p>Use it as an open, semi-enclosed or fully enclosed litter box.</p>` },
+  { id: "text_benefit_2",   html: `<h4>Stainless Steel Base</h4><p>Designed for straightforward wiping and routine cleaning.</p>` },
+  { id: "text_benefit_3",   html: `<h4>Flip-Top Access</h4><p>Open the lid for easier scooping and daily care.</p>` },
+  { id: "text_faq_h",       html: `<h3>FAQ</h3>` },
+  { id: "text_faq_q1",      html: `<h4>Is this litter box suitable for larger cats?</h4><p>The XL enclosed format provides more room than a compact litter box. Compare the product dimensions with your cat's current box before ordering.</p>` },
+  { id: "text_faq_q2",      html: `<h4>Can it be used without the full enclosure?</h4><p>Yes. The product media shows open, semi-enclosed and fully enclosed configurations.</p>` },
+  { id: "text_faq_q3",      html: `<h4>How do I clean the stainless steel base?</h4><p>Remove loose litter, wipe the base with a soft damp cloth and allow it to dry fully before reassembly.</p>` },
+  { id: "text_faq_q4",      html: `<h4>What is included?</h4><p>The XL enclosed litter box, stainless steel base, lid and removable litter-filter step.</p>` },
+  { id: "text_support",     html: `<h3>Support</h3><p>Questions? Email us at <a href="mailto:support@ailurova.com">support@ailurova.com</a>.</p>` },
+  { id: "text_final_cta_h", html: `<h3>A Cleaner Litter Routine Starts Here</h3>` },
 ];
 
 const EDITORIAL_BLOCK_IDS = new Set(EDITORIAL_BLOCKS.map(b => b.id));
