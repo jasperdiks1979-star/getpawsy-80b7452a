@@ -292,14 +292,13 @@ async function readback(priceListId: string, catalogId: string) {
         id name currency
         catalog { id title }
         parent { adjustment { type value } }
-        price(variantId: $vid) {
-          variant { id sku }
-          price { amount currencyCode }
-          compareAtPrice { amount currencyCode }
-          originType
-        }
-        fixedPricesOnly: prices(first: 50, originType: FIXED) {
-          nodes { variant { id sku } originType }
+        prices(first: 250) {
+          nodes {
+            variant { id sku }
+            price { amount currencyCode }
+            compareAtPrice { amount currencyCode }
+            originType
+          }
         }
       }
       product(id: $pid) {
