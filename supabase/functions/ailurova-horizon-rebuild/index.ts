@@ -25,6 +25,27 @@ const PRODUCT_HANDLE   = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-fo
 const PRODUCT_GID      = "gid://shopify/Product/15889810194764";
 const CONFIRM_TOKEN    = "CONFIRM_AILUROVA_HORIZON_REBUILD";
 
+// Approved Horizon shapes for the rebuild. These MUST be verified as present
+// in the draft (either as an existing section instance we can shape-clone, or
+// as a sections/<type>.liquid file whose {% schema %} we can parse) before any
+// themeFilesUpsert is attempted. Guessing schemas is a contract violation.
+const APPROVED_SECTION_TYPES = [
+  "hero",
+  "product-information",
+  "group",
+  "email-signup",
+  "header",
+  "footer",
+] as const;
+
+const APPROVED_BLOCK_TYPES = [
+  "group", "text", "button", "product-title", "price", "variant-picker",
+  "quantity", "add-to-cart", "buy-buttons", "accelerated-checkout",
+  "product-details", "disclosures", "product-media-gallery",
+  "header-announcements", "footer-utilities", "footer-copyright",
+  "footer-policy-list", "social-links",
+] as const;
+
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload, null, 2), {
     status,
@@ -175,7 +196,85 @@ async function shapeAudit() {
   }
 
   const shapeIncomplete = missing > 0 || Object.keys(shapeLibrary).length === 0;
-  const verdict = shapeIncomplete ? "HORIZON_SHAPE_LIBRARY_INCOMPLETE" : "HORIZON_SHAPE_LIBRARY_READY";
+
+  // Deep probe: pull sections/<type>.liquid for every approved section shape,
+  // and extract its {% schema %} block so block/setting keys are verified —
+  // not guessed.
+  const probeFilenames = APPROVED_SECTION_TYPES.map(t => `sections/${t}.liquid`);
+  const r3 = await readThemeFiles(TARGET_THEME_GID, probeFilenames);
+  const probeNodes = r3.data?.theme?.files?.nodes ?? [];
+  const approvedShapeProbe: Record<string, {
+    present: boolean;
+    schemaFound: boolean;
+    blockTypes: string[];
+    settingKeys: string[];
+  }> = {};
+  for (const t of APPROVED_SECTION_TYPES) {
+    approvedShapeProbe[t] = { present: false, schemaFound: false, blockTypes: [], settingKeys: [] };
+  }
+  for (const n of probeNodes) {
+    const fn = String(n.filename ?? "");
+    const t = fn.replace(/^sections\//, "").replace(/\.liquid$/, "");
+    if (!(t in approvedShapeProbe)) continue;
+    const src = decodeBody(n.body);
+    if (src == null) continue;
+    approvedShapeProbe[t].present = true;
+    const m = src.match(/\{%-?\s*schema\s*-?%\}([\s\S]*?)\{%-?\s*endschema\s*-?%\}/);
+    if (m) {
+      try {
+        const schema = JSON.parse(stripJsonc(m[1]));
+        approvedShapeProbe[t].schemaFound = true;
+        const blocks = Array.isArray(schema?.blocks) ? schema.blocks : [];
+        approvedShapeProbe[t].blockTypes = blocks
+          .map((b: any) => (typeof b?.type === "string" ? b.type : null))
+          .filter(Boolean);
+        const settings = Array.isArray(schema?.settings) ? schema.settings : [];
+        approvedShapeProbe[t].settingKeys = settings
+          .map((s: any) => (typeof s?.id === "string" ? s.id : null))
+          .filter(Boolean);
+      } catch {/* leave schemaFound=false */}
+    }
+  }
+
+  // Also probe approved block-level types that ship as their own liquid file
+  // (Horizon exposes many blocks under `blocks/<type>.liquid`).
+  const blockProbeNames = APPROVED_BLOCK_TYPES.map(t => `blocks/${t}.liquid`);
+  const r4 = await readThemeFiles(TARGET_THEME_GID, blockProbeNames);
+  const blockNodes = r4.data?.theme?.files?.nodes ?? [];
+  const approvedBlockProbe: Record<string, { present: boolean; settingKeys: string[] }> = {};
+  for (const t of APPROVED_BLOCK_TYPES) approvedBlockProbe[t] = { present: false, settingKeys: [] };
+  for (const n of blockNodes) {
+    const fn = String(n.filename ?? "");
+    const t = fn.replace(/^blocks\//, "").replace(/\.liquid$/, "");
+    if (!(t in approvedBlockProbe)) continue;
+    const src = decodeBody(n.body);
+    if (src == null) continue;
+    approvedBlockProbe[t].present = true;
+    const m = src.match(/\{%-?\s*schema\s*-?%\}([\s\S]*?)\{%-?\s*endschema\s*-?%\}/);
+    if (m) {
+      try {
+        const schema = JSON.parse(stripJsonc(m[1]));
+        const settings = Array.isArray(schema?.settings) ? schema.settings : [];
+        approvedBlockProbe[t].settingKeys = settings
+          .map((s: any) => (typeof s?.id === "string" ? s.id : null))
+          .filter(Boolean);
+      } catch {/* ignore */}
+    }
+  }
+
+  const missingApprovedSections = Object.entries(approvedShapeProbe)
+    .filter(([, v]) => !v.present || !v.schemaFound).map(([k]) => k);
+  const missingApprovedBlocks = Object.entries(approvedBlockProbe)
+    .filter(([, v]) => !v.present).map(([k]) => k);
+
+  const fullyReady =
+    !shapeIncomplete &&
+    missingApprovedSections.length === 0 &&
+    missingApprovedBlocks.length === 0;
+
+  const verdict = fullyReady
+    ? "HORIZON_SHAPE_LIBRARY_READY"
+    : "HORIZON_SHAPE_LIBRARY_INCOMPLETE";
 
   return {
     verdict,
@@ -191,6 +290,10 @@ async function shapeAudit() {
       sectionFilesFound,
       requirements,
       shapeTypes: Object.keys(shapeLibrary).sort(),
+      approvedSectionProbe: approvedShapeProbe,
+      approvedBlockProbe,
+      missingApprovedSections,
+      missingApprovedBlocks,
     },
     shapeLibrary,
     shapeExamples: seenExample,
