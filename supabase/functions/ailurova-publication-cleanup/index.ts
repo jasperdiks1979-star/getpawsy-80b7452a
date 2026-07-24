@@ -125,6 +125,8 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const mode: "preflight" | "execute" = body?.mode === "execute" ? "execute" : "preflight";
     const confirm = body?.confirm === CONFIRM_PHRASE;
+    const batchLimit: number = Math.max(1, Math.min(200, Number(body?.batchLimit ?? 40)));
+    const skipFinalReenum: boolean = body?.skipFinalReenum === true;
 
     // Publication resolution
     const pubRes = await shopifyAdminFetch<{ publication: { id: string; name: string } | null }>(PUB_QUERY, { id: ONLINE_STORE_PUB });
@@ -217,22 +219,26 @@ Deno.serve(async (req) => {
         results.push({ id: t.id, title: t.title, outcome: "FAILED", errors: errs.length ? errs : { status: r.status, publishable: pub2 } });
         break; // stop on first unexplained failure
       }
-      // Read-back
-      const rb = await shopifyAdminFetch<{ product: { id: string; publishedOnPublication: boolean; status: string } | null }>(
-        `query RB($id: ID!, $pubId: ID!) { product(id:$id){ id status publishedOnPublication(publicationId:$pubId) } }`,
-        { id: t.id, pubId: ONLINE_STORE_PUB },
-      );
-      const rbProd = rb.data?.product;
-      if (!rbProd || rbProd.publishedOnPublication !== false) {
-        failed++;
-        results.push({ id: t.id, title: t.title, outcome: "READBACK_FAILED" });
-        break;
-      }
       succeeded++;
       results.push({ id: t.id, title: t.title, outcome: "UNPUBLISHED" });
+      if (succeeded >= batchLimit) break;
     }
 
-    // Phase 5: fresh full catalog read-back
+    // Phase 5: fresh full catalog read-back (unless deferred to a later call to avoid gateway timeout)
+    if (skipFinalReenum) {
+      return json({
+        verdict: succeeded < targets.length ? "BATCH_PARTIAL_CONTINUE" : "AILUROVA_BATCH_COMPLETE_PENDING_VERIFY",
+        onlineStorePublication: { id: pub.id, name: pub.name },
+        batch: { batchLimit, processed: results.length, remaining: targets.length - succeeded },
+        unpublishResults: {
+          attempted: results.length,
+          successfullyUnpublished: succeeded,
+          failed,
+          affected: results,
+        },
+        ledger,
+      });
+    }
     const catalog2 = await enumerateCatalog();
     if (!catalog2.completed) {
       return json({ verdict: "AILUROVA_PUBLICATION_CLEANUP_VERIFICATION_FAILED", reason: "POST_CATALOG_PAGINATION_INCOMPLETE", ledger, results });
