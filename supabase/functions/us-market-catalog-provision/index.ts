@@ -308,7 +308,7 @@ async function readback(priceListId: string, catalogId: string) {
       }
       productVariant(id: $vid) {
         id sku price compareAtPrice inventoryPolicy inventoryQuantity
-        contextualPricing(context: {marketId: $mid}) {
+        contextualPricing(context: {country: US}) {
           price { amount currencyCode }
           compareAtPrice { amount currencyCode }
         }
