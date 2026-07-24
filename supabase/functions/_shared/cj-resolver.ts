@@ -140,6 +140,7 @@ export async function resolveCjVariant(
   const candidatePids = new Set<string>();
   const skuNorm = sku.trim().toLowerCase();
   const startReqs = budget.reqs;
+  let parentSkuUsed: string | null = null;
 
   if (budget.reqs >= budget.max) {
     return { sku, classification: "SKIPPED_BUDGET", candidatePids: [], exact: [], warehouses: [], usStock: 0, totalStock: 0, http, codes, requests: 0 };
@@ -153,6 +154,29 @@ export async function resolveCjVariant(
   for (const r of (q1.body?.data?.list ?? [])) {
     const pid = r?.pid ?? r?.productId;
     if (pid) candidatePids.add(String(pid));
+  }
+
+  // Step 1b: variant-suffix parent fallback.
+  // Only when the exact-SKU lookup succeeded (HTTP 200 + CJ code=success)
+  // AND returned zero results AND the input SKU confidently matches the
+  // CJ variant-suffix pattern. Never triggered on API errors — those must
+  // propagate as UPSTREAM_ERROR, not NOT_FOUND-with-fallback.
+  const q1Total = Number(q1.body?.data?.total ?? (q1.body?.data?.list?.length ?? 0));
+  const q1Ok = q1.status === 200 && (q1.body?.code === 200 || q1.body?.result === true);
+  if (candidatePids.size === 0 && q1Ok && q1Total === 0) {
+    const parentSku = deriveParentSkuFromVariant(sku);
+    if (parentSku && parentSku !== sku && budget.reqs < budget.max) {
+      parentSkuUsed = parentSku;
+      await sleep(600);
+      const q1p = await cjGet(`/product/list?productSku=${encodeURIComponent(parentSku)}&pageNum=1&pageSize=30`, token);
+      budget.reqs += 1;
+      http["product/list?productSku:parent"] = q1p.status;
+      codes["product/list?productSku:parent"] = q1p.body?.code ?? null;
+      for (const r of (q1p.body?.data?.list ?? [])) {
+        const pid = r?.pid ?? r?.productId;
+        if (pid) candidatePids.add(String(pid));
+      }
+    }
   }
 
   // Step 2: iterate pids, byte-equal variantSku match
@@ -224,5 +248,6 @@ export async function resolveCjVariant(
     http,
     codes,
     requests: budget.reqs - startReqs,
+    parentSkuUsed,
   };
 }
