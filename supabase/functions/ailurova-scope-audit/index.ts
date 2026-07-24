@@ -27,9 +27,9 @@ async function readShopPolicies() {
 }
 
 async function readContactPage() {
-  const q = `query($handle: String!) { pageByHandle(handle: $handle) { id handle title updatedAt } }`;
-  const r = await shopifyAdminFetch<{ pageByHandle: { id: string; handle: string; title: string; updatedAt: string } | null }>(q, { handle: "contact" });
-  return { status: r.status, errors: r.errors ?? null, page: r.data?.pageByHandle ?? null };
+  const q = `query($q: String!) { pages(first: 5, query: $q) { edges { node { id handle title updatedAt } } } }`;
+  const r = await shopifyAdminFetch<{ pages: { edges: { node: { id: string; handle: string; title: string; updatedAt: string } }[] } }>(q, { q: "handle:contact" });
+  return { status: r.status, errors: r.errors ?? null, page: r.data?.pages?.edges?.find((e: any) => e.node.handle === "contact")?.node ?? null };
 }
 
 Deno.serve(async (req) => {
