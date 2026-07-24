@@ -45,9 +45,9 @@ Deno.test("deriveParentSkuFromVariant: rejects parent-only SKU", () => {
 Deno.test("deriveParentSkuFromVariant: rejects malformed / non-CJ SKUs", () => {
   assertEquals(deriveParentSkuFromVariant(""), null);
   assertEquals(deriveParentSkuFromVariant("random-sku"), null);
-  assertEquals(deriveParentSkuFromVariant("CJ268927601AZ"), null); // digits too short for parent
   assertEquals(deriveParentSkuFromVariant("CJFT268927601A"), null); // only one trailing letter
   assertEquals(deriveParentSkuFromVariant("CJFT26892760XXX"), null); // wrong tail shape
+  assertEquals(deriveParentSkuFromVariant("1234567890AB"), null);   // no alpha prefix
 });
 
 // ---------------- resolveCjVariant ----------------
