@@ -292,15 +292,15 @@ async function readback(priceListId: string, catalogId: string) {
         id name currency
         catalog { id title }
         parent { adjustment { type value } }
-        prices(first: 5) {
-          nodes {
-            variant { id sku }
-            price { amount currencyCode }
-            compareAtPrice { amount currencyCode }
-            originType
-          }
+        price(variantId: $vid) {
+          variant { id sku }
+          price { amount currencyCode }
+          compareAtPrice { amount currencyCode }
+          originType
         }
-        pricesCount: prices(first: 250) { nodes { variant { id } } }
+        fixedPricesOnly: prices(first: 50, originType: FIXED) {
+          nodes { variant { id sku } originType }
+        }
       }
       product(id: $pid) {
         id title handle status vendor
@@ -328,8 +328,118 @@ Deno.serve(async (req) => {
 
   try {
     const input = await req.json().catch(() => ({} as any));
-    const mode = input?.mode === "execute" ? "execute" : "preflight";
+    const modeRaw = input?.mode;
+    const mode: "preflight" | "execute" | "verify" =
+      modeRaw === "execute" ? "execute" : modeRaw === "verify" ? "verify" : "preflight";
     const confirm = input?.confirm ?? "";
+
+    // --- VERIFY MODE (read-only, uses caller-supplied IDs) ---
+    if (mode === "verify") {
+      const plId = String(input?.priceListId ?? "");
+      const catId = String(input?.catalogId ?? "");
+      if (!plId || !catId) {
+        return new Response(JSON.stringify({
+          verdict: "BLOCKED_NO_MUTATION",
+          reason: "verify mode requires priceListId and catalogId",
+          mutations,
+        }), { status: 200, headers: jsonHeaders });
+      }
+      const rb = await readback(plId, catId);
+      const rbPriceList = rb?.data?.priceList;
+      const rbCatalog = rb?.data?.catalog;
+      const rbMarket = rb?.data?.market;
+      const rbProduct = rb?.data?.product;
+      const rbVariant = rb?.data?.productVariant;
+      const usdFixed = rbPriceList?.price;
+      const fixedNodes = rbPriceList?.fixedPricesOnly?.nodes ?? [];
+      const fixedCount = fixedNodes.length;
+      const catalogMarkets = (rbCatalog as any)?.markets?.nodes ?? [];
+      const catalogMarketIds = catalogMarkets.map((m: any) => m.id);
+
+      const supaUrl = Deno.env.get("SUPABASE_URL")!;
+      const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supa = createClient(supaUrl, supaKey);
+      const { data: mapping, error: mapErr } = await supa
+        .from("catalog_recovery_mappings")
+        .select("*")
+        .eq("id", MAPPING_ROW_ID)
+        .maybeSingle();
+
+      const usPriceOk =
+        usdFixed?.price?.currencyCode === "USD" &&
+        Number(usdFixed?.price?.amount) === Number(TARGET_PRICE_USD);
+      const readbackReport = {
+        usMarketId: rbMarket?.id,
+        catalogId: rbCatalog?.id,
+        catalogTitle: rbCatalog?.title,
+        catalogStatus: rbCatalog?.status,
+        catalogAttachedMarkets: catalogMarketIds,
+        catalogAttachedOnlyToUs:
+          catalogMarketIds.length === 1 && catalogMarketIds[0] === US_MARKET_GID,
+        catalogPublication: (rbCatalog as any)?.publication ?? null,
+        priceListId: rbPriceList?.id,
+        priceListCurrency: rbPriceList?.currency,
+        priceListParentAdjustment: rbPriceList?.parent?.adjustment,
+        variantId: usdFixed?.variant?.id,
+        variantSku: usdFixed?.variant?.sku,
+        usFixedPrice: usdFixed?.price,
+        usCompareAtPrice: usdFixed?.compareAtPrice ?? null,
+        usCompareAtIsNull: !usdFixed?.compareAtPrice,
+        usPriceOriginType: usdFixed?.originType,
+        fixedPriceRowsInPriceList: fixedCount,
+        onlyOneFixedRow: fixedCount === 1,
+        onlyFixedRowIsOurVariant:
+          fixedCount === 1 && fixedNodes[0]?.variant?.id === SHOPIFY_VARIANT_GID,
+        product: rbProduct,
+        productStatusStillDraft: rbProduct?.status === "DRAFT",
+        publicationsStillZero:
+          (rbProduct?.resourcePublicationsCount?.count ?? -1) === 0,
+        mediaCountUnchanged:
+          (rbProduct?.mediaCount?.count ?? -1) === EXPECTED_MEDIA_COUNT,
+        variant: rbVariant,
+        baseVariantPriceUnchanged: rbVariant?.price === EXPECTED_BASE_PRICE_EUR,
+        baseCompareAtUnchanged:
+          rbVariant?.compareAtPrice === EXPECTED_BASE_COMPARE_EUR,
+        inventoryQuantityStillZero: rbVariant?.inventoryQuantity === 0,
+        inventoryPolicyStillDeny: rbVariant?.inventoryPolicy === "DENY",
+        shopifyProductIdUnchanged: rbProduct?.id === SHOPIFY_PRODUCT_GID,
+        shopifyVariantIdUnchanged: rbVariant?.id === SHOPIFY_VARIANT_GID,
+        mappingRow: mapping,
+        mappingRowUnchanged: !!mapping && mapErr === null,
+      };
+      const presentment = {
+        usContextResolvesTo99: usPriceOk && readbackReport.catalogAttachedOnlyToUs,
+        eurBaseFallbackPreservedOutsideUs:
+          readbackReport.baseVariantPriceUnchanged &&
+          readbackReport.baseCompareAtUnchanged,
+        usPriceIsFixedNotFxConverted: usdFixed?.originType === "FIXED",
+        catalogMarketAssociationComplete: readbackReport.catalogAttachedOnlyToUs,
+      };
+      const allVerified =
+        usPriceOk &&
+        readbackReport.usCompareAtIsNull &&
+        readbackReport.onlyOneFixedRow &&
+        readbackReport.onlyFixedRowIsOurVariant &&
+        readbackReport.catalogAttachedOnlyToUs &&
+        readbackReport.productStatusStillDraft &&
+        readbackReport.publicationsStillZero &&
+        readbackReport.baseVariantPriceUnchanged &&
+        readbackReport.baseCompareAtUnchanged &&
+        readbackReport.inventoryQuantityStillZero &&
+        readbackReport.inventoryPolicyStillDeny &&
+        readbackReport.mediaCountUnchanged &&
+        readbackReport.shopifyProductIdUnchanged &&
+        readbackReport.shopifyVariantIdUnchanged &&
+        readbackReport.mappingRowUnchanged;
+      return new Response(JSON.stringify({
+        verdict: allVerified
+          ? "US_PRICE_ALREADY_CONFIGURED_AND_VERIFIED"
+          : "BLOCKED_NO_MUTATION",
+        phase3: readbackReport,
+        phase4: presentment,
+        mutations,
+      }), { status: 200, headers: jsonHeaders });
+    }
 
     // --- PHASE 1: PREFLIGHT ---
     const pf = await preflight();
