@@ -3,7 +3,7 @@
 // Never touches protected product 15889810194764.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
-import { requireAdmin } from "../_shared/admin-guard.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const ONLINE_STORE_PUB = "gid://shopify/Publication/355057631564";
 const PROTECTED_GID = "gid://shopify/Product/15889810194764";
@@ -112,12 +112,8 @@ function nonOnlineStorePubs(snap: Snapshot): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const guard = await requireAdmin(req);
-    if (!guard.ok) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const denied = await requireInternalOrAdmin(req);
+    if (denied) return denied;
 
     const body = await req.json().catch(() => ({}));
     const mode: "preflight" | "execute" = body?.mode === "execute" ? "execute" : "preflight";
