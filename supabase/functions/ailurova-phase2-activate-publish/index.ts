@@ -127,11 +127,31 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const body = await req.json().catch(() => ({}));
-    const mode: "preflight" | "execute" = body?.mode === "execute" ? "execute" : "preflight";
+    const mode: "preflight" | "execute" | "verify" =
+      body?.mode === "execute" ? "execute" : body?.mode === "verify" ? "verify" : "preflight";
     const confirm = body?.confirm === "CONFIRM_AILUROVA_PHASE2_ACTIVATE_PUBLISH";
 
     const ledger = newLedger();
     const log: Record<string, unknown> = { mode };
+
+    if (mode === "verify") {
+      const r = await shopifyAdminFetch<any>(READ_PRODUCT, { id: PROTECTED_GID, pub: ONLINE_STORE_PUB });
+      const p = r.data?.product;
+      const inv = p ? extractInventoryTotals(p) : { available: 0, on_hand: 0, sku: null };
+      const finalOk =
+        p?.id === PROTECTED_GID && p?.title === EXPECTED_TITLE && p?.status === "ACTIVE" &&
+        inv.sku === EXPECTED_SKU && inv.available === EXPECTED_AVAILABLE && inv.on_hand === EXPECTED_ON_HAND &&
+        p?.publishedOnPublication === true;
+      const tf = await shopifyAdminFetch<any>(READ_25, { ids: UNPUBLISHED_25, pub: ONLINE_STORE_PUB });
+      const nodes = (tf.data?.nodes ?? []) as Array<{ id: string; publishedOnPublication: boolean } | null>;
+      const allHidden = nodes.length === 25 && nodes.every((n) => n && n.publishedOnPublication === false);
+      return json({
+        verdict: finalOk && allHidden ? "VERIFY_OK" : "VERIFY_FAILED",
+        protected: { ok: finalOk, id: p?.id, title: p?.title, status: p?.status, sku: inv.sku, available: inv.available, on_hand: inv.on_hand, publishedOnPublication: p?.publishedOnPublication },
+        unpublished_25: { count: nodes.length, all_hidden: allHidden, offenders: nodes.filter((n) => !n || n.publishedOnPublication !== false).map((n) => n?.id ?? null) },
+        ledger,
+      });
+    }
 
     // STEP 1 — precheck
     const pre = await shopifyAdminFetch<any>(READ_PRODUCT, { id: PROTECTED_GID, pub: ONLINE_STORE_PUB });
