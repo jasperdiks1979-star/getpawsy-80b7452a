@@ -36,18 +36,25 @@ const CONFIRM_TOKEN = "CONFIRM_AILUROVA_REAL_STOREFRONT_REBUILD";
 // Compact benefit cards + compact FAQ. Two custom `section` containers keep
 // the visual grouping clean and avoid one giant text column.
 const BENEFITS_BLOCKS = [
-  { id: "b_h",  type: "text", settings: { text: `<h2>Why Ailurova</h2>` } },
-  { id: "b_1",  type: "text", settings: { text: `<h3>Flexible Setup</h3><p>Use it as an open, semi-enclosed or fully enclosed litter box.</p>` } },
-  { id: "b_2",  type: "text", settings: { text: `<h3>Stainless Steel Base</h3><p>Designed for straightforward wiping and routine cleaning.</p>` } },
-  { id: "b_3",  type: "text", settings: { text: `<h3>Flip-Top Access</h3><p>Open the lid for easier scooping and daily care.</p>` } },
+  { id: "b_h",   type: "text", settings: { text: `<h2>Why Ailurova</h2>` } },
+  { id: "b_1h",  type: "text", settings: { text: `<h3>Flexible Setup</h3>` } },
+  { id: "b_1p",  type: "text", settings: { text: `<p>Use it as an open, semi-enclosed or fully enclosed litter box.</p>` } },
+  { id: "b_2h",  type: "text", settings: { text: `<h3>Stainless Steel Base</h3>` } },
+  { id: "b_2p",  type: "text", settings: { text: `<p>Designed for straightforward wiping and routine cleaning.</p>` } },
+  { id: "b_3h",  type: "text", settings: { text: `<h3>Flip-Top Access</h3>` } },
+  { id: "b_3p",  type: "text", settings: { text: `<p>Open the lid for easier scooping and daily care.</p>` } },
 ] as const;
 
 const FAQ_BLOCKS = [
-  { id: "f_h",  type: "text", settings: { text: `<h2>Frequently Asked Questions</h2>` } },
-  { id: "f_q1", type: "text", settings: { text: `<h3>Is this litter box suitable for larger cats?</h3><p>The XL enclosed format provides more room than a compact litter box. Compare the product dimensions with your cat's current box before ordering.</p>` } },
-  { id: "f_q2", type: "text", settings: { text: `<h3>Can it be used without the full enclosure?</h3><p>Yes. The product media shows open, semi-enclosed and fully enclosed configurations.</p>` } },
-  { id: "f_q3", type: "text", settings: { text: `<h3>How do I clean the stainless steel base?</h3><p>Remove loose litter, wipe the base with a soft damp cloth and allow it to dry fully before reassembly.</p>` } },
-  { id: "f_q4", type: "text", settings: { text: `<h3>What is included?</h3><p>The XL enclosed litter box, stainless steel base, lid and removable litter-filter step.</p>` } },
+  { id: "f_h",    type: "text", settings: { text: `<h2>Frequently Asked Questions</h2>` } },
+  { id: "f_q1h",  type: "text", settings: { text: `<h3>Is this litter box suitable for larger cats?</h3>` } },
+  { id: "f_q1p",  type: "text", settings: { text: `<p>The XL enclosed format provides more room than a compact litter box. Compare the product dimensions with your cat's current box before ordering.</p>` } },
+  { id: "f_q2h",  type: "text", settings: { text: `<h3>Can it be used without the full enclosure?</h3>` } },
+  { id: "f_q2p",  type: "text", settings: { text: `<p>Yes. The product media shows open, semi-enclosed and fully enclosed configurations.</p>` } },
+  { id: "f_q3h",  type: "text", settings: { text: `<h3>How do I clean the stainless steel base?</h3>` } },
+  { id: "f_q3p",  type: "text", settings: { text: `<p>Remove loose litter, wipe the base with a soft damp cloth and allow it to dry fully before reassembly.</p>` } },
+  { id: "f_q4h",  type: "text", settings: { text: `<h3>What is included?</h3>` } },
+  { id: "f_q4p",  type: "text", settings: { text: `<p>The XL enclosed litter box, stainless steel base, lid and removable litter-filter step.</p>` } },
 ] as const;
 
 function json(payload: unknown, status = 200) {
