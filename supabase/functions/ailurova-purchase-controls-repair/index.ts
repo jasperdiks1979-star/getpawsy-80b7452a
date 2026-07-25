@@ -30,6 +30,86 @@ const PRODUCT_HANDLE = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-
 const PRODUCT_NUMERIC_ID = 15889810194764;
 const CONFIRM_TOKEN = "CONFIRM_AILUROVA_PURCHASE_CONTROLS_REPAIR";
 
+// Full preset structure of Horizon's `featured-product-information` section.
+// Verified by reading `sections/featured-product-information.liquid` schema
+// from the target theme. This section (unlike `featured-product`) accepts
+// `@theme` / `@app` blocks and exposes real purchase controls via the
+// static `_product-details` block: variant-picker, quantity, add-to-cart
+// and accelerated-checkout.
+function buildFeaturedProductInformationSection(productHandle: string) {
+  return {
+    type: "featured-product-information",
+    settings: {
+      product: productHandle,
+      gap: 48,
+      "padding-block-start": 40,
+      "padding-block-end": 40,
+      equal_columns: true,
+    },
+    blocks: {
+      "media-gallery": {
+        type: "_featured-product-information-carousel",
+        static: true,
+        settings: {
+          constrain_to_viewport: true,
+          media_fit: "contain",
+          media_radius: 0,
+          extend_media: false,
+          hide_variants: true,
+          slideshow_controls_style: "counter",
+          slideshow_mobile_controls_style: "dots",
+          thumbnail_position: "bottom",
+          thumbnail_width: 44,
+        },
+      },
+      "product-details": {
+        type: "_product-details",
+        static: true,
+        settings: {
+          gap: 28,
+          sticky_details_desktop: true,
+          "padding-block-start": 24,
+          "padding-block-end": 24,
+        },
+        blocks: {
+          header: {
+            type: "group",
+            name: "Header",
+            settings: { gap: 12 },
+            blocks: {
+              title: {
+                type: "product-title",
+                name: "Title",
+                settings: { type_preset: "rte" },
+              },
+              price: {
+                type: "price",
+                name: "Product price",
+                settings: { show_installments: true, show_tax_info: true },
+              },
+            },
+            block_order: ["title", "price"],
+          },
+          variant_picker: {
+            type: "variant-picker",
+            name: "Variant picker",
+          },
+          buy_buttons: {
+            type: "buy-buttons",
+            name: "Buy buttons",
+            blocks: {
+              quantity: { type: "quantity", static: true },
+              "add-to-cart": { type: "add-to-cart", static: true },
+              "accelerated-checkout": { type: "accelerated-checkout", static: true },
+            },
+          },
+        },
+        block_order: ["header", "variant_picker", "buy_buttons"],
+      },
+    },
+  } as any;
+}
+
 // Ordered list of purchase-related block "type" hints — used both to detect
 // missing controls and to score which product-information blocks to keep.
 const PURCHASE_TYPES: Array<{ key: string; patterns: RegExp[] }> = [
