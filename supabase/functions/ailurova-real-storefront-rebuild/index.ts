@@ -93,14 +93,29 @@ async function readThemeFiles(themeGid: string, filenames: string[]) {
   return await shopifyAdminFetch<any>(q, { id: themeGid, filenames });
 }
 async function listSectionFilenames(themeGid: string): Promise<string[]> {
-  // Enumerate all files, then filter to sections/*.liquid client-side.
-  const q = `query($id: ID!) {
+  // Enumerate all writable theme files, paginating fully. Horizon draft
+  // themes may store sections under `sections/*.liquid`, `blocks/*.liquid`,
+  // or expose them exclusively via the theme app extension (in which case
+  // no liquid files are returned and we cannot instantiate a new featured
+  // product section from the server).
+  const q = `query($id: ID!, $after: String) {
     theme(id: $id) {
-      files(first: 250) { nodes { filename } pageInfo { hasNextPage endCursor } }
-    } }`;
-  const r = await shopifyAdminFetch<any>(q, { id: themeGid });
-  const names: string[] = (r.data?.theme?.files?.nodes ?? []).map((n: any) => n.filename);
-  return names.filter(n => n.startsWith("sections/") && n.endsWith(".liquid"));
+      files(first: 250, after: $after) {
+        nodes { filename }
+        pageInfo { hasNextPage endCursor }
+      } } }`;
+  const all: string[] = [];
+  let after: string | null = null;
+  for (let i = 0; i < 20; i++) {
+    const r = await shopifyAdminFetch<any>(q, { id: themeGid, after });
+    const conn = r.data?.theme?.files;
+    for (const n of conn?.nodes ?? []) all.push(n.filename);
+    if (!conn?.pageInfo?.hasNextPage) break;
+    after = conn.pageInfo.endCursor;
+  }
+  return all.filter(n =>
+    (n.startsWith("sections/") || n.startsWith("blocks/")) && n.endsWith(".liquid")
+  );
 }
 async function themeFilesUpsert(themeGid: string, files: Array<{ filename: string; body: { type: "TEXT"; value: string } }>) {
   const m = `mutation($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
@@ -205,6 +220,7 @@ async function execute(req: Request) {
         target: before,
         sectionFilesInspected: discovery.schemaCount,
         sectionFilesTotal: discovery.sectionFilenames.length,
+      sectionFilesSample: discovery.sectionFilenames.slice(0, 40),
         candidates: discovery.candidates.map(c => ({
           filename: c.filename, sectionType: c.sectionType, productSetting: c.productSetting, reason: c.reason,
         })),
