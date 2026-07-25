@@ -281,10 +281,14 @@ async function execute(req: Request) {
   const oldOrder: string[] = Array.isArray(idx?.order) ? idx.order : Object.keys(idx?.sections ?? {});
   const oldSections = idx?.sections ?? {};
   let heroId: string | null = null;
+  let customId: string | null = null;
   for (const id of oldOrder) {
-    if (oldSections[id]?.type === "hero") { heroId = id; break; }
+    const t = oldSections[id]?.type;
+    if (t === "hero" && !heroId) heroId = id;
+    else if (t === "section" && !customId) customId = id;
   }
   const heroSection = heroId ? oldSections[heroId] : null;
+  const customSection = customId ? oldSections[customId] : null;
   if (heroSection) {
     // Reassert hero copy + CTA.
     for (const b of Object.values<any>(heroSection.blocks ?? {})) {
@@ -314,29 +318,31 @@ async function execute(req: Request) {
 
   const heroKey = "hero_ail";
   const featuredKey = "featured_product_ail";
-  const benefitsKey = "benefits_ail";
-  const faqKey = "faq_ail";
+  // Reuse the existing custom section container id if present — its schema
+  // defaults are known to persist. Fall back to a fresh key only if none.
+  const benefitsKey = customId ?? "benefits_ail";
+  const faqKey = customId ? `${customId}_faq` : "faq_ail";
 
   const nextSections: Record<string, any> = {};
   if (heroSection) nextSections[heroKey] = heroSection;
   nextSections[featuredKey] = { type: featuredType, settings: featuredSettings };
+  // Combine benefits + FAQ into one container to reuse the existing custom
+  // section's proven settings. Prior split-container attempts failed with
+  // FILE_VALIDATION_ERROR because a fresh `section` container lacks the
+  // schema defaults Horizon requires on the `text` setting.
+  const combined = [...BENEFITS_BLOCKS, ...FAQ_BLOCKS];
+  const baseSettings = customSection?.settings ? { ...customSection.settings } : {};
   nextSections[benefitsKey] = {
-    type: "section",
-    blocks: Object.fromEntries(BENEFITS_BLOCKS.map(b => [b.id, { type: b.type, settings: { ...b.settings } }])),
-    block_order: BENEFITS_BLOCKS.map(b => b.id),
-    settings: {},
-  };
-  nextSections[faqKey] = {
-    type: "section",
-    blocks: Object.fromEntries(FAQ_BLOCKS.map(b => [b.id, { type: b.type, settings: { ...b.settings } }])),
-    block_order: FAQ_BLOCKS.map(b => b.id),
-    settings: {},
+    ...(customSection ?? { type: "section" }),
+    type: (customSection?.type ?? "section"),
+    settings: baseSettings,
+    blocks: Object.fromEntries(combined.map(b => [b.id, { type: b.type, settings: { ...b.settings } }])),
+    block_order: combined.map(b => b.id),
   };
   const nextOrder = [
     ...(heroSection ? [heroKey] : []),
     featuredKey,
     benefitsKey,
-    faqKey,
   ];
 
   const removed = oldOrder.filter(id => id !== heroId).map(id => ({ id, type: oldSections[id]?.type ?? "?" }));
