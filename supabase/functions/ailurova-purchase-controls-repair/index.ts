@@ -143,7 +143,9 @@ async function execute(req: Request) {
     const rrd = await readThemeFiles(gid, [
       "sections/featured-product.liquid",
       "sections/product-information.liquid",
-      "sections/main-product.liquid",
+      "sections/featured-product-information.liquid",
+      "blocks/_featured-product.liquid",
+      "blocks/_product-details.liquid",
       "templates/product.json",
     ]);
     const out: Record<string, any> = {};
