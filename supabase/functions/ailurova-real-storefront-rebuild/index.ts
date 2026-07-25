@@ -300,7 +300,7 @@ async function execute(req: Request) {
         b.settings.heading = "A Cleaner, Smarter Litter Setup";
       }
       if (b?.type === "text" && b?.settings && typeof b.settings.text === "string") {
-        b.settings.text = "An XL enclosed litter box with a stainless steel base, flip-top access and a removable litter-filter step.";
+        b.settings.text = "<p>An XL enclosed litter box with a stainless steel base, flip-top access and a removable litter-filter step.</p>";
       }
     }
   }
