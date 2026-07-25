@@ -411,10 +411,10 @@ function buildSectionLiquid(): string {
 
 {% schema %}
 {
-  "name": "Ailurova One Product Store",
+  "name": "Ailurova Storefront",
   "settings": [],
   "presets": [
-    { "name": "Ailurova One Product Store" }
+    { "name": "Ailurova Storefront" }
   ]
 }
 {% endschema %}
