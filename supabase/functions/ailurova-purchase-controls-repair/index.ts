@@ -401,13 +401,6 @@ async function execute(req: Request) {
   if (!featuredEntry) {
     return { verdict: "AILUROVA_HOMEPAGE_PURCHASE_CONTROLS_BLOCKED", reason: "no featured-product section on homepage", audit };
   }
-  if (cloned.length === 0) {
-    return {
-      verdict: "AILUROVA_HOMEPAGE_PURCHASE_CONTROLS_BLOCKED",
-      reason: "featured-product schema does not accept any purchase block types from product-information",
-      audit,
-    };
-  }
 
   if (confirm !== CONFIRM_TOKEN) {
     return {
@@ -417,14 +410,23 @@ async function execute(req: Request) {
     };
   }
 
-  // ---- Phase 2: Rebuild featured-product block tree
-  const nextFeatured = {
-    ...featuredEntry.sec,
-    settings: { ...(featuredEntry.sec.settings ?? {}) },
-    blocks: Object.fromEntries(cloned.map(c => [c.id, { type: c.type, settings: c.settings }])),
-    block_order: cloned.map(c => c.id),
-  };
-  const nextSections: Record<string, any> = { ...idxSections, [featuredEntry.id]: nextFeatured };
+  // ---- Phase 2: REPLACE `featured-product` with `featured-product-information`
+  //
+  // Forensic finding: sections/featured-product.liquid declares zero
+  // `blocks` (no @theme/@app wildcard, no add-to-cart / quantity / buy-buttons
+  // block types). It is a title+price+gallery+swatches showcase only and
+  // cannot host purchase controls.
+  //
+  // sections/featured-product-information.liquid IS Horizon-native, has a
+  // `product` setting to bind a specific product on the homepage, accepts
+  // `@theme` + `@app` blocks, and its preset instantiates a static
+  // `_product-details` block containing variant-picker, quantity, add-to-cart
+  // and accelerated-checkout. This is the correct homepage-compatible clone
+  // of the verified product-information section from templates/product.json.
+  const newFeaturedId = `fpinfo_ail`;
+  const nextSections: Record<string, any> = { ...idxSections };
+  delete nextSections[featuredEntry.id];
+  nextSections[newFeaturedId] = buildFeaturedProductInformationSection(PRODUCT_HANDLE);
 
   // ---- Phase 3: Remove newsletter sections from index
   const removedNewsletterIds: string[] = [];
@@ -432,7 +434,9 @@ async function execute(req: Request) {
     delete nextSections[id];
     removedNewsletterIds.push(id);
   }
-  const nextOrder = idxOrder.filter(id => !removedNewsletterIds.includes(id));
+  const nextOrder = idxOrder
+    .map(id => (id === featuredEntry!.id ? newFeaturedId : id))
+    .filter(id => !removedNewsletterIds.includes(id));
 
   const nextIdx = { ...idx, sections: nextSections, order: nextOrder };
   const nextIndexStr = JSON.stringify(nextIdx, null, 2) + "\n";
@@ -494,13 +498,22 @@ async function execute(req: Request) {
   try { idxAfter = JSON.parse(stripJsonc(rbRaw)); } catch { /* */ }
   const orderAfter: string[] = idxAfter?.order ?? [];
   const sectionsAfter: Record<string, any> = idxAfter?.sections ?? {};
-  const featEntryAfter = orderAfter.map(id => ({ id, sec: sectionsAfter[id] })).find(x => x.sec?.type === "featured-product") ?? null;
+  const featEntryAfter = orderAfter
+    .map(id => ({ id, sec: sectionsAfter[id] }))
+    .find(x => x.sec?.type === "featured-product-information" || x.sec?.type === "featured-product") ?? null;
   const featBlocksAfter: Record<string, any> = featEntryAfter?.sec?.blocks ?? {};
   const featOrderAfter: string[] = Array.isArray(featEntryAfter?.sec?.block_order) ? featEntryAfter!.sec.block_order : Object.keys(featBlocksAfter);
+  // Walk the block tree recursively (static blocks are nested in the JSON)
   const presentAfter = new Set<string>();
-  for (const bid of featOrderAfter) {
-    const k = classifyType(featBlocksAfter[bid]?.type); if (k) presentAfter.add(k);
-  }
+  const walk = (blocks: any) => {
+    if (!blocks || typeof blocks !== "object") return;
+    for (const [_bid, b] of Object.entries<any>(blocks)) {
+      const k = classifyType(String(b?.type ?? ""));
+      if (k) presentAfter.add(k);
+      if (b?.blocks) walk(b.blocks);
+    }
+  };
+  walk(featBlocksAfter);
   const missingAfter = PURCHASE_TYPES.map(p => p.key).filter(k => !presentAfter.has(k));
 
   const themes2 = await listThemes();
