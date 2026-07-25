@@ -181,8 +181,10 @@ async function discoverFeaturedProductSection(themeGid: string) {
     if (!allowedOnIndex) continue;
     // Score: prefer names that look like a purchase section.
     let score = 0; let reason = "";
-    if (/featured[-_ ]?product/i.test(sectionType))   { score += 10; reason = "featured-product"; }
-    else if (/product[-_ ]?information/i.test(sectionType)) { score += 9;  reason = "product-information"; }
+    if (sectionType === "featured-product")                 { score += 12; reason = "featured-product"; }
+    else if (sectionType === "product-information")         { score += 11; reason = "product-information"; }
+    else if (/^featured[-_ ]?product/i.test(sectionType))   { score += 10; reason = "featured-product-family"; }
+    else if (/product[-_ ]?information/i.test(sectionType)) { score += 9;  reason = "product-information-family"; }
     else if (/^product$/i.test(sectionType))                { score += 8;  reason = "product"; }
     else if (/product/i.test(sectionType) && !/list|recommend|card|grid|rail|carousel/i.test(sectionType)) {
       score += 5; reason = "product-related";
