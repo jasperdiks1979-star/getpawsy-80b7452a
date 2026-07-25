@@ -135,6 +135,47 @@ async function execute(req: Request) {
   const confirm = url.searchParams.get("confirm") ?? "";
   const mode = url.searchParams.get("mode") ?? "execute"; // "audit" | "execute"
 
+  // Raw dump for schema forensics
+  if (mode === "raw") {
+    const target0 = await locateWorkTheme();
+    if (!target0) return { verdict: "TARGET_THEME_NOT_FOUND" };
+    const gid = `gid://shopify/OnlineStoreTheme/${target0.id}`;
+    const rrd = await readThemeFiles(gid, [
+      "sections/featured-product.liquid",
+      "sections/product-information.liquid",
+      "sections/main-product.liquid",
+      "templates/product.json",
+    ]);
+    const out: Record<string, any> = {};
+    for (const n of rrd.data?.theme?.files?.nodes ?? []) {
+      const c = decodeBody(n?.body) ?? "";
+      if (n.filename.endsWith(".liquid")) {
+        const s = extractSchemaJson(c);
+        out[n.filename] = { schema: s, size: c.length };
+      } else {
+        out[n.filename] = c;
+      }
+    }
+    // list all sections + blocks filenames
+    const q = `query($id: ID!, $after: String) { theme(id: $id) { files(first: 250, after: $after) { nodes { filename } pageInfo { hasNextPage endCursor } } } }`;
+    const all: string[] = [];
+    let after: string | null = null;
+    for (let i = 0; i < 20; i++) {
+      const r = await shopifyAdminFetch<any>(q, { id: gid, after });
+      const conn = r.data?.theme?.files;
+      for (const n of conn?.nodes ?? []) all.push(n.filename);
+      if (!conn?.pageInfo?.hasNextPage) break;
+      after = conn.pageInfo.endCursor;
+    }
+    return {
+      verdict: "AILUROVA_RAW_DUMP",
+      dump: out,
+      sectionFiles: all.filter(n => n.startsWith("sections/")),
+      blockFiles: all.filter(n => n.startsWith("blocks/")),
+    };
+  }
+
+
   const target = await locateWorkTheme();
   if (!target) return { verdict: "TARGET_THEME_NOT_FOUND", targetName: TARGET_THEME_NAME };
   const workGid = `gid://shopify/OnlineStoreTheme/${target.id}`;
