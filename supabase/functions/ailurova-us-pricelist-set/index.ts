@@ -35,10 +35,10 @@ query {
 }`;
 
 const Q_PRICELIST_READ = `
-query($id: ID!, $variantId: ID!) {
+query($id: ID!, $q: String!) {
   priceList(id: $id) {
     id name currency
-    prices(first: 5, query: $variantId) {
+    prices(first: 50, query: $q) {
       nodes {
         originType
         price { amount currencyCode }
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
   const priceListId = usCatalog.priceList.id as string;
 
   // Step 3: Read current fixed price
-  const beforeRead = await shopifyAdminFetch<any>(Q_PRICELIST_READ, { id: priceListId, variantId: variant.id });
+  const beforeRead = await shopifyAdminFetch<any>(Q_PRICELIST_READ, { id: priceListId, q: `variant_id:${variant.id.split("/").pop()}` });
   const beforePrices = beforeRead.data?.priceList?.prices?.nodes ?? [];
   const beforeForVariant = beforePrices.find((p: any) => p.variant?.id === variant.id) ?? beforePrices[0] ?? null;
   ledger.steps.push({ step: "read_before", before: beforeForVariant, gqlErrors: beforeRead.errors ?? null });
@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
   }
 
   // Step 5: Read-back verification
-  const afterRead = await shopifyAdminFetch<any>(Q_PRICELIST_READ, { id: priceListId, variantId: variant.id });
+  const afterRead = await shopifyAdminFetch<any>(Q_PRICELIST_READ, { id: priceListId, q: `variant_id:${variant.id.split("/").pop()}` });
   const afterPrices = afterRead.data?.priceList?.prices?.nodes ?? [];
   const afterForVariant = afterPrices.find((p: any) => p.variant?.id === variant.id) ?? afterPrices[0] ?? null;
 
