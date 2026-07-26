@@ -316,9 +316,9 @@ function buildSection(): string {
 
 {% schema %}
 {
-  "name": "Ailurova One Product Store",
+  "name": "Ailurova Product Store",
   "settings": [],
-  "presets": [{ "name": "Ailurova One Product Store" }]
+  "presets": [{ "name": "Ailurova Product Store" }]
 }
 {% endschema %}
 `;
