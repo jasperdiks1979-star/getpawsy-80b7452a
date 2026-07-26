@@ -82,12 +82,12 @@ function buildSection(): string {
   .ailurova-btn--wide{width:100%;padding:16px 22px;font-size:16px}
   .ailurova-hero{background:var(--ail-ivory);padding:56px 0 40px;border-bottom:1px solid var(--ail-line)}
   .ailurova-hero-grid{display:grid;grid-template-columns:1fr;gap:28px;align-items:center}
-  .ailurova-hero-media{border-radius:var(--ail-radius);overflow:hidden;background:#fff;aspect-ratio:4/3}
-  .ailurova-hero-media img{width:100%;height:100%;object-fit:cover;display:block}
+  .ailurova-hero-media{border-radius:var(--ail-radius);overflow:hidden;background:var(--ail-ivory);aspect-ratio:4/3}
+  .ailurova-hero-media img{width:100%;height:100%;object-fit:contain;object-position:center top;display:block}
   .ailurova-buy{padding:56px 0;background:#fff}
   .ailurova-buy-grid{display:grid;grid-template-columns:1fr;gap:32px}
   .ailurova-gallery-main{border-radius:var(--ail-radius);overflow:hidden;background:var(--ail-ivory);aspect-ratio:1/1}
-  .ailurova-gallery-main img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s ease}
+  .ailurova-gallery-main img{width:100%;height:100%;object-fit:contain;object-position:center top;display:block;transition:opacity .2s ease}
   .ailurova-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
   .ailurova-thumbs button{padding:0;border:1px solid var(--ail-line);background:#fff;border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:1/1}
   .ailurova-thumbs button.is-active{border-color:var(--ail-ink)}
