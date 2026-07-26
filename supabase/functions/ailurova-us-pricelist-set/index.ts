@@ -51,8 +51,8 @@ query($id: ID!, $q: String!) {
 
 const M_UPDATE = `
 mutation($priceListId: ID!, $prices: [PriceListPriceInput!]!) {
-  priceListFixedPricesUpdate(priceListId: $priceListId, pricesToAdd: $prices, variantIds: []) {
-    prices { originType price { amount currencyCode } compareAtPrice { amount currencyCode } variant { id sku } }
+  priceListFixedPricesUpdate(priceListId: $priceListId, pricesToAdd: $prices, variantIdsToDelete: []) {
+    pricesAdded { originType price { amount currencyCode } compareAtPrice { amount currencyCode } variant { id sku } }
     userErrors { field message code }
   }
 }`;
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
   }];
   const mr = await shopifyAdminFetch<any>(M_UPDATE, { priceListId, prices: pricesInput });
   const uErrs = mr.data?.priceListFixedPricesUpdate?.userErrors ?? [];
-  const mutated = mr.data?.priceListFixedPricesUpdate?.prices ?? [];
+  const mutated = mr.data?.priceListFixedPricesUpdate?.pricesAdded ?? [];
   ledger.steps.push({ step: "mutation", mutated, userErrors: uErrs, gqlErrors: mr.errors ?? null });
   ledger.mutation_performed = uErrs.length === 0 && !mr.errors ? "YES" : "NO";
 
