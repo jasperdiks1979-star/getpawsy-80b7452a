@@ -310,7 +310,7 @@ function buildSafeSection(): string {
 </div>
 
 {% schema %}
-{ "name": "Ailurova One Product Store", "settings": [], "presets": [{ "name": "Ailurova One Product Store" }] }
+{ "name": "Ailurova Store", "settings": [], "presets": [{ "name": "Ailurova Store" }] }
 {% endschema %}
 `;
 }
