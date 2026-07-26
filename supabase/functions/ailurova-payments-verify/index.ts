@@ -6,7 +6,7 @@ const PRODUCT_ID = "gid://shopify/Product/15889810194764";
 const Q = `query($id: ID!) {
   shop {
     name myshopifyDomain currencyCode
-    paymentSettings { supportedDigitalWallets acceptedCardBrands countryCode currencyCode }
+    paymentSettings { supportedDigitalWallets }
   }
   product(id:$id){ id handle status
     variants(first:5){ nodes { id sku availableForSale inventoryQuantity } } }
