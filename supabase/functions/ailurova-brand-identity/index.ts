@@ -182,6 +182,12 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const confirm = body.confirm ?? new URL(req.url).searchParams.get("confirm");
     const dry = Boolean(body.dry_run ?? new URL(req.url).searchParams.get("dry_run"));
+    const probe = Boolean(body.probe ?? new URL(req.url).searchParams.get("probe"));
+
+    if (probe) {
+      const themes = await listThemes();
+      return json({ verdict: "PROBE", themes });
+    }
 
     if (confirm !== CONFIRM) {
       return json({
