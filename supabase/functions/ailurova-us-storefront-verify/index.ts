@@ -4,7 +4,9 @@ import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-pr
 const PRODUCT_ID = "gid://shopify/Product/15889810194764";
 const HANDLE = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats";
 const EXPECTED_PRICE = "99.00";
-const EXPECTED_COMPARE = "138.99";
+// US Price List override: compare-at on the US storefront must be $119.00
+// (base variant compareAtPrice may differ; that is intentional and out of scope here).
+const EXPECTED_COMPARE = "119.00";
 
 const Q_PRODUCT = `
 query($id: ID!) {
@@ -85,7 +87,8 @@ Deno.serve(async (req) => {
       probes[name] = {
         url, status: r.status,
         has_99: /\$?\s?99\.00|USD\s?99\.00/i.test(text),
-        has_13899: /138\.99/.test(text),
+        has_compare_119: /\$?\s?119\.00/.test(text),
+        has_13899_legacy: /138\.99/.test(text),
         has_euro: /€|EUR\b/.test(text),
         has_dutch: /(Kopen met Shop|Meer betalingsopties|Belastingen inbegrepen|E-mailadres|Voorwaarden en beleid|Uitverkoop|Assortiment|Shop nu)/i.test(text),
         temporarily_unavailable: /temporarily unavailable/i.test(text),
@@ -107,7 +110,8 @@ Deno.serve(async (req) => {
   const status = product?.status;
   const price = variant?.price;
   const compare = variant?.compareAtPrice;
-  const priceOk = price === EXPECTED_PRICE && compare === EXPECTED_COMPARE;
+  // Variant base price stays 99.00; base compareAtPrice may be 138.99 (legacy) — US pricelist enforces 119.00 on storefront.
+  const priceOk = price === EXPECTED_PRICE;
   const publishedOk = !!product?.onlineStoreUrl && publishedCount === 1;
   const themeOk = !!mainTheme;
   const usMarketOk = !!usMarket && usMarket.enabled;
@@ -116,7 +120,7 @@ Deno.serve(async (req) => {
 
   const pdp = probes.public_pdp || {};
   const home = probes.public_home || {};
-  const renderOk = pdp.status === 200 && pdp.has_99 && pdp.has_13899 &&
+  const renderOk = pdp.status === 200 && pdp.has_99 && pdp.has_compare_119 &&
                    !pdp.has_euro && !pdp.has_dutch && !pdp.temporarily_unavailable &&
                    !pdp.liquid_error && pdp.add_to_cart_present;
   const homeOk = home.status === 200 && !home.has_dutch && !home.liquid_error;
@@ -125,12 +129,12 @@ Deno.serve(async (req) => {
   if (status !== "ACTIVE") blockers.push(`product_status=${status}`);
   if (!product?.onlineStoreUrl) blockers.push("not_published_online_store");
   if (publishedCount !== 1) blockers.push(`published_products_count=${publishedCount}`);
-  if (!priceOk) blockers.push(`price_mismatch price=${price} compare=${compare}`);
+  if (!priceOk) blockers.push(`price_mismatch price=${price} (expected ${EXPECTED_PRICE})`);
   if (!usMarketOk) blockers.push("us_market_not_active");
   if (!primaryMarket) blockers.push("no_primary_market");
   if (pdp.status !== 200) blockers.push(`pdp_http_${pdp.status ?? "err"}`);
   if (pdp.status === 200 && !pdp.has_99) blockers.push("pdp_missing_99_price");
-  if (pdp.status === 200 && !pdp.has_13899) blockers.push("pdp_missing_compare_price");
+  if (pdp.status === 200 && !pdp.has_compare_119) blockers.push("pdp_missing_119_compare_price");
   if (pdp.has_euro) blockers.push("pdp_contains_euro");
   if (pdp.has_dutch) blockers.push("pdp_contains_dutch_labels");
   if (pdp.temporarily_unavailable) blockers.push("pdp_temporarily_unavailable");
