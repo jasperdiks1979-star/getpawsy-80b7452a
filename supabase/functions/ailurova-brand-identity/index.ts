@@ -43,6 +43,42 @@ const ASSET_PATHS: Record<string, string> = {
 const HEADER_LOGO_FILENAME = "ailurova-logo.svg";
 const FAVICON_FILENAME     = "ailurova-favicon-512.png";
 
+// Idempotency marker: we look for this exact comment before injecting our
+// <link> block, and re-inject cleanly if the file already contains it.
+const HEAD_MARK_OPEN  = "<!-- AILUROVA_BRAND_HEAD_START -->";
+const HEAD_MARK_CLOSE = "<!-- AILUROVA_BRAND_HEAD_END -->";
+
+function buildHeadInjection(): string {
+  // {{ 'foo' | asset_url }} resolves to the CDN URL of the theme asset.
+  return [
+    HEAD_MARK_OPEN,
+    `<link rel="icon" type="image/svg+xml" href="{{ 'ailurova-logo-mark.svg' | asset_url }}">`,
+    `<link rel="icon" type="image/png" sizes="16x16" href="{{ 'ailurova-favicon-16.png' | asset_url }}">`,
+    `<link rel="icon" type="image/png" sizes="32x32" href="{{ 'ailurova-favicon-32.png' | asset_url }}">`,
+    `<link rel="icon" type="image/png" sizes="48x48" href="{{ 'ailurova-favicon-48.png' | asset_url }}">`,
+    `<link rel="icon" type="image/png" sizes="192x192" href="{{ 'ailurova-favicon-192.png' | asset_url }}">`,
+    `<link rel="icon" type="image/png" sizes="512x512" href="{{ 'ailurova-favicon-512.png' | asset_url }}">`,
+    `<link rel="apple-touch-icon" sizes="180x180" href="{{ 'ailurova-apple-touch-icon.png' | asset_url }}">`,
+    `<link rel="shortcut icon" href="{{ 'ailurova-favicon.ico' | asset_url }}">`,
+    `<meta name="theme-color" content="#1C1B19">`,
+    `<meta property="og:image" content="{{ 'ailurova-og-image.png' | asset_url }}">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:image" content="{{ 'ailurova-og-image.png' | asset_url }}">`,
+    HEAD_MARK_CLOSE,
+  ].join("\n  ");
+}
+
+function patchLayoutHead(raw: string): string {
+  const injection = buildHeadInjection();
+  // Idempotent: if our block already exists, replace it in place.
+  const re = new RegExp(`${HEAD_MARK_OPEN}[\\s\\S]*?${HEAD_MARK_CLOSE}`, "m");
+  if (re.test(raw)) return raw.replace(re, injection);
+  // Otherwise inject just before </head>.
+  if (/<\/head>/i.test(raw)) return raw.replace(/<\/head>/i, `  ${injection}\n</head>`);
+  // No </head>? Prepend — theme is malformed, but we still ship the tags.
+  return `${injection}\n${raw}`;
+}
+
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload, null, 2), {
     status,
@@ -200,9 +236,30 @@ Deno.serve(async (req) => {
       body: { type: "TEXT", value: settingsPatched },
     }]);
 
+    // 4) Inject favicon + OG tags into layout/theme.liquid. This is the
+    //    reliable path — the settings.favicon field only accepts Shopify File
+    //    URLs, but <link rel="icon"> from the theme layout applies globally.
+    const layoutPath = "layout/theme.liquid";
+    const layoutRaw = await readFile(themeGid, layoutPath);
+    let layoutResult: any[] = [];
+    let layoutBackup: string | null = null;
+    if (layoutRaw) {
+      layoutBackup = `assets/ailurova-layout-backup-${Date.now()}.txt`;
+      await upsertFiles(themeGid, [{
+        filename: layoutBackup,
+        body: { type: "TEXT", value: layoutRaw },
+      }]);
+      const patchedLayout = patchLayoutHead(layoutRaw);
+      layoutResult = await upsertFiles(themeGid, [{
+        filename: layoutPath,
+        body: { type: "TEXT", value: patchedLayout },
+      }]);
+    }
+
     const allErrors = [
       ...brandResults.flatMap((r: any) => r.userErrors ?? []),
       ...settingsResult.flatMap((r: any) => r.userErrors ?? []),
+      ...layoutResult.flatMap((r: any) => r.userErrors ?? []),
     ];
 
     return json({
@@ -210,6 +267,8 @@ Deno.serve(async (req) => {
       theme: { id: main.id, name: main.name, role: main.role },
       uploaded_assets: brandFiles.map(f => f.filename),
       settings_backup: backupPath,
+      layout_backup: layoutBackup,
+      layout_patched: Boolean(layoutRaw),
       settings_changes: settingsChanges,
       user_errors: allErrors,
       mutation_ledger: [
