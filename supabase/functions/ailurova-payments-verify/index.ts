@@ -15,7 +15,9 @@ const Q = `query($id: ID!) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const { domain } = getShopifyConfig();
-  const g = await shopifyAdminFetch<any>(Q, { id: PRODUCT_ID });
+  let g: any = null, gErr: any = null;
+  try { g = await shopifyAdminFetch<any>(Q, { id: PRODUCT_ID }); }
+  catch (e: any) { gErr = String(e?.message ?? e); }
   const shop = g.data?.shop;
   const variant = g.data?.product?.variants?.nodes?.[0];
   const numericVid = variant?.id?.split("/").pop();
@@ -53,6 +55,7 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({
+    domain, gErr, gqlErrors: g?.errors ?? null,
     shop,
     product: { id: g.data?.product?.id, status: g.data?.product?.status, handle: g.data?.product?.handle },
     variant: { id: variant?.id, numericVid, availableForSale: variant?.availableForSale, qty: variant?.inventoryQuantity },
