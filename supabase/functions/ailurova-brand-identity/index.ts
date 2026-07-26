@@ -92,7 +92,11 @@ async function upsertFiles(themeGid: string, files: Array<{ filename: string; bo
 }
 
 function patchSettingsData(raw: string): { patched: string; changes: Record<string, unknown> } {
-  const doc = JSON.parse(raw);
+  // Horizon ships settings_data.json with /* … */ and // comments (JSONC).
+  // Strip them before parsing; preserve strings so we don't nuke URLs.
+  const stripped = raw
+    .replace(/"(?:[^"\\]|\\.)*"|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, (m) => (m.startsWith('"') ? m : ""));
+  const doc = JSON.parse(stripped);
   const changes: Record<string, unknown> = {};
 
   // Horizon / Dawn / Refresh all store theme-level settings under current.
