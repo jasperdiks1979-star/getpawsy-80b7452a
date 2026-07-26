@@ -186,7 +186,22 @@ Deno.serve(async (req) => {
 
     if (probe) {
       const themes = await listThemes();
-      return json({ verdict: "PROBE", themes });
+      const main = themes.find(t => t.role === "main");
+      const themeGid = main ? `gid://shopify/OnlineStoreTheme/${main.id}` : null;
+      let layoutHead: string | null = null;
+      let layoutLen = 0;
+      let hasMarker = false;
+      if (themeGid) {
+        const raw = await readFile(themeGid, "layout/theme.liquid");
+        if (raw) {
+          layoutLen = raw.length;
+          hasMarker = raw.includes(HEAD_MARK_OPEN);
+          // Return the first 400 chars around </head> for visual verification
+          const idx = raw.toLowerCase().indexOf("</head>");
+          layoutHead = idx >= 0 ? raw.slice(Math.max(0, idx - 800), idx + 20) : raw.slice(0, 400);
+        }
+      }
+      return json({ verdict: "PROBE", themes, main_theme: main, layout_len: layoutLen, has_marker: hasMarker, layout_head_snippet: layoutHead });
     }
 
     if (confirm !== CONFIRM) {
