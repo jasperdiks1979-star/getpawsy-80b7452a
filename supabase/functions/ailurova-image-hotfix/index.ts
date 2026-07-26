@@ -47,7 +47,7 @@ async function themeFilesUpsert(themeGid: string, files: Array<{ filename: strin
 async function inspectProduct() {
   const q = `query($id: ID!) {
     product(id: $id) {
-      id handle title status onlineStoreUrl publishedOnCurrentPublication
+      id handle title status onlineStoreUrl
       featuredImage { url altText }
       images(first: 20) { nodes { url altText width height } }
       media(first: 20) { nodes { mediaContentType alt preview { image { url altText } } } }
@@ -347,7 +347,7 @@ Deno.serve(async (req) => {
       mainTheme: { id: main.id, name: main.name, role: main.role },
       product: {
         gid: p?.id, handle: p?.handle, title: p?.title, status: p?.status,
-        onlineStoreUrl: p?.onlineStoreUrl, publishedOnCurrentPublication: p?.publishedOnCurrentPublication,
+        onlineStoreUrl: p?.onlineStoreUrl,
         featuredImageUrl: featured,
         imageCount: images.length,
         firstImageUrls: images.slice(0, 4),
@@ -356,6 +356,7 @@ Deno.serve(async (req) => {
         firstVariant: p?.variants?.nodes?.[0] ?? null,
         validRenderableImageCount: validCount,
       },
+      productQueryErrors: prodRes.errors ?? null,
       liveSection: {
         exists: beforeBody.length > 0,
         lengthBefore: beforeBody.length,
