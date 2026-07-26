@@ -122,7 +122,7 @@ const PAGES_QUERY = `
   query Pages($cursor: String) {
     pages(first: 100, after: $cursor) {
       pageInfo { hasNextPage endCursor }
-      nodes { id title handle isPublished onlineStoreUrl body }
+      nodes { id title handle isPublished body }
     }
   }
 `;
@@ -130,7 +130,7 @@ const PAGES_QUERY = `
 const PAGE_CREATE = `
   mutation PageCreate($page: PageCreateInput!) {
     pageCreate(page: $page) {
-      page { id handle title isPublished onlineStoreUrl }
+      page { id handle title isPublished }
       userErrors { field message code }
     }
   }
@@ -139,7 +139,7 @@ const PAGE_CREATE = `
 const PAGE_UPDATE = `
   mutation PageUpdate($id: ID!, $page: PageUpdateInput!) {
     pageUpdate(id: $id, page: $page) {
-      page { id handle title isPublished onlineStoreUrl }
+      page { id handle title isPublished }
       userErrors { field message code }
     }
   }
