@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
   let g: any = null, gErr: any = null;
   try { g = await shopifyAdminFetch<any>(Q, { id: PRODUCT_ID }); }
   catch (e: any) { gErr = String(e?.message ?? e); }
-  const shop = g.data?.shop;
-  const variant = g.data?.product?.variants?.nodes?.[0];
+  const shop = g?.data?.shop;
+  const variant = g?.data?.product?.variants?.nodes?.[0];
   const numericVid = variant?.id?.split("/").pop();
 
   const probes: any = {};
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({
     domain, gErr, gqlErrors: g?.errors ?? null,
     shop,
-    product: { id: g.data?.product?.id, status: g.data?.product?.status, handle: g.data?.product?.handle },
+    product: { id: g?.data?.product?.id, status: g?.data?.product?.status, handle: g?.data?.product?.handle },
     variant: { id: variant?.id, numericVid, availableForSale: variant?.availableForSale, qty: variant?.inventoryQuantity },
     probes,
   }, null, 2), { headers: { ...corsHeaders, "content-type": "application/json" } });
