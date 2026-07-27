@@ -32,13 +32,13 @@ const LOGO_LIGHT_FILENAME = "ailurova-logo-light.svg";  // light ink — use on 
 const MARK_OPEN  = "<!-- AILUROVA_HEADER_LOGO_START -->";
 const MARK_CLOSE = "<!-- AILUROVA_HEADER_LOGO_END -->";
 
-// Two candidate header files. Order matters: we probe both, but patch the
-// FIRST one that contains a matching wordmark.
-const CANDIDATE_FILES = [
-  "sections/ailurova-one-product-store.liquid",
-  "sections/header.liquid",
-  "snippets/header.liquid",
-];
+// Horizon renders the header logo via a private `_header-logo` block, so the
+// wordmark text is not in any theme file. Instead we inject a CSS override
+// into layout/theme.liquid's <head>: it hides the native text wordmark and
+// paints our SVG via `background-image`, preserving Horizon's layout,
+// spacing, transparency states, and screen-reader accessibility (the text
+// stays in the DOM, only visually hidden).
+const TARGET_FILE = "layout/theme.liquid";
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload, null, 2), {
@@ -93,23 +93,44 @@ async function upsertFile(themeGid: string, filename: string, content: string) {
 // via CSS from desktop 168px → mobile 132px width. `alt="Ailurova"` for
 // accessibility, `aria-label` on the link, `<a href="/">` for homepage.
 function buildLogoBlock(): string {
+  // Horizon's `_header-logo` block renders either an <a class="header-logo">
+  // wrapping an <img class="header__heading-logo"> (when settings.logo is
+  // set) or an <a class="header-logo"> wrapping a <span class="header__heading-logo header__heading-logo--text">
+  // (when it isn't). We target the anchor itself: reserve dimensions,
+  // paint our SVG as background, and visually hide any child text/img so
+  // both fallbacks render the same brand mark. Screen readers still read
+  // the "Ailurova" text node.
   return [
     MARK_OPEN,
-    `<a href="/" class="ail-brand-logo" aria-label="Ailurova — home">`,
-    `  <img`,
-    `    src="{{ 'ailurova-logo.svg' | asset_url }}"`,
-    `    alt="Ailurova"`,
-    `    width="168"`,
-    `    height="28"`,
-    `    decoding="async"`,
-    `    class="ail-brand-logo__img"`,
-    `  />`,
-    `</a>`,
-    `<style>`,
-    `  .ail-brand-logo{display:inline-flex;align-items:center;line-height:0;text-decoration:none;color:inherit}`,
-    `  .ail-brand-logo__img{display:block;width:168px;height:auto;max-height:32px;object-fit:contain;image-rendering:-webkit-optimize-contrast}`,
+    `<style id="ail-header-logo-style">`,
+    `  .header-logo a,`,
+    `  a.header-logo,`,
+    `  .header__heading-link{`,
+    `    display:inline-flex;align-items:center;justify-content:center;`,
+    `    width:168px;height:32px;`,
+    `    background-image:url({{ 'ailurova-logo.svg' | asset_url }});`,
+    `    background-repeat:no-repeat;background-position:center center;`,
+    `    background-size:contain;`,
+    `    text-decoration:none;line-height:0;`,
+    `  }`,
+    `  /* Hide the native text/image node without removing it from the a11y tree. */`,
+    `  .header-logo a > *,`,
+    `  a.header-logo > *,`,
+    `  .header__heading-link > *{`,
+    `    position:absolute!important;width:1px!important;height:1px!important;`,
+    `    padding:0!important;margin:-1px!important;overflow:hidden!important;`,
+    `    clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;`,
+    `  }`,
+    `  /* Dark-mode / transparent-header inverse: swap to the light logo. */`,
+    `  header-component[transparent]:not([data-sticky-state='active']) .header-logo a,`,
+    `  header-component[transparent]:not([data-sticky-state='active']) a.header-logo,`,
+    `  header-component[transparent]:not([data-sticky-state='active']) .header__heading-link{`,
+    `    background-image:url({{ 'ailurova-logo-light.svg' | asset_url }});`,
+    `  }`,
     `  @media (max-width: 749px){`,
-    `    .ail-brand-logo__img{width:132px;max-height:28px}`,
+    `    .header-logo a,`,
+    `    a.header-logo,`,
+    `    .header__heading-link{width:132px;height:28px}`,
     `  }`,
     `</style>`,
     MARK_CLOSE,
@@ -122,59 +143,12 @@ function buildLogoBlock(): string {
 // generic wordmark spans.
 //
 // Returns { pattern, snippet } describing what was found, or null.
-type Match = { kind: string; index: number; length: number; snippet: string };
-
-function findWordmark(raw: string): Match | null {
-  // 1. Idempotent re-run: our own block already present → replace in place.
-  const own = raw.match(new RegExp(`${MARK_OPEN}[\\s\\S]*?${MARK_CLOSE}`, "m"));
-  if (own && typeof own.index === "number") {
-    return { kind: "own_marker", index: own.index, length: own[0].length, snippet: "(existing marker block)" };
-  }
-
-  // 2. Anchor around the visible AILUROVA string. Then expand outward to the
-  //    nearest enclosing <a ...>…</a> so we replace the whole link, not just
-  //    the text node.
-  const wordRe = /AILUROVA/;
-  const wm = raw.match(wordRe);
-  if (!wm || typeof wm.index !== "number") return null;
-
-  const wordIdx = wm.index;
-  // Walk backward for the nearest '<a ' that has href="/" (or a relative
-  // homepage). Limit search window to 800 chars to avoid gobbling unrelated
-  // markup.
-  const winStart = Math.max(0, wordIdx - 800);
-  const before = raw.slice(winStart, wordIdx);
-  const aOpenMatches = [...before.matchAll(/<a\b[^>]*>/g)];
-  const lastOpen = aOpenMatches.at(-1);
-  if (!lastOpen || typeof lastOpen.index !== "number") return null;
-  const openAbsStart = winStart + lastOpen.index;
-  const openTag = lastOpen[0];
-  // Only replace if the anchor points at homepage-ish targets.
-  if (!/href\s*=\s*["'](\/|\{\{\s*routes\.root_url\s*\}\}|\{\{\s*shop\.url\s*\}\})["']/i.test(openTag)) {
-    return null;
-  }
-
-  // Walk forward from wordIdx for the next '</a>'.
-  const after = raw.slice(wordIdx);
-  const closeIdx = after.search(/<\/a\s*>/i);
-  if (closeIdx < 0) return null;
-  const closeMatch = after.match(/<\/a\s*>/i)!;
-  const endAbs = wordIdx + closeIdx + closeMatch[0].length;
-
-  return {
-    kind: "anchor_wordmark",
-    index: openAbsStart,
-    length: endAbs - openAbsStart,
-    snippet: raw.slice(openAbsStart, endAbs).slice(0, 400),
-  };
-}
-
-function patchFile(raw: string): { patched: string; match: Match } | null {
-  const m = findWordmark(raw);
-  if (!m) return null;
+function patchLayoutHead(raw: string): { patched: string; kind: string } {
   const block = buildLogoBlock();
-  const patched = raw.slice(0, m.index) + block + raw.slice(m.index + m.length);
-  return { patched, match: m };
+  const re = new RegExp(`${MARK_OPEN}[\\s\\S]*?${MARK_CLOSE}`, "m");
+  if (re.test(raw)) return { patched: raw.replace(re, block), kind: "replaced_in_place" };
+  if (/<\/head>/i.test(raw)) return { patched: raw.replace(/<\/head>/i, `${block}\n</head>`), kind: "injected_before_head_close" };
+  return { patched: `${block}\n${raw}`, kind: "prepended_no_head_close" };
 }
 
 function ymdhms(): string {
@@ -211,38 +185,27 @@ Deno.serve(async (req) => {
       return json({ ok: true, file: dumpFile, length: raw.length, hitCount: hits.length, hits });
     }
 
-    // Probe both candidate files.
-    const scans: Array<{ file: string; exists: boolean; length: number; match: Match | null }> = [];
-    for (const f of CANDIDATE_FILES) {
-      const raw = await readFile(themeGid, f);
-      if (raw == null) {
-        scans.push({ file: f, exists: false, length: 0, match: null });
-        continue;
-      }
-      scans.push({ file: f, exists: true, length: raw.length, match: findWordmark(raw) });
-    }
+    // Probe target file.
+    const raw = await readFile(themeGid, TARGET_FILE);
+    if (raw == null) return json({ ok: false, error: "target_file_not_found", file: TARGET_FILE });
+    const hasMarker = raw.includes(MARK_OPEN);
+    const hasHeadClose = /<\/head>/i.test(raw);
 
     if (probe || confirm !== CONFIRM) {
       return json({
         ok: true,
         mode: probe ? "probe" : "no_confirm",
         theme: { id: main.id, name: main.name, role: main.role },
-        scans,
+        target: TARGET_FILE,
+        length: raw.length,
+        hasMarker,
+        hasHeadClose,
         needConfirm: !probe ? `POST { "confirm": "${CONFIRM}" } to apply` : undefined,
       });
     }
 
-    // Apply: pick the first file with a match.
-    const target = scans.find(s => s.exists && s.match);
-    if (!target) {
-      return json({ ok: false, error: "no_wordmark_found", scans });
-    }
-
-    const raw = await readFile(themeGid, target.file);
-    if (!raw) return json({ ok: false, error: "target_file_disappeared", file: target.file });
-
     // Backup first.
-    const backupName = target.file.replace(/\.liquid$/, `.backup-${ymdhms()}.liquid`);
+    const backupName = TARGET_FILE.replace(/\.liquid$/, `.backup-${ymdhms()}.liquid`);
     const backupRes = await upsertFile(themeGid, backupName, raw);
     const backupErrors = backupRes.data?.themeFilesUpsert?.userErrors ?? [];
     if (backupErrors.length) {
@@ -250,22 +213,21 @@ Deno.serve(async (req) => {
     }
 
     // Patch.
-    const result = patchFile(raw);
-    if (!result) return json({ ok: false, error: "patch_returned_null", file: target.file });
-
-    const upRes = await upsertFile(themeGid, target.file, result.patched);
+    const result = patchLayoutHead(raw);
+    const upRes = await upsertFile(themeGid, TARGET_FILE, result.patched);
     const userErrors = upRes.data?.themeFilesUpsert?.userErrors ?? [];
 
     return json({
       ok: userErrors.length === 0,
       mutation_performed: userErrors.length === 0 ? "YES" : "NO",
       theme: { id: main.id, name: main.name },
-      file_modified: target.file,
+      file_modified: TARGET_FILE,
       backup_path: backupName,
-      asset_used: LOGO_FILENAME,
+      asset_used_light_bg: LOGO_FILENAME,
+      asset_used_dark_bg: LOGO_LIGHT_FILENAME,
       desktop_width_px: 168,
       mobile_width_px: 132,
-      match: { kind: result.match.kind, before_snippet: result.match.snippet },
+      patch_kind: result.kind,
       after_length: result.patched.length,
       before_length: raw.length,
       userErrors,
