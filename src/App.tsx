@@ -393,6 +393,7 @@ const ProgressDashboard = lazyWithRetry(() => import("./pages/admin/ProgressDash
 const JobsQueuePage = lazyWithRetry(() => import("./pages/admin/JobsQueuePage"));
 const EdgeFunctionsHealthPage = lazyWithRetry(() => import("./pages/admin/EdgeFunctionsHealthPage"));
 const AdminSeoDashboard = lazyWithRetry(() => import("./pages/admin/AdminSeoDashboard"));
+const AilurovaPinMetrics = lazyWithRetry(() => import("./pages/admin/AilurovaPinMetrics"));
 const CrawlDiagnosticsDashboard = lazyWithRetry(() => import("./pages/admin/CrawlDiagnosticsDashboard"));
 const CrawlHealthDashboard = lazyWithRetry(() => import("./pages/admin/CrawlHealthDashboard"));
 const SnippetMonitor = lazyWithRetry(() => import("./pages/admin/SnippetMonitor"));
@@ -2251,6 +2252,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <AdminSeoDashboard />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="ailurova-pin-metrics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AilurovaPinMetrics />
                                 </Suspense>
                               }
                             />
