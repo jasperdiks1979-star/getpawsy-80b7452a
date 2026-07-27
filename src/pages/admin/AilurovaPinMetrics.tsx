@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 type PinRow = {
   pin_id: string;
@@ -15,6 +18,14 @@ type PinRow = {
     ctr: number;
     save_rate: number;
     error: string | null;
+    daily?: Array<{
+      date: string;
+      IMPRESSION: number;
+      SAVE: number;
+      PIN_CLICK: number;
+      OUTBOUND_CLICK: number;
+      ctr: number;
+    }>;
   };
   site: { sessions: number; orders: number; reached_checkout: number };
 };
@@ -37,6 +48,30 @@ type Payload = {
 
 const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
+
+const SERIES_COLORS = ["hsl(var(--primary))", "#f59e0b", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
+
+type MetricKey = "IMPRESSION" | "OUTBOUND_CLICK" | "SAVE" | "ctr";
+const METRICS: Array<{ key: MetricKey; title: string; format: (n: number) => string }> = [
+  { key: "IMPRESSION", title: "Impressions", format: fmt },
+  { key: "OUTBOUND_CLICK", title: "Outbound clicks", format: fmt },
+  { key: "SAVE", title: "Saves", format: fmt },
+  { key: "ctr", title: "CTR", format: pct },
+];
+
+function buildSeries(pins: PinRow[], metric: MetricKey) {
+  const dateSet = new Set<string>();
+  pins.forEach((p) => p.pinterest.daily?.forEach((d) => dateSet.add(d.date)));
+  const dates = Array.from(dateSet).sort();
+  return dates.map((date) => {
+    const row: Record<string, string | number> = { date };
+    pins.forEach((p) => {
+      const d = p.pinterest.daily?.find((x) => x.date === date);
+      row[p.utm_content] = d ? Number(d[metric] ?? 0) : 0;
+    });
+    return row;
+  });
+}
 
 export default function AilurovaPinMetrics() {
   const [days, setDays] = useState(30);
@@ -135,6 +170,57 @@ export default function AilurovaPinMetrics() {
                 <div className="mt-1 text-xl font-semibold text-foreground">{fmt(Number(val))}</div>
               </div>
             ))}
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {METRICS.map((m, idx) => {
+              const chartPins = data.pins;
+              const chartData = buildSeries(chartPins, m.key);
+              return (
+                <div key={m.key} className="rounded-lg border border-border bg-card p-4">
+                  <div className="mb-2 flex items-baseline justify-between">
+                    <h2 className="text-sm font-semibold text-foreground">{m.title} over time</h2>
+                    <span className="text-xs text-muted-foreground">by utm_content</span>
+                  </div>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis
+                          tick={{ fontSize: 11 }}
+                          stroke="hsl(var(--muted-foreground))"
+                          tickFormatter={(v) => (m.key === "ctr" ? `${(Number(v) * 100).toFixed(1)}%` : fmt(Number(v)))}
+                          width={m.key === "ctr" ? 48 : 40}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                          formatter={(v: number) => m.format(Number(v))}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        {chartPins.map((p, i) => (
+                          <Line
+                            key={p.utm_content}
+                            type="monotone"
+                            dataKey={p.utm_content}
+                            name={p.utm_content}
+                            stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {idx === 0 && chartData.length === 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      No daily datapoints yet. Pinterest typically populates 24–72h after publish.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </section>
 
           <section className="overflow-x-auto rounded-lg border border-border">
