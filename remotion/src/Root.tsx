@@ -17,9 +17,19 @@ import { CompilationReel, compilationSchema } from "./cinematic/CompilationReel"
 import { UgcPovScene, ugcPovSchema } from "./cinematic/UgcPovScene";
 import { LifestyleScene, lifestyleSchema } from "./cinematic/LifestyleScene";
 import { MainVideoV4, v4PropsSchema } from "./MainVideoV4";
+import { MainVideoAilurovaTikTok, AILUROVA_TIKTOK_DURATION } from "./MainVideoAilurovaTikTok";
 
 export const RemotionRoot = () => (
   <>
+    {/* ---------------- Ailurova XL — TikTok launch spot (18s, 1080x1920, 30fps) ---------------- */}
+    <Composition
+      id="ailurova-tiktok"
+      component={MainVideoAilurovaTikTok}
+      durationInFrames={AILUROVA_TIKTOK_DURATION}
+      fps={30}
+      width={1080}
+      height={1920}
+    />
     {/* ---------------- Cinematic v4 Pinterest Revenue Renderer ---------------- */}
     <Composition
       id="cinematic-v4"
