@@ -189,11 +189,27 @@ Deno.serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const probe = Boolean(body.probe);
     const confirm = body.confirm;
+    const dumpFile: string | undefined = body.dump;
+    const dumpPattern: string | undefined = body.grep;
 
     const themes = await listThemes();
     const main = themes.find(t => t.role === "main");
     if (!main) return json({ ok: false, error: "No MAIN theme found" }, 404);
     const themeGid = `gid://shopify/OnlineStoreTheme/${main.id}`;
+
+    // Dump mode: return excerpts around a regex from a specific file.
+    if (dumpFile) {
+      const raw = await readFile(themeGid, dumpFile);
+      if (raw == null) return json({ ok: false, error: "file_not_found", file: dumpFile });
+      const re = new RegExp(dumpPattern ?? "logo|shop_name|heading|wordmark|brand|AILUROVA", "gi");
+      const hits: Array<{ index: number; excerpt: string }> = [];
+      for (const m of raw.matchAll(re)) {
+        const i = m.index ?? 0;
+        hits.push({ index: i, excerpt: raw.slice(Math.max(0, i - 200), i + 400) });
+        if (hits.length >= 15) break;
+      }
+      return json({ ok: true, file: dumpFile, length: raw.length, hitCount: hits.length, hits });
+    }
 
     // Probe both candidate files.
     const scans: Array<{ file: string; exists: boolean; length: number; match: Match | null }> = [];
