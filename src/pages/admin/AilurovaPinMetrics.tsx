@@ -174,7 +174,8 @@ export default function AilurovaPinMetrics() {
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {METRICS.map((m, idx) => {
-              const data = buildSeries(data_safe_pins(data.pins), m.key);
+              const chartPins = data.pins;
+              const chartData = buildSeries(chartPins, m.key);
               return (
                 <div key={m.key} className="rounded-lg border border-border bg-card p-4">
                   <div className="mb-2 flex items-baseline justify-between">
@@ -183,7 +184,7 @@ export default function AilurovaPinMetrics() {
                   </div>
                   <div className="h-64 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                      <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                         <YAxis
@@ -197,7 +198,7 @@ export default function AilurovaPinMetrics() {
                           formatter={(v: number) => m.format(Number(v))}
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        {data_safe_pins(data.pins).map((p, i) => (
+                        {chartPins.map((p, i) => (
                           <Line
                             key={p.utm_content}
                             type="monotone"
@@ -212,7 +213,7 @@ export default function AilurovaPinMetrics() {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  {idx === 0 && data.length === 0 && (
+                  {idx === 0 && chartData.length === 0 && (
                     <p className="mt-2 text-xs text-muted-foreground">
                       No daily datapoints yet. Pinterest typically populates 24–72h after publish.
                     </p>
