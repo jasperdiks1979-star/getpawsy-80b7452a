@@ -49,6 +49,37 @@ type Payload = {
 const fmt = (n: number) => new Intl.NumberFormat("en-US").format(n);
 const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
+const csvEscape = (v: unknown) => {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+function downloadPinsCsv(data: Payload) {
+  const headers = [
+    "pin_id", "utm_content", "label", "angle", "pin_url",
+    "impressions", "saves", "save_rate", "pin_clicks", "outbound_clicks", "ctr",
+    "site_sessions", "reached_checkout", "site_orders",
+    "window_start", "window_end", "window_days",
+  ];
+  const rows = data.pins.map((p) => [
+    p.pin_id, p.utm_content, p.label, p.angle, p.pin_url,
+    p.pinterest.IMPRESSION, p.pinterest.SAVE, p.pinterest.save_rate,
+    p.pinterest.PIN_CLICK, p.pinterest.OUTBOUND_CLICK, p.pinterest.ctr,
+    p.site.sessions, p.site.reached_checkout, p.site.orders,
+    data.window.start_date, data.window.end_date, data.window.days,
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ailurova-pin-metrics_${data.window.start_date}_to_${data.window.end_date}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 const SERIES_COLORS = ["hsl(var(--primary))", "#f59e0b", "#10b981", "#ef4444", "#6366f1", "#ec4899"];
 
 type MetricKey = "IMPRESSION" | "OUTBOUND_CLICK" | "SAVE" | "ctr";
@@ -144,6 +175,14 @@ export default function AilurovaPinMetrics() {
             disabled={loading}
           >
             {loading ? "Loading…" : "Refresh"}
+          </button>
+          <button
+            className="rounded-md border border-input bg-background px-3 py-1 text-sm hover:bg-muted disabled:opacity-50"
+            onClick={() => data && downloadPinsCsv(data)}
+            disabled={!data || loading}
+            title="Download current metrics as CSV"
+          >
+            Export CSV
           </button>
         </div>
       </header>
