@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     const pinResults = await Promise.all(PINS.map(async (p) => {
       let pin_metrics: Record<string, number> = { IMPRESSION: 0, SAVE: 0, PIN_CLICK: 0, OUTBOUND_CLICK: 0 };
       let pin_error: string | null = null;
+      let daily: Array<{ date: string; IMPRESSION: number; SAVE: number; PIN_CLICK: number; OUTBOUND_CLICK: number; ctr: number }> = [];
       if (token) {
         const u = `${PIN_API}/pins/${p.pin_id}/analytics?start_date=${start_date}&end_date=${end_date}&metric_types=${metric_types}`;
         const r = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
@@ -82,6 +83,20 @@ Deno.serve(async (req) => {
             PIN_CLICK: Number(all.PIN_CLICK ?? 0),
             OUTBOUND_CLICK: Number(all.OUTBOUND_CLICK ?? 0),
           };
+          const dm = body?.all?.daily_metrics ?? [];
+          daily = (Array.isArray(dm) ? dm : []).map((d: any) => {
+            const m = d?.metrics ?? {};
+            const impr = Number(m.IMPRESSION ?? 0);
+            const out = Number(m.OUTBOUND_CLICK ?? 0);
+            return {
+              date: String(d?.date ?? ""),
+              IMPRESSION: impr,
+              SAVE: Number(m.SAVE ?? 0),
+              PIN_CLICK: Number(m.PIN_CLICK ?? 0),
+              OUTBOUND_CLICK: out,
+              ctr: impr > 0 ? out / impr : 0,
+            };
+          }).filter((d: any) => d.date);
         }
       } else {
         pin_error = "no_pinterest_connection";
@@ -92,7 +107,7 @@ Deno.serve(async (req) => {
       return {
         ...p,
         pin_url: `https://www.pinterest.com/pin/${p.pin_id}/`,
-        pinterest: { ...pin_metrics, ctr, save_rate, error: pin_error },
+        pinterest: { ...pin_metrics, ctr, save_rate, error: pin_error, daily },
         site,
       };
     }));
