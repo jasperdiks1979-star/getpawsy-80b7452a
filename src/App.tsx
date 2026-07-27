@@ -2256,6 +2256,14 @@ const App = () => {
                               }
                             />
                             <Route
+                              path="ailurova-pin-metrics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AilurovaPinMetrics />
+                                </Suspense>
+                              }
+                            />
+                            <Route
                               path="crawl-diagnostics"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
