@@ -172,6 +172,56 @@ export default function AilurovaPinMetrics() {
             ))}
           </section>
 
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {METRICS.map((m, idx) => {
+              const data = buildSeries(data_safe_pins(data.pins), m.key);
+              return (
+                <div key={m.key} className="rounded-lg border border-border bg-card p-4">
+                  <div className="mb-2 flex items-baseline justify-between">
+                    <h2 className="text-sm font-semibold text-foreground">{m.title} over time</h2>
+                    <span className="text-xs text-muted-foreground">by utm_content</span>
+                  </div>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis
+                          tick={{ fontSize: 11 }}
+                          stroke="hsl(var(--muted-foreground))"
+                          tickFormatter={(v) => (m.key === "ctr" ? `${(Number(v) * 100).toFixed(1)}%` : fmt(Number(v)))}
+                          width={m.key === "ctr" ? 48 : 40}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                          formatter={(v: number) => m.format(Number(v))}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        {data_safe_pins(data.pins).map((p, i) => (
+                          <Line
+                            key={p.utm_content}
+                            type="monotone"
+                            dataKey={p.utm_content}
+                            name={p.utm_content}
+                            stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                            strokeWidth={2}
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  {idx === 0 && data.length === 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      No daily datapoints yet. Pinterest typically populates 24–72h after publish.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
           <section className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
