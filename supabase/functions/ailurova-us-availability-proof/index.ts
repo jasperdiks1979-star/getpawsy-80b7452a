@@ -14,7 +14,13 @@ const Q_PROFILE = `
 query P($vid: ID!) {
   productVariant(id: $vid) {
     id title sku availableForSale inventoryQuantity
-    price compareAtPrice
+    price compareAtPrice sellableOnlineQuantity
+    deliveryProfile { id name default }
+    contextualPricing(context: { country: US }) {
+      price { amount currencyCode } compareAtPrice { amount currencyCode }
+      quantityRule { minimum increment }
+    }
+    product { id title status }
     inventoryItem {
       id requiresShipping tracked
       inventoryLevels(first: 20) {
@@ -56,7 +62,6 @@ query M($pid: ID!) {
   }
   product(id: $pid) {
     id title status handle onlineStoreUrl
-    publishedOnCurrentPublication
     resourcePublicationsV2(first: 40) {
       nodes { isPublished publishDate publication { id catalog { id title
         ... on AppCatalog { apps(first:3){nodes{title}} } } } }
