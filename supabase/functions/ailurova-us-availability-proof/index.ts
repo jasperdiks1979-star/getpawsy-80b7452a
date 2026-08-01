@@ -83,7 +83,7 @@ query L($loc: ID!, $prof: ID!) {
   }
   deliveryProfile(id: $prof) {
     id name
-    locationsWithoutRatesCount { count }
+    locationsWithoutRatesCount
     unassignedLocations { id name }
     profileLocationGroups {
       locationGroup { id locations(first: 30) { nodes { id name } } }
