@@ -70,6 +70,28 @@ query M($pid: ID!) {
   publications(first: 40) { nodes { id autoPublish catalog { id title } } }
 }`;
 
+
+const Q_LOC = `
+query L($loc: ID!, $prof: ID!) {
+  location(id: $loc) {
+    id name isActive fulfillsOnlineOrders shipsInventory hasActiveInventory
+    localPickupSettingsV2 { instructions }
+    address { countryCode }
+  }
+  locations(first: 20, includeInactive: true) {
+    nodes { id name isActive fulfillsOnlineOrders shipsInventory }
+  }
+  deliveryProfile(id: $prof) {
+    id name
+    locationsWithoutRatesCount { count }
+    unassignedLocations { id name }
+    profileLocationGroups {
+      locationGroup { id locations(first: 30) { nodes { id name } } }
+    }
+  }
+  shop { id name }
+}`;
+
 async function probe(url: string, init?: RequestInit) {
   try {
     const r = await fetch(url, init);
@@ -91,6 +113,9 @@ Deno.serve(async (req) => {
 
   try { out.markets = await shopifyAdminFetch(Q_MARKETS, { pid: PRODUCT_GID }); }
   catch (e) { out.markets_error = String(e); }
+
+  try { out.locations = await shopifyAdminFetch(Q_LOC, { loc: LOCATION_GID, prof: "gid://shopify/DeliveryProfile/146220056908" }); }
+  catch (e) { out.locations_error = String(e); }
 
   // Storefront API contextual reads (US vs NL) if a storefront token exists.
   const sfToken = Deno.env.get("SHOPIFY_STOREFRONT_TOKEN");
