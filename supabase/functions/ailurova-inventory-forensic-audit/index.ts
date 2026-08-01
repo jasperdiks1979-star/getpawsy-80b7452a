@@ -17,7 +17,7 @@ query M($id: ID!) {
           ... on MarketCatalog { markets(first:5){nodes{id name}} }
         }
       }
-      webPresences(first: 5) { nodes { id defaultLocale rootUrls { locale url } domain { host } } }
+      webPresences(first: 5) { nodes { id rootUrls { locale url } domain { host } } }
     }
   }
   product(id: $id) {
