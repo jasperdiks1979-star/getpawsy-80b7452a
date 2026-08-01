@@ -9,7 +9,7 @@ const Q3 = `
 query C($id: ID!, $cat: ID!) {
   catalog(id: $cat) {
     id title status
-    publication { id autoPublish productsCount { count } products(first: 10) { nodes { id title } } }
+    publication { id autoPublish products(first: 10) { nodes { id title } } }
     priceList { id name currency parent { adjustment { type value } } }
   }
   product(id: $id) {
