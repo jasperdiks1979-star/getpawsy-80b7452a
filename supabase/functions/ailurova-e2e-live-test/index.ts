@@ -86,6 +86,37 @@ Deno.serve(async (r0) => {
 
   const onlyParam = new URL(r0.url).searchParams.get("only") ?? "all";
   only_fast = onlyParam === "cart";
+
+  // Non-persisting shipping-rate + pricing calculation for a US address.
+  // draftOrderCalculate does NOT create a draft order or an order.
+  if (onlyParam === "calc") {
+    const Q_CALC = `mutation C($input: DraftOrderInput!) {
+      draftOrderCalculate(input: $input) {
+        calculatedDraftOrder {
+          currencyCode
+          subtotalPriceSet { presentmentMoney { amount currencyCode } }
+          totalShippingPriceSet { presentmentMoney { amount currencyCode } }
+          totalTaxSet { presentmentMoney { amount currencyCode } }
+          totalPriceSet { presentmentMoney { amount currencyCode } }
+          availableShippingRates { handle title price { amount currencyCode } }
+          lineItems { title variantTitle quantity originalUnitPriceSet { presentmentMoney { amount currencyCode } } }
+        }
+        userErrors { field message }
+      }
+    }`;
+    const input = {
+      presentmentCurrencyCode: "USD",
+      lineItems: [{ variantId: VARIANT_GID, quantity: 1 }],
+      shippingAddress: {
+        firstName: "Test", lastName: "Customer", address1: "1 Apple Park Way",
+        city: "Cupertino", provinceCode: "CA", zip: "95014", countryCode: "US",
+      },
+    };
+    try { out.calc = await shopifyAdminFetch(Q_CALC, { input }); } catch (e) { out.calc_error = String(e); }
+    try { out.orders_check = await shopifyAdminFetch(Q_ORDERS, {}); } catch (e) { out.orders_check_error = String(e); }
+    return new Response(JSON.stringify(out, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   if (!only_fast) {
   // PHASE 1 — admin baseline
   try { out.phase1_baseline = await shopifyAdminFetch(Q_BASE, { vid: VARIANT_GID }); } catch (e) { out.phase1_error = String(e); }
