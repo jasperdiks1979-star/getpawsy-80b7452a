@@ -166,8 +166,8 @@ Deno.serve(async (r0) => {
   try { out.phase5_baseline = await shopifyAdminFetch(Q_BASE, { vid: VARIANT_GID }); } catch (e) { out.phase5_error = String(e); }
   try { out.phase5_orders_after = await shopifyAdminFetch(Q_ORDERS, {}); } catch (e) { out.phase5_orders_error = String(e); }
   out.phase5_pdp_recheck = only_fast ? null : slim(await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`));
-  const recheck = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
   }
+  const recheck = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
   out.phase5_pdp_js = (() => { try { const j = JSON.parse(recheck.text); const v = j.variants.find((x: any) => x.id === VARIANT_ID); return { available: j.available, price: j.price, compare_at_price: j.compare_at_price, variant_available: v?.available, variant_price: v?.price }; } catch { return { parse_error: true, status: recheck.status }; } })();
 
   return new Response(JSON.stringify(out, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
