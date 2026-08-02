@@ -24,6 +24,7 @@ function store(res: Response) {
 function cookieHeader() { return [...jar].map(([k, v]) => `${k}=${v}`).join("; "); }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+let only_fast = false;
 
 async function req(url: string, init: RequestInit = {}) {
   const headers: Record<string, string> = {
@@ -38,13 +39,13 @@ async function req(url: string, init: RequestInit = {}) {
   let attempt = 0;
   while (res.status === 429 && attempt < 3) {
     await res.body?.cancel();
-    await sleep(6000 * (attempt + 1));
+    await sleep((only_fast ? 2500 : 6000) * (attempt + 1));
     attempt++;
     res = await fetch(url, { ...init, headers: { ...headers, Cookie: cookieHeader() || "" }, redirect: "manual" });
   }
   store(res);
   const text = await res.text();
-  await sleep(1200);
+  await sleep(only_fast ? 200 : 1200);
   return { url, status: res.status, location: res.headers.get("location"), len: text.length, text, retries: attempt };
 }
 async function follow(url: string, init: RequestInit = {}, max = 5) {
@@ -83,17 +84,21 @@ Deno.serve(async (r0) => {
   const cb = () => `cb=${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
   const out: Record<string, unknown> = { mode: "READ_ONLY + ephemeral cart", ts: new Date().toISOString(), config: getShopifyConfig() };
 
+  const onlyParam = new URL(r0.url).searchParams.get("only") ?? "all";
+  only_fast = onlyParam === "cart";
+  if (!only_fast) {
   // PHASE 1 — admin baseline
   try { out.phase1_baseline = await shopifyAdminFetch(Q_BASE, { vid: VARIANT_GID }); } catch (e) { out.phase1_error = String(e); }
   try { out.phase1_orders_before = await shopifyAdminFetch(Q_ORDERS, {}); } catch (e) { out.phase1_orders_error = String(e); }
+  }
 
-  const only = new URL(r0.url).searchParams.get("only") ?? "all";
+  const only = onlyParam;
 
   // PHASE 2 — public storefront (US context)
   jar.set("localization", "US"); jar.set("cart_currency", "USD");
-  const home = await follow(`${ORIGIN}/?${cb()}`);
-  const pdp = await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`);
-  const pjson = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
+  const home = only === "cart" ? { url: "", status: 0, location: null, len: 0, text: "" } as any : await follow(`${ORIGIN}/?${cb()}`);
+  const pdp = only === "cart" ? { url: "", status: 0, location: null, len: 0, text: "" } as any : await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`);
+  const pjson = only === "cart" ? { url: "", status: 0, location: null, len: 0, text: "" } as any : await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
   const policies: Record<string, unknown> = {};
   for (const p of only === "cart" ? [] : ["/policies/shipping-policy", "/policies/refund-policy", "/policies/terms-of-service", "/policies/privacy-policy", "/pages/contact"]) {
     policies[p] = slim(await follow(`${ORIGIN}${p}?${cb()}`));
@@ -157,10 +162,12 @@ Deno.serve(async (r0) => {
   out.phase5_cart_cleared = slim(await req(`${ORIGIN}/cart/clear.js`, { method: "POST" }));
 
   // PHASE 5 — post-test consistency
+  if (!only_fast) {
   try { out.phase5_baseline = await shopifyAdminFetch(Q_BASE, { vid: VARIANT_GID }); } catch (e) { out.phase5_error = String(e); }
   try { out.phase5_orders_after = await shopifyAdminFetch(Q_ORDERS, {}); } catch (e) { out.phase5_orders_error = String(e); }
-  out.phase5_pdp_recheck = slim(await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`));
+  out.phase5_pdp_recheck = only_fast ? null : slim(await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`));
   const recheck = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
+  }
   out.phase5_pdp_js = (() => { try { const j = JSON.parse(recheck.text); const v = j.variants.find((x: any) => x.id === VARIANT_ID); return { available: j.available, price: j.price, compare_at_price: j.compare_at_price, variant_available: v?.available, variant_price: v?.price }; } catch { return { parse_error: true, status: recheck.status }; } })();
 
   return new Response(JSON.stringify(out, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
