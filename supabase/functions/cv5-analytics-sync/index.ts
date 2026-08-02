@@ -19,21 +19,28 @@ Deno.serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // Map V5 storyboards -> pin_ids via pinterest_video_queue.
+    // pinterest_video_queue has no product_id — the product identity lives on
+    // pinterest_video_assets (queue.asset_id -> assets.id).
     const { data: queueRows, error: qErr } = await sb
       .from("pinterest_video_queue")
-      .select("pin_id, storyboard_id, product_id")
+      .select("pin_id, storyboard_id, asset_id, pinterest_video_assets:asset_id(product_slug)")
       .eq("engine_version", "v5")
       .not("pin_id", "is", null)
       .not("storyboard_id", "is", null);
-    if (qErr) throw qErr;
+    if (qErr) throw new Error(`load_video_queue: ${qErr.message}`);
+
+    // Guard against duplicate (storyboard_id, pin_id) pairs in the upsert batch.
+    const uniqueRows = new Map<string, Record<string, unknown>>();
+    for (const r of queueRows || []) uniqueRows.set(`${r.storyboard_id}|${r.pin_id}`, r as Record<string, unknown>);
 
     let upserts = 0;
-    for (const q of queueRows || []) {
+    for (const q of uniqueRows.values() as Iterable<any>) {
       // Sum per-day metrics for this pin.
-      const { data: metrics } = await sb
+      const { data: metrics, error: mErr } = await sb
         .from("pinterest_video_metrics")
         .select("impressions, outbound_clicks, saves, ctr, engagement_rate")
         .eq("pin_id", q.pin_id);
+      if (mErr) throw new Error(`load_video_metrics(${q.pin_id}): ${mErr.message}`);
       if (!metrics || metrics.length === 0) continue;
 
       const imp = metrics.reduce((a, r) => a + (r.impressions || 0), 0);
@@ -41,12 +48,14 @@ Deno.serve(async (req) => {
       const saves = metrics.reduce((a, r) => a + (r.saves || 0), 0);
 
       // Watch-time + completion: optional, sourced from pinterest_video_assets if present.
-      let totalWatch = 0, avgWatch = 0, views = 0, completion = 0;
-      const { data: perf } = await sb
+      const totalWatch = 0, avgWatch = 0, views = 0, completion = 0;
+      const { data: perf, error: pErr } = await sb
         .from("pinterest_pin_performance")
         .select("performance_score")
         .eq("pin_id", q.pin_id)
+        .limit(1)
         .maybeSingle();
+      if (pErr) throw new Error(`load_pin_performance(${q.pin_id}): ${pErr.message}`);
 
       const ctr = imp > 0 ? clicks / imp : 0;
       const saveRate = imp > 0 ? saves / imp : 0;
@@ -56,7 +65,7 @@ Deno.serve(async (req) => {
       const { error: upErr } = await sb.from("cv5_video_analytics").upsert({
         storyboard_id: q.storyboard_id,
         pin_id: q.pin_id,
-        product_id: q.product_id,
+        product_id: q.pinterest_video_assets?.product_slug ?? null,
         impressions: imp,
         outbound_clicks: clicks,
         saves,
@@ -69,14 +78,16 @@ Deno.serve(async (req) => {
         composite_score: composite,
         last_synced_at: new Date().toISOString(),
       }, { onConflict: "storyboard_id,pin_id" });
-      if (!upErr) upserts++;
+      if (upErr) throw new Error(`upsert_cv5_analytics(${q.pin_id}): ${upErr.message}`);
+      upserts++;
     }
 
     // If we crossed the threshold, fire pattern extraction.
-    const { count } = await sb
+    const { count, error: cErr } = await sb
       .from("cv5_video_analytics")
       .select("id", { count: "exact", head: true })
       .gt("impressions", 0);
+    if (cErr) throw new Error(`count_cv5_analytics: ${cErr.message}`);
     let patternResult: any = null;
     if ((count || 0) >= PATTERN_THRESHOLD) {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/cv5-extract-patterns`, {

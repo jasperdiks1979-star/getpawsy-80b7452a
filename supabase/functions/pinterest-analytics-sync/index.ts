@@ -36,34 +36,55 @@ Deno.serve(async (req) => {
     const base = await getApiBase(sb);
 
     // Refresh dimensions from video queue + pin queue
-    const { data: vq } = await sb
+    // pinterest_video_queue has no product_slug/published_at — the slug lives on
+    // pinterest_video_assets (queue.asset_id -> assets.id, NOT NULL, unique per row).
+    const { data: vq, error: vqErr } = await sb
       .from("pinterest_video_queue")
-      .select("pin_id,asset_id,product_slug,hook_variant,copy_variant,cta_variant,board_id,published_at,category_key")
+      .select("pin_id,asset_id,hook_variant,copy_variant,cta_variant,board_id,updated_at,pinterest_video_assets:asset_id(product_slug)")
       .not("pin_id", "is", null)
       .limit(500);
+    if (vqErr) {
+      return new Response(JSON.stringify({ ok: false, traceId, stage: "load_video_queue", message: vqErr.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (Array.isArray(vq) && vq.length) {
-      const dims = vq.map((r: Record<string, unknown>) => ({
+      const byPin = new Map<string, Record<string, unknown>>();
+      for (const r of vq as Record<string, unknown>[]) byPin.set(String(r.pin_id), r);
+      const dims = [...byPin.values()].map((r: Record<string, unknown>) => ({
         pin_id: String(r.pin_id),
         asset_id: r.asset_id as string | null,
-        product_slug: r.product_slug as string | null,
+        product_slug: ((r.pinterest_video_assets as { product_slug?: string } | null)?.product_slug) ?? null,
         category_key: (r.category_key as string | null) ?? null,
         hook_variant: (r.hook_variant as string | null) ?? null,
         copy_variant: (r.copy_variant as string | null) ?? null,
         cta_variant: (r.cta_variant as string | null) ?? null,
         board_id: (r.board_id as string | null) ?? null,
-        published_at: (r.published_at as string | null) ?? null,
+        published_at: (r.updated_at as string | null) ?? null,
         source: "video",
         updated_at: new Date().toISOString(),
       }));
-      await sb.from("pinterest_pin_dimensions").upsert(dims, { onConflict: "pin_id" });
+      const { error: dimErr } = await sb.from("pinterest_pin_dimensions").upsert(dims, { onConflict: "pin_id" });
+      if (dimErr) {
+        return new Response(JSON.stringify({ ok: false, traceId, stage: "upsert_video_dimensions", message: dimErr.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
-    const { data: pq } = await sb
+    const { data: pq, error: pqErr } = await sb
       .from("pinterest_pin_queue")
       .select("pin_external_id,product_slug,product_id,hook_group,category_key,board_name,posted_at")
       .not("pin_external_id", "is", null)
       .limit(500);
+    if (pqErr) {
+      return new Response(JSON.stringify({ ok: false, traceId, stage: "load_pin_queue", message: pqErr.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (Array.isArray(pq) && pq.length) {
-      const dims = pq.map((r: Record<string, unknown>) => ({
+      const byPin = new Map<string, Record<string, unknown>>();
+      for (const r of pq as Record<string, unknown>[]) byPin.set(String(r.pin_external_id), r);
+      const dims = [...byPin.values()].map((r: Record<string, unknown>) => ({
         pin_id: String(r.pin_external_id),
         product_slug: r.product_slug as string | null,
         category_key: (r.category_key as string | null) ?? null,
@@ -73,11 +94,21 @@ Deno.serve(async (req) => {
         source: "image",
         updated_at: new Date().toISOString(),
       }));
-      await sb.from("pinterest_pin_dimensions").upsert(dims, { onConflict: "pin_id" });
+      const { error: dimErr2 } = await sb.from("pinterest_pin_dimensions").upsert(dims, { onConflict: "pin_id" });
+      if (dimErr2) {
+        return new Response(JSON.stringify({ ok: false, traceId, stage: "upsert_image_dimensions", message: dimErr2.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Pull last 7 days analytics for each known pin
-    const { data: pins } = await sb.from("pinterest_pin_dimensions").select("pin_id").limit(1000);
+    const { data: pins, error: pinsErr } = await sb.from("pinterest_pin_dimensions").select("pin_id").limit(1000);
+    if (pinsErr) {
+      return new Response(JSON.stringify({ ok: false, traceId, stage: "load_dimensions", message: pinsErr.message }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const start = new Date(Date.now() - 7 * 86400000);
     const startDay = isoDay(start);
     const endDay = isoDay(new Date());
@@ -111,7 +142,8 @@ Deno.serve(async (req) => {
           };
         });
         if (rows.length) {
-          await sb.from("pinterest_analytics_daily").upsert(rows, { onConflict: "pin_id,day" });
+          const { error: aErr } = await sb.from("pinterest_analytics_daily").upsert(rows, { onConflict: "pin_id,day" });
+          if (aErr) { errors++; console.error("[pinterest-analytics-sync] upsert failed", row.pin_id, aErr.message); continue; }
           synced += rows.length;
         }
       } catch { errors++; }

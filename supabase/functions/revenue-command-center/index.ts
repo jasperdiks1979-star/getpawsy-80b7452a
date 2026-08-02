@@ -103,8 +103,16 @@ Deno.serve(async (req) => {
     // ── PRODUCTS ────────────────────────────────────────────
     const [monthOrdersFull, oosRes] = await Promise.all([
       svc.from("orders").select("items").eq("status", "paid").gte("created_at", iso(monthAgo)).limit(5000),
-      svc.from("products").select("id,name,slug").or("available.eq.false,in_stock.eq.false").eq("active", true).limit(50),
+      // products has no `available` / `in_stock` / `active` columns.
+      // Authoritative: is_active (bool, nullable), us_available (bool, nullable),
+      // effective_stock (int, nullable). NULL = unknown, never treated as sold out.
+      svc.from("products").select("id,name,slug,effective_stock,us_available")
+        .eq("is_active", true)
+        .or("us_available.is.false,effective_stock.eq.0")
+        .limit(50),
     ]);
+    if (monthOrdersFull.error) throw new Error(`orders_month: ${monthOrdersFull.error.message}`);
+    if (oosRes.error) throw new Error(`products_out_of_stock: ${oosRes.error.message}`);
     const prodCounts = new Map<string, { name: string; slug: string; units: number; revenue: number }>();
     for (const o of (monthOrdersFull.data ?? []) as { items: any }[]) {
       const items = Array.isArray(o.items) ? o.items : [];
@@ -137,11 +145,13 @@ Deno.serve(async (req) => {
     const lastPub = (recentPub.data?.[0] as { posted_at: string } | undefined)?.posted_at ?? null;
     const minsSinceLastPub = lastPub ? Math.round((Date.now() - new Date(lastPub).getTime()) / 60000) : null;
 
-    const { data: topPinsRaw } = await svc
+    // pinterest_pin_performance has product_id (no product_slug).
+    const { data: topPinsRaw, error: topPinsErr } = await svc
       .from("pinterest_pin_performance")
-      .select("pin_id,pin_title,clicks,impressions,saves,product_slug")
+      .select("pin_id,pin_title,clicks,impressions,saves,product_id")
       .order("clicks", { ascending: false })
       .limit(10);
+    if (topPinsErr) throw new Error(`top_pins: ${topPinsErr.message}`);
 
     return json({
       ok: true,
