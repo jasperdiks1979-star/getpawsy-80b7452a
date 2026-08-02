@@ -157,6 +157,32 @@ Deno.serve(async (req) => {
   }
   out.B_price_lists = priceLists;
 
+  // B2. Targeted fixed-price lookup for this variant in every price list
+  const Q_PL_ONE = `
+  query($id: ID!, $q: String!) {
+    priceList(id: $id) {
+      id currency
+      prices(first: 5, query: $q) {
+        nodes { originType price { amount currencyCode } compareAtPrice { amount currencyCode } variant { id sku } }
+      }
+    }
+  }`;
+  const vNum = variant?.id?.split("/").pop();
+  const targeted: any[] = [];
+  for (const c of catalogs) {
+    if (!c.priceList?.id) continue;
+    const r = await shopifyAdminFetch<any>(Q_PL_ONE, { id: c.priceList.id, q: `variant_id:${vNum}` });
+    targeted.push({ priceListId: c.priceList.id, nodes: r.data?.priceList?.prices?.nodes ?? [], gqlErrors: r.errors ?? null });
+  }
+  out.B2_variant_fixed_prices = targeted;
+
+  // B3. Contextual pricing in the Netherlands market (shop-currency path)
+  const Q_NL = `query($id: ID!) { product(id: $id) { variants(first: 5) { nodes { id sku
+      nl: contextualPricing(context: { country: NL }) { price { amount currencyCode } compareAtPrice { amount currencyCode } } } } } }`;
+  const nlr = await shopifyAdminFetch<any>(Q_NL, { id: PRODUCT_ID });
+  out.B3_nl_contextual = (nlr.data?.product?.variants?.nodes ?? []).filter((v: any) => v.sku === SKU);
+  out.B3_errors = nlr.errors ?? null;
+
   // D. Storefront readbacks
   const bust = `?v=${Date.now()}`;
   const base = "https://ailurova.com/products/" + HANDLE;
@@ -166,6 +192,7 @@ Deno.serve(async (req) => {
     desktop_html_us: await probe(base + bust, UA_DESKTOP, { "x-shopify-country": "US" }),
     mobile_html_us: await probe(base + bust, UA_MOBILE, { "x-shopify-country": "US" }),
     myshopify_json: await probe(myshop + ".js" + bust, UA_DESKTOP, { "x-shopify-country": "US" }),
+    nl_context_json: await probe(base + ".js" + bust + "1", UA_DESKTOP, { "x-shopify-country": "NL", "accept-language": "nl-NL,nl;q=0.9" }),
   };
 
   return new Response(JSON.stringify(out, null, 2), {
