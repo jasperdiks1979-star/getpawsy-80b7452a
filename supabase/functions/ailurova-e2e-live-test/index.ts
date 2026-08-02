@@ -87,6 +87,23 @@ Deno.serve(async (r0) => {
   const onlyParam = new URL(r0.url).searchParams.get("only") ?? "all";
   only_fast = onlyParam === "cart";
 
+  if (onlyParam === "pdp") {
+    only_fast = true;
+    const p = await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`);
+    const t = p.text;
+    const i = t.search(/add to cart/i);
+    out.pdp = {
+      status: p.status, url: p.url, len: p.len,
+      button_context: i > -1 ? t.slice(Math.max(0, i - 1200), i + 400) : null,
+      sold_out: /sold out/i.test(t),
+      disabled_buy: /(add-to-cart|product-form__submit|button[^>]*type="submit")[^>]*disabled/i.test(t),
+      price_hits: [...t.matchAll(/\$1?[0-9]{2}\.[0-9]{2}/g)].map((m) => m[0]).slice(0, 12),
+    };
+    const j = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
+    out.pdp_js = { status: j.status, body: j.text.slice(0, 400) };
+    return new Response(JSON.stringify(out, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   // Non-persisting shipping-rate + pricing calculation for a US address.
   // draftOrderCalculate does NOT create a draft order or an order.
   if (onlyParam === "calc") {
