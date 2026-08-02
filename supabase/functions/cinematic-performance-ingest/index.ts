@@ -3,7 +3,11 @@
 // Pulls latest per-pin metrics from cinematic_pin_performance and upserts a
 // composite-scored row into cinematic_performance_signals. Run every 30 min.
 //
-// composite = 0.35*ctr + 0.25*save + 0.20*hold + 0.10*completion + 0.10*atc
+// composite = renormalised over the metrics that actually have a source.
+// Authoritative columns in cinematic_pin_performance: outbound_clicks, saves,
+// impressions, watch_seconds_p50, engagement_rate, collected_at.
+// hold_rate / completion_rate / add_to_cart_rate have NO reliable source and are
+// therefore written as NULL (unavailable) — never as a measured 0.
 //
 // Auth: service role (cron). Idempotent on (job_id, pin_id).
 
@@ -32,11 +36,11 @@ Deno.serve(async (req) => {
     const since = new Date(Date.now() - 14 * 86400000).toISOString();
     const { data: rows, error } = await admin
       .from("cinematic_pin_performance")
-      .select("job_id, pin_id, outbound_ctr, save_rate, hold_rate, completion_rate, add_to_cart_rate, updated_at")
-      .gte("updated_at", since)
-      .order("updated_at", { ascending: false })
+      .select("job_id, pin_id, impressions, outbound_clicks, saves, watch_seconds_p50, engagement_rate, collected_at")
+      .gte("collected_at", since)
+      .order("collected_at", { ascending: false })
       .limit(2000);
-    if (error) return json(500, { ok: false, traceId, message: error.message });
+    if (error) return json(500, { ok: false, traceId, stage: "load_performance", message: error.message });
 
     const latest = new Map<string, any>();
     for (const r of rows ?? []) {
@@ -45,13 +49,21 @@ Deno.serve(async (req) => {
     }
 
     let upserted = 0;
+    let unavailable_metrics = 0;
     for (const r of latest.values()) {
-      const ctr = num(r.outbound_ctr);
-      const save = num(r.save_rate);
-      const hold = num(r.hold_rate);
-      const comp = num(r.completion_rate);
-      const atc = num(r.add_to_cart_rate);
-      const composite = +(0.35 * ctr + 0.25 * save + 0.20 * hold + 0.10 * comp + 0.10 * atc).toFixed(4);
+      const imp = num(r.impressions);
+      // Rates are only meaningful with a non-zero impression base.
+      const ctr = imp > 0 ? +(num(r.outbound_clicks) / imp).toFixed(6) : null;
+      const save = imp > 0 ? +(num(r.saves) / imp).toFixed(6) : null;
+      // No source in this schema — explicitly unavailable, not zero.
+      const hold = null;
+      const comp = null;
+      const atc = null;
+      if (ctr === null) unavailable_metrics++;
+      const composite = (ctr === null || save === null)
+        ? null
+        // renormalised over the 0.35 + 0.25 weights that have a real source
+        : +(((0.35 * ctr) + (0.25 * save)) / 0.60).toFixed(6);
 
       const { error: upErr } = await admin
         .from("cinematic_performance_signals")
@@ -67,10 +79,15 @@ Deno.serve(async (req) => {
           window_days: 14,
           updated_at: new Date().toISOString(),
         }, { onConflict: "job_id,pin_id" });
-      if (!upErr) upserted++;
+      if (upErr) return json(500, { ok: false, traceId, stage: "upsert_signals", pin_id: r.pin_id, message: upErr.message, upserted });
+      upserted++;
     }
 
-    return json(200, { ok: true, traceId, scanned: rows?.length ?? 0, upserted });
+    return json(200, {
+      ok: true, traceId, scanned: rows?.length ?? 0, upserted,
+      pins_without_impression_base: unavailable_metrics,
+      unavailable_metrics: ["hold_rate", "completion_rate", "add_to_cart_rate"],
+    });
   } catch (e) {
     return json(500, { ok: false, traceId, message: e instanceof Error ? e.message : String(e) });
   }
