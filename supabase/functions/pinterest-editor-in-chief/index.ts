@@ -89,17 +89,26 @@ Deno.serve(async (req) => {
   const maxIter = Math.max(0, Math.min(3, body.maxIterations ?? 2));
 
   // 1. Pull drafts (oldest first so the backlog drains).
-  const { data: drafts, error } = await supabase
+  // NOTE: the authoritative column is `hook_group` (there is no `hook` column).
+  const { data: draftRows, error } = await supabase
     .from("pinterest_pin_queue")
-    .select("id,product_slug,category_key,content_type,pin_title,pin_description,hashtags,hook,meta,priority")
+    .select("id,product_slug,category_key,content_type,pin_title,pin_description,hashtags,hook_group,meta,priority")
     .eq("status", "draft")
     .order("created_at", { ascending: true })
     .limit(limit);
   if (error) {
-    return new Response(JSON.stringify({ ok: false, error: error.message, traceId }), {
+    return new Response(JSON.stringify({ ok: false, stage: "load_drafts", error: error.message, traceId }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  // `priority` is a TEXT column in this schema — keep numeric logic, persist as text.
+  const toPriorityNumber = (v: unknown): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 50;
+  };
+  const drafts = (draftRows ?? []).map((r: Record<string, unknown>) => ({
+    ...r, hook: r.hook_group ?? null,
+  }));
 
   // 2. Feed snapshot — reuse existing gv41-feed-quality (no duplicate logic).
   let feedSnapshot: unknown = null;
@@ -115,7 +124,7 @@ Deno.serve(async (req) => {
   const summary = { evaluated: 0, approved: 0, downranked: 0, rejected: 0, improved: 0, iterations: 0 };
   const decisions: Array<Record<string, unknown>> = [];
 
-  for (const d0 of (drafts ?? []) as Draft[]) {
+  for (const d0 of drafts as unknown as Draft[]) {
     summary.evaluated++;
     let current = { ...d0 };
     let scored = scoreAxes(current);
@@ -155,28 +164,48 @@ Deno.serve(async (req) => {
     const { action, reason } = decideEditorAction({ composite: scored.composite, minScore, maxIter });
 
     if (!dryRun) {
-      const after = { pin_title: current.pin_title, hook: current.hook, pin_description: current.pin_description, hashtags: current.hashtags };
+      const after = {
+        pin_title: current.pin_title,
+        hook_group: current.hook ?? null,
+        pin_description: current.pin_description,
+        hashtags: current.hashtags,
+      };
       if (action === "approve") {
-        await supabase.from("pinterest_pin_queue").update({
+        const { error: upErr } = await supabase.from("pinterest_pin_queue").update({
           ...after,
           status: "queued",
-          priority: Math.max(50, (current.priority ?? 50) + Math.round((scored.composite - minScore) / 2)),
+          priority: String(Math.max(50, toPriorityNumber(current.priority) + Math.round((scored.composite - minScore) / 2))),
           updated_at: new Date().toISOString(),
         }).eq("id", d0.id).eq("status", "draft");
+        if (upErr) {
+          return new Response(JSON.stringify({ ok: false, stage: "approve_update", draft_id: d0.id, error: upErr.message, traceId }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         summary.approved++;
       } else if (action === "reject") {
-        await supabase.from("pinterest_pin_queue").update({
+        const { error: upErr } = await supabase.from("pinterest_pin_queue").update({
           status: "rejected",
           rejection_reason: `editor_in_chief:${reason}`,
           updated_at: new Date().toISOString(),
         }).eq("id", d0.id).eq("status", "draft");
+        if (upErr) {
+          return new Response(JSON.stringify({ ok: false, stage: "reject_update", draft_id: d0.id, error: upErr.message, traceId }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         summary.rejected++;
       } else {
-        await supabase.from("pinterest_pin_queue").update({
+        const { error: upErr } = await supabase.from("pinterest_pin_queue").update({
           ...after,
-          priority: Math.max(0, (current.priority ?? 50) - 40),
+          priority: String(Math.max(0, toPriorityNumber(current.priority) - 40)),
           updated_at: new Date().toISOString(),
         }).eq("id", d0.id).eq("status", "draft");
+        if (upErr) {
+          return new Response(JSON.stringify({ ok: false, stage: "downrank_update", draft_id: d0.id, error: upErr.message, traceId }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         summary.downranked++;
       }
     } else {
@@ -186,7 +215,7 @@ Deno.serve(async (req) => {
       else summary.downranked++;
     }
 
-    await supabase.from("pinterest_editor_decisions").insert({
+    const { error: decErr } = await supabase.from("pinterest_editor_decisions").insert({
       run_id: traceId,
       draft_id: d0.id,
       product_slug: d0.product_slug,
@@ -203,6 +232,11 @@ Deno.serve(async (req) => {
       before_snapshot: before,
       after_snapshot: { pin_title: current.pin_title, hook: current.hook, pin_description: current.pin_description, hashtags: current.hashtags },
     });
+    if (decErr) {
+      return new Response(JSON.stringify({ ok: false, stage: "decision_insert", draft_id: d0.id, error: decErr.message, traceId }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     decisions.push({
       draft_id: d0.id, action, composite: scored.composite, iterations: improvements.length,
