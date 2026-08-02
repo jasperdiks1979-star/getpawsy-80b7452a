@@ -103,7 +103,8 @@ Deno.serve(async (req) => {
   // into the next pass; static/slideshow outputs are never tolerated.
   let query = admin
     .from("cinematic_ad_jobs")
-    .select("id, product_slug, status, fidelity_regen_passes, fidelity_score, fidelity_reject_reasons, scenes_needing_regen, v4_reject_reasons, v5_reject_reasons, media_type, meta")
+    // NOTE: cinematic_ad_jobs has no `meta` column — regen context is appended to status_message.
+    .select("id, product_slug, status, status_message, fidelity_regen_passes, fidelity_score, fidelity_reject_reasons, scenes_needing_regen, v4_reject_reasons, v5_reject_reasons, media_type")
     .in("status", ["needs_scene_regen", "creative_rejected"])
     .order("updated_at", { ascending: true })
     .limit(limit);
@@ -116,11 +117,12 @@ Deno.serve(async (req) => {
     const passes = Number(job.fidelity_regen_passes ?? 0);
     if (passes > maxPasses) {
       // Cap exhausted — park for human review. Never silently publish.
-      await admin.from("cinematic_ad_jobs").update({
+      const { error: capErr } = await admin.from("cinematic_ad_jobs").update({
         status: "creative_rejected",
         status_message: `fidelity regen cap reached (${passes}/${maxPasses}) — manual review required`,
         approved_for_render: false,
       }).eq("id", job.id);
+      if (capErr) return json(500, { ok: false, traceId, stage: "cap_update", job_id: job.id, message: capErr.message });
       out.push({ job_id: job.id, action: "capped", passes });
       continue;
     }
@@ -137,27 +139,21 @@ Deno.serve(async (req) => {
     const analysis = isHardReject ? await rootCauseAnalysis(allReasons, passes, job.product_slug) : "";
 
     const nextPass = passes + (isHardReject ? 1 : 0); // validate already bumps soft-fails
-    const meta = (job.meta && typeof job.meta === "object") ? { ...(job.meta as Record<string, unknown>) } : {};
-    const regenLog = Array.isArray((meta as any).regen_log) ? (meta as any).regen_log : [];
-    regenLog.push({
-      at: new Date().toISOString(),
-      pass: nextPass,
-      cap: maxPasses,
-      trigger: isHardReject ? "hard_reject" : "needs_scene_regen",
-      reasons: allReasons.slice(0, 8),
-      analysis: analysis || undefined,
-    });
-    (meta as any).regen_log = regenLog.slice(-10);
-    (meta as any).last_regen_analysis = analysis || (meta as any).last_regen_analysis;
+
+    // Safe, bounded append to the existing status_message (never blind overwrite).
+    const prevMessage = typeof job.status_message === "string" ? job.status_message : "";
+    const note = isHardReject
+      ? `auto-regen pass ${nextPass}/${maxPasses} (hard-reject) — ${analysis ? analysis.slice(0, 140) : "rebuilding"}`
+      : `auto-regen pass ${passes}/${maxPasses} — rebuilding failing scenes`;
+    const reasonNote = allReasons.length ? ` [reasons: ${allReasons.slice(0, 4).join("; ").slice(0, 160)}]` : "";
+    const nextMessage = `${note}${reasonNote}${prevMessage ? ` | prev: ${prevMessage}` : ""}`.slice(0, 900);
 
     // Push the job back to the start of the pipeline so cinematic-ad-prepare
     // rebuilds scenes, cinematic-ad-queue-render queues a fresh render, and
     // cinematic-ad-validate re-runs V6 fidelity on the new output.
     const patch: Record<string, unknown> = {
       status: "pending",
-      status_message: isHardReject
-        ? `auto-regen pass ${nextPass}/${maxPasses} (hard-reject) — ${analysis ? analysis.slice(0, 140) : "rebuilding"}`
-        : `auto-regen pass ${passes}/${maxPasses} — rebuilding failing scenes`,
+      status_message: nextMessage,
       output_mp4_url: null,
       output_thumbnail_url: null,
       fidelity_passed: null,
@@ -171,7 +167,6 @@ Deno.serve(async (req) => {
       render_worker_id: null,
       render_started_at: null,
       fidelity_regen_passes: nextPass,
-      meta,
     };
     const { error: upErr } = await admin.from("cinematic_ad_jobs").update(patch).eq("id", job.id);
     out.push({
