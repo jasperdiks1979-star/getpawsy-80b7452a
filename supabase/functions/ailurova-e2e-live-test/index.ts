@@ -23,6 +23,8 @@ function store(res: Response) {
 }
 function cookieHeader() { return [...jar].map(([k, v]) => `${k}=${v}`).join("; "); }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function req(url: string, init: RequestInit = {}) {
   const headers: Record<string, string> = {
     "User-Agent": UA,
@@ -32,10 +34,18 @@ async function req(url: string, init: RequestInit = {}) {
   };
   const c = cookieHeader();
   if (c) headers["Cookie"] = c;
-  const res = await fetch(url, { ...init, headers, redirect: "manual" });
+  let res = await fetch(url, { ...init, headers, redirect: "manual" });
+  let attempt = 0;
+  while (res.status === 429 && attempt < 3) {
+    await res.body?.cancel();
+    await sleep(6000 * (attempt + 1));
+    attempt++;
+    res = await fetch(url, { ...init, headers: { ...headers, Cookie: cookieHeader() || "" }, redirect: "manual" });
+  }
   store(res);
   const text = await res.text();
-  return { url, status: res.status, location: res.headers.get("location"), len: text.length, text };
+  await sleep(1200);
+  return { url, status: res.status, location: res.headers.get("location"), len: text.length, text, retries: attempt };
 }
 async function follow(url: string, init: RequestInit = {}, max = 5) {
   let r = await req(url, init);
@@ -77,13 +87,15 @@ Deno.serve(async (r0) => {
   try { out.phase1_baseline = await shopifyAdminFetch(Q_BASE, { vid: VARIANT_GID }); } catch (e) { out.phase1_error = String(e); }
   try { out.phase1_orders_before = await shopifyAdminFetch(Q_ORDERS, {}); } catch (e) { out.phase1_orders_error = String(e); }
 
+  const only = new URL(r0.url).searchParams.get("only") ?? "all";
+
   // PHASE 2 — public storefront (US context)
   jar.set("localization", "US"); jar.set("cart_currency", "USD");
   const home = await follow(`${ORIGIN}/?${cb()}`);
   const pdp = await follow(`${ORIGIN}/products/${HANDLE}?${cb()}`);
   const pjson = await follow(`${ORIGIN}/products/${HANDLE}.js?${cb()}`);
   const policies: Record<string, unknown> = {};
-  for (const p of ["/policies/shipping-policy", "/policies/refund-policy", "/policies/terms-of-service", "/policies/privacy-policy", "/pages/contact"]) {
+  for (const p of only === "cart" ? [] : ["/policies/shipping-policy", "/policies/refund-policy", "/policies/terms-of-service", "/policies/privacy-policy", "/pages/contact"]) {
     policies[p] = slim(await follow(`${ORIGIN}${p}?${cb()}`));
   }
   const body = pdp.text;
