@@ -16,7 +16,7 @@ query RB($pid: ID!, $vid: ID!, $lid: ID!, $prof: ID!) {
   location(id: $lid) { id name isActive fulfillsOnlineOrders shipsInventory address { countryCode zip } }
   deliveryProfile(id: $prof) {
     id name default locationsWithoutRatesCount
-    unassignedLocations(first: 50) { id name }
+    unassignedLocations { id name }
     profileLocationGroups {
       locationGroup { id locations(first: 50) { nodes { id name } } }
       locationGroupZones(first: 30) { nodes {
@@ -44,7 +44,7 @@ const M = `
 mutation Fix($id: ID!, $profile: DeliveryProfileInput!) {
   deliveryProfileUpdate(id: $id, profile: $profile) {
     profile { id name locationsWithoutRatesCount
-      unassignedLocations(first: 50) { id name }
+      unassignedLocations { id name }
       profileLocationGroups { locationGroup { id locations(first: 50) { nodes { id name } } } } }
     userErrors { field message }
   }
