@@ -201,6 +201,48 @@ Deno.serve(async (req) => {
       });
     }
 
+
+    if (mode === "verify") {
+      const forbidden = [/removable step/i, /odou?r[- ]?proof/i, /eliminates? odou?rs?/i, /antibacterial/i, /rust[- ]?proof/i, /stain[- ]?proof/i, /medical grade/i, /non[- ]?stick/i, /aggregateRating/i, /ships in 1[–-]3 business days/i];
+      const desc = product.descriptionHtml ?? "";
+      const pageBodies = pages.map((p: any) => `${p.handle}::${p.body ?? ""}`).join("\n");
+      const corpus = desc + "\n" + pageBodies;
+      const violations = forbidden.filter((r) => r.test(corpus)).map(String);
+
+      // checkout branding capability probe (read-only)
+      let checkoutBranding: unknown = null;
+      try {
+        const pubs = await gql<any>(`query{ checkoutProfiles(first:5){nodes{id name isPublished}} }`);
+        checkoutBranding = pubs.checkoutProfiles?.nodes ?? null;
+      } catch (e) { checkoutBranding = { error: String(e).slice(0, 200) }; }
+
+      // live storefront probe
+      const probe = async (url: string) => {
+        const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/124 Safari/537.36" } });
+        const html = await r.text();
+        return {
+          url, status: r.status,
+          hasLegacyEmail: html.includes(OLD_EMAIL),
+          hasNewEmail: html.includes(NEW_EMAIL),
+          hasGetPawsy: /getpawsy/i.test(html),
+          has99: html.includes("99.00") || html.includes("$99"),
+          has119: html.includes("119.00") || html.includes("$119"),
+          soldOut: /sold out/i.test(html),
+          hasAggregateRating: /aggregateRating/i.test(html),
+        };
+      };
+      const base = "https://www.ailurova.com";
+      const urls = [`${base}/products/${product.handle}`, `${base}/pages/about`, `${base}/pages/faq`, `${base}/pages/contact`, `${base}/`];
+      const live = [];
+      for (const u of urls) { try { live.push(await probe(u)); } catch (e) { live.push({ url: u, error: String(e) }); } }
+
+      return new Response(JSON.stringify({ ok: violations.length === 0, mode, violations, checkoutBranding, live,
+        product: { title: product.title, seo: product.seo, descLen: desc.length, variants: product.variants.nodes,
+          media: product.media.nodes.map((m: any) => m.alt) },
+        legacyEmailInThemeFiles: hits, legacyEmailInPages: pageHits }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ ok: false, error: `mode ${mode} not implemented in this build` }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
