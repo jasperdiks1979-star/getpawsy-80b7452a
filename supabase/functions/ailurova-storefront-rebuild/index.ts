@@ -243,6 +243,19 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+
+    if (mode === "publish-pages") {
+      const out: any[] = [];
+      for (const h of ["about", "faq"]) {
+        const pg = pages.find((x: any) => x.handle === h);
+        if (!pg) { out.push({ handle: h, error: "not found" }); continue; }
+        const r = await gql<any>(`mutation($id:ID!,$page:PageUpdateInput!){ pageUpdate(id:$id,page:$page){ page{ id handle isPublished publishedAt } userErrors{field message} } }`,
+          { id: pg.id, page: { isPublished: true } });
+        out.push({ handle: h, result: r.pageUpdate });
+      }
+      return new Response(JSON.stringify({ ok: true, mode, out }, null, 2), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     return new Response(JSON.stringify({ ok: false, error: `mode ${mode} not implemented in this build` }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
