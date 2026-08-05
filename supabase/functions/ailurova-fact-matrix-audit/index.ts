@@ -42,7 +42,6 @@ query F($pid: ID!) {
   shop {
     name email contactEmail myshopifyDomain url
     billingAddress { address1 address2 city province zip country countryCodeV2 company phone }
-    shopPolicies { type title body url }
   }
   deliveryProfiles(first: 10) {
     nodes {
