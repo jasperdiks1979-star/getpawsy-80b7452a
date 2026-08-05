@@ -10,7 +10,7 @@ query F($pid: ID!) {
   product(id: $pid) {
     id title handle status vendor productType tags createdAt updatedAt
     descriptionHtml description
-    onlineStoreUrl onlinePreviewUrl
+    onlineStoreUrl
     seo { title description }
     featuredMedia { ... on MediaImage { id image { url altText width height } } }
     media(first: 60) {
