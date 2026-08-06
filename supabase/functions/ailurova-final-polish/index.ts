@@ -313,6 +313,26 @@ Deno.serve(async (req) => {
       const files = await readThemeFiles(live.id, wanted);
       report.steps.theme_files_found = Object.keys(files);
 
+      // Locate the duplicate visually-hidden shop-name <h1> wherever it lives.
+      try {
+        const all = await gql<any>(
+          `query($id:ID!){ theme(id:$id){ files(first:250){ nodes{ filename } } } }`,
+          { id: live.id },
+        );
+        const names: string[] = (all.theme?.files?.nodes ?? []).map((n: any) => n.filename)
+          .filter((n: string) => /^(layout|sections|snippets|blocks)\/.*\.liquid$/.test(n));
+        report.steps.h1_scan = [];
+        for (let i = 0; i < names.length; i += 20) {
+          const chunk = await readThemeFiles(live.id, names.slice(i, i + 20));
+          for (const [fn, src] of Object.entries(chunk)) {
+            if (/<h1[^>]*visually-hidden/i.test(src) || /<h1[^>]*>\s*\{\{\s*shop\.name/i.test(src)) {
+              report.steps.h1_scan.push(fn);
+              files[fn] = src;
+            }
+          }
+        }
+      } catch (e) { report.steps.h1_scan_error = String(e).slice(0, 200); }
+
       const toWrite: Record<string, string> = {};
 
       const layout = files["layout/theme.liquid"];
@@ -324,12 +344,23 @@ Deno.serve(async (req) => {
         if (r.out !== layout) toWrite["layout/theme.liquid"] = r.out;
       }
 
-      for (const f of ["snippets/logo.liquid", "blocks/logo.liquid", "snippets/header.liquid", "sections/header.liquid"]) {
+      const h1Targets = [
+        "snippets/logo.liquid", "blocks/logo.liquid", "snippets/header.liquid", "sections/header.liquid",
+        ...(report.steps.h1_scan ?? []),
+      ].filter((v, i, a) => a.indexOf(v) === i && v !== "layout/theme.liquid");
+      for (const f of h1Targets) {
         const src = files[f];
         if (!src) continue;
-        const r = patchHeaderH1(src);
+        const before = src;
+        let mod = src.replace(
+          /<h1(\s+class="visually-hidden"[^>]*)>([\s\S]*?)<\/h1>/gi,
+          '<p$1>$2</p>',
+        );
+        const r = patchHeaderH1(mod);
+        if (mod !== before) r.notes.push("demoted visually-hidden shop-name <h1> to <p>");
+        r.out = r.out;
         report.steps[`h1_${f}`] = r.notes;
-        if (r.out !== src) {
+        if (r.out !== before) {
           report.snapshots[`${f}_before`] = src;
           toWrite[f] = r.out;
         }
