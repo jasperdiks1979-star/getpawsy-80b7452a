@@ -101,10 +101,11 @@ async function scanPage(path: string) {
 
 async function applyNav(dryRun: boolean) {
   const menus = await readMenus();
-  const main = menus.find((m: any) => m.handle === 'main-menu') ?? menus[0];
-  const snapshot = JSON.parse(JSON.stringify(main));
+  const main = menus.find((m: any) => m.handle === 'main-menu');
+  const footer = menus.find((m: any) => m.handle === 'footer');
+  const snapshot = JSON.parse(JSON.stringify({ main, footer }));
 
-  const items = [
+  const mainItems = [
     { title: 'Home', type: 'FRONTPAGE', url: `${BASE}/` },
     { title: 'Shop', type: 'HTTP', url: `${BASE}${PDP_PATH}` },
     { title: 'About', type: 'HTTP', url: `${BASE}/pages/about` },
@@ -112,16 +113,28 @@ async function applyNav(dryRun: boolean) {
     { title: 'Contact', type: 'HTTP', url: `${BASE}/pages/contact` },
   ];
 
-  if (dryRun) return { snapshot, planned: items, applied: false };
+  // Footer: same destinations, English labels, plus the existing privacy page.
+  const footerItems = [
+    { title: 'Shop', type: 'HTTP', url: `${BASE}${PDP_PATH}` },
+    { title: 'About', type: 'HTTP', url: `${BASE}/pages/about` },
+    { title: 'FAQ', type: 'HTTP', url: `${BASE}/pages/faq` },
+    { title: 'Contact', type: 'HTTP', url: `${BASE}/pages/contact` },
+    { title: 'Your privacy choices', type: 'HTTP', url: `${BASE}/pages/data-sharing-opt-out` },
+  ];
 
-  const d = await gql<any>(`mutation($id:ID!,$title:String!,$handle:String!,$items:[MenuItemUpdateInput!]!){
+  if (dryRun) return { snapshot, planned: { mainItems, footerItems }, applied: false };
+
+  const M = `mutation($id:ID!,$title:String!,$handle:String!,$items:[MenuItemUpdateInput!]!){
     menuUpdate(id:$id,title:$title,handle:$handle,items:$items){
-      menu{ id handle items{ id title type url } }
+      menu{ id handle title items{ id title type url } }
       userErrors{ field message }
     }
-  }`, { id: main.id, title: main.title, handle: main.handle, items });
+  }`;
 
-  return { snapshot, applied: true, result: d.menuUpdate };
+  const mainRes = await gql<any>(M, { id: main.id, title: 'Main menu', handle: 'main-menu', items: mainItems });
+  const footerRes = await gql<any>(M, { id: footer.id, title: 'Footer menu', handle: 'footer', items: footerItems });
+
+  return { snapshot, applied: true, result: { main: mainRes.menuUpdate, footer: footerRes.menuUpdate } };
 }
 
 /* ---------------- media reorder ---------------- */
