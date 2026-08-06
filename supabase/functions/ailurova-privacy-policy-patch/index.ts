@@ -48,9 +48,9 @@ Deno.serve(async (req) => {
     const mode = url.searchParams.get('mode') ?? 'audit';
 
     const shop = await gql<any>(`query {
-      shop { id privacyPolicy { id body url } }
+      shop { id shopPolicies { id type body url } }
     }`);
-    const policy = shop.shop.privacyPolicy;
+    const policy = (shop.shop.shopPolicies ?? []).find((p: any) => p.type === 'PRIVACY_POLICY') ?? null;
 
     const pagesData = await gql<any>(`query {
       pages(first: 50, query: "privacy") { nodes { id handle title body } }
@@ -110,10 +110,11 @@ Deno.serve(async (req) => {
     }
 
     // verify
-    const after = await gql<any>(`query { shop { privacyPolicy { body url } } }`);
+    const after = await gql<any>(`query { shop { shopPolicies { type body url } } }`);
+    const ap = (after.shop.shopPolicies ?? []).find((p: any) => p.type === 'PRIVACY_POLICY');
     report.verify = {
-      shopPolicyObsoleteHits: hits(after.shop.privacyPolicy?.body || ''),
-      supportEmailPresent: /support@ailurova\.com/i.test(after.shop.privacyPolicy?.body || ''),
+      shopPolicyObsoleteHits: hits(ap?.body || ''),
+      supportEmailPresent: /support@ailurova\.com/i.test(ap?.body || ''),
     };
     return json(report);
   } catch (e) {
