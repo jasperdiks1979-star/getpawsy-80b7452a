@@ -126,7 +126,9 @@ async function writeThemeFiles(themeId: string, files: Record<string, string>) {
 
 const META_MARKER = "{%- comment -%} ailurova-final-polish:head-meta {%- endcomment -%}";
 
-const META_BLOCK = `${META_MARKER}
+// v1 block (now reverted: the theme already renders og:* + description via its own
+// meta-tags snippet, so this produced duplicate metadata).
+const OLD_META_BLOCK = `${META_MARKER}
 {%- liquid
   assign gp_desc = ''
   if template contains 'product' and product
@@ -151,17 +153,37 @@ const META_BLOCK = `${META_MARKER}
 <meta name="twitter:description" content="{{ gp_desc | escape }}">
 `;
 
+// v2: fill ONLY the genuine gap — pages where the theme emits no description at all
+// (home, cart, policy pages, because shop.description is empty). Never duplicates.
+const FALLBACK_MARKER = "{%- comment -%} ailurova-final-polish:desc-fallback {%- endcomment -%}";
+const FALLBACK_BLOCK = `${FALLBACK_MARKER}
+{%- unless page_description -%}
+  {%- liquid
+    assign gp_desc = 'Ailurova makes one thing properly: an XL enclosed cat litter box with a stainless steel base tray, flip-top lid and a removable litter-filter step. Free US shipping and 30-day returns.'
+    if template contains 'cart'
+      assign gp_desc = 'Your Ailurova cart. XL enclosed cat litter box with a stainless steel base tray. Free US shipping and 30-day returns.'
+    endif
+  -%}
+  <meta name="description" content="{{ gp_desc | escape }}">
+{%- endunless -%}
+`;
+
 function patchThemeLiquid(src: string) {
   const notes: string[] = [];
   let out = src;
 
-  if (out.includes("ailurova-final-polish:head-meta")) {
-    notes.push("head-meta block already present (idempotent skip)");
+  if (out.includes(OLD_META_BLOCK)) {
+    out = out.replace(OLD_META_BLOCK, "");
+    notes.push("removed v1 head-meta block (was duplicating theme metadata)");
+  }
+
+  if (out.includes("ailurova-final-polish:desc-fallback")) {
+    notes.push("description fallback already present (idempotent skip)");
   } else if (out.includes("</head>")) {
-    out = out.replace("</head>", `${META_BLOCK}</head>`);
-    notes.push("inserted head-meta block before </head>");
+    out = out.replace("</head>", `${FALLBACK_BLOCK}</head>`);
+    notes.push("inserted description fallback before </head>");
   } else {
-    notes.push("SKIPPED head-meta: no </head> found");
+    notes.push("SKIPPED description fallback: no </head> found");
   }
 
   // Duplicate H1: the theme prints a visually-hidden shop-name <h1> on top of the
