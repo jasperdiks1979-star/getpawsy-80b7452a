@@ -26,8 +26,17 @@ async function liveTheme() {
 }
 
 async function themeFilenames(themeId: string) {
-  const d = await gql<any>(`query($id:ID!){ theme(id:$id){ files(first:250){ nodes{ filename } } } }`, { id: themeId });
-  return d.theme.files.nodes.map((n: any) => n.filename) as string[];
+  const out: string[] = [];
+  let after: string | null = null;
+  for (let i = 0; i < 10; i++) {
+    const d: any = await gql<any>(
+      `query($id:ID!,$after:String){ theme(id:$id){ files(first:250, after:$after){ nodes{ filename } pageInfo{ hasNextPage endCursor } } } }`,
+      { id: themeId, after });
+    out.push(...d.theme.files.nodes.map((n: any) => n.filename));
+    if (!d.theme.files.pageInfo.hasNextPage) break;
+    after = d.theme.files.pageInfo.endCursor;
+  }
+  return out;
 }
 
 async function readFiles(themeId: string, names: string[]) {
