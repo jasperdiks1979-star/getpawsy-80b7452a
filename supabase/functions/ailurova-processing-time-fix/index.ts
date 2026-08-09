@@ -62,11 +62,12 @@ const DASH = '[–—-]';
 
 function fixLine(line: string): string {
   let out = line;
-  // 1) processing time 1-2 -> 1-3 (never in support-response context)
-  const has12 = new RegExp(`1\\s*${DASH}\\s*2 business day`, 'i').test(out);
-  if (has12 && !SUPPORT.test(out) && PROC.test(out)) {
-    out = out.replace(new RegExp(`1\\s*${DASH}\\s*2( business day)`, 'gi'), '1–3$1');
-  }
+  // 1) processing time 1-2 -> 1-3, judged on the local context around each match
+  out = out.replace(new RegExp(`1\\s*${DASH}\\s*2( business day)`, 'gi'), (m, tail, off: number) => {
+    const ctx = line.slice(Math.max(0, off - 60), off + 40);
+    if (SUPPORT.test(ctx) || !PROC.test(ctx)) return m;
+    return `1–3${tail}`;
+  });
   // 2) delivery 5-10 must say "after dispatch" — skip lines that already
   // distinguish dispatch, and never touch refund-processing wording.
   if (/dispatch|refund/i.test(out)) return out;
