@@ -67,7 +67,9 @@ function fixLine(line: string): string {
   if (has12 && !SUPPORT.test(out) && PROC.test(out)) {
     out = out.replace(new RegExp(`1\\s*${DASH}\\s*2( business day)`, 'gi'), '1–3$1');
   }
-  // 2) delivery 5-10 must say "after dispatch"
+  // 2) delivery 5-10 must say "after dispatch" — skip lines that already
+  // distinguish dispatch, and never touch refund-processing wording.
+  if (/dispatch|refund/i.test(out)) return out;
   out = out.replace(
     new RegExp(`5\\s*${DASH}\\s*10 business days(?!\\s*(after dispatch|after your order))`, 'gi'),
     '5–10 business days after dispatch',
@@ -106,7 +108,8 @@ Deno.serve(async (req) => {
 
     const findings = [
       ...Object.entries(files).map(([n, c]) => scan(n, c)),
-      ...pages.map((p: any) => scan(`page:${p.handle}`, p.body ?? '')),
+      ...pages.filter((p: any) => !/draft/i.test(p.handle))
+        .map((p: any) => scan(`page:${p.handle}`, p.body ?? '')),
       scan('product:descriptionHtml', product.descriptionHtml ?? ''),
     ].filter(Boolean);
 
@@ -124,6 +127,7 @@ Deno.serve(async (req) => {
     }
 
     for (const p of pages) {
+      if (/draft/i.test(p.handle)) continue;
       const f = apply(p.body ?? '');
       if (f === (p.body ?? '')) continue;
       const r = await gql<any>(`mutation($id:ID!,$page:PageUpdateInput!){ pageUpdate(id:$id, page:$page){ page{ handle } userErrors{ field message } } }`,
