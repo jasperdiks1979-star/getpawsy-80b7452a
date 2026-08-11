@@ -114,12 +114,15 @@ export default function AilurovaPinMetrics() {
     setLoading(true);
     setErr(null);
     try {
-      const { data: res, error } = await supabase.functions.invoke("ailurova-pin-metrics", {
-        method: "GET",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        body: undefined as any,
-      });
-      // supabase.functions.invoke doesn't pass query params; fall back to fetch
+      const { data: res, error } = await supabase.functions.invoke(
+        `ailurova-pin-metrics?days=${d}`,
+        {
+          method: "GET",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          body: undefined as any,
+        },
+      );
+      // Fall back to a direct fetch (also carries ?days=) if invoke fails
       let payload: Payload | null = res as Payload | null;
       if (error || !payload) {
         const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ailurova-pin-metrics?days=${d}`;
