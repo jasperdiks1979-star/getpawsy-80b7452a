@@ -860,7 +860,6 @@ async function healthCheck(loopReport?: Json) {
   }
 
   // 8. Phase 6 extra signals
-  const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const since72h = new Date(Date.now() - 72 * 3600 * 1000).toISOString();
   const since7d  = new Date(Date.now() - 7  * 86400 * 1000).toISOString();
 
@@ -929,12 +928,12 @@ async function healthCheck(loopReport?: Json) {
 
   // Pinterest OAuth disconnect
   try {
-    const { data: conn } = await sb.from("pinterest_connection").select("expires_at,is_active").limit(1).maybeSingle();
-    if (!conn || conn.is_active === false || (conn.expires_at && new Date(conn.expires_at as string).getTime() < Date.now())) {
+    const { data: conn } = await sb.from("pinterest_connection").select("token_expires_at,is_active").limit(1).maybeSingle();
+    if (!conn || conn.is_active === false || (conn.token_expires_at && new Date(conn.token_expires_at as string).getTime() < Date.now())) {
       alerts.push({
         alert_key: KEYS.oauth, severity: "P1", category: "pinterest_revenue_ai",
         title: "Revenue AI: Pinterest OAuth disconnected or expired",
-        description: `pinterest_connection is inactive or token expired (${conn?.expires_at ?? "n/a"}).`,
+        description: `pinterest_connection is inactive or token expired (${conn?.token_expires_at ?? "n/a"}).`,
         affected_urls: ["/admin/pinterest"],
         suggested_fix: "Re-authorize Pinterest in /admin/pinterest.",
       });

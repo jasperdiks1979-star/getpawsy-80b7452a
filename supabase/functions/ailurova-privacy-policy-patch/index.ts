@@ -2,7 +2,7 @@
 // mode=audit -> read shop privacy policy + any privacy page, report obsolete brand hits.
 // mode=apply -> replace obsolete GetPawsy branding/contact with Ailurova / Skidzo / support@ailurova.com.
 // No other policy, product, theme, SEO, menu, checkout or shipping object is touched.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
 
 const json = (b: unknown, s = 200) =>

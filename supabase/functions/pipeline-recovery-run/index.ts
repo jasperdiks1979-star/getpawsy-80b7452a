@@ -39,8 +39,8 @@ serve(async (req) => {
     checks.credit_state = await invokeProbe("pinterest-credit-status");
 
     try {
-      const { data: conn } = await sb.from("pinterest_connection").select("expires_at").order("updated_at", { ascending: false }).limit(1).maybeSingle();
-      checks.pinterest_token_expires_at = (conn as any)?.expires_at ?? null;
+      const { data: conn } = await sb.from("pinterest_connection").select("token_expires_at").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+      checks.pinterest_token_expires_at = (conn as any)?.token_expires_at ?? null;
     } catch { checks.pinterest_token_expires_at = null; }
 
     for (const fn of ["pinterest-regen-autopilot", "pinterest-pipeline-drain", "cinematic-ad-autopublish"]) {

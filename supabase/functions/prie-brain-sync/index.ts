@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const [pinsRes, fevRes, ordersRes, pdpRes] = await Promise.all([
       sb.from("pinterest_pins").select("id, status, created_at").gte("created_at", since30),
       sb.from("pinterest_funnel_events").select("event_type, created_at").gte("created_at", since30),
-      sb.from("orders").select("total_cents, created_at, utm_source").gte("created_at", since30),
+      sb.from("orders").select("total_amount, created_at, utm_source").gte("created_at", since30),
       sb.from("pinterest_pdp_conversion_stats").select("views, atc, purchases, day").gte("day", since30.slice(0, 10)),
     ]);
 
@@ -32,10 +32,10 @@ Deno.serve(async (req) => {
     const pdp = pdpRes.data ?? [];
 
     const pinterestOrders = orders.filter((o: any) => (o.utm_source ?? "").toLowerCase().includes("pinterest"));
-    const revenue30 = pinterestOrders.reduce((s: number, o: any) => s + (o.total_cents ?? 0), 0);
+    const revenue30 = pinterestOrders.reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
     const revenue7 = pinterestOrders
       .filter((o: any) => o.created_at >= since7)
-      .reduce((s: number, o: any) => s + (o.total_cents ?? 0), 0);
+      .reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
     const clicks30 = fev.filter((e: any) => e.event_type === "outbound_click").length;
     const atc30 = pdp.reduce((s: number, r: any) => s + (r.atc ?? 0), 0);
