@@ -860,8 +860,6 @@ async function healthCheck(loopReport?: Json) {
   }
 
   // 8. Phase 6 extra signals
-  // reuse since24h from publishing-health block above
-  const _since24hUnused = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const since72h = new Date(Date.now() - 72 * 3600 * 1000).toISOString();
   const since7d  = new Date(Date.now() - 7  * 86400 * 1000).toISOString();
 
