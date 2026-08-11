@@ -1,7 +1,7 @@
 // Ailurova storefront finalize — navigation, media order, footer/legal scan, Stage 5 verify.
 // Strictly scoped: menus + product media ORDER only. No pricing, inventory, markets,
 // shipping profiles, payments, checkout logic, Merchant Center or Ads mutations.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
 
 const PRODUCT_GID = 'gid://shopify/Product/15889810194764';

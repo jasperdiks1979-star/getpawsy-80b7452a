@@ -105,13 +105,13 @@ Deno.serve(async (req) => {
       evidence = { ...evidence, ...sums };
       // Reconcile purchases against internal orders (volume only — id-match needs fbclid mapping).
       const { data: orders } = await c
-        .from("orders").select("total_cents,status,created_at")
+        .from("orders").select("total_amount,status,created_at")
         .gte("created_at", sinceIso);
       const paidOrders = (orders ?? []).filter((o: any) =>
         ["paid", "completed", "fulfilled"].includes(String(o.status ?? "").toLowerCase())
       );
       const orderCount = paidOrders.length;
-      const orderCents = paidOrders.reduce((s2, o: any) => s2 + Number(o.total_cents ?? 0), 0);
+      const orderCents = paidOrders.reduce((s2, o: any) => s2 + Math.round(Number(o.total_amount ?? 0) * 100), 0);
       const countDelta = orderCount === 0 ? 1 : Math.abs(sums.purchases - orderCount) / Math.max(sums.purchases, orderCount);
       const revDelta   = orderCents === 0 ? 1 : Math.abs(sums.value_cents - orderCents) / Math.max(sums.value_cents, orderCents);
       const purchConf  = Math.round(Math.max(0, 100 - countDelta * 60 - revDelta * 40));

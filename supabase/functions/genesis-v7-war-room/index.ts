@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       sb.from("cro_findings").select("category,severity,title,recommendation").eq("status", "open").gte("created_at", new Date(Date.now() - 30 * 864e5).toISOString()).limit(500),
       sb.from("pdp_health_audits").select("overall_score,product_id").gte("audited_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(2000),
       sb.from("pinterest_pin_performance").select("status,impressions,saves,pin_clicks,outbound_clicks").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(2000),
-      sb.from("orders").select("id,status,created_at,total_cents").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(500),
+      sb.from("orders").select("id,status,created_at,total_amount").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(500),
       sb.from("pre_evaluations").select("product_visibility_score,click_intent_score").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(1000),
     ]);
 
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     const pinCtr = pinImpr > 0 ? Math.round((pinClicks / pinImpr) * 10000) / 100 : 0;
 
     const paidOrders = (orders ?? []).filter(o => ["paid", "fulfilled", "completed"].includes(String(o.status))).length;
-    const revenueCents = (orders ?? []).filter(o => ["paid", "fulfilled", "completed"].includes(String(o.status))).reduce((a, o: any) => a + (o.total_cents ?? 0), 0);
+    const revenueCents = (orders ?? []).filter(o => ["paid", "fulfilled", "completed"].includes(String(o.status))).reduce((a, o: any) => a + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
     const avgVis = (pre ?? []).length ? Math.round((pre ?? []).reduce((a, r: any) => a + (r.product_visibility_score ?? 0), 0) / (pre ?? []).length) : 0;
     const avgIntent = (pre ?? []).length ? Math.round((pre ?? []).reduce((a, r: any) => a + (r.click_intent_score ?? 0), 0) / (pre ?? []).length) : 0;

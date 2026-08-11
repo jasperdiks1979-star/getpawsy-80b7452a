@@ -2,7 +2,7 @@
 // mode=audit   -> read-only listing of product media (id, position, filename, alt, url)
 // mode=apply   -> reversible detach of named media IDs from the product (files remain in Files)
 // Strictly scoped to product 15889810194764 media. No price/inventory/SEO/theme/checkout writes.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
 
 const PRODUCT_GID = 'gid://shopify/Product/15889810194764';

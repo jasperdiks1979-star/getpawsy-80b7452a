@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const [productsRes, pdpRes] = await Promise.all([
       sb
         .from("products")
-        .select("id, slug, price_cents, cost_price, sale_price_cents, is_active")
+        .select("id, slug, price, compare_at_price, cost_price, is_active")
         .eq("is_active", true)
         .limit(limit),
       sb
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       const dailyViews = views / 30;
       const convRate = views ? purchases / views : 0;
       const atcRate = views ? atc / views : 0;
-      const unitPriceCents = p.sale_price_cents ?? p.price_cents ?? 0;
+      const unitPriceCents = Math.round(Number(p.price ?? 0) * 100);
       const dailyRevenue = dailyViews * convRate * unitPriceCents;
 
       const horizon = 30;

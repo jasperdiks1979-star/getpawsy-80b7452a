@@ -33,9 +33,9 @@ async function captureBaseline(windowDays = 7): Promise<Record<string, number | 
     aov_cents: null, bhi: null,
   };
   try {
-    const { data: orders } = await s.from('orders').select('total_cents').gte('created_at', since).eq('status', 'paid');
+    const { data: orders } = await s.from('orders').select('total_amount').gte('created_at', since).eq('status', 'paid');
     if (orders) {
-      const rev = orders.reduce((a, r: any) => a + (r.total_cents || 0), 0);
+      const rev = orders.reduce((a, r: any) => a + Math.round(Number(r.total_amount || 0) * 100), 0);
       metrics.revenue_cents = rev;
       metrics.orders = orders.length;
       metrics.aov_cents = orders.length ? Math.round(rev / orders.length) : 0;

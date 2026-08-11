@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
   const [sessionsR, funnelR, ordersR, prevOrdersR, pinsR] = await Promise.all([
     supa.from("pinterest_attribution_sessions").select("id, session_id", { count: "exact", head: false }).gte("created_at", since).limit(50000),
     supa.from("pinterest_funnel_events").select("event_type, value_cents, created_at").gte("created_at", since).limit(100000),
-    supa.from("orders").select("id, total_cents, created_at, utm_source, product_slugs:metadata").gte("created_at", since).limit(20000),
-    supa.from("orders").select("id, total_cents, utm_source, product_slugs:metadata").gte("created_at", sincePrev).lt("created_at", since).limit(20000),
+    supa.from("orders").select("id, total_amount, created_at, utm_source, product_slugs:metadata").gte("created_at", since).limit(20000),
+    supa.from("orders").select("id, total_amount, utm_source, product_slugs:metadata").gte("created_at", sincePrev).lt("created_at", since).limit(20000),
     supa.from("pinterest_pins").select("id, impressions, outbound_clicks, saves").limit(20000),
   ]);
 
@@ -44,9 +44,9 @@ Deno.serve(async (req) => {
   const purchases = funnel.filter((e: any) => e.event_type === "purchase" || e.event_type === "checkout_complete").length;
 
   const orders = (ordersR.data ?? []).filter((o: any) => (o.utm_source || "").toLowerCase().includes("pinterest"));
-  const revenueCents = orders.reduce((s: number, o: any) => s + (Number(o.total_cents) || 0), 0);
+  const revenueCents = orders.reduce((s: number, o: any) => s + Math.round((Number(o.total_amount) || 0) * 100), 0);
   const prevOrders = (prevOrdersR.data ?? []).filter((o: any) => (o.utm_source || "").toLowerCase().includes("pinterest"));
-  const prevRevenue = prevOrders.reduce((s: number, o: any) => s + (Number(o.total_cents) || 0), 0);
+  const prevRevenue = prevOrders.reduce((s: number, o: any) => s + Math.round((Number(o.total_amount) || 0) * 100), 0);
 
   // 2. Pinterest reach proxies — sum across pins table where available
   const pins = pinsR.data ?? [];
@@ -64,13 +64,13 @@ Deno.serve(async (req) => {
     const slugs: string[] = Array.isArray((o as any).product_slugs?.product_slugs)
       ? (o as any).product_slugs.product_slugs
       : [];
-    for (const s of slugs) slugRev.set(s, (slugRev.get(s) ?? 0) + Number(o.total_cents || 0) / Math.max(slugs.length, 1));
+    for (const s of slugs) slugRev.set(s, (slugRev.get(s) ?? 0) + Math.round(Number(o.total_amount || 0) * 100) / Math.max(slugs.length, 1));
   }
   for (const o of prevOrders) {
     const slugs: string[] = Array.isArray((o as any).product_slugs?.product_slugs)
       ? (o as any).product_slugs.product_slugs
       : [];
-    for (const s of slugs) slugPrev.set(s, (slugPrev.get(s) ?? 0) + Number(o.total_cents || 0) / Math.max(slugs.length, 1));
+    for (const s of slugs) slugPrev.set(s, (slugPrev.get(s) ?? 0) + Math.round(Number(o.total_amount || 0) * 100) / Math.max(slugs.length, 1));
   }
   const trending = [...slugRev.entries()]
     .sort((a, b) => b[1] - a[1])

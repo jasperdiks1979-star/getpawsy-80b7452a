@@ -69,12 +69,12 @@ async function revenueTruth(c: ReturnType<typeof admin>, hours = 24) {
 
   const { data: orders } = await c
     .from("orders")
-    .select("total_cents, currency, created_at, status")
+    .select("total_amount, currency, created_at, status")
     .gte("created_at", since);
 
   const orders_cents = (orders ?? [])
     .filter((o: any) => ["paid", "completed", "fulfilled"].includes(String(o.status ?? "").toLowerCase()))
-    .reduce((s: number, o: any) => s + Number(o.total_cents ?? 0), 0);
+    .reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
   // Stripe / GA4 / Pinterest / TikTok sources are placeholders until each adapter
   // is wired — record 0 with status=pending so divergence is not falsely raised.

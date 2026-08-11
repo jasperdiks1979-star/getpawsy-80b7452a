@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         "CANONICAL_PAGE_VIEW","CANONICAL_PRODUCT_VIEW","CANONICAL_ADD_TO_CART",
         "CANONICAL_CART","CANONICAL_CHECKOUT","CANONICAL_PURCHASE",
       ]).limit(50000),
-    sb.from("orders").select("id,status,total_cents,created_at").gte("created_at", since14).limit(1000),
+    sb.from("orders").select("id,status,total_amount,created_at").gte("created_at", since14).limit(1000),
     sb.from("pinterest_pin_queue").select("status,created_at").gte("created_at", since7).limit(5000),
     sb.from("pinterest_publish_logs").select("id,status,created_at").gte("created_at", since7).limit(1000),
     sb.from("pre_evaluations").select("passed,created_at").gte("created_at", since7).limit(5000),
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
 
   const orders = ordersQ.data ?? [];
   const paidOrders = orders.filter((o: any) => ["paid","completed","fulfilled"].includes(String(o.status).toLowerCase()));
-  const revenue14d = paidOrders.reduce((s: number, o: any) => s + (o.total_cents ?? 0), 0) / 100;
+  const revenue14d = paidOrders.reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0) / 100;
 
   const queue = queueQ.data ?? [];
   const queueByStatus: Record<string, number> = {};
