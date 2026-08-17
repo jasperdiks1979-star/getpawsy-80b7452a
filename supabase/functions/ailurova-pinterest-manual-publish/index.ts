@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
     const { data: conn, error: connErr } = await sb
       .from("pinterest_connection")
       .select("id, account_name, account_id, access_token, scopes, status, token_expires_at")
-      .eq("status", "connected")
+      .in("status", ["connected", "auth_failed"])
+      .order("token_expires_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (connErr || !conn) return json({ ok: false, step: "load_connection", error: connErr?.message ?? "no_connection" }, 500);
     const username: string = conn.account_name;
