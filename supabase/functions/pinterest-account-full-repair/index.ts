@@ -481,7 +481,10 @@ Deno.serve(async (req) => {
         const repaired = mutations.filter((m) => m.new_destination !== "DELETED");
         const rescan = {
           total_pins_after: after.items.length,
-          repairs_verified: repaired.filter((m) => afterById.get(m.pin_id) && stripQuery(afterById.get(m.pin_id)!.link ?? "") === stripQuery(m.new_destination)).length,
+          repairs_verified: repaired.filter((m) => {
+            const id = m.new_pin_id ?? m.pin_id;
+            return afterById.get(id) && stripQuery(afterById.get(id)!.link ?? "") === stripQuery(m.new_destination);
+          }).length,
           deletions_verified: mutations.filter((m) => m.new_destination === "DELETED" && !afterById.has(m.pin_id)).length,
           protected_pins_untouched: ledger.filter((r) => !AUTHORIZED.has(r.action)).length + (byAction["KEEP"] ?? 0),
           cross_brand_misroutes: after.items.filter((p: PinRec) => {
