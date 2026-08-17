@@ -304,7 +304,7 @@ export default function SlowFeederDogBowls() {
           <section className="py-16">
             <div className="container mx-auto px-4 max-w-3xl">
               <div className="bg-card border-2 border-primary/20 rounded-2xl overflow-hidden md:flex">
-                <Link to={featuredProduct.slug ? `/product/${featuredProduct.slug}` : `/product/${featuredProduct.id}`} className="block md:w-1/2 relative aspect-square overflow-hidden bg-muted">
+                <Link to={featuredProduct.slug ? `/products/${featuredProduct.slug}` : `/products/${featuredProduct.id}`} className="block md:w-1/2 relative aspect-square overflow-hidden bg-muted">
                   <OptimizedImage
                     src={featuredProduct.image_url || '/placeholder.svg'}
                     alt={`${featuredProduct.name} | GetPawsy`}

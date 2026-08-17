@@ -16,6 +16,8 @@ import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
 import { UsOnlyTrustStrip } from "@/components/home/UsOnlyTrustStrip";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
+import { FeaturedCategories } from "@/components/home/FeaturedCategories";
+import { ProductRail } from "@/components/home/ProductRail";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialProofSection } from "@/components/home/SocialProofSection";
@@ -200,6 +202,32 @@ const HomePage = () => {
 
       {/* 2. Benefits */}
       <BenefitsSection />
+
+      {/* 2b. Shop by category — real storefront navigation for a multi-product store */}
+      <FeaturedCategories />
+
+      {/* 2c. Live catalog rails — always in-stock, never an empty homepage */}
+      <ProductRail
+        title="Best sellers"
+        subtitle="In stock now, ready to ship from our US-serving fulfillment network"
+        limit={8}
+        viewAllHref="/products"
+        viewAllLabel="Shop all"
+      />
+      <ProductRail
+        title="For cats"
+        subtitle="Litter boxes, trees, scratchers and toys"
+        species="cat"
+        limit={4}
+        viewAllHref="/collections/cats"
+      />
+      <ProductRail
+        title="For dogs"
+        subtitle="Beds, travel gear, training and treats"
+        species="dog"
+        limit={4}
+        viewAllHref="/collections/dogs"
+      />
 
       {/* 3. Featured Products — pulled live from the bestsellers table */}
       {featuredIds.length > 0 && (

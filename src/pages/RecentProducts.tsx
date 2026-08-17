@@ -58,7 +58,7 @@ export default function RecentProducts() {
             {products?.map((product) => (
               <Link
                 key={product.id}
-                to={`/product/${product.slug || product.id}`}
+                to={`/products/${product.slug || product.id}`}
                 className="group rounded-xl border border-border bg-card overflow-hidden hover:shadow-md hover:border-primary/30 transition-all"
               >
                 <div className="aspect-square bg-muted overflow-hidden">

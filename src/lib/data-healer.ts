@@ -84,13 +84,21 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
  * Validate and fix cart items structure
  */
 const healCartData = (data: unknown): { healed: unknown; wasCorrupted: boolean } => {
-  if (!isPlainObject(data)) {
-    return { healed: { items: [] }, wasCorrupted: true };
+  // CartContext persists `pawsy-cart` as a bare ARRAY of cart items.
+  // Treating that array as a corrupt `{items:[]}` object wiped the cart of
+  // every returning visitor on first paint (and emptied checkout after a
+  // page reload). Support both shapes and always heal back to the SAME
+  // shape we were given.
+  const isArrayShape = Array.isArray(data);
+  if (!isArrayShape && !isPlainObject(data)) {
+    return { healed: [], wasCorrupted: true };
   }
-  
+
   let wasCorrupted = false;
-  const healed: Record<string, unknown> = { ...data };
-  
+  const healed: Record<string, unknown> = isArrayShape
+    ? { items: data as unknown[] }
+    : { ...(data as Record<string, unknown>) };
+
   // Ensure items is an array
   if (!Array.isArray(healed.items)) {
     healed.items = [];
@@ -136,8 +144,8 @@ const healCartData = (data: unknown): { healed: unknown; wasCorrupted: boolean }
       return true;
     });
   }
-  
-  return { healed, wasCorrupted };
+
+  return { healed: isArrayShape ? healed.items : healed, wasCorrupted };
 };
 
 /**

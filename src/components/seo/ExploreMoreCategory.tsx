@@ -142,7 +142,7 @@ export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreC
         {relatedProducts.map(product => (
           <Link
             key={product.id}
-            to={`/product/${product.slug || product.id}`}
+            to={`/products/${product.slug || product.id}`}
             className="group flex gap-3 bg-card border rounded-xl p-4 hover:border-primary/30 hover:shadow-md transition-all"
           >
             {product.image_url && (

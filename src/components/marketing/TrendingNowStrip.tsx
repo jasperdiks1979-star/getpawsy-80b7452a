@@ -22,7 +22,7 @@ export const TrendingNowStrip = memo(() => {
         {trending.map((p) => (
           <Link
             key={p.slug}
-            to={`/product/${p.slug}`}
+            to={`/products/${p.slug}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0"
           >
             {p.name}

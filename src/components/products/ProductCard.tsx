@@ -168,7 +168,7 @@ export const ProductCard = memo(
     const { percent: discount } = getProductDiscount(cardPrice, cardCanonical.compareAtPrice);
 
     const productUrl =
-      product.slug && product.slug.trim() !== "" ? `/product/${product.slug}` : `/product/${product.id}`;
+      product.slug && product.slug.trim() !== "" ? `/products/${product.slug}` : `/products/${product.id}`;
 
     const premium = getConversionFlag("premiumCard");
 
