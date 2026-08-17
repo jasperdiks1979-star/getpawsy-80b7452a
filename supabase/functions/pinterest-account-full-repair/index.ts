@@ -64,10 +64,16 @@ async function verifyUrl(raw: string) {
     });
     const text = await res.text();
     const t = text.toLowerCase();
+    // getpawsy.pet is a client-rendered SPA: EVERY path returns the same 200
+    // shell (which itself contains the router's "Page Not Found" string), so
+    // HTML text can never prove product existence there. Live truth for that
+    // host comes from the catalog, not from the response body.
+    const spaShell = /(^|\.)getpawsy\.pet$/.test(hostOf(res.url || raw));
     out = {
       status: res.status,
       finalUrl: res.url || raw,
-      soft404: res.status === 200 && (t.includes("product not found") || t.includes("page not found") || t.includes("404 - not found")),
+      soft404: !spaShell && res.status === 200 &&
+        (t.includes("product not found") || t.includes("404 not found") || t.includes("page you were looking for")),
     };
   } catch (_e) { /* leave status 0 */ }
   urlCache.set(key, out);
