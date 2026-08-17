@@ -30,7 +30,14 @@ export default defineConfig(({ mode }) => ({
           // ── node_modules splitting ───────────────────────────────────────
           if (id.includes('node_modules')) {
             // Core React runtime — smallest possible critical chunk
-            if (id.includes('react-dom') || id.includes('react/')) return 'react-vendor';
+            // Match the package root exactly — `id.includes('react/')` also matched
+            // node_modules/@tiptap/react/*, dragging ProseMirror into the critical
+            // vendor chunk (+300KB for every storefront visitor).
+            if (
+              /node_modules\/(\.pnpm\/)?react-dom(@[^/]+)?\//.test(id) ||
+              /node_modules\/(\.pnpm\/)?react(@[^/]+)?\//.test(id) ||
+              /node_modules\/scheduler\//.test(id)
+            ) return 'react-vendor';
             if (id.includes('react-router')) return 'router';
             if (id.includes('@tanstack/react-query')) return 'query';
             if (id.includes('@supabase')) return 'supabase';
