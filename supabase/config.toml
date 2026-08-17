@@ -554,3 +554,6 @@ verify_jwt = false
 
 [functions.ailurova-scope-audit]
 verify_jwt = false
+
+[functions.pinterest-account-full-repair]
+verify_jwt = false
