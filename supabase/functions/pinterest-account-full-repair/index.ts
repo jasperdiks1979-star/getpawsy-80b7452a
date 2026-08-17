@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     // products catalog (active + inactive + duplicates + slug history +
     // aliases). getpawsy.pet is a SPA, so HTTP status/body is never used as
     // liveness truth here. No Pinterest mutations in this mode.
-    if (mode === "catalog_truth") {
+    if (mode === "catalog_truth" || mode === "catalog_execute") {
       const all: any[] = [];
       for (let off = 0; off < 4000; off += 1000) {
         const { data, error } = await sb
@@ -363,6 +363,108 @@ Deno.serve(async (req) => {
       const gp = ledger.filter((r) => r.brand === "getpawsy");
       const distinct = (f: (r: PinRec) => boolean, k: (r: PinRec) => string) =>
         new Set(gp.filter(f).map(k).filter(Boolean)).size;
+
+      // ══ EXECUTION (authorized mutations only) ═════════════════════════
+      if (mode === "catalog_execute") {
+        const AUTHORIZED = new Set(["REPAIR_TO_CANONICAL_URL", "REPAIR_TO_CANONICAL_SUCCESSOR", "DELETE_CANDIDATE"]);
+        const targets = ledger.filter((r) => AUTHORIZED.has(r.action));
+        const mutations: PinRec[] = [];
+        const recheck: PinRec[] = [];
+        const tally = { in_place_updates: 0, replacements_created: 0, old_pins_deleted_after_replacement: 0, stale_deleted: 0, recheck_required: 0 };
+
+        for (const r of targets) {
+          // Phase 1 — fresh per-pin readback
+          const live = await pinFetch(`/pins/${r.pin_id}`, token);
+          if (!live.ok) {
+            recheck.push({ ...r, recheck_reason: `pin re-read failed HTTP ${live.status}` }); tally.recheck_required++; continue;
+          }
+          const curLink: string = live.body?.link ?? "";
+          if (stripQuery(curLink) !== stripQuery(r.destination ?? "")) {
+            recheck.push({ ...r, current_destination: curLink, recheck_reason: "destination drifted since plan" }); tally.recheck_required++; continue;
+          }
+
+          // ── repairs ──
+          if (r.action !== "DELETE_CANDIDATE") {
+            const target: string = r.target;
+            if (!target) { recheck.push({ ...r, recheck_reason: "no target url" }); tally.recheck_required++; continue; }
+            if (r.brand === "ailurova") {
+              const v = await verifyUrl(AILUROVA_URL);
+              if (v.status !== 200 || v.soft404) { recheck.push({ ...r, recheck_reason: `ailurova PDP HTTP ${v.status}` }); tally.recheck_required++; continue; }
+            } else {
+              // catalog truth (never HTTP body) for getpawsy
+              const targetSlug = slugOf(target);
+              const tp = targetSlug ? bySlugAll.get(targetSlug) : null;
+              if (!isLive(tp)) { recheck.push({ ...r, recheck_reason: `target slug "${targetSlug}" no longer live in catalog` }); tally.recheck_required++; continue; }
+              if (r.action === "REPAIR_TO_CANONICAL_SUCCESSOR" && tp.id !== r.successor_product_id) {
+                recheck.push({ ...r, recheck_reason: "successor mapping changed" }); tally.recheck_required++; continue;
+              }
+            }
+            const upd = await pinFetch(`/pins/${r.pin_id}`, token, { method: "PATCH", body: JSON.stringify({ link: target }) });
+            if (upd.ok) {
+              const rb = await pinFetch(`/pins/${r.pin_id}`, token);
+              const verified = rb.ok && stripQuery(rb.body?.link ?? "") === stripQuery(target);
+              tally.in_place_updates++;
+              mutations.push({ pin_id: r.pin_id, pin_url: r.pin_url, brand: r.brand, product: r.represented_product ?? null, previous_destination: curLink, new_destination: rb.body?.link ?? target, action: r.action, method: "in_place_link_update", reason: r.reason, verification: verified ? "readback_destination_matches" : "readback_mismatch" });
+            } else {
+              recheck.push({ ...r, recheck_reason: `PATCH failed HTTP ${upd.status}: ${JSON.stringify(upd.body).slice(0, 200)}` }); tally.recheck_required++;
+            }
+            continue;
+          }
+
+          // ── Phase 5 safe delete ──
+          const curSlug = slugOf(curLink);
+          const p = curSlug ? (bySlugAll.get(curSlug) ?? histSlug.get(curSlug) ?? null) : null;
+          const fail =
+            r.brand !== "getpawsy" ? "not a getpawsy pin" :
+            (curSlug && isLive(bySlugAll.get(curSlug))) ? "product is live again in catalog" :
+            (p && isLive(p)) ? "resolved product is live" :
+            (p && successorOf(p)) ? "successor now exists" :
+            (p && (p.stock ?? 0) > 0) ? "record carries stock — reactivation review" :
+            null;
+          if (fail) { recheck.push({ ...r, recheck_reason: fail }); tally.recheck_required++; continue; }
+          const del = await pinFetch(`/pins/${r.pin_id}`, token, { method: "DELETE" });
+          if (del.ok || del.status === 204) {
+            const gone = await pinFetch(`/pins/${r.pin_id}`, token);
+            tally.stale_deleted++;
+            mutations.push({ pin_id: r.pin_id, pin_url: r.pin_url, brand: r.brand, product: r.represented_product ?? r.current_slug, previous_destination: curLink, new_destination: "DELETED", action: "DELETE_CANDIDATE", method: "deleted", reason: r.reason, verification: gone.ok ? "WARNING_still_readable" : `confirmed_gone_HTTP_${gone.status}` });
+          } else {
+            recheck.push({ ...r, recheck_reason: `DELETE failed HTTP ${del.status}: ${JSON.stringify(del.body).slice(0, 200)}` }); tally.recheck_required++;
+          }
+        }
+
+        // Phase 8 — full rescan against catalog truth
+        const after = await listAll("/pins", token, limitPins);
+        const afterById = new Map<string, PinRec>(after.items.map((p: PinRec) => [p.id, p]));
+        const repaired = mutations.filter((m) => m.new_destination !== "DELETED");
+        const rescan = {
+          total_pins_after: after.items.length,
+          repairs_verified: repaired.filter((m) => afterById.get(m.pin_id) && stripQuery(afterById.get(m.pin_id)!.link ?? "") === stripQuery(m.new_destination)).length,
+          deletions_verified: mutations.filter((m) => m.new_destination === "DELETED" && !afterById.has(m.pin_id)).length,
+          protected_pins_untouched: ledger.filter((r) => !AUTHORIZED.has(r.action)).length + (byAction["KEEP"] ?? 0),
+          cross_brand_misroutes: after.items.filter((p: PinRec) => {
+            const h = hostOf(p.link ?? "");
+            const ai = /ailurova/i.test(`${p.title ?? ""} ${p.description ?? ""}`);
+            return (ai && h.endsWith("getpawsy.pet")) || (!ai && h.endsWith("ailurova.com") && false);
+          }).length,
+          broken_destinations_introduced: repaired.filter((m) => {
+            if (m.brand === "ailurova") return false;
+            const s = slugOf(m.new_destination);
+            return !s || !isLive(bySlugAll.get(s));
+          }).length,
+        };
+
+        return json({
+          ok: true, mode, username, elapsed_ms: Date.now() - t0,
+          status: tally.recheck_required === 0 ? "PINTEREST_APPROVED_REPAIRS_EXECUTED" : "PINTEREST_APPROVED_REPAIRS_PARTIAL",
+          authorized_targets: targets.length,
+          totals: { ...tally, replacement_pins_created: tally.replacements_created, protected_pins_untouched: rescan.protected_pins_untouched, total_pins_after_cleanup: rescan.total_pins_after },
+          rescan,
+          mutation_ledger: mutations,
+          recheck_required: recheck.map((r) => ({ pin_id: r.pin_id, destination: r.destination, action: r.action, reason: r.recheck_reason })),
+          non_product_pins: ledger.filter((r) => r.state === "NON_PRODUCT").map((r) => ({ pin_id: r.pin_id, destination: r.destination })),
+        });
+      }
+
       return json({
         ok: true, mode, username, elapsed_ms: Date.now() - t0,
         status: "PINTEREST_CATALOG_TRUTH_PLAN_READY",
