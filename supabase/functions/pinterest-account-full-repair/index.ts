@@ -148,6 +148,242 @@ Deno.serve(async (req) => {
     }
     const pins = pinsRes.items;
 
+    // ══ mode: catalog_truth ══════════════════════════════════════════════
+    // Deterministic, read-only pin→product resolution against the FULL
+    // products catalog (active + inactive + duplicates + slug history +
+    // aliases). getpawsy.pet is a SPA, so HTTP status/body is never used as
+    // liveness truth here. No Pinterest mutations in this mode.
+    if (mode === "catalog_truth") {
+      const all: any[] = [];
+      for (let off = 0; off < 4000; off += 1000) {
+        const { data, error } = await sb
+          .from("products")
+          .select("id,name,slug,is_active,is_duplicate,canonical_product_id,dedupe_key,sku,cj_product_id,stock,product_type,category")
+          .range(off, off + 999);
+        if (error) return json({ ok: false, step: "catalog", error: error.message }, 500);
+        all.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      const byId = new Map<string, any>(all.map((p) => [p.id, p]));
+      const bySlugAll = new Map<string, any>();
+      for (const p of all) if (p.slug) bySlugAll.set(p.slug, p);
+      const { data: hist } = await sb.from("product_slug_history").select("product_id,old_slug,current_slug");
+      const { data: aliases } = await sb.from("product_aliases").select("product_id,alias,kind");
+      const histSlug = new Map<string, any>();
+      for (const h of hist ?? []) if (h.old_slug && byId.has(h.product_id)) histSlug.set(h.old_slug, byId.get(h.product_id));
+      for (const a of aliases ?? []) if (a.alias && byId.has(a.product_id)) histSlug.set(a.alias, byId.get(a.product_id));
+
+      // exact-identity successor index
+      const activeByDedupe = new Map<string, any>();
+      const activeBySku = new Map<string, any>();
+      const activeByCj = new Map<string, any>();
+      for (const p of all) {
+        if (!p.is_active || p.is_duplicate) continue;
+        if (p.dedupe_key && !activeByDedupe.has(p.dedupe_key)) activeByDedupe.set(p.dedupe_key, p);
+        if (p.sku && !activeBySku.has(p.sku)) activeBySku.set(p.sku, p);
+        if (p.cj_product_id && !activeByCj.has(p.cj_product_id)) activeByCj.set(p.cj_product_id, p);
+      }
+      const isLive = (p: any) => !!p && p.is_active === true && p.is_duplicate !== true;
+      function successorOf(p: any): { prod: any; proof: string } | null {
+        if (!p) return null;
+        const c = p.canonical_product_id ? byId.get(p.canonical_product_id) : null;
+        if (isLive(c)) return { prod: c, proof: `canonical_product_id → ${c.id} (merge/dedup continuation)` };
+        if (p.dedupe_key) {
+          const d = activeByDedupe.get(p.dedupe_key);
+          if (isLive(d) && d.id !== p.id) return { prod: d, proof: `identical dedupe_key "${p.dedupe_key}"` };
+        }
+        if (p.sku) {
+          const s = activeBySku.get(p.sku);
+          if (isLive(s) && s.id !== p.id) return { prod: s, proof: `identical SKU "${p.sku}"` };
+        }
+        if (p.cj_product_id) {
+          const s = activeByCj.get(p.cj_product_id);
+          if (isLive(s) && s.id !== p.id) return { prod: s, proof: `identical CJ supplier id "${p.cj_product_id}"` };
+        }
+        return null;
+      }
+
+      const liveTokens = all.filter(isLive).map((p) => ({ p, t: tokens(p.name) }));
+      const ledger: PinRec[] = [];
+      for (const pin of pins) {
+        const link: string = pin.link ?? "";
+        const host = hostOf(link);
+        const title: string = pin.title ?? "";
+        const desc: string = pin.description ?? "";
+        const slug = slugOf(link);
+        const row: PinRec = {
+          pin_id: pin.id,
+          pin_url: `https://www.pinterest.com/pin/${pin.id}/`,
+          board: boardName[pin.board_id] ?? pin.board_id,
+          title,
+          destination: link || null,
+          current_slug: slug,
+          created_at: pin.created_at ?? null,
+        };
+
+        // Phase 8 — Ailurova is fully separated from GetPawsy logic
+        const aiLooking = /ailurova/i.test(`${title} ${desc}`) || /ailurova/i.test(link);
+        if (host.endsWith("ailurova.com") || aiLooking) {
+          row.brand = "ailurova";
+          row.represented_product = "Ailurova XL Stainless Steel Enclosed Cat Litter Box";
+          row.canonical_url = AILUROVA_URL;
+          if (stripQuery(link) === AILUROVA_URL) {
+            row.state = "ACTIVE_CANONICAL_MATCH"; row.action = "KEEP"; row.confidence = 1;
+          } else {
+            row.state = "ACTIVE_LEGACY_SLUG";
+            row.action = "REPAIR_TO_CANONICAL_URL";
+            row.target = withUtm(AILUROVA_URL, "ailurova", pin.id);
+            row.confidence = 1;
+            row.reason = "Ailurova pin not on canonical PDP URL";
+          }
+          ledger.push(row); continue;
+        }
+
+        if (!link) {
+          row.brand = "none"; row.state = "NON_PRODUCT"; row.action = "KEEP_UNLESS_OTHERWISE_BROKEN";
+          row.confidence = 1; row.reason = "pin has no destination link";
+          ledger.push(row); continue;
+        }
+
+        // Phase 9 — off-brand host
+        if (!host.endsWith("getpawsy.pet")) {
+          row.brand = "other";
+          const t = tokens(`${title} ${desc} ${(slug ?? "").replace(/-/g, " ")}`);
+          let best: any = null, bs = 0;
+          for (const { p, t: pt } of liveTokens) { const s = overlap(t, pt); if (s > bs) { bs = s; best = p; } }
+          row.match_score = Number(bs.toFixed(2));
+          row.match_candidate = best ? { id: best.id, slug: best.slug, name: best.name } : null;
+          row.state = "AMBIGUOUS_IDENTITY";
+          row.action = "MANUAL_REVIEW";
+          row.confidence = 0.4;
+          row.reason = `off-brand destination host "${host}" — ownership must be confirmed manually; never deleted on host alone`;
+          ledger.push(row); continue;
+        }
+
+        row.brand = "getpawsy";
+        if (!slug) {
+          row.state = "NON_PRODUCT"; row.action = "KEEP_UNLESS_OTHERWISE_BROKEN";
+          row.confidence = 1; row.reason = "non-product GetPawsy page (collection / guide / home)";
+          ledger.push(row); continue;
+        }
+
+        const direct = bySlugAll.get(slug);
+        const viaHistory = direct ? null : histSlug.get(slug);
+        const prod = direct ?? viaHistory ?? null;
+        const legacyRoute = isLegacyRoute(link);
+
+        if (prod) {
+          row.matched_product_id = prod.id;
+          row.represented_product = prod.name;
+          row.matched_status = prod.is_duplicate ? "duplicate" : (prod.is_active ? "active" : "inactive");
+          row.canonical_slug = prod.slug;
+          row.stock = prod.stock;
+        }
+
+        // ACTIVE
+        if (isLive(prod)) {
+          const canonical = `${GETPAWSY}/products/${prod.slug}`;
+          row.canonical_url = canonical;
+          if (!direct) {
+            row.state = "ACTIVE_LEGACY_SLUG";
+            row.action = "REPAIR_TO_CANONICAL_URL";
+            row.target = withUtm(canonical, "getpawsy", pin.id);
+            row.confidence = 1;
+            row.reason = `pinned slug "${slug}" is a historical slug of live product ${prod.id}`;
+          } else if (legacyRoute) {
+            row.state = "ACTIVE_LEGACY_SLUG";
+            row.action = "REPAIR_TO_CANONICAL_URL";
+            row.target = withUtm(canonical, "getpawsy", pin.id);
+            row.confidence = 1;
+            row.reason = "legacy /product/:slug route → canonical /products/:slug";
+          } else if (stripQuery(link) !== canonical) {
+            row.state = "ACTIVE_WRONG_PRODUCT_URL";
+            row.action = "REPAIR_TO_EXACT_PRODUCT_URL";
+            row.target = withUtm(canonical, "getpawsy", pin.id);
+            row.confidence = 1;
+            row.reason = `destination ${stripQuery(link)} ≠ canonical product URL`;
+          } else {
+            row.state = "ACTIVE_CANONICAL_MATCH"; row.action = "KEEP"; row.confidence = 1;
+          }
+          ledger.push(row); continue;
+        }
+
+        // INACTIVE / DUPLICATE record still present
+        if (prod) {
+          const succ = successorOf(prod);
+          if (succ) {
+            const canonical = `${GETPAWSY}/products/${succ.prod.slug}`;
+            row.state = "INACTIVE_HAS_ACTIVE_SUCCESSOR";
+            row.action = "REPAIR_TO_CANONICAL_SUCCESSOR";
+            row.successor_product_id = succ.prod.id;
+            row.successor_proof = succ.proof;
+            row.canonical_url = canonical;
+            row.target = withUtm(canonical, "getpawsy", pin.id);
+            row.confidence = 1;
+            row.reason = `product ${prod.id} inactive; exact one-to-one continuation → ${succ.prod.name}`;
+          } else {
+            const retired = (prod.stock ?? 0) <= 0;
+            row.state = "INACTIVE_NO_SUCCESSOR";
+            row.inactive_cause = retired ? "deactivated with zero/unknown stock (supplier or stock driven)" : `deactivated while stock=${prod.stock} — likely intentional retirement`;
+            row.action = retired ? "DELETE_CANDIDATE" : "KEEP_FOR_REACTIVATION_REVIEW";
+            row.confidence = retired ? 0.9 : 0.6;
+            row.reason = retired
+              ? "no live canonical duplicate, no SKU/CJ/dedupe successor, out of stock — nothing sellable to point at"
+              : "no successor, but record still carries stock and may return to sale";
+          }
+          ledger.push(row); continue;
+        }
+
+        // REMOVED — no record anywhere in catalog / history / aliases
+        const t = tokens(`${title} ${desc} ${slug.replace(/-/g, " ")}`);
+        let best: any = null, bs = 0;
+        for (const { p, t: pt } of liveTokens) { const s = overlap(t, pt); if (s > bs) { bs = s; best = p; } }
+        row.match_score = Number(bs.toFixed(2));
+        row.match_candidate = best ? { id: best.id, slug: best.slug, name: best.name } : null;
+        if (bs >= 0.85 && best) {
+          row.state = "AMBIGUOUS_IDENTITY";
+          row.action = "MANUAL_REVIEW";
+          row.confidence = Number(bs.toFixed(2));
+          row.reason = `removed slug "${slug}"; near-identical live product "${best.slug}" (${bs.toFixed(2)}) but no SKU/dedupe proof of one-to-one continuation`;
+        } else {
+          row.state = "REMOVED_NO_SUCCESSOR";
+          row.action = "DELETE_CANDIDATE";
+          row.confidence = 0.95;
+          row.reason = `slug "${slug}" absent from products, slug history and aliases; no exact successor (best similarity ${bs.toFixed(2)})`;
+        }
+        ledger.push(row);
+      }
+
+      const byAction: Record<string, number> = {};
+      const byState: Record<string, number> = {};
+      for (const r of ledger) {
+        byAction[r.action] = (byAction[r.action] ?? 0) + 1;
+        byState[r.state] = (byState[r.state] ?? 0) + 1;
+      }
+      const gp = ledger.filter((r) => r.brand === "getpawsy");
+      const distinct = (f: (r: PinRec) => boolean, k: (r: PinRec) => string) =>
+        new Set(gp.filter(f).map(k).filter(Boolean)).size;
+      return json({
+        ok: true, mode, username, elapsed_ms: Date.now() - t0,
+        status: "PINTEREST_CATALOG_TRUTH_PLAN_READY",
+        catalog: { total: all.length, active: all.filter(isLive).length, slug_history: (hist ?? []).length, aliases: (aliases ?? []).length },
+        totals: {
+          pins: ledger.length,
+          getpawsy_pins: gp.length,
+          ailurova_pins: ledger.filter((r) => r.brand === "ailurova").length,
+          active_products_represented: distinct((r) => r.matched_status === "active", (r) => r.matched_product_id),
+          inactive_products_represented: distinct((r) => r.matched_status === "inactive" || r.matched_status === "duplicate", (r) => r.matched_product_id),
+          removed_products_represented: distinct((r) => String(r.state).startsWith("REMOVED") || (r.state === "AMBIGUOUS_IDENTITY" && !r.matched_product_id && r.brand === "getpawsy"), (r) => r.current_slug),
+          exact_successor_mappings: ledger.filter((r) => r.successor_product_id).length,
+          ambiguous_remaining: byAction["MANUAL_REVIEW"] ?? 0,
+        },
+        by_action: byAction,
+        by_state: byState,
+        ledger: ledger.filter((r) => r.action !== "KEEP"),
+        keep_count: byAction["KEEP"] ?? 0,
+      });
+    }
+
     // ── live catalogs ──
     const { data: products } = await sb
       .from("products_public")
