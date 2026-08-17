@@ -405,6 +405,49 @@ Deno.serve(async (req) => {
               const verified = rb.ok && stripQuery(rb.body?.link ?? "") === stripQuery(target);
               tally.in_place_updates++;
               mutations.push({ pin_id: r.pin_id, pin_url: r.pin_url, brand: r.brand, product: r.represented_product ?? null, previous_destination: curLink, new_destination: rb.body?.link ?? target, action: r.action, method: "in_place_link_update", reason: r.reason, verification: verified ? "readback_destination_matches" : "readback_mismatch" });
+            } else if (body.allow_recreate === true && (upd.status === 401 || upd.status === 403)) {
+              // Phase 4 fallback — in-place edit not permitted by the app scope:
+              // republish the same creative to the same board with the corrected
+              // destination, verify it is live, and only then delete the old pin.
+              const src = live.body?.media;
+              const img = src?.images?.["1200x"]?.url ?? src?.images?.originals?.url ?? src?.images?.["600x"]?.url ?? null;
+              const isVideo = String(src?.media_type ?? "").toLowerCase().includes("video");
+              if (!img || isVideo) {
+                recheck.push({ ...r, recheck_reason: isVideo ? "pin_edit denied and creative is video — cannot be republished losslessly" : "pin_edit denied and no reusable image creative" });
+                tally.recheck_required++; continue;
+              }
+              const create = await pinFetch(`/pins`, token, {
+                method: "POST",
+                body: JSON.stringify({
+                  board_id: live.body?.board_id,
+                  title: live.body?.title ?? undefined,
+                  description: live.body?.description ?? undefined,
+                  alt_text: live.body?.alt_text ?? undefined,
+                  link: target,
+                  media_source: { source_type: "image_url", url: img },
+                }),
+              });
+              if (!create.ok || !create.body?.id) {
+                recheck.push({ ...r, recheck_reason: `pin_edit denied; replacement create failed HTTP ${create.status}: ${JSON.stringify(create.body).slice(0, 200)}` });
+                tally.recheck_required++; continue;
+              }
+              const newId = create.body.id;
+              const nrb = await pinFetch(`/pins/${newId}`, token);
+              if (!nrb.ok || stripQuery(nrb.body?.link ?? "") !== stripQuery(target)) {
+                recheck.push({ ...r, recheck_reason: `replacement pin ${newId} did not verify — old pin left untouched` });
+                tally.recheck_required++; continue;
+              }
+              tally.replacements_created++;
+              const del = await pinFetch(`/pins/${r.pin_id}`, token, { method: "DELETE" });
+              if (del.ok || del.status === 204) tally.old_pins_deleted_after_replacement++;
+              mutations.push({
+                pin_id: r.pin_id, new_pin_id: newId, pin_url: `https://www.pinterest.com/pin/${newId}/`,
+                brand: r.brand, product: r.represented_product ?? null,
+                previous_destination: curLink, new_destination: nrb.body?.link ?? target,
+                action: r.action, method: (del.ok || del.status === 204) ? "republished_then_old_deleted" : "republished_old_delete_failed",
+                reason: `${r.reason} (in-place edit blocked: pin_edit scope)`,
+                verification: `new_pin_live_destination_verified${(del.ok || del.status === 204) ? "; old pin deleted" : "; OLD PIN STILL LIVE"}`,
+              });
             } else {
               recheck.push({ ...r, recheck_reason: `PATCH failed HTTP ${upd.status}: ${JSON.stringify(upd.body).slice(0, 200)}` }); tally.recheck_required++;
             }
