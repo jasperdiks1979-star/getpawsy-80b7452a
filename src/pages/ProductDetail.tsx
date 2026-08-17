@@ -1669,6 +1669,13 @@ const ProductDetail = () => {
                   const bullets: string[] = [];
                   const hay = `${n} ${cat}`;
 
+                  // Per-SKU verified overrides always win over generic
+                  // category copy (prevents automation claims leaking onto
+                  // manual products).
+                  if (productContentOverride?.benefits?.length) {
+                    bullets.push(...productContentOverride.benefits);
+                  }
+
                   // P0-4 (conversion sprint): grooming / supplement / dispenser
                   // branches MUST run before the toy branch — otherwise a
                   // "Dog Paw Cleaner" or "Grooming Brush" filed under
@@ -1679,7 +1686,9 @@ const ProductDetail = () => {
                   const isFeeder = /feeder|dispenser|water\s*fountain|automatic\s*food/.test(hay);
 
                   // Category-aware benefit bullets (problem → outcome)
-                  if (isGrooming) {
+                  if (bullets.length) {
+                    // verified override copy already set
+                  } else if (isGrooming) {
                     bullets.push(
                       "Gently cleans paws, coat, or nails without stress",
                       "Skin-safe materials designed for sensitive pets",

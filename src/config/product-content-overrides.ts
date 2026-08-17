@@ -169,8 +169,63 @@ const AUTOMATIC_CAT_LITTER_BOX: ProductContentOverride = {
   ],
 };
 
+/**
+ * Covered Cat Litter Box – Privacy Hood with Scoop & Deodorizing Bags
+ * MANUAL product. Verified from products.description only: covered privacy
+ * hood, enclosed design, removable top, included scoop, deodorizing bags,
+ * helps contain litter scatter and odor. No sensors, no app control, no
+ * automatic waste removal — generic "litter box" category copy must not apply.
+ */
+const COVERED_CAT_LITTER_BOX: ProductContentOverride = {
+  intro:
+    'A covered litter box with a privacy hood that gives your cat an enclosed space. It comes with a scoop and deodorizing bags, and the removable top makes routine scooping and cleaning straightforward.',
+  suppressUrgencyLine: true,
+  hideAdIntentHeadline: true,
+  hideEmotionalHook: true,
+  benefits: [
+    'Covered privacy hood gives your cat an enclosed space',
+    'Litter scoop and deodorizing bags included',
+    'Removable top for easy access and routine scooping',
+    'Enclosed design helps contain litter scatter and visual mess',
+    'Suitable for everyday manual litter-box use',
+  ],
+  specs: [
+    { label: 'Category', value: 'Cat Litter Boxes' },
+    { label: 'Type', value: 'Covered (hooded) litter box — manual scooping' },
+    { label: 'Design', value: 'Enclosed hood with removable top' },
+    { label: 'Included', value: 'Litter scoop and deodorizing bags' },
+    { label: 'Litter Containment', value: 'Enclosed sides help contain litter scatter' },
+    { label: 'Brand', value: 'GetPawsy' },
+  ],
+  steps: [
+    { step: '1', title: 'Place the box and add litter', description: 'Fill the base with your usual litter and set the hood in place.' },
+    { step: '2', title: 'Your cat uses the enclosed space', description: 'The privacy hood gives your cat a covered spot and helps keep litter inside the box.' },
+    { step: '3', title: 'Scoop with the included scoop', description: 'Lift or remove the top for easy access and scoop as part of your normal routine.' },
+    { step: '4', title: 'Bag and dispose', description: 'Use the included deodorizing bags when you empty the scooped waste.' },
+  ],
+  faqs: [
+    { q: 'Is this litter box automatic or self-cleaning?', a: 'No. This is a manual covered litter box. There are no sensors, motors or app control — you scoop it yourself with the included scoop.' },
+    { q: 'What is included?', a: 'The covered litter box with its privacy hood, a litter scoop, and deodorizing bags.' },
+    { q: 'How do I clean it?', a: 'The top is removable, so you can lift it off for easy access, scoop the litter as part of your daily routine, and wipe the base out when you change the litter.' },
+    { q: 'Does the hood help with mess?', a: 'The enclosed design helps contain litter scatter and keeps the contents out of sight. Regular scooping is still needed to keep it fresh.' },
+    { q: 'What litter can I use?', a: 'You can use your cat’s usual litter — the box has no mechanism that restricts litter type.' },
+    { q: 'How long does shipping take?', a: 'We ship to the United States. Delivery times and any free-shipping thresholds are shown at checkout.' },
+    { q: 'What is the return policy?', a: 'GetPawsy offers a 30-day return policy. Items must be unused and in original condition — contact support to start a return.' },
+  ],
+  hideSections: [
+    // All of these render hardcoded automatic/self-cleaning/sensor claims for
+    // anything matching the "litter box" category — false for this manual box.
+    'litterBoxConversionBoost',
+    'problemSolution',
+    'productVsAlternatives',
+    'litterBoxLovedSection',
+    'productIdealFor',
+  ],
+};
+
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
   '128e0207-8a94-4d71-b428-5b7f5002528f': AUTOMATIC_CAT_LITTER_BOX,
+  'e4474637-f447-4503-a342-5667c4c546a8': COVERED_CAT_LITTER_BOX,
 };
 
 export function getProductContentOverride(productId?: string | null): ProductContentOverride | undefined {
