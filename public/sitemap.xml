@@ -12,4 +12,12 @@
     <loc>https://getpawsy.pet/sitemap-collections.xml</loc>
     <lastmod>2026-08-17</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>https://getpawsy.pet/sitemap-guides.xml</loc>
+    <lastmod>2026-08-17</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://getpawsy.pet/sitemap-blog.xml</loc>
+    <lastmod>2026-08-17</lastmod>
+  </sitemap>
 </sitemapindex>
