@@ -171,6 +171,7 @@ const AUTOMATIC_CAT_LITTER_BOX: ProductContentOverride = {
 
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
   '128e0207-8a94-4d71-b428-5b7f5002528f': AUTOMATIC_CAT_LITTER_BOX,
+  'e4474637-f447-4503-a342-5667c4c546a8': COVERED_CAT_LITTER_BOX,
 };
 
 export function getProductContentOverride(productId?: string | null): ProductContentOverride | undefined {
