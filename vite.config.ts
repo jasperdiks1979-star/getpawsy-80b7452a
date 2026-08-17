@@ -30,7 +30,14 @@ export default defineConfig(({ mode }) => ({
           // ── node_modules splitting ───────────────────────────────────────
           if (id.includes('node_modules')) {
             // Core React runtime — smallest possible critical chunk
-            if (id.includes('react-dom') || id.includes('react/')) return 'react-vendor';
+            // Match the package root exactly — `id.includes('react/')` also matched
+            // node_modules/@tiptap/react/*, dragging ProseMirror into the critical
+            // vendor chunk (+300KB for every storefront visitor).
+            if (
+              /node_modules\/(\.pnpm\/)?react-dom(@[^/]+)?\//.test(id) ||
+              /node_modules\/(\.pnpm\/)?react(@[^/]+)?\//.test(id) ||
+              /node_modules\/scheduler\//.test(id)
+            ) return 'react-vendor';
             if (id.includes('react-router')) return 'router';
             if (id.includes('@tanstack/react-query')) return 'query';
             if (id.includes('@supabase')) return 'supabase';
@@ -40,7 +47,12 @@ export default defineConfig(({ mode }) => ({
             // circular init errors identical to the d3/recharts incident.
             // Let Vite naturally code-split these. See: P0 incident 2026-02-21
 
-            if (id.includes('embla-carousel')) return 'carousel';
+            // NOTE: embla-carousel and @tiptap/prosemirror intentionally NOT
+            // manually chunked — forcing them into named chunks made Rollup
+            // emit bare `import "./carousel.js"` / `import "./editor.js"`
+            // side-effect imports from the ENTRY chunk, so every storefront
+            // visitor downloaded the 353KB admin editor. Natural code-splitting
+            // keeps them inside the lazy PDP/admin chunks. See: perf 2026-08-17
 
             // Animation — keep isolated so pages without it don't pay the cost
             if (id.includes('framer-motion')) return 'animations';
@@ -51,7 +63,7 @@ export default defineConfig(({ mode }) => ({
 
             // Heavy utilities — never in initial bundle
             if (id.includes('mapbox-gl')) return 'mapbox';
-            if (id.includes('@tiptap') || id.includes('prosemirror')) return 'editor';
+            // (see note above — no manual chunk for @tiptap/prosemirror)
             if (id.includes('zod') || id.includes('react-hook-form') || id.includes('@hookform')) return 'forms';
             if (id.includes('date-fns')) return 'date-utils';
             if (id.includes('sonner')) return 'notifications';

@@ -84,6 +84,20 @@ function useDeferWidgets(): boolean {
 export const Layout = ({ children }: LayoutProps) => {
   const widgetsReady = useDeferWidgets();
 
+  // Dev-only consent tooling pulls in jsPDF/html2canvas (~450KB). Gate the lazy
+  // chunk behind a runtime host check so production shoppers never fetch it.
+  const devToolsEnabled = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const h = window.location.hostname;
+    return (
+      h === 'localhost' ||
+      h === '127.0.0.1' ||
+      h.endsWith('.lovable.app') ||
+      h.endsWith('.lovableproject.com') ||
+      h.endsWith('.lovable.dev')
+    );
+  }, []);
+
   // Read promo banner state synchronously to match Suspense fallback height with actual Navbar.
   // This prevents a 40px CLS when the promo banner has been dismissed.
   const navbarFallbackHeight = useMemo(() => {
@@ -113,8 +127,12 @@ export const Layout = ({ children }: LayoutProps) => {
         <Suspense fallback={null}>
           <ScrollToTop />
           <CookieConsent />
-          <DevConsentToggle />
-          <ConsentLeakWarning />
+          {devToolsEnabled && (
+            <>
+              <DevConsentToggle />
+              <ConsentLeakWarning />
+            </>
+          )}
         </Suspense>
       </MarketingErrorBoundary>
       {/* Chat widget deferred until after grid paint / interaction / 5s */}
