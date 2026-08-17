@@ -96,7 +96,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
             className="bg-card border rounded-xl overflow-hidden group"
           >
             <Link
-              to={`/product/${product.slug || product.id}`}
+              to={`/products/${product.slug || product.id}`}
               onClick={() => trackCrossSellClick(
                 productId,
                 productName,
@@ -118,7 +118,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
             </Link>
             <div className="p-3">
               <Link
-                to={`/product/${product.slug || product.id}`}
+                to={`/products/${product.slug || product.id}`}
                 className="text-sm font-medium line-clamp-2 hover:text-primary transition-colors"
               >
                 {product.name}

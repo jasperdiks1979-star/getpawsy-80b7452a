@@ -47,7 +47,7 @@ export const TrendingWinnersBlock = memo(() => {
           {winners.map((p) => (
             <Link
               key={p.id}
-              to={`/product/${p.slug}`}
+              to={`/products/${p.slug}`}
               className="group rounded-xl border border-border bg-card p-3 hover:shadow-md transition-shadow flex flex-col"
             >
               {/* Image */}

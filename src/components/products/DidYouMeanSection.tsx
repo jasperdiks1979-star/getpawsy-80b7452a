@@ -264,7 +264,7 @@ export const DidYouMeanSection = ({
             {suggestedProducts.map((product, index) => (
               <Link 
                 key={product.id} 
-                to={`/product/${product.id}`}
+                to={`/products/${product.id}`}
                 className="group"
                 onClick={() => handleProductClick(product, index)}
               >

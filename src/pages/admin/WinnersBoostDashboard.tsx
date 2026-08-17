@@ -333,7 +333,7 @@ const ProductTable = ({ products, isLoading, onBoost, emptyMessage, badgeColor, 
               </Button>
               {p.slug && (
                 <a
-                  href={`/product/${p.slug}`}
+                  href={`/products/${p.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground"

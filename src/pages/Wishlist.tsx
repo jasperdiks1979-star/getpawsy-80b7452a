@@ -330,7 +330,7 @@ const Wishlist = () => {
                   }
                 >
                   {/* Image */}
-                  <Link to={`/product/${product.id}`}>
+                  <Link to={`/products/${product.id}`}>
                     <div className="relative aspect-square overflow-hidden bg-muted">
                       <img
                         src={product.image_url || '/placeholder.svg'}
@@ -342,7 +342,7 @@ const Wishlist = () => {
 
                   {/* Content */}
                   <div className="p-4">
-                    <Link to={`/product/${product.id}`}>
+                    <Link to={`/products/${product.id}`}>
                       {product.category && (
                         <p className={
                           premiumV1

@@ -123,7 +123,7 @@ const BestsellerCard = ({ bestseller, index, onSelect, rating, reviewCount }: {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Link to={`/product/${bestseller.product.slug || bestseller.slug}`} onClick={handleClick}>
+      <Link to={`/products/${bestseller.product.slug || bestseller.slug}`} onClick={handleClick}>
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
           <div className="relative aspect-square overflow-hidden bg-muted">
             <div className="absolute top-3 left-3 z-10">
@@ -420,7 +420,7 @@ const Bestsellers = () => {
               Looking for the <strong>best pet products</strong> in 2026? Our curated list of <strong>top-rated pet supplies</strong> is ranked monthly by verified US pet owners based on real reviews, repeat purchases, and satisfaction ratings. From <a href="/collections/cat-trees-and-condos" className="text-primary hover:underline">cat trees and condos</a> to <a href="/collections/dog-toys" className="text-primary hover:underline">interactive dog toys</a>, every product on this page has been tested and approved by real pet families.
             </p>
             <p>
-              Whether you're shopping for a new <a href="/product/automatic-cat-litter-box-self-cleaning-app-control" className="text-primary hover:underline">self-cleaning cat litter box</a>, an orthopedic dog bed, or enrichment toys for your indoor cat — our <strong>best sellers for dogs and cats</strong> deliver quality, value, and free US shipping on orders over $35.
+              Whether you're shopping for a new <a href="/products/automatic-cat-litter-box-self-cleaning-app-control" className="text-primary hover:underline">self-cleaning cat litter box</a>, an orthopedic dog bed, or enrichment toys for your indoor cat — our <strong>best sellers for dogs and cats</strong> deliver quality, value, and free US shipping on orders over $35.
             </p>
           </div>
         </div>
@@ -487,7 +487,7 @@ const Bestsellers = () => {
                       <tr key={b.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-bold text-primary">#{b.rank}</td>
                         <td className="p-3">
-                          <Link to={`/product/${b.product.slug || b.slug}`} className="font-medium hover:text-primary transition-colors">
+                          <Link to={`/products/${b.product.slug || b.slug}`} className="font-medium hover:text-primary transition-colors">
                             {(b.hero_headline || b.product.name).slice(0, 50)}
                           </Link>
                         </td>

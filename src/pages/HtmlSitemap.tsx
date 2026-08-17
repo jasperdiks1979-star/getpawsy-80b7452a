@@ -158,7 +158,7 @@ export default function HtmlSitemap() {
             <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
               {products.map(product => (
                 <li key={product.slug}>
-                  <Link to={`/product/${product.slug}`} className="text-primary hover:underline text-sm">
+                  <Link to={`/products/${product.slug}`} className="text-primary hover:underline text-sm">
                     {product.name}
                   </Link>
                 </li>

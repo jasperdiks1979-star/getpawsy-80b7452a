@@ -48,7 +48,7 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
         {popular.map((product, i) => (
           <Link
             key={product.id}
-            to={`/product/${product.slug || product.id}`}
+            to={`/products/${product.slug || product.id}`}
             className="group block bg-card border rounded-xl overflow-hidden hover:border-primary/30 hover:shadow-md transition-all"
           >
             <div className="aspect-square bg-muted relative overflow-hidden">

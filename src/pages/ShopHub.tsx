@@ -104,7 +104,7 @@ export default function ShopHub() {
               {featuredProducts.map((product) => (
                 <Link
                   key={product.id}
-                  to={`/product/${product.slug || product.id}`}
+                  to={`/products/${product.slug || product.id}`}
                   className="group rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-shadow"
                 >
                   {product.image_url && (
