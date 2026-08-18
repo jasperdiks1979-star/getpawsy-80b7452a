@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, RefreshCw, AlertTriangle, Download, ChevronDown } from 'lucide-react';
+import { LiveVisitorsWorld, type LiveHealth } from '@/components/admin/live-world/LiveVisitorsWorld';
 
 type Range = '24h' | '7d' | '30d' | '90d';
 const RANGE_HOURS: Record<Range, number> = { '24h': 24, '7d': 168, '30d': 720, '90d': 2160 };
@@ -227,6 +228,7 @@ export default function UnifiedAnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const [liveHealth, setLiveHealth] = useState<LiveHealth | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -265,6 +267,13 @@ export default function UnifiedAnalyticsDashboard() {
       : { sessions: data.kpis.qualified_sessions, product_views: data.kpis.product_views, add_to_cart: data.kpis.add_to_cart, checkouts: data.kpis.checkouts, orders: data.kpis.orders };
   }, [data, mode]);
   const checks = useMemo(() => (data ? healthChecks(data) : []), [data]);
+  const allChecks = useMemo<Health[]>(
+    () =>
+      liveHealth
+        ? [...checks, { label: 'Live presence', status: liveHealth.status, reason: liveHealth.reason ?? undefined }]
+        : checks,
+    [checks, liveHealth],
+  );
   const notes = useMemo(() => (data ? insights(data) : []), [data]);
 
   return (
@@ -332,6 +341,8 @@ export default function UnifiedAnalyticsDashboard() {
           </div>
         </div>
       </header>
+
+      <LiveVisitorsWorld onHealth={setLiveHealth} />
 
       {error && (
         <Alert variant="destructive">
@@ -480,7 +491,7 @@ export default function UnifiedAnalyticsDashboard() {
             <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2"><CardTitle className="text-base">Data health</CardTitle></CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {checks.map((c) => (
+                {allChecks.map((c) => (
                   <li key={c.label} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{c.label}</span>
