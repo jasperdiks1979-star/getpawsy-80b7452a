@@ -1019,7 +1019,7 @@ export default function merchantFeedPlugin(): Plugin {
         execSync('node scripts/generate-sitemaps.mjs', {
           cwd: process.cwd(),
           stdio: 'inherit',
-          timeout: 60_000,
+          timeout: 300_000,
         });
         console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
 
@@ -1028,7 +1028,7 @@ export default function merchantFeedPlugin(): Plugin {
           execSync('node scripts/validate-sitemaps.mjs', {
             cwd: process.cwd(),
             stdio: 'inherit',
-            timeout: 30_000,
+            timeout: 60_000,
           });
           console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
         }
