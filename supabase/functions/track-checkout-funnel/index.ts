@@ -19,6 +19,13 @@ const ALLOWED_STEPS = new Set([
   "complete_payment",
   "klarna_purchase",
   "checkout_abandoned",
+  // Steps emitted by src/pages/Checkout.tsx — previously rejected with 400
+  "checkout_click",
+  "checkout_redirect_attempt",
+  "checkout_redirect_success",
+  "checkout_error",
+  "shipping_country_blocked",
+  "payment_success",
 ]);
 
 interface Body {
