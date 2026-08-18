@@ -66,6 +66,43 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
 
 // ── XML helpers ───────────────────────────────────────────────────────
 
+/**
+ * Paginated REST fetch.
+ *
+ * products_public is a wide view (description/images columns) and a single
+ * 5000-row request reliably trips the Postgres statement timeout (57014),
+ * which silently produced a 0-item merchant feed and failed the build guard.
+ * Fetching in bounded keyset-ordered pages keeps every statement well under
+ * the timeout. Pass `params` WITHOUT order/limit/offset.
+ */
+async function supaRestPaged<T>(table: string, params: string, pageSize = 200, maxPages = 40): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 0; page < maxPages; page++) {
+    const offset = page * pageSize;
+    let rows: T[] = [];
+    // Retry with progressively smaller pages — a cold/contended pool can still
+    // hit the 57014 statement timeout on the first attempt.
+    for (const size of [pageSize, Math.ceil(pageSize / 2), Math.ceil(pageSize / 4)]) {
+      const chunk: T[] = [];
+      let ok = true;
+      for (let sub = 0; sub * size < pageSize; sub++) {
+        const subRows = await supaRest<T>(
+          table,
+          `${params}&order=id.asc&limit=${size}&offset=${offset + sub * size}`
+        );
+        chunk.push(...subRows);
+        if (subRows.length < size) break;
+      }
+      if (chunk.length > 0 || size === Math.ceil(pageSize / 4)) { rows = chunk; ok = true; }
+      if (ok && chunk.length > 0) break;
+    }
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+  console.log(`[xml-plugin][supaRest] ✓ paged ${table} → ${all.length} total rows`);
+  return all;
+}
+
 function stripInvalidXmlChars(text: string): string {
   return text
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
@@ -695,9 +732,9 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const feedStartedAt = Date.now();
   console.log('[xml-plugin][feed] ▶ buildMerchantFeed() starting…');
   const [rawProducts, bestsellers] = await Promise.all([
-    supaRest<MerchantProduct>(
+    supaRestPaged<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null&order=created_at.desc&limit=5000'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
@@ -755,9 +792,9 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
 // ── Merchant Diagnostics ──────────────────────────────────────────────
 
 async function buildMerchantDiagnostics(): Promise<string> {
-  const products = await supaRest<MerchantProduct>(
+  const products = await supaRestPaged<MerchantProduct>(
     'products_public',
-    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&order=created_at.desc&limit=5000'
+    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false'
   );
 
   const issues: string[] = [];
