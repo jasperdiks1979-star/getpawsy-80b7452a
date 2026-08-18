@@ -333,8 +333,8 @@ Deno.serve(async (req) => {
   }
 
   // Load Pinterest boards once for Phase 4 mapping
-  const { data: boards } = await sb.from("pinterest_boards").select("id,name,description").limit(200);
-  const boardList = (boards ?? []).map((b: any) => ({ name: b.name, description: b.description ?? "" }));
+  const { data: boards } = await sb.from("pinterest_boards").select("id,name").limit(200);
+  const boardList = (boards ?? []).map((b: any) => ({ name: b.name }));
 
   // For scan_one, run synchronously and return full diagnostics. For everything
   // else, kick off the loop in the background so the edge function returns immediately
@@ -596,7 +596,7 @@ interface AiCallResult {
   stack?: string;
 }
 
-async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string; description: string }[]): Promise<AiCallResult> {
+async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string }[]): Promise<AiCallResult> {
   const boardNames = boards.map((b) => b.name).slice(0, 40);
   const system = `You are a Pinterest + SEO product intelligence engine for a US pet supplies brand.
 Return STRICT JSON only. No prose. No markdown.`;
