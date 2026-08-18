@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.gp_unified_analytics_v2(integer) FROM anon;
