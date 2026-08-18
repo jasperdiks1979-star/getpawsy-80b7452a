@@ -31,6 +31,8 @@ interface AuthContextType {
   isAdmin: boolean;
   /** False until the server-side role check for the current user has settled. */
   isAdminResolved: boolean;
+  /** False until the initial getSession()/onAuthStateChange has settled. */
+  isSessionResolved: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -55,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminResolved, setIsAdminResolved] = useState(false);
+  const [isSessionResolved, setIsSessionResolved] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Stable action refs — recreated only when needed ───────────────────────
@@ -143,6 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       traceStateSet('AuthProvider', 'isLoading', false);
       setIsLoading(false);
+      setIsSessionResolved(true);
     };
 
     // ── Dynamic import — supabase SDK downloads AFTER React is mounted ────────
@@ -168,12 +172,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('[AuthProvider] getSession failed:', e);
         traceStateSet('AuthProvider', 'isLoading [getSession catch]', false);
         setIsLoading(false);
+        setIsSessionResolved(true);
       });
     };
 
     initAuth().catch(e => {
       console.error('[AuthProvider] initAuth failed:', e);
       setIsLoading(false);
+      setIsSessionResolved(true);
     });
 
     return () => {
@@ -210,7 +216,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, isAdminResolved, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, isAdminResolved, isSessionResolved, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
