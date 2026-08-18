@@ -29,6 +29,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAdmin: boolean;
+  /** False until the server-side role check for the current user has settled. */
+  isAdminResolved: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -52,18 +54,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Auth state resolves asynchronously via onAuthStateChange.
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminResolved, setIsAdminResolved] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Stable action refs — recreated only when needed ───────────────────────
   const scheduleTokenRefreshRef = useRef<((expiresAt: number) => void) | null>(null);
 
   const checkAdminRole = useCallback(async (user: User | null) => {
-    if (!user) { setIsAdmin(false); return false; }
+    if (!user) { setIsAdmin(false); setIsAdminResolved(true); return false; }
     // Dynamic import keeps isAdmin.ts (and its supabase dep) out of critical path
-    const { resolveIsAdmin } = await import('@/lib/auth/isAdmin');
-    const result = await resolveIsAdmin(user);
-    setIsAdmin(result);
-    return result;
+    try {
+      const { resolveIsAdmin } = await import('@/lib/auth/isAdmin');
+      const result = await resolveIsAdmin(user);
+      setIsAdmin(result);
+      return result;
+    } catch (e) {
+      console.error('[AuthProvider] admin role check failed:', e);
+      setIsAdmin(false);
+      return false;
+    } finally {
+      setIsAdminResolved(true);
+    }
   }, []);
 
   const refreshSession = useCallback(async (): Promise<Session | null> => {
@@ -124,9 +135,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       if (session?.expires_at) scheduleTokenRefresh(session.expires_at);
       if (session?.user) {
+        setIsAdminResolved(false);
         setTimeout(() => checkAdminRole(session.user), 0);
       } else {
         setIsAdmin(false);
+        setIsAdminResolved(true);
       }
       traceStateSet('AuthProvider', 'isLoading', false);
       setIsLoading(false);
@@ -193,10 +206,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const supabase = await getSupabase();
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setIsAdminResolved(true);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, isAdminResolved, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );
