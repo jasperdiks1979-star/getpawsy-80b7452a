@@ -19,9 +19,13 @@ const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 
 // ── Supabase REST helper ──────────────────────────────────────────────
 
-async function supaRest<T>(table: string, params: string): Promise<T[]> {
+/**
+ * Raw REST call. Returns rows on success, `null` on a TRANSIENT failure
+ * (timeout, network error, 5xx/429). An empty array means "no rows".
+ */
+async function supaRestRaw<T>(table: string, params: string): Promise<T[] | null> {
   const controller = new AbortController();
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 25000;
   const startedAt = Date.now();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -41,7 +45,7 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
       console.warn(
         `[xml-plugin][supaRest] ❌ HTTP ${res.status} ${res.statusText} on "${table}" after ${elapsedMs}ms — body: ${body.slice(0, 300)}`
       );
-      return [];
+      return null;
     }
     const data = (await res.json()) as T[];
     console.log(
@@ -60,8 +64,13 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
       `[xml-plugin][supaRest] ❌ fetch failed for "${table}" — ${reason}` +
         (e?.cause ? ` | cause=${JSON.stringify(e.cause).slice(0, 200)}` : '')
     );
-    return [];
+    return null;
   }
+}
+
+/** Back-compat wrapper: transient failures collapse to an empty array. */
+async function supaRest<T>(table: string, params: string): Promise<T[]> {
+  return (await supaRestRaw<T>(table, params)) ?? [];
 }
 
 // ── XML helpers ───────────────────────────────────────────────────────
