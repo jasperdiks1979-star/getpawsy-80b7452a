@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
     const { data: conn, error: connErr } = await sb
       .from("pinterest_connection")
-      .select("account_name, access_token, scopes, status, token_expires_at")
+      .select("id, account_name, access_token, refresh_token, scopes, status, token_expires_at")
       .in("status", ["connected", "auth_failed"])
       .order("token_expires_at", { ascending: false })
       .limit(1)
@@ -30,7 +30,36 @@ Deno.serve(async (req) => {
     if (conn.account_name !== requiredUsername) {
       return json({ ok: false, step: "account_check", found: conn.account_name, expected: requiredUsername }, 400);
     }
-    const auth = { Authorization: `Bearer ${conn.access_token}`, "Content-Type": "application/json" };
+
+    // Self-healing OAuth: refresh when the stored token is expired or expiring within 5 minutes.
+    let accessToken: string = conn.access_token;
+    const expMs = conn.token_expires_at ? new Date(conn.token_expires_at).getTime() : 0;
+    if (!expMs || expMs - Date.now() < 5 * 60 * 1000) {
+      const clientId = Deno.env.get("PINTEREST_CLIENT_ID");
+      const clientSecret = Deno.env.get("PINTEREST_CLIENT_SECRET");
+      if (conn.refresh_token && clientId && clientSecret) {
+        const r = await fetch("https://api.pinterest.com/v5/oauth/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+          },
+          body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: conn.refresh_token }),
+        });
+        const t = await r.text();
+        if (!r.ok) return json({ ok: false, step: "token_refresh", status: r.status, error: t }, 500);
+        const d = JSON.parse(t);
+        accessToken = d.access_token;
+        await sb.from("pinterest_connection").update({
+          access_token: d.access_token,
+          refresh_token: d.refresh_token || conn.refresh_token,
+          token_expires_at: new Date(Date.now() + (d.expires_in || 3600) * 1000).toISOString(),
+          status: "connected",
+          updated_at: new Date().toISOString(),
+        }).eq("id", conn.id);
+      }
+    }
+    const auth = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
 
     if (mode === "boards") {
       const res = await fetch(`${PIN_API}/boards?page_size=100`, { headers: auth });
