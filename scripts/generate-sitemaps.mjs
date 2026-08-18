@@ -22,10 +22,17 @@ const HISTORY_PATH = joinRoot("data", "sitemap-history.json");
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://nojvgfbcjgipjxpfatmm.supabase.co";
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc";
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Single REST call. Returns rows on success, or null on a TRANSIENT failure
+ * (timeout / network reset / 5xx / 429). Callers must retry nulls; an empty
+ * array is a real "no rows" answer and is never confused with a failure.
+ */
 async function fetchFromSupabase(table, params) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
       signal: controller.signal,
@@ -36,15 +43,34 @@ async function fetchFromSupabase(table, params) {
   } catch (err) { console.warn(`[sitemaps] REST fetch failed ${table}:`, err.message); return null; }
 }
 
-/** Paginated fetch — handles Supabase 1000-row limit */
+/** One page with bounded retries + backoff. Returns rows or throws. */
+async function fetchPageWithRetry(table, params, limit, offset, maxAttempts = 4) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const sep = params ? "&" : "";
+    const page = await fetchFromSupabase(table, `${params}${sep}limit=${limit}&offset=${offset}`);
+    if (page !== null) return page;
+    if (attempt < maxAttempts) {
+      const backoff = 800 * attempt;
+      console.warn(`[sitemaps] retry ${attempt}/${maxAttempts - 1} for ${table} rows ${offset}-${offset + limit} in ${backoff}ms`);
+      await sleep(backoff);
+    }
+  }
+  throw new Error(`[sitemaps] FATAL: ${table} page offset=${offset} limit=${limit} failed after ${maxAttempts} attempts`);
+}
+
+/**
+ * Paginated fetch with per-page retries.
+ * Small pages (200) keep every statement well below the Postgres statement
+ * timeout; a single wide 1000-row page reliably tripped 57014 under load and
+ * was silently downgraded to "0 products", aborting the build.
+ */
 async function fetchAllPages(table, params) {
-  const PAGE_SIZE = 1000;
+  const PAGE_SIZE = 200;
   let all = [];
   let offset = 0;
-  while (true) {
-    const sep = params ? "&" : "";
-    const page = await fetchFromSupabase(table, `${params}${sep}limit=${PAGE_SIZE}&offset=${offset}`);
-    if (!page || page.length === 0) break;
+  while (offset < 20000) {
+    const page = await fetchPageWithRetry(table, params, PAGE_SIZE, offset);
+    if (page.length === 0) break;
     all = all.concat(page);
     if (page.length < PAGE_SIZE) break;
     offset += PAGE_SIZE;
@@ -133,13 +159,13 @@ async function main() {
     const seen = new Set();
     products = productsRaw
       .filter((p) => {
-        if (!p.slug || p.slug.trim() === "" || isExcluded(`/product/${p.slug}`)) return false;
+        if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
         if (seen.has(p.slug)) return false;
         seen.add(p.slug);
         return true;
       })
-      .map((p) => ({ path: `/product/${p.slug}`, lastmod: p.updated_at }));
+      .map((p) => ({ path: `/products/${p.slug}`, lastmod: p.updated_at }));
     console.log(`[sitemaps] Products: ${products.length}`);
   } else {
     products = (safeRead(joinRoot("data", "products.json"), [])

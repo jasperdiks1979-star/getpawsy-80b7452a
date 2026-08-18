@@ -181,41 +181,76 @@ function buildProductSchema(product: ProductRecord, canonical: string, descripti
   };
 }
 
-async function supaRest<T>(table: string, params: string): Promise<T[]> {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Single REST call. Returns rows on success, `null` on a TRANSIENT failure
+ * (abort/timeout, network reset, 5xx, 429). An empty array is a genuine
+ * "no rows" answer — never conflated with a failure, which is what used to
+ * abort the whole build on one timed-out page.
+ */
+async function supaRest<T>(table: string, params: string): Promise<T[] | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Prefer: 'count=exact',
       },
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.warn(`[prerender-products] REST ${res.status} on ${table}`);
+      return null;
+    }
     return (await res.json()) as T[];
-  } catch {
+  } catch (err) {
     clearTimeout(timeout);
-    return [];
+    console.warn(`[prerender-products] REST fetch failed on ${table}: ${(err as Error).message}`);
+    return null;
   }
 }
 
+/** One page with bounded retries + linear backoff; throws with the exact range. */
+async function fetchPageWithRetry<T>(
+  table: string,
+  params: string,
+  limit: number,
+  offset: number,
+  maxAttempts = 4,
+): Promise<T[]> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const rows = await supaRest<T>(table, `${params}&limit=${limit}&offset=${offset}`);
+    if (rows !== null) return rows;
+    if (attempt < maxAttempts) {
+      const backoff = 800 * attempt;
+      console.warn(
+        `[prerender-products] retry ${attempt}/${maxAttempts - 1} for ${table} rows ${offset}-${offset + limit} in ${backoff}ms`,
+      );
+      await sleep(backoff);
+    }
+  }
+  throw new Error(
+    `[prerender-products] FATAL: ${table} page offset=${offset} limit=${limit} failed after ${maxAttempts} attempts`,
+  );
+}
+
 async function fetchAllProducts(): Promise<ProductRecord[]> {
-  const pageSize = 1000;
-  let offset = 0;
+  const pageSize = 200;
   const all: ProductRecord[] = [];
 
   const fetchPaged = async (table: 'products_public' | 'products') => {
-    offset = 0;
-    while (true) {
-      const duplicateFilter = table === 'products_public' ? '&is_duplicate=eq.false' : '&is_duplicate=eq.false';
-      const page = await supaRest<ProductRecord>(
+    let offset = 0;
+    while (offset < 20000) {
+      const page = await fetchPageWithRetry<ProductRecord>(
         table,
-        `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true${duplicateFilter}&slug=not.is.null&order=updated_at.desc&limit=${pageSize}&offset=${offset}`,
+        `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`,
+        pageSize,
+        offset,
       );
 
       if (!page.length) break;
@@ -264,7 +299,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
 
 function buildProductPage(product: ProductRecord, related: ProductRecord[], spaHtml: string): string {
   const slug = product.slug || product.id;
-  const canonical = `${SITE}/product/${slug}`;
+  const canonical = `${SITE}/products/${slug}`;
   const cleanDescription = stripHtml(product.description);
   const intro = buildIntro(product);
   const description = cleanDescription.length >= 80
@@ -380,7 +415,7 @@ function buildProductPage(product: ProductRecord, related: ProductRecord[], spaH
 
       ${related.length ? `<section>
         <h2>Related products</h2>
-        <div class="links">${related.map((item) => `<a href="/product/${escapeHtml(item.slug || item.id)}">${escapeHtml(item.name)}</a>`).join('')}</div>
+        <div class="links">${related.map((item) => `<a href="/products/${escapeHtml(item.slug || item.id)}">${escapeHtml(item.name)}</a>`).join('')}</div>
       </section>` : ''}
 
       <section class="faq">
@@ -456,13 +491,23 @@ function updateRedirectsManifest(distDir: string, slugs: string[]) {
   }
 
   const redirects = fs.readFileSync(redirectsPath, 'utf-8').split(/\r?\n/);
-  const filtered = redirects.filter((line) => !line.includes('/product/:slug /product/:slug.html 200') && !line.includes('/product/* /404.html 404'));
+  const filtered = redirects.filter(
+    (line) =>
+      !line.includes('/product/:slug /product/:slug.html 200') &&
+      !line.includes('/product/* /404.html 404') &&
+      !line.includes('/products/* /404.html 404') &&
+      !line.startsWith('# ═══ Generated product prerender routes'),
+  );
   const fallbackIndex = filtered.findIndex((line) => line.trim() === '/* /index.html 200');
   const insertIndex = fallbackIndex === -1 ? filtered.length : fallbackIndex;
 
   const explicitRules = [
     '# ═══ Generated product prerender routes — exact-match static HTML before SPA fallback ═══',
-    ...slugs.map((slug) => `/product/${slug} /product/${slug}.html 200`),
+    // canonical route
+    ...slugs.map((slug) => `/products/${slug} /products/${slug}.html 200`),
+    // legacy singular route → canonical (permanent)
+    ...slugs.map((slug) => `/product/${slug} /products/${slug} 301`),
+    '/products/* /404.html 404',
     '/product/* /404.html 404',
   ];
 
@@ -477,7 +522,7 @@ export default function prerenderProductsPlugin(): Plugin {
     apply: 'build',
     async closeBundle() {
       const distDir = path.resolve('dist');
-      const distProductDir = path.join(distDir, 'product');
+      const distProductDir = path.join(distDir, 'products');
       const spaHtmlPath = path.join(distDir, 'index.html');
 
       if (!fs.existsSync(spaHtmlPath)) {
