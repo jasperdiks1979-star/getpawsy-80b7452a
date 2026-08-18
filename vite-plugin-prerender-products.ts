@@ -299,7 +299,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
 
 function buildProductPage(product: ProductRecord, related: ProductRecord[], spaHtml: string): string {
   const slug = product.slug || product.id;
-  const canonical = `${SITE}/product/${slug}`;
+  const canonical = `${SITE}/products/${slug}`;
   const cleanDescription = stripHtml(product.description);
   const intro = buildIntro(product);
   const description = cleanDescription.length >= 80
@@ -415,7 +415,7 @@ function buildProductPage(product: ProductRecord, related: ProductRecord[], spaH
 
       ${related.length ? `<section>
         <h2>Related products</h2>
-        <div class="links">${related.map((item) => `<a href="/product/${escapeHtml(item.slug || item.id)}">${escapeHtml(item.name)}</a>`).join('')}</div>
+        <div class="links">${related.map((item) => `<a href="/products/${escapeHtml(item.slug || item.id)}">${escapeHtml(item.name)}</a>`).join('')}</div>
       </section>` : ''}
 
       <section class="faq">
@@ -491,13 +491,23 @@ function updateRedirectsManifest(distDir: string, slugs: string[]) {
   }
 
   const redirects = fs.readFileSync(redirectsPath, 'utf-8').split(/\r?\n/);
-  const filtered = redirects.filter((line) => !line.includes('/product/:slug /product/:slug.html 200') && !line.includes('/product/* /404.html 404'));
+  const filtered = redirects.filter(
+    (line) =>
+      !line.includes('/product/:slug /product/:slug.html 200') &&
+      !line.includes('/product/* /404.html 404') &&
+      !line.includes('/products/* /404.html 404') &&
+      !line.startsWith('# ═══ Generated product prerender routes'),
+  );
   const fallbackIndex = filtered.findIndex((line) => line.trim() === '/* /index.html 200');
   const insertIndex = fallbackIndex === -1 ? filtered.length : fallbackIndex;
 
   const explicitRules = [
     '# ═══ Generated product prerender routes — exact-match static HTML before SPA fallback ═══',
-    ...slugs.map((slug) => `/product/${slug} /product/${slug}.html 200`),
+    // canonical route
+    ...slugs.map((slug) => `/products/${slug} /products/${slug}.html 200`),
+    // legacy singular route → canonical (permanent)
+    ...slugs.map((slug) => `/product/${slug} /products/${slug} 301`),
+    '/products/* /404.html 404',
     '/product/* /404.html 404',
   ];
 
@@ -512,7 +522,7 @@ export default function prerenderProductsPlugin(): Plugin {
     apply: 'build',
     async closeBundle() {
       const distDir = path.resolve('dist');
-      const distProductDir = path.join(distDir, 'product');
+      const distProductDir = path.join(distDir, 'products');
       const spaHtmlPath = path.join(distDir, 'index.html');
 
       if (!fs.existsSync(spaHtmlPath)) {
