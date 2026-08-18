@@ -94,8 +94,67 @@ function buildArticleBody(guide: GuideJson): string {
   }
 
   if (guide.sections?.length) {
-    for (const section of guide.sections) {
-      parts.push(`<section><h2>${escapeHtml(section.heading)}</h2>${markdownToHtml(section.content)}</section>`);
+    for (const section of guide.sections as Array<Record<string, unknown>>) {
+      if (!section || typeof section !== 'object') continue;
+      // Guide JSON uses two shapes: {heading, content} and typed blocks
+      // ({type:'heading',level,text} | {type:'faq',items} | {type:'comparison',rows} …).
+      // Render both defensively — a missing field must never throw.
+      const heading = typeof section.heading === 'string' ? section.heading : '';
+      const type = typeof section.type === 'string' ? section.type : '';
+      const chunks: string[] = [];
+
+      if (type === 'heading') {
+        const level = typeof section.level === 'number' && section.level >= 2 && section.level <= 4 ? section.level : 2;
+        const text = typeof section.text === 'string' ? section.text : heading;
+        if (text) parts.push(`<h${level}>${escapeHtml(text)}</h${level}>`);
+        continue;
+      }
+
+      if (heading) chunks.push(`<h2>${escapeHtml(heading)}</h2>`);
+      if (typeof section.content === 'string' && section.content.trim()) {
+        chunks.push(markdownToHtml(section.content));
+      }
+      if (Array.isArray(section.items)) {
+        const items = section.items as Array<unknown>;
+        const isFaq = items.every((i) => i && typeof i === 'object' && 'question' in (i as object));
+        if (isFaq) {
+          chunks.push(
+            items
+              .map((i) => {
+                const f = i as { question?: string; answer?: string };
+                return `<details><summary>${escapeHtml(f.question || '')}</summary><p>${escapeHtml(f.answer || '')}</p></details>`;
+              })
+              .join(''),
+          );
+        } else {
+          chunks.push(
+            `<ul>${items
+              .map((i) => {
+                if (typeof i === 'string') return `<li>${escapeHtml(i)}</li>`;
+                const o = i as { title?: string; text?: string; description?: string; name?: string };
+                const label = o.title || o.name || '';
+                const body = o.text || o.description || '';
+                return `<li>${label ? `<strong>${escapeHtml(label)}</strong> ` : ''}${escapeHtml(body)}</li>`;
+              })
+              .join('')}</ul>`,
+          );
+        }
+      }
+      if (Array.isArray(section.rows)) {
+        const columns = Array.isArray(section.columns) ? (section.columns as unknown[]).map(String) : [];
+        const head = columns.length
+          ? `<thead><tr>${columns.map((c) => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>`
+          : '';
+        const body = (section.rows as unknown[])
+          .map((r) => {
+            const cells = Array.isArray(r) ? r.map(String) : Object.values(r as object).map(String);
+            return `<tr>${cells.map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`;
+          })
+          .join('');
+        chunks.push(`<table>${head}<tbody>${body}</tbody></table>`);
+      }
+
+      if (chunks.length) parts.push(`<section>${chunks.join('')}</section>`);
     }
   }
 
