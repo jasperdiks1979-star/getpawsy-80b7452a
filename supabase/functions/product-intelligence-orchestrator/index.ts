@@ -596,7 +596,7 @@ interface AiCallResult {
   stack?: string;
 }
 
-async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string; description: string }[]): Promise<AiCallResult> {
+async function callIntelligenceAI(model: string, p: any, gpc: any, boards: { name: string }[]): Promise<AiCallResult> {
   const boardNames = boards.map((b) => b.name).slice(0, 40);
   const system = `You are a Pinterest + SEO product intelligence engine for a US pet supplies brand.
 Return STRICT JSON only. No prose. No markdown.`;
