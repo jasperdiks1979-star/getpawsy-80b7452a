@@ -14,12 +14,12 @@ interface Props {
  * Logs all guard denials to console.error for diagnostics.
  */
 export function AdminRouteGuard({ children }: Props) {
-  const { user, isLoading, isAdmin, isAdminResolved } = useAuth();
+  const { user, isLoading, isAdmin, isAdminResolved, isSessionResolved } = useAuth();
   const location = useLocation();
 
   // Wait for both the session AND the server-side role check.
-  // Denying while the role check is still in flight locks out real admins.
-  if (isLoading || (user && !isAdminResolved)) {
+  // Denying while either is still in flight locks out real admins.
+  if (isLoading || !isSessionResolved || (user && !isAdminResolved)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
