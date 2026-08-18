@@ -23,7 +23,11 @@ const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
  * Raw REST call. Returns rows on success, `null` on a TRANSIENT failure
  * (timeout, network error, 5xx/429). An empty array means "no rows".
  */
-async function supaRestRaw<T>(table: string, params: string): Promise<T[] | null> {
+async function supaRestRaw<T>(
+  table: string,
+  params: string,
+  opts: { countExact?: boolean } = {}
+): Promise<T[] | null> {
   const controller = new AbortController();
   const TIMEOUT_MS = 25000;
   const startedAt = Date.now();
@@ -33,7 +37,10 @@ async function supaRestRaw<T>(table: string, params: string): Promise<T[] | null
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        Prefer: 'count=exact',
+        // count=exact forces a full COUNT over the wide products_public view on
+        // EVERY page request, which trips the Postgres statement timeout (57014).
+        // Paged fetches opt out; only ad-hoc calls ask for the exact count.
+        Prefer: opts.countExact ? 'count=exact' : 'count=none',
       },
       signal: controller.signal,
     });
