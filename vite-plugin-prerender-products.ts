@@ -245,18 +245,25 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
 
   const fetchPaged = async (table: 'products_public' | 'products') => {
     let offset = 0;
+    let size = pageSize;
     while (offset < 20000) {
-      const page = await fetchPageWithRetry<ProductRecord>(
-        table,
-        `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`,
-        pageSize,
-        offset,
-      );
+      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
+      let page: ProductRecord[] | undefined;
+      while (page === undefined) {
+        try {
+          page = await fetchPageWithRetry<ProductRecord>(table, params, size, offset);
+        } catch (err) {
+          if (size <= 25) throw err;
+          size = Math.max(25, Math.floor(size / 2));
+          console.warn(`[prerender-products] shrinking pageSize to ${size} after failures at offset=${offset}`);
+        }
+      }
 
       if (!page.length) break;
       all.push(...page.filter((product) => product.slug));
-      if (page.length < pageSize) break;
-      offset += pageSize;
+      if (page.length < size) break;
+      offset += size;
     }
   };
 
@@ -496,15 +503,16 @@ function updateRedirectsManifest(distDir: string, slugs: string[]) {
       !line.includes('/product/:slug /product/:slug.html 200') &&
       !line.includes('/product/* /404.html 404') &&
       !line.includes('/products/* /404.html 404') &&
+      !/^\/products\/[^\s]+ \/products\/[^\s]+\.html 200$/.test(line.trim()) &&
       !line.startsWith('# ═══ Generated product prerender routes'),
   );
   const fallbackIndex = filtered.findIndex((line) => line.trim() === '/* /index.html 200');
   const insertIndex = fallbackIndex === -1 ? filtered.length : fallbackIndex;
 
   const explicitRules = [
-    '# ═══ Generated product prerender routes — exact-match static HTML before SPA fallback ═══',
-    // canonical route
-    ...slugs.map((slug) => `/products/${slug} /products/${slug}.html 200`),
+    '# ═══ Generated product prerender routes ═══',
+    '# Canonical /products/<slug> is served natively from dist/products/<slug>/index.html',
+    '# (directory index resolves before the SPA fallback) — no rewrite rules needed.',
     // legacy singular route → canonical (permanent)
     ...slugs.map((slug) => `/product/${slug} /products/${slug} 301`),
     '/products/* /404.html 404',
@@ -553,7 +561,14 @@ export default function prerenderProductsPlugin(): Plugin {
           .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category)
           .slice(0, 4);
         const html = buildProductPage(product, related, spaHtml);
-        fs.writeFileSync(path.join(distProductDir, `${slug}.html`), html, 'utf-8');
+        // Directory-index output: static hosting resolves /products/<slug> to
+        // <slug>/index.html BEFORE the SPA fallback, so the canonical
+        // extensionless URL serves prerendered HTML natively. Writing
+        // `<slug>.html` only worked behind a _redirects rewrite, which Lovable
+        // hosting does not process. See: PDP shell incident 2026-08-18.
+        const slugDir = path.join(distProductDir, slug);
+        fs.mkdirSync(slugDir, { recursive: true });
+        fs.writeFileSync(path.join(slugDir, 'index.html'), html, 'utf-8');
         count += 1;
       }
 
@@ -565,7 +580,8 @@ export default function prerenderProductsPlugin(): Plugin {
         excludedNonPet: excludedCount,
         totalFetched: products.length,
         sampleSlugs: safeProducts.slice(0, 5).map((product) => product.slug || product.id),
-        redirectMode: 'exact-static-routes-before-spa-fallback',
+        redirectMode: 'directory-index-native-resolution',
+        outputPattern: 'dist/products/<slug>/index.html',
       };
       fs.writeFileSync(path.join(distDir, 'prerender-validation.json'), JSON.stringify(validationReport, null, 2), 'utf-8');
 
