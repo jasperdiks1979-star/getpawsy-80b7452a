@@ -15,7 +15,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        launchOptions: { executablePath: "/chromium-1194/chrome-linux/chrome" },
+        launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || "/chromium-1194/chrome-linux/chrome" },
       },
     },
   ],
