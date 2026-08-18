@@ -91,21 +91,24 @@ async function supaRest<T>(table: string, params: string): Promise<T[]> {
  * Fetching in bounded keyset-ordered pages keeps every statement well under
  * the timeout. Pass `params` WITHOUT order/limit/offset.
  */
-async function supaRestPaged<T>(table: string, params: string, pageSize = 200, maxPages = 100): Promise<T[]> {
+async function supaRestPaged<T>(table: string, params: string, pageSize = 200, maxPages = 400): Promise<T[]> {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const MAX_ATTEMPTS = 4;
+  const MAX_ATTEMPTS = 5;
+  const MIN_PAGE_SIZE = 25;
   const all: T[] = [];
+  let size = pageSize;
 
-  for (let page = 0; page < maxPages; page++) {
-    const offset = page * pageSize;
+  for (let page = 0, offset = 0; page < maxPages; page++) {
     let rows: T[] | null = null;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS && rows === null; attempt++) {
-      rows = await supaRestRaw<T>(table, `${params}&order=id.asc&limit=${pageSize}&offset=${offset}`);
+      rows = await supaRestRaw<T>(table, `${params}&order=id.asc&limit=${size}&offset=${offset}`);
       if (rows === null && attempt < MAX_ATTEMPTS) {
+        // Statement timeouts shrink the window instead of just waiting.
+        if (size > MIN_PAGE_SIZE) size = Math.max(MIN_PAGE_SIZE, Math.floor(size / 2));
         const backoff = 800 * attempt;
         console.warn(
-          `[xml-plugin][supaRest] retry ${attempt}/${MAX_ATTEMPTS - 1} for ${table} rows ${offset}-${offset + pageSize} in ${backoff}ms`
+          `[xml-plugin][supaRest] retry ${attempt}/${MAX_ATTEMPTS - 1} for ${table} rows ${offset}-${offset + size} (pageSize=${size}) in ${backoff}ms`
         );
         await sleep(backoff);
       }
@@ -113,12 +116,13 @@ async function supaRestPaged<T>(table: string, params: string, pageSize = 200, m
 
     if (rows === null) {
       throw new Error(
-        `[xml-plugin][supaRest] FATAL: ${table} page offset=${offset} limit=${pageSize} failed after ${MAX_ATTEMPTS} attempts`
+        `[xml-plugin][supaRest] FATAL: ${table} page offset=${offset} limit=${size} failed after ${MAX_ATTEMPTS} attempts`
       );
     }
 
     all.push(...rows);
-    if (rows.length < pageSize) break;
+    if (rows.length < size) break;
+    offset += rows.length;
   }
 
   console.log(`[xml-plugin][supaRest] ✓ paged ${table} → ${all.length} total rows`);
