@@ -159,13 +159,13 @@ async function main() {
     const seen = new Set();
     products = productsRaw
       .filter((p) => {
-        if (!p.slug || p.slug.trim() === "" || isExcluded(`/product/${p.slug}`)) return false;
+        if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
         if (seen.has(p.slug)) return false;
         seen.add(p.slug);
         return true;
       })
-      .map((p) => ({ path: `/product/${p.slug}`, lastmod: p.updated_at }));
+      .map((p) => ({ path: `/products/${p.slug}`, lastmod: p.updated_at }));
     console.log(`[sitemaps] Products: ${products.length}`);
   } else {
     products = (safeRead(joinRoot("data", "products.json"), [])
