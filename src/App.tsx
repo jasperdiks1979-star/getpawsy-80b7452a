@@ -348,6 +348,7 @@ const FunnelDashboardPage = lazyWithRetry(() => import("./pages/admin/FunnelDash
 const ProductStockAuditPage = lazyWithRetry(() => import("./pages/admin/ProductStockAuditPage"));
 const ProductsPerformancePage = lazyWithRetry(() => import("./pages/admin/ProductsPerformance"));
 const TrafficPerformancePage = lazyWithRetry(() => import("./pages/admin/TrafficPerformance"));
+const UnifiedAnalyticsDashboardPage = lazyWithRetry(() => import("./pages/admin/UnifiedAnalyticsDashboard"));
 const TrackingHealthPage = lazyWithRetry(() => import("./pages/admin/TrackingHealth"));
 const TikTokCredentialsStatusPage = lazyWithRetry(() => import("./pages/admin/TikTokCredentialsStatusPage"));
 const ConversionDashboardPage = lazyWithRetry(() => import("./pages/admin/ConversionDashboardPage"));
@@ -4855,6 +4856,14 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <TrafficPerformancePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="analytics"
+                              element={
+                                <Suspense fallback={<RouteLoader />}>
+                                  <UnifiedAnalyticsDashboardPage />
                                 </Suspense>
                               }
                             />

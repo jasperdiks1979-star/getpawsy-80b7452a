@@ -78623,6 +78623,7 @@ export type Database = {
         }
         Returns: Json
       }
+      gp_unified_analytics: { Args: { p_hours?: number }; Returns: Json }
       gpd_refresh_module_rollups: { Args: never; Returns: undefined }
       gpd_upsert_concept: {
         Args: {
