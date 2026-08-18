@@ -1,16 +1,16 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { getTopSprintProducts } from '@/lib/sprint-products';
+import { useEligibleProducts, diversify, productUrl } from '@/lib/catalog-eligibility';
 
 /**
  * Sitewide "Trending Now" strip — renders below the navbar.
- * Shows top 4 sprint products as quick-access links.
- * Static data, no DB calls, no layout shift.
+ * Catalog-driven: only active, in-stock, non-duplicate products appear.
+ * Fixed height keeps CLS at zero while the query resolves.
  */
-
-const trending = getTopSprintProducts(4);
-
 export const TrendingNowStrip = memo(() => {
+  const { data } = useEligibleProducts({ limit: 16 });
+  const trending = diversify(data ?? [], 4);
+
   return (
     <div className="w-full bg-accent/50 border-b border-border/50 overflow-hidden" style={{ height: 36, contain: 'layout' }}>
       <div className="container px-4 py-2 flex items-center gap-3 overflow-x-auto scrollbar-hide">
@@ -21,9 +21,9 @@ export const TrendingNowStrip = memo(() => {
         <span className="w-px h-4 bg-border shrink-0" aria-hidden="true" />
         {trending.map((p) => (
           <Link
-            key={p.slug}
-            to={`/products/${p.slug}`}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0"
+            key={p.id}
+            to={productUrl(p.slug)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap shrink-0 max-w-[180px] truncate"
           >
             {p.name}
           </Link>
