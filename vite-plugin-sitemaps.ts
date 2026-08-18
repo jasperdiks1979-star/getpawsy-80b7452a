@@ -1048,18 +1048,35 @@ export default function merchantFeedPlugin(): Plugin {
         const generated = await Promise.race([
           buildMerchantFeed(),
           new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
           ),
         ]);
         assertGoogleFeedValid(generated, 'public/google-feed.xml (live DB)');
         merchantFeed = generated;
       } catch (err) {
         console.warn(
-          '[xml-plugin] ⚠️ public feed live generation failed — using static catalog emergency feed:',
+          '[xml-plugin] ⚠️ public feed live generation failed — falling back to previous artifact:',
           (err as Error)?.message ?? err
         );
-        merchantFeed = buildStaticCatalogFallbackFeed();
-        assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml (static catalog fallback)');
+        // Preferred fallback: the last valid generated artifact from a previous
+        // build. The static catalog array is intentionally empty since P3, so it
+        // can no longer serve as an emergency feed — an empty feed used to throw
+        // here, aborting rollup before a single module was transformed.
+        const previousFeedPath = join(publicDir, 'google-feed.xml');
+        let recovered: string | null = null;
+        if (existsSync(previousFeedPath)) {
+          const previous = readFileSync(previousFeedPath, 'utf8');
+          try {
+            assertGoogleFeedValid(previous, 'public/google-feed.xml (previous artifact)');
+            recovered = previous;
+            console.warn('[xml-plugin] ✓ Reused previous public/google-feed.xml artifact.');
+          } catch { /* fall through */ }
+        }
+        if (!recovered) {
+          recovered = buildStaticCatalogFallbackFeed();
+          assertGoogleFeedValid(recovered, 'public/google-feed.xml (static catalog fallback)');
+        }
+        merchantFeed = recovered;
       }
       writeFeedArtifacts(publicDir, merchantFeed, 'dist/google-feed.xml');
       console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
@@ -1105,7 +1122,7 @@ export default function merchantFeedPlugin(): Plugin {
         const generated = await Promise.race([
           buildMerchantFeed(),
           new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 30000)
+            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
           ),
         ]);
         // Validate; if it throws we'll fall through to the fallback below.
@@ -1148,7 +1165,7 @@ export default function merchantFeedPlugin(): Plugin {
         const diagnostics = await Promise.race([
           buildMerchantDiagnostics(),
           new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant diagnostics generation timed out')), 30000)
+            setTimeout(() => reject(new Error('Merchant diagnostics generation timed out')), 180000)
           ),
         ]);
         writeFileSync(join(outDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
