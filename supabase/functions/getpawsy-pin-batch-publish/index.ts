@@ -49,6 +49,40 @@ Deno.serve(async (req) => {
       return json({ ok: true, results: out });
     }
 
+    // Read-only inventory listing used for duplicate-avoidance reference sets.
+    if (mode === "list") {
+      const pageSize = Math.min(Number(body.page_size ?? 100), 100);
+      const maxPages = Math.min(Number(body.max_pages ?? 3), 10);
+      const items: any[] = [];
+      let bookmark: string | null = null;
+      for (let i = 0; i < maxPages; i++) {
+        const qs = new URLSearchParams({ page_size: String(pageSize) });
+        if (bookmark) qs.set("bookmark", bookmark);
+        const r = await fetch(`${PIN_API}/pins?${qs}`, { headers: auth });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return json({ ok: false, step: "list", status: r.status, error: j }, 500);
+        for (const p of j?.items ?? []) {
+          items.push({ id: p.id, title: p.title, description: p.description, link: p.link, board_id: p.board_id, created_at: p.created_at, alt_text: p.alt_text });
+        }
+        bookmark = j?.bookmark ?? null;
+        if (!bookmark) break;
+      }
+      const filter = typeof body.link_contains === "string" ? body.link_contains : null;
+      const filtered = filter ? items.filter((p) => (p.link ?? "").includes(filter)) : items;
+      return json({ ok: true, count: filtered.length, total_scanned: items.length, pins: filtered });
+    }
+
+    if (mode === "__verify_legacy") {
+      const ids: string[] = body.pin_ids ?? [];
+      const out: any[] = [];
+      for (const id of ids) {
+        const r = await fetch(`${PIN_API}/pins/${id}`, { headers: auth });
+        const j = await r.json().catch(() => ({}));
+        out.push({ id, status: r.status, ok: r.ok, pin: r.ok ? { id: j.id, title: j.title, description: j.description, link: j.link, board_id: j.board_id, alt_text: j.alt_text, created_at: j.created_at, media: j.media?.images?.["600x"]?.url ?? null } : j });
+      }
+      return json({ ok: true, results: out });
+    }
+
     if (mode === "publish") {
       const pins: any[] = body.pins ?? [];
       if (!pins.length) return json({ ok: false, error: "no_pins" }, 400);
