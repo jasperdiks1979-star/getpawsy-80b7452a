@@ -33,7 +33,7 @@ interface GuideJson {
   featuredImage?: string;
   readingTime?: number;
   content?: string;
-  sections?: Array<{ heading: string; content: string }>;
+  sections?: Array<Record<string, unknown>>;
   faq?: Array<{ question: string; answer: string }>;
   buyingCriteria?: Array<{ criterion: string; description: string }>;
   commonMistakes?: Array<{ mistake: string; fix: string }>;
