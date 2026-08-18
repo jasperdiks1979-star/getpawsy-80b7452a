@@ -333,8 +333,8 @@ Deno.serve(async (req) => {
   }
 
   // Load Pinterest boards once for Phase 4 mapping
-  const { data: boards } = await sb.from("pinterest_boards").select("id,name,description").limit(200);
-  const boardList = (boards ?? []).map((b: any) => ({ name: b.name, description: b.description ?? "" }));
+  const { data: boards } = await sb.from("pinterest_boards").select("id,name").limit(200);
+  const boardList = (boards ?? []).map((b: any) => ({ name: b.name }));
 
   // For scan_one, run synchronously and return full diagnostics. For everything
   // else, kick off the loop in the background so the edge function returns immediately
