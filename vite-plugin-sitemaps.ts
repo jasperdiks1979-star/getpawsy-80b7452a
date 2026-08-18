@@ -1118,21 +1118,33 @@ export default function merchantFeedPlugin(): Plugin {
       // hiccup from killing the entire production build.
       const publicFeedPath = join(publicDir, 'google-feed.xml');
       let merchantFeed: string | null = null;
-      try {
-        const generated = await Promise.race([
-          buildMerchantFeed(),
-          new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
-          ),
-        ]);
-        // Validate; if it throws we'll fall through to the fallback below.
-        assertGoogleFeedValid(generated, 'dist/google-feed.xml (regen)');
-        merchantFeed = generated;
-      } catch (err) {
-        console.warn(
-          '[xml-plugin] ⚠️ closeBundle feed regen failed — falling back to public/google-feed.xml:',
-          (err as Error)?.message ?? err
-        );
+      // Preferred source: the feed artifact PHASE 1 already generated and
+      // validated during THIS build. Re-fetching the same 349 rows here only
+      // added a second, redundant network dependency that could fail.
+      if (existsSync(publicFeedPath)) {
+        const publicFeed = readFileSync(publicFeedPath, 'utf8');
+        try {
+          assertGoogleFeedValid(publicFeed, 'dist/google-feed.xml (from build artifact)');
+          merchantFeed = publicFeed;
+          console.log('[xml-plugin] ✓ Reused this build\'s public/google-feed.xml as dist feed source.');
+        } catch { /* fall through to regen */ }
+      }
+      if (!merchantFeed) {
+        try {
+          const generated = await Promise.race([
+            buildMerchantFeed(),
+            new Promise<string>((_, reject) =>
+              setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
+            ),
+          ]);
+          assertGoogleFeedValid(generated, 'dist/google-feed.xml (regen)');
+          merchantFeed = generated;
+        } catch (err) {
+          console.warn(
+            '[xml-plugin] ⚠️ closeBundle feed regen failed:',
+            (err as Error)?.message ?? err
+          );
+        }
       }
 
       if (!merchantFeed) {
