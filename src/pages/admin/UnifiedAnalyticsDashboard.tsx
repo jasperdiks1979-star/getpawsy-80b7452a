@@ -228,6 +228,7 @@ export default function UnifiedAnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const [liveHealth, setLiveHealth] = useState<LiveHealth | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -266,6 +267,13 @@ export default function UnifiedAnalyticsDashboard() {
       : { sessions: data.kpis.qualified_sessions, product_views: data.kpis.product_views, add_to_cart: data.kpis.add_to_cart, checkouts: data.kpis.checkouts, orders: data.kpis.orders };
   }, [data, mode]);
   const checks = useMemo(() => (data ? healthChecks(data) : []), [data]);
+  const allChecks = useMemo<Health[]>(
+    () =>
+      liveHealth
+        ? [...checks, { label: 'Live presence', status: liveHealth.status, reason: liveHealth.reason ?? undefined }]
+        : checks,
+    [checks, liveHealth],
+  );
   const notes = useMemo(() => (data ? insights(data) : []), [data]);
 
   return (
