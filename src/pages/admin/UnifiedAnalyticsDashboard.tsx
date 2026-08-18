@@ -154,40 +154,99 @@ function FunnelStep({ label, value, sub }: { label: string; value: number; sub?:
   );
 }
 
-type Health = { label: string; status: 'HEALTHY' | 'DEGRADED' | 'UNAVAILABLE'; reason?: string };
+// Data Health semantics (Phase 4):
+//   HEALTHY          — tracker/data source verified operational AND events observed
+//   HEALTHY_0_EVENTS — tracker operational, but zero qualifying events in the window
+//   DEGRADED         — events may be incomplete, or an observed mismatch exists
+//   UNAVAILABLE      — the tracking/data source itself could not be queried
+// A count of 0 is never, by itself, a reason to report UNAVAILABLE.
+type HealthStatus = 'HEALTHY' | 'HEALTHY_0_EVENTS' | 'DEGRADED' | 'UNAVAILABLE';
+type Health = { label: string; status: HealthStatus; reason?: string };
+
+export const HEALTH_LABEL: Record<HealthStatus, string> = {
+  HEALTHY: 'HEALTHY',
+  HEALTHY_0_EVENTS: 'HEALTHY — 0 EVENTS',
+  DEGRADED: 'DEGRADED',
+  UNAVAILABLE: 'UNAVAILABLE',
+};
 
 function healthChecks(d: Payload): Health[] {
   const k = d.kpis;
+  const raw = d.kpis_raw;
+  // The pipeline is provably reachable when the reporting layer returned a
+  // payload and any session was ingested in the window. Only a missing /
+  // unreadable source is UNAVAILABLE.
+  const pipelineUp = (k.raw_sessions_all_ingested ?? 0) > 0 || (raw?.sessions ?? 0) > 0;
+  const zeroOk = (reason: string): Health['status'] => (pipelineUp ? 'HEALTHY_0_EVENTS' : 'UNAVAILABLE');
+
+  // Product views: DEGRADED only when there is an observed mismatch — the raw
+  // stream has product-view events but the qualified layer shows none.
+  const pvMismatch = k.product_views === 0 && (raw?.product_views ?? 0) > 0;
+  const atcMismatch = k.add_to_cart === 0 && (raw?.add_to_cart ?? 0) > 0;
+  const coMismatch = k.checkouts === 0 && (raw?.checkouts ?? 0) > 0;
+
   return [
-    { label: 'Sessions', status: k.raw_sessions > 0 ? 'HEALTHY' : 'UNAVAILABLE', reason: k.raw_sessions ? undefined : 'no sessions ingested in window' },
+    {
+      label: 'Sessions',
+      status: k.raw_sessions > 0 ? 'HEALTHY' : pipelineUp ? 'HEALTHY_0_EVENTS' : 'UNAVAILABLE',
+      reason: k.raw_sessions ? undefined : pipelineUp ? 'no commercial sessions in window' : 'session source returned no data',
+    },
     {
       label: 'Product views',
-      status: k.product_views > 0 ? 'HEALTHY' : k.qualified_sessions > 0 ? 'DEGRADED' : 'UNAVAILABLE',
-      reason: k.product_views === 0 && k.qualified_sessions > 0 ? 'qualified sessions recorded but zero product-view events' : undefined,
+      status: k.product_views > 0 ? 'HEALTHY' : pvMismatch ? 'DEGRADED' : zeroOk('product views'),
+      reason: k.product_views > 0
+        ? undefined
+        : pvMismatch
+          ? `${raw.product_views} product-view events exist in raw traffic but none in qualified sessions`
+          : 'tracker operational — no qualified product views in window',
     },
     {
       label: 'Add to cart',
-      status: k.add_to_cart > 0 ? 'HEALTHY' : k.product_views > 0 ? 'DEGRADED' : 'UNAVAILABLE',
-      reason: k.add_to_cart === 0 ? 'no qualified add-to-cart events in window' : undefined,
+      status: k.add_to_cart > 0 ? 'HEALTHY' : atcMismatch ? 'DEGRADED' : zeroOk('add to cart'),
+      reason: k.add_to_cart > 0
+        ? undefined
+        : atcMismatch
+          ? `${raw.add_to_cart} add-to-cart events exist in raw traffic but none in qualified sessions`
+          : 'tracker operational — no qualified add-to-cart events in window',
     },
     {
       label: 'Checkout',
-      status: k.checkouts > 0 ? 'HEALTHY' : k.add_to_cart > 0 ? 'DEGRADED' : 'UNAVAILABLE',
-      reason: k.checkouts === 0 ? 'no qualified checkout events in window' : undefined,
+      status: k.checkouts > 0 ? 'HEALTHY' : coMismatch ? 'DEGRADED' : zeroOk('checkout'),
+      reason: k.checkouts > 0
+        ? undefined
+        : coMismatch
+          ? `${raw.checkouts} checkout events exist in raw traffic but none in qualified sessions`
+          : 'tracker operational — no qualified checkouts in window',
     },
-    { label: 'Paid orders', status: 'HEALTHY', reason: undefined },
+    {
+      label: 'Paid orders',
+      status: k.orders > 0 ? 'HEALTHY' : 'HEALTHY_0_EVENTS',
+      reason: k.orders > 0 ? undefined : 'orders source readable — no paid orders in window',
+    },
     {
       label: 'Pinterest attribution',
-      status: k.pinterest_sessions > 0 ? 'HEALTHY' : 'DEGRADED',
-      reason: k.pinterest_sessions === 0 ? 'no qualified Pinterest-attributed sessions' : undefined,
+      status: k.pinterest_sessions > 0 ? 'HEALTHY' : 'HEALTHY_0_EVENTS',
+      reason: k.pinterest_sessions === 0 ? 'attribution operational — no qualified Pinterest sessions in window' : undefined,
     },
     {
       label: 'Country attribution',
-      status: d.geo_unknown_pct <= 25 ? 'HEALTHY' : d.geo_unknown_pct <= 75 ? 'DEGRADED' : 'UNAVAILABLE',
-      reason: d.geo_unknown_pct > 25 ? `${d.geo_unknown_pct}% of qualified sessions have no country` : undefined,
+      status: k.qualified_sessions === 0
+        ? 'HEALTHY_0_EVENTS'
+        : d.geo_unknown_pct <= 25 ? 'HEALTHY' : 'DEGRADED',
+      reason: k.qualified_sessions === 0
+        ? 'no qualified sessions to resolve in window'
+        : d.geo_unknown_pct > 25 ? `${d.geo_unknown_pct}% of qualified sessions have no country` : undefined,
     },
-    { label: 'Bot filtering', status: 'HEALTHY' },
-    { label: 'Internal traffic filtering', status: 'HEALTHY' },
+    {
+      label: 'Bot filtering',
+      status: pipelineUp ? 'HEALTHY' : 'UNAVAILABLE',
+      reason: pipelineUp ? undefined : 'classifier input unavailable',
+    },
+    {
+      label: 'Internal traffic filtering',
+      status: pipelineUp ? 'HEALTHY' : 'UNAVAILABLE',
+      reason: pipelineUp ? undefined : 'classifier input unavailable',
+    },
   ];
 }
 
@@ -270,7 +329,22 @@ export default function UnifiedAnalyticsDashboard() {
   const allChecks = useMemo<Health[]>(
     () =>
       liveHealth
-        ? [...checks, { label: 'Live presence', status: liveHealth.status, reason: liveHealth.reason ?? undefined }]
+        ? [
+            ...checks,
+            {
+              label: 'Live presence',
+              // The presence source reports UNAVAILABLE when simply nobody was
+              // on-site in the window. That is "operational, zero events",
+              // not a broken tracker.
+              status:
+                liveHealth.error
+                  ? 'UNAVAILABLE'
+                  : liveHealth.status === 'UNAVAILABLE'
+                    ? 'HEALTHY_0_EVENTS'
+                    : liveHealth.status,
+              reason: liveHealth.error ?? liveHealth.reason ?? undefined,
+            },
+          ]
         : checks,
     [checks, liveHealth],
   );
@@ -495,7 +569,20 @@ export default function UnifiedAnalyticsDashboard() {
                   <li key={c.label} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{c.label}</span>
-                      <Badge variant={c.status === 'HEALTHY' ? 'default' : c.status === 'DEGRADED' ? 'secondary' : 'destructive'}>{c.status}</Badge>
+                      <Badge
+                        className="whitespace-nowrap"
+                        variant={
+                          c.status === 'HEALTHY'
+                            ? 'default'
+                            : c.status === 'HEALTHY_0_EVENTS'
+                              ? 'outline'
+                              : c.status === 'DEGRADED'
+                                ? 'secondary'
+                                : 'destructive'
+                        }
+                      >
+                        {HEALTH_LABEL[c.status]}
+                      </Badge>
                     </div>
                     {c.reason && <p className="text-xs text-muted-foreground mt-1 break-words [overflow-wrap:anywhere]">{c.reason}</p>}
                   </li>

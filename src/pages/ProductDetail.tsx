@@ -45,6 +45,8 @@ import { PinchZoomImage } from "@/components/ui/pinch-zoom-image";
 import { useCart } from "@/contexts/CartContext";
 import { useCartAnimation } from "@/contexts/CartAnimationContext";
 import { trackCci } from "@/lib/cci";
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { shouldRecordProductView } from "@/lib/productViewDedupe";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
@@ -807,15 +809,20 @@ const ProductDetail = () => {
         )
         .catch(() => {});
       try {
-        trackCci('product_view', {
-          product_id: currentProductId,
-          funnel_stage: 'product_view',
-          meta: {
-            slug: product.slug ?? null,
-            price: Number(product.price) || 0,
-            currency: 'USD',
-          },
-        });
+        // Exactly one PRODUCT_VIEW per (session, product) per logical view
+        // window — remounts / hydration / back-navigation no longer inflate
+        // the funnel. Fails open: on any storage error the event still fires.
+        if (shouldRecordProductView(getCanonicalSessionId(), currentProductId)) {
+          trackCci('product_view', {
+            product_id: currentProductId,
+            funnel_stage: 'product_view',
+            meta: {
+              slug: product.slug ?? null,
+              price: Number(product.price) || 0,
+              currency: 'USD',
+            },
+          });
+        }
       } catch { /* swallow */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
