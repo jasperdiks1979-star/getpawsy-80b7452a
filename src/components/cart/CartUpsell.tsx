@@ -73,8 +73,24 @@ DefaultUpsellSkeleton.displayName = 'DefaultUpsellSkeleton';
 export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }: CartUpsellProps) => {
   const { addItem } = useCart();
 
-  // Extract base product IDs (remove variant suffixes)
-  const baseProductIds = currentItemIds.map(id => id.split('-')[0]);
+  // Extract base product IDs (remove variant suffixes).
+  // Product IDs are UUIDs, which themselves contain "-": splitting on "-"
+  // truncated them to "18028997" and made every products_public lookup a
+  // 400 (invalid uuid). Only strip an explicit variant suffix.
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  const baseProductIds = Array.from(
+    new Set(
+      currentItemIds
+        .map((id) => {
+          const match = String(id).match(UUID_RE);
+          if (match) return match[0];
+          // Non-UUID legacy ids may carry a "-variant" suffix.
+          return String(id).split('::')[0];
+        })
+        .filter(Boolean),
+    ),
+  );
 
   // Fetch cart items to get categories
   const { data: cartProducts, isLoading: isLoadingCart } = useQuery({
