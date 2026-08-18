@@ -49,11 +49,15 @@ Deno.serve(async (req) => {
       const us = rows.filter((r) => r.country_code === "US").reduce((s, r) => s + r.qty, 0);
       const eu = rows.filter((r) => ["DE", "GB", "FR", "ES", "IT", "NL"].includes(r.country_code ?? "")).reduce((s, r) => s + r.qty, 0);
       const cn = rows.filter((r) => r.country_code === "CN").reduce((s, r) => s + r.qty, 0);
+      // effective_stock / us_available / eu_available are GENERATED columns —
+      // writing them made this whole update fail silently, which left `stock`
+      // and `us_stock` permanently out of sync. Write only real columns and
+      // keep the canonical sellable `stock` aligned with fresh US truth.
       await sb.from("products").update({
         us_stock: us, eu_stock: eu, cn_stock: cn,
-        effective_stock: globalQty,
-        us_available: us > 0,
-        eu_available: eu > 0,
+        stock: us,
+        last_inventory_sync_at: new Date().toISOString(),
+        last_inventory_sync_status: us > 0 ? "in_stock" : "out_of_stock",
       }).eq("id", p.id);
 
       results.push({

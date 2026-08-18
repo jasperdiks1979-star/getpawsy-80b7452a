@@ -249,6 +249,10 @@ Deno.serve(async (req) => {
       if (!dryRun) {
         const update: Record<string, any> = {
           stock: newStock,
+          // Root-cause fix (P0): keep the canonical sellable column and the
+          // warehouse column in lockstep. Writing `stock` alone was the source
+          // of the stock=0 / us_stock>0 divergence that hid live products.
+          us_stock: newStock,
           variant_stock: variantStockOut,
           last_inventory_sync_at: new Date().toISOString(),
           last_inventory_sync_status: shouldZero ? "out_of_stock" : "in_stock",
