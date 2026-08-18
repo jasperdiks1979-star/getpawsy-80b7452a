@@ -491,9 +491,6 @@ export default function UnifiedAnalyticsDashboard() {
             <CardHeader className="pb-2 p-4 sm:p-6 sm:pb-2"><CardTitle className="text-base">Data health</CardTitle></CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {checks.map((c) => (
-                  <></>
-                ))}
                 {allChecks.map((c) => (
                   <li key={c.label} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between gap-2">
