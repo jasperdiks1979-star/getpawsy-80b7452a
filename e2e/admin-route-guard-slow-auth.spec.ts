@@ -43,7 +43,8 @@ async function seedSession(context: any) {
   );
 }
 
-/** Everything except the routes a test overrides earlier resolves empty. */
+/** Catch-all REST stub. Register BEFORE specific routes: Playwright
+ *  matches the most recently registered handler first. */
 async function stubRest(page: any) {
   await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route: any) =>
     route.fulfill({
@@ -78,6 +79,8 @@ test.describe("AdminRouteGuard · slow session/role resolution", () => {
       });
     });
 
+    await stubRest(page);
+
     // Role check resolves slowly — this is the window where the old guard
     // wrongly rendered "Access Denied".
     await page.route(`**/${SUPABASE_HOST}/rest/v1/user_roles**`, async (route) => {
@@ -88,7 +91,6 @@ test.describe("AdminRouteGuard · slow session/role resolution", () => {
         body: JSON.stringify({ role: "admin" }),
       });
     });
-    await stubRest(page);
 
     await page.goto(ADMIN_PATH);
 
@@ -123,6 +125,7 @@ test.describe("AdminRouteGuard · slow session/role resolution", () => {
       });
     });
 
+    await stubRest(page);
     await page.route(`**/${SUPABASE_HOST}/rest/v1/user_roles**`, (route) =>
       route.fulfill({
         status: 200,
@@ -130,7 +133,6 @@ test.describe("AdminRouteGuard · slow session/role resolution", () => {
         body: JSON.stringify({ role: "admin" }),
       }),
     );
-    await stubRest(page);
 
     await page.goto(ADMIN_PATH);
 
