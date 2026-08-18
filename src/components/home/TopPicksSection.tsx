@@ -1,229 +1,39 @@
 import { Link } from 'react-router-dom';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Star from 'lucide-react/dist/esm/icons/star';
 import { Button } from '@/components/ui/button';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { SITE_URL } from '@/lib/constants';
 import { Helmet } from 'react-helmet-async';
+import {
+  useEligibleProducts,
+  diversify,
+  productUrl,
+  type EligibleProduct,
+} from '@/lib/catalog-eligibility';
 
 /**
- * "Top Picks" — 20 curated product cards for internal link authority.
- * Static data: no DB call on critical homepage path.
- * All links are real <a href> for crawlability.
+ * "Top Picks" — live, catalog-driven product cards.
+ * Source of truth: products_public via the shared promotion eligibility contract.
+ * A product that goes inactive, zero-stock or duplicate disappears here on the
+ * next query — no code deploy required.
  */
 
-export interface TopPickProduct {
-  slug: string;
-  name: string;
-  price: number;
-  compareAt?: number;
-  image: string;
-  benefit: string;
-  pet: 'dog' | 'cat';
-}
+const MAX_PICKS = 20;
 
-export const TOP_PICKS: TopPickProduct[] = [
-  // ── DOG products (10) ──
-  {
-    slug: 'memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner',
-    name: 'Orthopedic Memory Foam Pet Bed',
-    price: 69.49,
-    compareAt: 84.99,
-    image: '/__l5e/assets-v1/1ef1b668-7aad-4ac2-8235-855bebb5abf0/memory-foam-pet-bed.webp',
-    benefit: 'Vet-recommended for joint relief',
-    pet: 'dog',
-  },
-  {
-    slug: 'tactical-service-dog-harness-strap-set-car-seat-belt-collapsible-bowl-biodegradable-trash-bag-set-fo',
-    name: 'Tactical Dog Harness & Car Safety Set',
-    price: 63.99,
-    compareAt: 81.99,
-    image: '/__l5e/assets-v1/dae2c8fe-9f34-4b43-bdc3-4b651bd4ceb4/tactical-dog-harness.webp',
-    benefit: '5-in-1 travel safety bundle',
-    pet: 'dog',
-  },
-  {
-    slug: 'outdoor-dog-kennel-with-roof-rotating-4-level-adjustable-bowls',
-    name: 'Outdoor Dog Kennel with Roof & Adjustable Bowls',
-    price: 149.99,
-    compareAt: 187.49,
-    image: '/__l5e/assets-v1/01154ad9-6038-4bcd-b228-28ed831ce55e/outdoor-dog-kennel.webp',
-    benefit: 'Weather-resistant with built-in feeders',
-    pet: 'dog',
-  },
-  {
-    slug: 'crate-furniture-32small-dog-cage-end-table-with-2-doors-lockable-door-puppy-kennel-indoor-black',
-    name: 'Dog Crate End Table with Lockable Doors',
-    price: 149.99,
-    compareAt: 187.49,
-    image: '/images/products/dog-crate-end-table.webp',
-    benefit: 'Stylish furniture-grade kennel',
-    pet: 'dog',
-  },
-  {
-    slug: '2-in-1-dog-bike-trailer-pet-stroller-carrier-for-large-dogs-with-hitch',
-    name: '2-in-1 Dog Bike Trailer & Stroller',
-    price: 322.99,
-    compareAt: 409.99,
-    image: '/images/products/dog-bike-trailer.webp',
-    benefit: 'Converts between biking & walking',
-    pet: 'dog',
-  },
-  {
-    slug: 'double-sided-all-season-dog-bed-mat-made-of-chew-resistant-leather-for-pets',
-    name: 'Double-Sided All-Season Dog Bed Mat',
-    price: 21.53,
-    compareAt: 26.91,
-    image: '/images/products/double-sided-dog-bed.webp',
-    benefit: 'Chew-resistant & reversible',
-    pet: 'dog',
-  },
-  {
-    slug: '3-in-1-pet-jogging-stroller-for-small-dogs-and-cats-with-detachable-carrier-storage-basket-gray',
-    name: '3-in-1 Pet Jogging Stroller',
-    price: 432.99,
-    compareAt: 549.99,
-    image: '/images/products/pet-jogging-stroller.webp',
-    benefit: 'Detachable carrier + storage',
-    pet: 'dog',
-  },
-  {
-    slug: 'iq-puzzle-health-dog-bowl-mat-slow-feeding-training-blanket',
-    name: 'IQ Puzzle Slow Feeder Dog Bowl Mat',
-    price: 9.99,
-    compareAt: 12.49,
-    image: '/images/products/slow-feeder-dog-bowl.webp',
-    benefit: 'Slows eating & stimulates mind',
-    pet: 'dog',
-  },
-  {
-    slug: 'detangle-and-de-shed-with-this-foldable-pet-grooming-comb',
-    name: 'Foldable Pet Grooming Comb',
-    price: 9.99,
-    compareAt: 12.49,
-    image: '/images/products/pet-grooming-comb.webp',
-    benefit: 'Portable detangling & de-shedding',
-    pet: 'dog',
-  },
-  {
-    slug: 'yegbong-pet-moisturizing-paw-balm-suitable-for-cats-and-dogs-protects-and-moisturizes-paw-pads',
-    name: 'Pet Moisturizing Paw Balm',
-    price: 9.99,
-    compareAt: 12.49,
-    image: '/images/products/pet-paw-balm.webp',
-    benefit: 'Soothes cracked & dry paws',
-    pet: 'dog',
-  },
-  // ── CAT products (10) ──
-  {
-    slug: 'all-in-one-cactus-cat-tree-with-climbing-frame-and-cozy-nest',
-    name: 'Cactus Cat Tree with Climbing Frame',
-    price: 88.99,
-    compareAt: 109.99,
-    image: '/__l5e/assets-v1/a56c0b75-8603-4969-a92e-12412e7f06bc/cactus-cat-tree.webp',
-    benefit: 'Space-saving adorable design',
-    pet: 'cat',
-  },
-  {
-    slug: 'solid-wood-cat-tree-with-integrated-scratching-post-and-cozy-nest',
-    name: 'Solid Wood Cat Tree with Scratching Post',
-    price: 149.99,
-    compareAt: 187.49,
-    image: '/images/products/solid-wood-cat-tree.webp',
-    benefit: 'Premium real-wood construction',
-    pet: 'cat',
-  },
-  {
-    slug: '5-level-revolving-stair-cat-tree-scratcher-climbing-activity-tower-with-play-center-and-resting-perc',
-    name: '5-Level Revolving Stair Cat Tower',
-    price: 116.18,
-    compareAt: 145.23,
-    image: '/images/products/revolving-stair-cat-tower.webp',
-    benefit: 'Multi-level play & rest zones',
-    pet: 'cat',
-  },
-  {
-    slug: 'cat-litter-box-front-entry-enclosed-extra-large-litter-box-with-litter-catching-lid-and-scoop-for-bi',
-    name: 'Extra Large Enclosed Cat Litter Box',
-    price: 136.99,
-    compareAt: 170.99,
-    image: '/images/products/enclosed-litter-box.webp',
-    benefit: 'Front-entry with litter-catching lid',
-    pet: 'cat',
-  },
-  {
-    slug: 'outdoor-catio-cat-enclosure-large-wooden-cat-house-with-6-jumping-platforms-scratching-post-2-ramps--1',
-    name: 'Outdoor Catio Cat Enclosure',
-    price: 471.99,
-    compareAt: 594.99,
-    image: '/images/products/outdoor-catio.webp',
-    benefit: 'Safe outdoor play for 2-3 cats',
-    pet: 'cat',
-  },
-  {
-    slug: 'pawhut-cat-tree-for-indoor-cats-with-hammock-cat-tower-green',
-    name: 'PawHut Cat Tree with Hammock',
-    price: 136.99,
-    compareAt: 166.99,
-    image: '/images/products/pawhut-cat-tree.webp',
-    benefit: 'Cozy hammock + sisal posts',
-    pet: 'cat',
-  },
-  {
-    slug: 'cat-toy-with-bells-accordion-style-scratching-post-for-cats',
-    name: 'Accordion-Style Cat Scratching Post',
-    price: 9.99,
-    compareAt: 12.49,
-    image: '/images/products/accordion-scratching-post.webp',
-    benefit: 'Fun bells + satisfying scratch',
-    pet: 'cat',
-  },
-  {
-    slug: '57-multi-level-cat-tree-for-multi-cat-households-2-condos-hammock-with-sisal-scratching-posts-gray',
-    name: '57" Multi-Level Cat Tree for Multi-Cat Homes',
-    price: 147.99,
-    compareAt: 183.99,
-    image: '/__l5e/assets-v1/833a1d02-51ce-496c-a15c-0717b8d701a4/multi-cat-tree-57.webp',
-    benefit: '2 condos + hammock for multi-cat',
-    pet: 'cat',
-  },
-  {
-    slug: 'extra-large-stainless-steel-litter-box-enclosed-cat-litter-box-with-scoop-deodorizer-bag-sand-drop-p',
-    name: 'Stainless Steel Enclosed Litter Box',
-    price: 134.99,
-    compareAt: 166.99,
-    image: '/images/products/stainless-steel-litter-box.webp',
-    benefit: 'Rust-proof with deodorizer',
-    pet: 'cat',
-  },
-  {
-    slug: 'pet-ear-cleanersuitable-for-both-cats-and-dogs',
-    name: 'Pet Ear Cleaner for Cats & Dogs',
-    price: 9.99,
-    compareAt: 12.49,
-    image: '/images/products/pet-ear-cleaner.webp',
-    benefit: 'Gentle formula for sensitive ears',
-    pet: 'cat',
-  },
-];
-
-/** JSON-LD ItemList for the 20 top picks */
-function TopPicksJsonLd() {
-  const items = TOP_PICKS.map((p, i) => ({
-    '@type': 'ListItem',
-    position: i + 1,
-    url: `${SITE_URL}/products/${p.slug}`,
-    name: p.name,
-  }));
-
+function TopPicksJsonLd({ products }: { products: EligibleProduct[] }) {
+  if (!products.length) return null;
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'Top Picks for Pet Parents',
-    numberOfItems: TOP_PICKS.length,
-    itemListElement: items,
+    numberOfItems: products.length,
+    itemListElement: products.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `${SITE_URL}${productUrl(p.slug)}`,
+      name: p.name,
+    })),
   };
-
   return (
     <Helmet>
       <script type="application/ld+json">{JSON.stringify(schema)}</script>
@@ -232,9 +42,15 @@ function TopPicksJsonLd() {
 }
 
 export function TopPicksSection() {
+  const { data, isLoading } = useEligibleProducts({ limit: 40 });
+  const products = diversify(data ?? [], MAX_PICKS);
+
+  // No eligible products → hide the section entirely (never render dead cards).
+  if (!isLoading && products.length === 0) return null;
+
   return (
     <section className="py-16 md:py-20">
-      <TopPicksJsonLd />
+      <TopPicksJsonLd products={products} />
       <div className="container px-4 md:px-6">
         <FadeInView className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
           <div>
@@ -242,7 +58,7 @@ export function TopPicksSection() {
               Top Picks for Pet Parents
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl">
-              20 hand-selected products loved by dogs and cats — verified quality, US shipping
+              In-stock products for dogs and cats — verified availability, US shipping
             </p>
           </div>
           <Button asChild variant="outline" className="gap-2 rounded-full shrink-0">
@@ -252,57 +68,72 @@ export function TopPicksSection() {
           </Button>
         </FadeInView>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-5">
-          {TOP_PICKS.map((product, idx) => {
-            const discount = product.compareAt
-              ? Math.round((1 - product.price / product.compareAt) * 100)
-              : 0;
-            return (
-              <a
-                key={product.slug}
-                href={`/products/${product.slug}`}
-                className="group block bg-card rounded-xl border border-border/50 overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
-                data-seo-slot={`top-pick-${idx}`}
-              >
-                <div className="relative aspect-square overflow-hidden bg-muted">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    loading={idx < 5 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    width={300}
-                    height={300}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
-                  />
-                  {discount > 0 && (
-                    <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
-                      -{discount}%
-                    </span>
-                  )}
-                  <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] font-medium px-1.5 py-0.5 rounded capitalize text-muted-foreground">
-                    {product.pet === 'dog' ? '🐕 Dog' : '🐈 Cat'}
-                  </span>
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/50 overflow-hidden">
+                <div className="aspect-square bg-muted animate-pulse" />
+                <div className="p-3 space-y-2">
+                  <div className="h-3 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-1/2 bg-muted rounded animate-pulse" />
                 </div>
-                <div className="p-3 space-y-1.5">
-                  <h3 className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center gap-1 text-[10px] text-primary">
-                    <Star className="w-3 h-3 fill-primary" />
-                    <span className="truncate">{product.benefit}</span>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-sm font-bold text-foreground">${product.price.toFixed(2)}</span>
-                    {product.compareAt && (
-                      <span className="text-[10px] text-muted-foreground line-through">${product.compareAt.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-5">
+            {products.map((product, idx) => {
+              const compareAt = product.compare_at_price ?? 0;
+              const discount =
+                compareAt > product.price ? Math.round((1 - product.price / compareAt) * 100) : 0;
+              return (
+                <a
+                  key={product.id}
+                  href={productUrl(product.slug)}
+                  className="group block bg-card rounded-xl border border-border/50 overflow-hidden shadow-soft hover:shadow-soft-lg transition-all duration-300 hover:-translate-y-1"
+                  data-seo-slot={`top-pick-${idx}`}
+                >
+                  <div className="relative aspect-square overflow-hidden bg-muted">
+                    <img
+                      src={product.image_url || '/placeholder.svg'}
+                      alt={product.name}
+                      loading={idx < 5 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      width={300}
+                      height={300}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                    />
+                    {discount > 0 && (
+                      <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        -{discount}%
+                      </span>
+                    )}
+                    {product.primary_species && (
+                      <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] font-medium px-1.5 py-0.5 rounded capitalize text-muted-foreground">
+                        {product.primary_species === 'dog' ? '🐕 Dog' : '🐈 Cat'}
+                      </span>
                     )}
                   </div>
-                </div>
-              </a>
-            );
-          })}
-        </div>
+                  <div className="p-3 space-y-1.5">
+                    <h3 className="text-xs sm:text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                      {product.name}
+                    </h3>
+                    {product.category && (
+                      <p className="text-[10px] text-muted-foreground truncate">{product.category}</p>
+                    )}
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-bold text-foreground">${product.price.toFixed(2)}</span>
+                      {compareAt > product.price && (
+                        <span className="text-[10px] text-muted-foreground line-through">${compareAt.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

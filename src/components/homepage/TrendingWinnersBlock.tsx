@@ -20,6 +20,9 @@ async function fetchWinners() {
     .from('products_public')
     .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
+    .gt('stock', 0)
+    .not('is_duplicate', 'is', true)
+    .not('image_url', 'is', null)
     .order('price', { ascending: false })
     .limit(4);
 

@@ -1,19 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBag } from 'lucide-react';
 import { getCanonicalPrice } from '@/lib/canonical-pricing';
-
-const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
-
-const TOP_SLUGS = [
-  'automatic-cat-litter-box-self-cleaning-app-control',
-  'foldable-dog-stroller-pet-travel-cart',
-  'hidden-cat-litter-box-furniture-enclosure',
-  'elevated-cooling-dog-bed-outdoor-pet-cot',
-  'tall-cat-tree-ufo-perch-space-capsule-sisal',
-  'expandable-pet-carrier-backpack-breathable',
-  'modern-cat-tree-35-inch-wooden-scratching-tower',
-  'xl-stainless-steel-cat-litter-box-flip-top',
-];
+import { fetchEligibleProducts, diversify } from '@/lib/catalog-eligibility';
 
 interface TopProduct {
   id: string;
@@ -31,18 +19,8 @@ interface TopProduct {
 export function TopProductsGrid() {
   const { data: products } = useQuery<TopProduct[]>({
     queryKey: ['homepage-top-products'],
-    queryFn: async () => {
-      const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id, name, slug, image_url, price, variants')
-        .in('slug', TOP_SLUGS)
-        .eq('is_active', true);
-      if (error) throw error;
-      // Preserve curated order
-      const bySlug = new Map((data ?? []).map(p => [p.slug, p]));
-      return TOP_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as TopProduct[];
-    },
+    // Live catalog truth — active, in-stock, non-duplicate products only.
+    queryFn: async () => diversify(await fetchEligibleProducts({ limit: 24 }), 8) as TopProduct[],
     staleTime: 15 * 60 * 1000,
   });
 

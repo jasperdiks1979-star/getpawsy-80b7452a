@@ -33,7 +33,7 @@ export function CrawlableRelatedLinks({ products, currentCategory }: CrawlableRe
         {products.slice(0, 8).map((p) => (
           <li key={p.id}>
             <Link
-              to={`/product/${p.slug || p.id}`}
+              to={`/products/${p.slug || p.id}`}
               className="text-sm text-primary hover:underline line-clamp-1"
             >
               {p.name}
