@@ -33742,6 +33742,27 @@ export type Database = {
         }
         Relationships: []
       }
+      gp_analytics_cache: {
+        Row: {
+          compute_ms: number
+          computed_at: string
+          payload: Json
+          window_hours: number
+        }
+        Insert: {
+          compute_ms?: number
+          computed_at?: string
+          payload: Json
+          window_hours: number
+        }
+        Update: {
+          compute_ms?: number
+          computed_at?: string
+          payload?: Json
+          window_hours?: number
+        }
+        Relationships: []
+      }
       gpd_bundles: {
         Row: {
           accessory_product_ids: string[]
@@ -78623,9 +78644,24 @@ export type Database = {
         }
         Returns: Json
       }
+      gp_analytics_cache_refresh: {
+        Args: { p_windows?: number[] }
+        Returns: Json
+      }
       gp_live_visitors: { Args: { p_minutes?: number }; Returns: Json }
       gp_unified_analytics: { Args: { p_hours?: number }; Returns: Json }
-      gp_unified_analytics_v2: { Args: { p_hours?: number }; Returns: Json }
+      gp_unified_analytics_v2: {
+        Args: {
+          p_force?: boolean
+          p_hours?: number
+          p_max_age_seconds?: number
+        }
+        Returns: Json
+      }
+      gp_unified_analytics_v2_compute: {
+        Args: { p_hours?: number }
+        Returns: Json
+      }
       gpd_refresh_module_rollups: { Args: never; Returns: undefined }
       gpd_upsert_concept: {
         Args: {
