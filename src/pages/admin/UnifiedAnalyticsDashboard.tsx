@@ -342,6 +342,8 @@ export default function UnifiedAnalyticsDashboard() {
         </div>
       </header>
 
+      <LiveVisitorsWorld onHealth={setLiveHealth} />
+
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -490,6 +492,9 @@ export default function UnifiedAnalyticsDashboard() {
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {checks.map((c) => (
+                  <></>
+                ))}
+                {allChecks.map((c) => (
                   <li key={c.label} className="rounded-lg border p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{c.label}</span>
