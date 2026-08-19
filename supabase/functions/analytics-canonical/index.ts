@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
       from += PAGE_WAVE * PAGE;
       if (from > 200_000) break;
     }
+    mark("events");
 
     // ── orders (paid) ──────────────────────────────────────────
     const { data: paidOrders, error: oErr } = await supabase
@@ -211,6 +212,7 @@ Deno.serve(async (req) => {
       .lte("created_at", until)
       .limit(5000);
     if (oErr) throw oErr;
+    mark("orders");
     let purchases = paidOrders ?? [];
     if (geo === "US") {
       purchases = purchases.filter((o: any) => {
@@ -420,6 +422,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    mark("va_by_session");
     // Fallback enrichment by visitor_id for sessions still missing geo.
     // Guarantees map markers cannot go to zero just because a session_id
     // namespace mismatch exists between the two writers.
@@ -460,6 +463,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    mark("va_by_visitor");
     const allSessionsArr = Array.from(sessionAgg.values()).sort(
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
     );
@@ -503,6 +507,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+    mark("canonical_sessions_flags");
     const HUMAN_CLASS = new Set([
       "CONFIRMED_HUMAN","PROBABLE_HUMAN","HUMAN_CONFIRMED","HUMAN_PROBABLE",
     ]);
@@ -662,6 +667,7 @@ Deno.serve(async (req) => {
       sessions: sessionsArr,
       sample_event: sample,
       diagnostics,
+      timings,
       traffic_quality_breakdown,
       generated_at: new Date().toISOString(),
     };
@@ -800,6 +806,7 @@ Deno.serve(async (req) => {
         respBody.v2_error = (e as Error).message;
       }
     }
+    mark("v2_block");
     cache.set(key, { at: now, body: respBody });
     return new Response(JSON.stringify(respBody), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
