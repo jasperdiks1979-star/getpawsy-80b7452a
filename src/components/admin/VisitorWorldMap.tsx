@@ -607,7 +607,10 @@ export const VisitorWorldMap = ({
   const { data: truth } = useAnalyticsTruth({
     hours: truthHours,
     geo: usOnly ? "US" : "all",
-    refetchIntervalMs: timeRange === "live" ? 10_000 : 60_000,
+    // Non-live windows use the hook default, which scales with window size
+    // (>=72h aligns with the 5-minute server cache) — this prevents
+    // overlapping expensive 7d refetches on mobile.
+    refetchIntervalMs: timeRange === "live" ? 10_000 : undefined,
   });
 
   // Canonical map model — the SAME truth session list powers counters, CSV,

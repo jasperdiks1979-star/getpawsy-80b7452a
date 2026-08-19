@@ -123,21 +123,47 @@ export async function requireInternalOrAdmin(req: Request): Promise<Response | n
       });
     }
     const adminClient = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: isAdmin } = await adminClient.rpc("has_role", {
+    const { data: rpcIsAdmin, error: rpcErr } = await adminClient.rpc("has_role", {
       _user_id: u.user.id,
       _role: "admin",
     });
+    let isAdmin = rpcIsAdmin === true;
+    // Resilience: the `has_role` RPC can transiently fail (PostgREST schema
+    // cache reload, connection saturation). A failed lookup is NOT proof of
+    // "not admin" — fall back to a direct service-role read of user_roles so
+    // a transient error cannot silently downgrade a real admin to 403.
+    // Security is unchanged: the role is still verified server-side against
+    // the same table the RPC reads.
+    let fallbackErr: string | null = null;
+    if (!isAdmin) {
+      if (rpcErr) console.error("[admin-guard] has_role rpc failed", rpcErr.message ?? rpcErr);
+      const { data: roleRows, error: selErr } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.user.id)
+        .eq("role", "admin")
+        .limit(1);
+      if (selErr) {
+        fallbackErr = selErr.message ?? String(selErr);
+        console.error("[admin-guard] user_roles fallback failed", fallbackErr);
+      }
+      isAdmin = Array.isArray(roleRows) && roleRows.length > 0;
+    }
     if (!isAdmin) {
       audit({
         auth_mode: "admin_jwt",
         outcome: "forbidden",
         status_code: 403,
-        reason: "not_admin",
+        reason: rpcErr || fallbackErr ? "role_lookup_failed" : "not_admin",
         user_id: u.user.id,
         user_email: u.user.email ?? null,
+        metadata: { rpc_error: rpcErr?.message ?? null, fallback_error: fallbackErr },
       });
-      return new Response(JSON.stringify({ ok: false, error: "forbidden" }), {
-        status: 403,
+      return new Response(JSON.stringify({
+        ok: false,
+        error: rpcErr || fallbackErr ? "role_lookup_failed" : "forbidden",
+      }), {
+        status: rpcErr || fallbackErr ? 503 : 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
