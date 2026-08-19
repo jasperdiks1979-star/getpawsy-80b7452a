@@ -380,9 +380,9 @@ Deno.serve(async (req) => {
     // envelope still carries geo/is_internal and the map can render markers.
     const sessionIds = Array.from(sessionAgg.keys());
     const CHUNK = 500;
-    for (let i = 0; i < sessionIds.length; i += CHUNK) {
-      const batch = sessionIds.slice(i, i + CHUNK);
-      const { data: va, error: vaErr } = await supabase
+    const CONCURRENCY = 6;
+    const vaBySession = await mapChunksParallel(sessionIds, CHUNK, CONCURRENCY, (batch) =>
+      supabase
         .from("visitor_activity")
         .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("session_id", batch)
@@ -393,7 +393,9 @@ Deno.serve(async (req) => {
         // the same filters (10h=26 → 24h=23 was the reported symptom).
         .gte("created_at", since)
         .lte("created_at", until)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+    );
+    for (const { data: va, error: vaErr } of vaBySession) {
       if (vaErr) continue; // enrichment failure must not break the truth envelope
       for (const row of va ?? []) {
         const s = sessionAgg.get(row.session_id as string);
@@ -421,16 +423,17 @@ Deno.serve(async (req) => {
       byVisitor.set(s.visitor_id, arr);
     }
     const visitorIds = Array.from(byVisitor.keys());
-    for (let i = 0; i < visitorIds.length; i += CHUNK) {
-      const batch = visitorIds.slice(i, i + CHUNK);
-      const { data: va, error: vaErr } = await supabase
+    const vaByVisitor = await mapChunksParallel(visitorIds, CHUNK, CONCURRENCY, (batch) =>
+      supabase
         .from("visitor_activity")
         .select("visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
         .in("visitor_id", batch)
         // Same monotonicity guard as the session_id enrichment above.
         .gte("created_at", since)
         .lte("created_at", until)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+    );
+    for (const { data: va, error: vaErr } of vaByVisitor) {
       if (vaErr) continue;
       for (const row of va ?? []) {
         const targets = byVisitor.get(row.visitor_id as string);
@@ -473,12 +476,13 @@ Deno.serve(async (req) => {
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
-    for (let i = 0; i < sidsForFlags.length; i += 500) {
-      const batch = sidsForFlags.slice(i, i + 500);
-      const { data: csRows } = await supabase
+    const flagRows = await mapChunksParallel(sidsForFlags, 500, CONCURRENCY, (batch) =>
+      supabase
         .from("canonical_sessions")
         .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
-        .in("session_id", batch);
+        .in("session_id", batch)
+    );
+    for (const { data: csRows } of flagRows) {
       for (const r of csRows ?? []) {
         flagsMap.set(r.session_id as string, {
           is_internal: r.is_internal === true,
