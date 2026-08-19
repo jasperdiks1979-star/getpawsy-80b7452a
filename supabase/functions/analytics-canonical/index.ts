@@ -137,7 +137,11 @@ Deno.serve(async (req) => {
     (globalThis as any).__ac_deploy_marker = "phase4b-v2-3-atc-source";
     const now = Date.now();
     const hit = cache.get(key);
-    if (hit && now - hit.at < TTL_MS) {
+    // Wide windows (>=72h) are dominated by historical rows that no longer
+    // change, so they get a longer TTL. This keeps the 7-day view warm and
+    // cheap instead of re-scanning the window on every dashboard poll.
+    const ttlForWindow = hours >= 72 ? 300_000 : TTL_MS;
+    if (hit && now - hit.at < ttlForWindow) {
       return new Response(JSON.stringify({ ...hit.body, cached: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
