@@ -389,26 +389,43 @@ Deno.serve(async (req) => {
     // different session_id namespaces (UUID vs `<epoch>-<rand>`). When the
     // session_id join yields nothing, fall back to visitor_id so the truth
     // envelope still carries geo/is_internal and the map can render markers.
-    const sessionIds = Array.from(sessionAgg.keys());
-    const CHUNK = 500;
     const CONCURRENCY = 6;
-    const vaBySession = await mapChunksParallel(sessionIds, CHUNK, CONCURRENCY, (batch) =>
-      supabase
-        .from("visitor_activity")
-        .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
-        .in("session_id", batch)
-        // MONOTONICITY FIX: bound enrichment to the same time window as the
-        // canonical_events query. Without this, an unrelated historical
-        // visitor_activity row with is_internal=true can retroactively flag
-        // a session as internal — causing 24h totals to drop below 10h for
-        // the same filters (10h=26 → 24h=23 was the reported symptom).
-        .gte("created_at", since)
-        .lte("created_at", until)
-        .order("created_at", { ascending: false })
-    );
-    for (const { data: va, error: vaErr } of vaBySession) {
-      if (vaErr) continue; // enrichment failure must not break the truth envelope
-      for (const row of va ?? []) {
+    // PERF: instead of N chunked `.in(session_id, …)` lookups (each one a
+    // separate round trip against a saturated DB), scan visitor_activity ONCE
+    // over the same time window — the exact rows the two enrichment passes
+    // could ever match — and join in memory. Same monotonicity guarantee
+    // (window-bounded), a fraction of the round trips.
+    const vaRows: any[] = [];
+    {
+      const VA_PAGE = 1000;
+      const VA_WAVE = 6;
+      let vaFrom = 0;
+      let vaDone = false;
+      while (!vaDone) {
+        const offsets = Array.from({ length: VA_WAVE }, (_, i) => vaFrom + i * VA_PAGE);
+        const wave = await Promise.all(
+          offsets.map((off) =>
+            supabase
+              .from("visitor_activity")
+              .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
+              .gte("created_at", since)
+              .lte("created_at", until)
+              .order("created_at", { ascending: false })
+              .range(off, off + VA_PAGE - 1)
+          ),
+        );
+        for (const { data, error } of wave) {
+          if (error) { vaDone = true; continue; } // enrichment failure must not break truth
+          if (!data || data.length === 0) { vaDone = true; continue; }
+          vaRows.push(...data);
+          if (data.length < VA_PAGE) vaDone = true;
+        }
+        vaFrom += VA_WAVE * VA_PAGE;
+        if (vaFrom > 200_000) break;
+      }
+    }
+    {
+      for (const row of vaRows) {
         const s = sessionAgg.get(row.session_id as string);
         if (!s) continue;
         if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
@@ -434,20 +451,10 @@ Deno.serve(async (req) => {
       arr.push(s);
       byVisitor.set(s.visitor_id, arr);
     }
-    const visitorIds = Array.from(byVisitor.keys());
-    const vaByVisitor = await mapChunksParallel(visitorIds, CHUNK, CONCURRENCY, (batch) =>
-      supabase
-        .from("visitor_activity")
-        .select("visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
-        .in("visitor_id", batch)
-        // Same monotonicity guard as the session_id enrichment above.
-        .gte("created_at", since)
-        .lte("created_at", until)
-        .order("created_at", { ascending: false })
-    );
-    for (const { data: va, error: vaErr } of vaByVisitor) {
-      if (vaErr) continue;
-      for (const row of va ?? []) {
+    {
+      // Same window-scanned rows, joined by visitor_id this time. No extra
+      // network cost at all.
+      for (const row of vaRows) {
         const targets = byVisitor.get(row.visitor_id as string);
         if (!targets) continue;
         for (const s of targets) {
