@@ -88,6 +88,12 @@ export interface TruthResponse {
   cached?: boolean;
   error?: string;
   traffic_quality_breakdown?: TrafficQualityBreakdown;
+  /** Precomputed-cache metadata (see `analytics-canonical` cache layer). */
+  cache_status?: "hit" | "miss" | "stale";
+  cache_generated_at?: string | null;
+  cache_age_seconds?: number | null;
+  cache_stale?: boolean;
+  cache_max_lag_seconds?: number;
 }
 
 export interface UseAnalyticsTruthOptions {
@@ -110,11 +116,18 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
   // tens of seconds cold. Polling them every 60s only produces overlapping
   // in-flight requests and a permanently "loading" UI on mobile, so align
   // the client poll with the server cache TTL.
-  const defaultInterval = hours >= 72 ? 300_000 : 60_000;
+  // Align the client poll with the server-side warmer cadence per window
+  // (hot 5 min, 14d 10 min, 30d 15 min, 90d 30 min). Polling faster than the
+  // data can change only produces overlapping in-flight requests.
+  const defaultInterval =
+    hours >= 2160 ? 1_800_000 :
+    hours >= 720 ? 900_000 :
+    hours >= 336 ? 600_000 :
+    hours >= 72 ? 300_000 : 60_000;
   return useQuery<TruthResponse>({
     queryKey: ["analytics-truth", hours, geo],
     enabled: opts.enabled ?? true,
-    staleTime: hours >= 72 ? 300_000 : 30_000,
+    staleTime: hours >= 72 ? Math.min(defaultInterval, 900_000) : 30_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
     refetchInterval: opts.refetchIntervalMs ?? defaultInterval,

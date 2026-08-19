@@ -163,7 +163,7 @@ const ACTIVITY_WEIGHTS = {
 };
 
 // Time range options
-type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "30d";
+type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "14d" | "30d" | "90d";
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
   { value: "live", label: "Live now", minutes: 2 },
@@ -174,7 +174,9 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[]
   { value: "10h", label: "Laatste 10 uur", minutes: 600 },
   { value: "24h", label: "Laatste 24 uur", minutes: 24 * 60 },
   { value: "7d", label: "Laatste 7 dagen", minutes: 24 * 60 * 7 },
+  { value: "14d", label: "Laatste 14 dagen", minutes: 24 * 60 * 14 },
   { value: "30d", label: "Laatste 30 dagen", minutes: 24 * 60 * 30 },
+  { value: "90d", label: "Laatste 90 dagen", minutes: 24 * 60 * 90 },
 ];
 
 /**

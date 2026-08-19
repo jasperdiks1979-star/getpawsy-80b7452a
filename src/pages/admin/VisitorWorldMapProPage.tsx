@@ -8,6 +8,7 @@ import {
   ProToolbar,
   type ProToolbarState,
   proHoursForRange,
+  PRO_TIME_RANGES,
 } from "@/components/admin/visitor-world-map-v2/ProToolbar";
 import { ProKpiHeader } from "@/components/admin/visitor-world-map-v2/ProKpiHeader";
 import { V2EnvelopeBadge } from "@/components/admin/V2EnvelopeBadge";
@@ -35,16 +36,23 @@ function loadInitialState(): ProToolbarState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as Partial<ProToolbarState>;
-    return { ...DEFAULT_STATE, ...parsed };
+    const merged = { ...DEFAULT_STATE, ...parsed };
+    // Persisted state may hold a retired interval (30m / 2.5h / 5h / 10h).
+    // Those windows are not warmed, so drop back to the default rather than
+    // forcing a slow synchronous full-window scan.
+    if (!PRO_TIME_RANGES.some((o) => o.value === merged.timeRange)) {
+      merged.timeRange = DEFAULT_STATE.timeRange;
+    }
+    return merged;
   } catch {
     return DEFAULT_STATE;
   }
 }
 
 function proTimeRangeToMapTimeRange(t: ProToolbarState["timeRange"]) {
-  // The underlying VisitorWorldMap uses the same tokens except "30m" is not
-  // in its enum — fall back to "15m" (closest short-window value it accepts).
-  return t === "30m" ? "15m" : t;
+  // The underlying VisitorWorldMap accepts the same tokens (its enum now also
+  // carries 14d/90d), so this is a straight pass-through.
+  return t;
 }
 
 /**
