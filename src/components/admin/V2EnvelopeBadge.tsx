@@ -25,7 +25,7 @@ function fmt(n: number | null | undefined): string {
 }
 
 export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: V2EnvelopeBadgeProps) {
-  const { data } = useAnalyticsTruth({ hours, geo });
+  const { data, error, isError, isLoading, refetch } = useAnalyticsTruth({ hours, geo });
   const m = useMemo(() => getCanonicalAnalyticsMetrics(data as any), [data]);
   const useV2 = m?.envelope_resolved === "v2";
 
@@ -46,7 +46,7 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: 
   return (
     <section
       data-testid="v2-envelope-badge"
-      data-envelope={useV2 ? "v2" : "v1"}
+      data-envelope={isError ? "error" : useV2 ? "v2" : "v1"}
       data-hours={hours}
       data-geo={geo}
       className="rounded-md border bg-card p-3"
@@ -57,13 +57,15 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: 
           <span
             data-testid="v2-envelope-indicator"
             className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-              useV2
+              isError
+                ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                : useV2
                 ? "bg-emerald-500/15 text-emerald-600"
                 : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
             }`}
-            title={useV2 ? "traffic-quality v2 (Phase 4C)" : "legacy v1 envelope"}
+            title={isError ? "analytics-canonical request failed" : useV2 ? "traffic-quality v2 (Phase 4C)" : "legacy v1 envelope"}
           >
-            {useV2 ? "v2" : "v1 (legacy)"}
+            {isError ? "error" : isLoading ? "loading" : useV2 ? "v2" : "v1 (legacy)"}
           </span>
         </div>
         {useV2 && m && (
@@ -72,7 +74,26 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: 
           </div>
         )}
       </div>
-      {useV2 && cards.length ? (
+      {isError ? (
+        <div
+          data-testid="v2-envelope-error"
+          className="flex flex-wrap items-center gap-2 rounded border border-rose-500/40 bg-rose-500/5 p-2 text-[11px] text-rose-600 dark:text-rose-400"
+        >
+          <span>
+            analytics-canonical request failed — numbers below are NOT zero traffic,
+            they are unavailable. {(error as Error)?.message}
+          </span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="rounded border border-rose-500/40 px-2 py-0.5 font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      ) : isLoading ? (
+        <div className="h-10 animate-pulse rounded bg-muted/50" />
+      ) : useV2 && cards.length ? (
         <div className={`grid gap-2 ${compact ? "grid-cols-3 sm:grid-cols-5 lg:grid-cols-9" : "grid-cols-3 sm:grid-cols-5 md:grid-cols-9"}`}>
           {cards.map((c) => (
             <div key={c.key} data-testid={`v2b-${c.key}`} className="rounded border bg-background/50 p-2">
