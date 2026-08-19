@@ -73,6 +73,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, count: items.length, ids: (items as { id: string }[]).map((p) => p.id) });
     }
 
+    if (action === "account_analytics") {
+      const u = `${PIN_API}/user_account/analytics?start_date=${body.start_date}&end_date=${body.end_date}&metric_types=IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE&granularity=DAY`;
+      const r = await fetch(u, { headers: auth });
+      const j = await r.json().catch(() => ({}));
+      return json({ ok: r.ok, status: r.status, data: j });
+    }
+
     if (action === "move_pin") {
       const pinId = String(body.pin_id ?? "");
       const target = String(body.board_id ?? "");
