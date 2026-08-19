@@ -723,6 +723,11 @@ Deno.serve(async (req) => {
       sample_event: sample,
       diagnostics,
       timings,
+      flags_coverage: {
+        sessions: sidsForFlags.length,
+        with_flag_row: flagsMap.size,
+        scan_error: flagsScanError,
+      },
       traffic_quality_breakdown,
       generated_at: new Date().toISOString(),
     };
@@ -781,7 +786,7 @@ Deno.serve(async (req) => {
             rows.map((r) => r.session_id).filter((s): s is string => !!s),
           ));
           const atcMap = new Map<string, string>();
-          const CHUNK_ATC = 1000;
+          const CHUNK_ATC = 200;
           const atcChunks = await mapChunksParallel(uniqSids, CHUNK_ATC, 6, (batch) =>
             supabase
               .from("analytics_traffic_classification")
