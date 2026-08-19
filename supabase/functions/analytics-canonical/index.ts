@@ -496,7 +496,7 @@ Deno.serve(async (req) => {
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
-    const flagRows = await mapChunksParallel(sidsForFlags, 500, CONCURRENCY, (batch) =>
+    const flagRows = await mapChunksParallel(sidsForFlags, 1000, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
         .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
@@ -733,7 +733,7 @@ Deno.serve(async (req) => {
             rows.map((r) => r.session_id).filter((s): s is string => !!s),
           ));
           const atcMap = new Map<string, string>();
-          const CHUNK_ATC = 500;
+          const CHUNK_ATC = 1000;
           const atcChunks = await mapChunksParallel(uniqSids, CHUNK_ATC, 6, (batch) =>
             supabase
               .from("analytics_traffic_classification")
