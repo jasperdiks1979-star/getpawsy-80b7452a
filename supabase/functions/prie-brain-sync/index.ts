@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
     const [pinsRes, fevRes, ordersRes, pdpRes] = await Promise.all([
       sb.from("pinterest_pins").select("id, status, created_at").gte("created_at", since30),
-      sb.from("pinterest_funnel_events").select("event_type, created_at").gte("created_at", since30),
+      sb.from("pinterest_funnel_events").select("event_type, occurred_at").gte("occurred_at", since30),
       sb.from("orders").select("total_amount, created_at, utm_source").gte("created_at", since30),
       sb.from("pinterest_pdp_conversion_stats").select("views, atc, purchases, day").gte("day", since30.slice(0, 10)),
     ]);

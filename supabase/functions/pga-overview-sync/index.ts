@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   // 1. Pinterest-attributed sessions + funnel events
   const [sessionsR, funnelR, ordersR, prevOrdersR, pinsR] = await Promise.all([
     supa.from("pinterest_attribution_sessions").select("id, session_id", { count: "exact", head: false }).gte("created_at", since).limit(50000),
-    supa.from("pinterest_funnel_events").select("event_type, value_cents, created_at").gte("created_at", since).limit(100000),
+    supa.from("pinterest_funnel_events").select("event_type, value_cents, occurred_at").gte("occurred_at", since).limit(100000),
     supa.from("orders").select("id, total_amount, created_at, utm_source, product_slugs:metadata").gte("created_at", since).limit(20000),
     supa.from("orders").select("id, total_amount, utm_source, product_slugs:metadata").gte("created_at", sincePrev).lt("created_at", since).limit(20000),
     supa.from("pinterest_pins").select("id, impressions, outbound_clicks, saves").limit(20000),
