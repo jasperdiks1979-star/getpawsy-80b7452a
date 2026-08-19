@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       const r = await fetch(`${PIN_API}/boards`, {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description: body.description ?? "", privacy: "SECRET" }),
+        body: JSON.stringify({ name, description: body.description ?? "", privacy: body.privacy ?? "PROTECTED" }),
       });
       const j = await r.json().catch(() => ({}));
       return json({ ok: r.ok, status: r.status, board: j });
