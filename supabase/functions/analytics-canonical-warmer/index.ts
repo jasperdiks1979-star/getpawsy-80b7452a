@@ -61,28 +61,47 @@ Deno.serve(async (req) => {
   }
   const tier = requested as WarmerTier;
 
-  const results: Array<Record<string, unknown>> = [];
-  for (const combo of combosForTier(tier)) {
-    const started = Date.now();
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-internal-secret": INTERNAL_SECRET },
-        body: JSON.stringify({ ...combo, envelope: "v2", refresh: true }),
-      });
-      const ok = res.ok;
-      const bodyText = ok ? "" : await res.text();
-      results.push({ ...combo, status: res.status, ok, ms: Date.now() - started, error: ok ? null : bodyText.slice(0, 300) });
-      if (!ok) console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} failed [${res.status}]: ${bodyText}`);
-    } catch (e) {
-      // Never abort the tier: one failed combo must not starve the others.
-      results.push({ ...combo, ok: false, ms: Date.now() - started, error: (e as Error).message });
-      console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} threw`, (e as Error).message);
+  const run = async () => {
+    const results: Array<Record<string, unknown>> = [];
+    for (const combo of combosForTier(tier)) {
+      const started = Date.now();
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-internal-secret": INTERNAL_SECRET },
+          body: JSON.stringify({ ...combo, envelope: "v2", refresh: true }),
+        });
+        const ok = res.ok;
+        const bodyText = ok ? "" : await res.text();
+        results.push({ ...combo, status: res.status, ok, ms: Date.now() - started, error: ok ? null : bodyText.slice(0, 300) });
+        if (!ok) console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} failed [${res.status}]: ${bodyText}`);
+        else console.log(`[warmer:${tier}] ${combo.hours}h/${combo.geo} ok in ${Date.now() - started}ms`);
+      } catch (e) {
+        // Never abort the tier: one failed combo must not starve the others.
+        results.push({ ...combo, ok: false, ms: Date.now() - started, error: (e as Error).message });
+        console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} threw`, (e as Error).message);
+      }
     }
+    return results;
+  };
+
+  // A full tier costs far more than the 150s request budget (a single cold long
+  // window can take minutes), so the caller is answered immediately and the
+  // sequential refresh continues as a background task. Cron only needs to know the
+  // run was accepted; per-combo outcomes go to the function logs. `sync: true`
+  // keeps the blocking behaviour for manual canary runs on cheap tiers.
+  if (body?.sync === true) {
+    const results = await run();
+    return new Response(
+      JSON.stringify({ ok: true, tier, mode: "sync", refreshed: results, generated_at: new Date().toISOString() }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
+  // @ts-ignore EdgeRuntime is provided by the Supabase edge runtime.
+  EdgeRuntime.waitUntil(run());
   return new Response(
-    JSON.stringify({ ok: true, tier, refreshed: results, generated_at: new Date().toISOString() }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    JSON.stringify({ ok: true, tier, mode: "background", accepted_at: new Date().toISOString() }),
+    { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
 });
