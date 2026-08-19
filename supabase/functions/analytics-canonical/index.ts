@@ -693,23 +693,36 @@ Deno.serve(async (req) => {
           const v2totals = totalsFromAggregate(agg);
           const coverage = classificationCoverage(agg);
           // Historical join estimate.
+          //
+          // PERF-FIX: these two `count: exact` probes are full sequential
+          // scans over `canonical_events`. On the current (saturated) DB
+          // instance each one takes ~40s, which alone pushed every
+          // dashboard request past the 150s edge idle timeout — the map
+          // then rendered the empty legacy v1 state. They are pure
+          // diagnostics (never used by any UI counter), so they now only
+          // run when explicitly requested with `deep_diagnostics: true`.
           let historicalSessions = 0;
           let joinableBySession = 0;
-          try {
-            const { count } = await supabase
-              .from("canonical_events")
-              .select("session_id", { count: "exact", head: true })
-              .lt("ingested_at", gate.phase4aCutoffIso);
-            historicalSessions = count ?? 0;
-          } catch { /* noop */ }
-          try {
-            const { count } = await supabase
-              .from("canonical_events")
-              .select("session_id", { count: "exact", head: true })
-              .lt("ingested_at", gate.phase4aCutoffIso)
-              .not("classification_version", "is", null);
-            joinableBySession = count ?? 0;
-          } catch { /* noop */ }
+          const deepDiagnostics =
+            body?.deep_diagnostics === true ||
+            url.searchParams.get("deep_diagnostics") === "true";
+          if (deepDiagnostics) {
+            try {
+              const { count } = await supabase
+                .from("canonical_events")
+                .select("session_id", { count: "exact", head: true })
+                .lt("ingested_at", gate.phase4aCutoffIso);
+              historicalSessions = count ?? 0;
+            } catch { /* noop */ }
+            try {
+              const { count } = await supabase
+                .from("canonical_events")
+                .select("session_id", { count: "exact", head: true })
+                .lt("ingested_at", gate.phase4aCutoffIso)
+                .not("classification_version", "is", null);
+              joinableBySession = count ?? 0;
+            } catch { /* noop */ }
+          }
           respBody.v2 = {
             ...v2totals,
             classification_version: "v2.phase4a+atc",
