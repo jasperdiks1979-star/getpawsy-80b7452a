@@ -120,32 +120,21 @@ async function mapChunksParallel<T, R>(
   return out;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+interface ComputeOpts {
+  req: Request;
+  hours: number;
+  geo: "US" | "all";
+  envParam: string;
+  deepDiagnostics: boolean;
+  internalTrusted: boolean;
+}
 
-  const guard = await requireInternalOrAdmin(req);
-  if (guard) return guard;
-
-  try {
-    const url = new URL(req.url);
-    let body: any = null;
-    if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
-    const { hours, geo } = parseInput(url, body);
-    const envelope = (url.searchParams.get("envelope") || body?.envelope) === "v2" ? "v2" : "v1";
-    const key = `${hours}|${geo}|${envelope}`;
+async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknown>> {
+  const { req, hours, geo, envParam: envParamRaw, deepDiagnostics, internalTrusted } = opts;
+  {
     // Deploy marker to prove new bundle is live.
-    (globalThis as any).__ac_deploy_marker = "phase4b-v2-3-atc-source";
+    (globalThis as any).__ac_deploy_marker = "phase5-precomputed-cache";
     const now = Date.now();
-    const hit = cache.get(key);
-    // Wide windows (>=72h) are dominated by historical rows that no longer
-    // change, so they get a longer TTL. This keeps the 7-day view warm and
-    // cheap instead of re-scanning the window on every dashboard poll.
-    const ttlForWindow = hours >= 72 ? 300_000 : TTL_MS;
-    if (hit && now - hit.at < ttlForWindow) {
-      return new Response(JSON.stringify({ ...hit.body, cached: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -738,7 +727,7 @@ Deno.serve(async (req) => {
     //   (a) caller explicitly requests envelope=v2, OR
     //   (b) admin caller AND `canonical_traffic_quality_v2.default_for_internal`
     //       flag is on AND envelope != 'v1' (explicit legacy fallback).
-    const envParam = (url.searchParams.get("envelope") || body?.envelope || "").toLowerCase();
+    const envParam = (envParamRaw || "").toLowerCase();
     const wantsV1Fallback = envParam === "v1";
     const wantsV2Explicit = envParam === "v2";
     let defaultForInternal = false;
@@ -752,7 +741,7 @@ Deno.serve(async (req) => {
     } catch { /* noop */ }
     if (!wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
       try {
-        const gate = await checkCanonicalV2Gate(req);
+        const gate = await checkCanonicalV2Gate(req, { trustedInternal: internalTrusted });
         respBody.v2_gate = {
           enabled: gate.enabled,
           isAdmin: gate.isAdmin,
@@ -818,9 +807,6 @@ Deno.serve(async (req) => {
           // run when explicitly requested with `deep_diagnostics: true`.
           let historicalSessions = 0;
           let joinableBySession = 0;
-          const deepDiagnostics =
-            body?.deep_diagnostics === true ||
-            url.searchParams.get("deep_diagnostics") === "true";
           if (deepDiagnostics) {
             try {
               const { count } = await supabase
@@ -867,14 +853,199 @@ Deno.serve(async (req) => {
       }
     }
     mark("v2_block");
-    cache.set(key, { at: now, body: respBody });
-    return new Response(JSON.stringify(respBody), {
+    return respBody;
+  }
+}
+
+// ── Precomputed cache layer ───────────────────────────────────────────
+// The 7-day compute costs 35–90s cold against a saturated DB, which is far
+// too slow for a mobile dashboard load. The heavy work is therefore done
+// out-of-band by `analytics-canonical-warmer` (pg_cron, every 5 minutes)
+// and persisted into `public.analytics_canonical_cache` (service-role only,
+// RLS on, no anon/authenticated grants). Requests read one indexed row.
+//
+// Freshness contract: MAX data lag = 5 minutes (refresh cadence). A payload
+// older than that is still served — clearly marked `stale: true` with its
+// `age_seconds` — for at most MAX_STALE_MS while a single-flight background
+// refresh runs. Beyond that the request computes inline rather than serving
+// indefinitely stale data. Zeros are never fabricated and there is no silent
+// V1 downgrade: on failure the caller gets a real error.
+const FRESH_MS = 300_000;      // 5 min — matches warmer cadence
+const MAX_STALE_MS = 1_800_000; // 30 min — bounded stale-serve window
+const LOCK_MS = 240_000;        // single-flight lock lease
+
+function svc() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+async function readCacheRow(key: string) {
+  const { data } = await svc()
+    .from("analytics_canonical_cache")
+    .select("cache_key,payload,generated_at,compute_ms,locked_until,refresh_error")
+    .eq("cache_key", key)
+    .maybeSingle();
+  return data ?? null;
+}
+
+async function writeCacheRow(
+  key: string,
+  hours: number,
+  geo: string,
+  envelope: string,
+  payload: Record<string, unknown>,
+  computeMs: number,
+) {
+  await svc().from("analytics_canonical_cache").upsert({
+    cache_key: key,
+    hours,
+    geo,
+    envelope,
+    payload,
+    compute_ms: computeMs,
+    generated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    locked_until: null,
+    refresh_error: null,
+  }, { onConflict: "cache_key" });
+}
+
+/** Single-flight: only one worker may rebuild a given cache key at a time. */
+async function acquireLock(key: string): Promise<boolean> {
+  const nowIso = new Date().toISOString();
+  const until = new Date(Date.now() + LOCK_MS).toISOString();
+  const { data, error } = await svc()
+    .from("analytics_canonical_cache")
+    .update({ locked_until: until })
+    .eq("cache_key", key)
+    .or(`locked_until.is.null,locked_until.lt.${nowIso}`)
+    .select("cache_key");
+  if (error) return false;
+  return Array.isArray(data) && data.length > 0;
+}
+
+async function releaseLock(key: string, err?: string) {
+  await svc()
+    .from("analytics_canonical_cache")
+    .update({ locked_until: null, refresh_error: err ?? null })
+    .eq("cache_key", key);
+}
+
+export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unknown>> {
+  const key = `${opts.hours}|${opts.geo}|${opts.envParam || "auto"}`;
+  const started = Date.now();
+  const payload = await computeEnvelope(opts);
+  await writeCacheRow(
+    key,
+    opts.hours,
+    opts.geo,
+    (payload as any)?.v2 ? "v2" : "v1",
+    payload,
+    Date.now() - started,
+  );
+  return payload;
+}
+
+function withCacheMeta(
+  payload: Record<string, unknown>,
+  meta: { cache: "hit" | "miss" | "stale"; generatedAt: string | null; ageSeconds: number | null; hours: number },
+) {
+  return {
+    ...payload,
+    cached: meta.cache !== "miss",
+    cache_status: meta.cache,
+    cache_generated_at: meta.generatedAt,
+    cache_age_seconds: meta.ageSeconds,
+    cache_stale: meta.cache === "stale",
+    cache_max_lag_seconds: FRESH_MS / 1000,
+    cache_source_window_hours: meta.hours,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
+
+  const json = (b: unknown, status = 200) =>
+    new Response(JSON.stringify(b), {
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
+  try {
+    const url = new URL(req.url);
+    let body: any = null;
+    if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
+    const { hours, geo } = parseInput(url, body);
+    const envParam = String(url.searchParams.get("envelope") || body?.envelope || "").toLowerCase();
+    const deepDiagnostics =
+      body?.deep_diagnostics === true || url.searchParams.get("deep_diagnostics") === "true";
+    const internalTrusted = !!req.headers.get("x-internal-secret");
+    const forceRefresh = body?.refresh === true || url.searchParams.get("refresh") === "true";
+    const key = `${hours}|${geo}|${envParam || "auto"}`;
+    const opts: ComputeOpts = { req, hours, geo, envParam, deepDiagnostics, internalTrusted };
+
+    // Deep diagnostics always bypass the cache (they add expensive probes).
+    if (deepDiagnostics) return json(withCacheMeta(await computeEnvelope(opts), {
+      cache: "miss", generatedAt: null, ageSeconds: null, hours,
+    }));
+
+    // Warmer / explicit rebuild path.
+    if (forceRefresh) {
+      const got = await acquireLock(key);
+      try {
+        const payload = await refreshKey(opts);
+        return json(withCacheMeta(payload, {
+          cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours,
+        }));
+      } catch (e) {
+        if (got) await releaseLock(key, (e as Error).message);
+        throw e;
+      }
+    }
+
+    // In-process memo (protects against burst re-renders in one isolate).
+    const memo = cache.get(key);
+    if (memo && Date.now() - memo.at < TTL_MS) {
+      return json({ ...memo.body, cached: true, cache_status: "hit" });
+    }
+
+    const row = await readCacheRow(key);
+    if (row?.payload) {
+      const ageMs = Date.now() - new Date(row.generated_at as string).getTime();
+      const ageSeconds = Math.round(ageMs / 1000);
+      if (ageMs <= FRESH_MS) {
+        cache.set(key, { at: Date.now(), body: row.payload });
+        return json(withCacheMeta(row.payload as Record<string, unknown>, {
+          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours,
+        }));
+      }
+      if (ageMs <= MAX_STALE_MS) {
+        // Serve last-known-good immediately, rebuild in the background under
+        // a single-flight lock so concurrent admin loads cannot stampede.
+        const bg = (async () => {
+          if (!(await acquireLock(key))) return;
+          try { await refreshKey(opts); }
+          catch (e) { await releaseLock(key, (e as Error).message); }
+        })();
+        try { (globalThis as any).EdgeRuntime?.waitUntil?.(bg); } catch { /* noop */ }
+        return json(withCacheMeta(row.payload as Record<string, unknown>, {
+          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours,
+        }));
+      }
+    }
+
+    // Cold: nothing usable cached — compute inline and persist.
+    const payload = await refreshKey(opts);
+    cache.set(key, { at: Date.now(), body: payload });
+    return json(withCacheMeta(payload, {
+      cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours,
+    }));
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ ok: false, error: (e as Error).message }, 500);
   }
 });

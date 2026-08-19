@@ -14,7 +14,13 @@ export interface CanonicalV2GateResult {
 
 const DEFAULT_CUTOFF = "2026-07-17T23:20:00Z";
 
-export async function checkCanonicalV2Gate(req: Request): Promise<CanonicalV2GateResult> {
+export async function checkCanonicalV2Gate(
+  req: Request,
+  // `trustedInternal` is set ONLY by server-side callers that already passed
+  // the internal-function-secret guard (the cache warmer). It never comes
+  // from client input, so it cannot widen access for browser callers.
+  opts: { trustedInternal?: boolean } = {},
+): Promise<CanonicalV2GateResult> {
   const url = Deno.env.get("SUPABASE_URL");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
@@ -49,7 +55,7 @@ export async function checkCanonicalV2Gate(req: Request): Promise<CanonicalV2Gat
   // Verify admin via JWT.
   const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "");
-  let isAdmin = false;
+  let isAdmin = opts.trustedInternal === true;
   if (token && anon) {
     try {
       const userClient = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } } });
