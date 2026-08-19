@@ -890,6 +890,14 @@ function maxStaleMsFor(hours: number): number {
   return Math.max(MAX_STALE_MS, freshMsFor(hours) * 4);
 }
 
+// Cache key is (hours, geo) ONLY. The envelope is NOT part of the key: the
+// warmer requests `envelope: "v2"` while the browser sends no envelope at
+// all, and keying on it produced two disjoint caches — warmed rows the UI
+// could never read, forcing slow inline computes on every dashboard load.
+function cacheKeyFor(hours: number, geo: string): string {
+  return `${hours}|${geo}`;
+}
+
 function svc() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -950,7 +958,7 @@ async function releaseLock(key: string, err?: string) {
 }
 
 export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unknown>> {
-  const key = `${opts.hours}|${opts.geo}|${opts.envParam || "auto"}`;
+  const key = cacheKeyFor(opts.hours, opts.geo);
   const started = Date.now();
   const payload = await computeEnvelope(opts);
   await writeCacheRow(
@@ -1002,7 +1010,7 @@ Deno.serve(async (req) => {
       body?.deep_diagnostics === true || url.searchParams.get("deep_diagnostics") === "true";
     const internalTrusted = !!req.headers.get("x-internal-secret");
     const forceRefresh = body?.refresh === true || url.searchParams.get("refresh") === "true";
-    const key = `${hours}|${geo}|${envParam || "auto"}`;
+    const key = cacheKeyFor(hours, geo);
     const opts: ComputeOpts = { req, hours, geo, envParam, deepDiagnostics, internalTrusted };
 
     // Deep diagnostics always bypass the cache (they add expensive probes).
