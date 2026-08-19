@@ -99,6 +99,27 @@ function parseInput(url: URL, body: any): { hours: number; geo: "US" | "all" } {
 const cache = new Map<string, { at: number; body: any }>();
 const TTL_MS = 30_000;
 
+/**
+ * PERF: run chunked `.in()` lookups with bounded concurrency instead of
+ * strictly sequentially. Under DB saturation a single round trip costs
+ * 0.3–2s; a 7-day window needs dozens of them, which is what pushed the
+ * request past the 150s edge idle timeout.
+ */
+async function mapChunksParallel<T, R>(
+  items: T[],
+  size: number,
+  concurrency: number,
+  fn: (batch: T[]) => Promise<R>,
+): Promise<R[]> {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+  const out: R[] = [];
+  for (let i = 0; i < batches.length; i += concurrency) {
+    out.push(...(await Promise.all(batches.slice(i, i + concurrency).map(fn))));
+  }
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -116,7 +137,11 @@ Deno.serve(async (req) => {
     (globalThis as any).__ac_deploy_marker = "phase4b-v2-3-atc-source";
     const now = Date.now();
     const hit = cache.get(key);
-    if (hit && now - hit.at < TTL_MS) {
+    // Wide windows (>=72h) are dominated by historical rows that no longer
+    // change, so they get a longer TTL. This keeps the 7-day view warm and
+    // cheap instead of re-scanning the window on every dashboard poll.
+    const ttlForWindow = hours >= 72 ? 300_000 : TTL_MS;
+    if (hit && now - hit.at < ttlForWindow) {
       return new Response(JSON.stringify({ ...hit.body, cached: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -130,30 +155,53 @@ Deno.serve(async (req) => {
     const since = new Date(now - hours * 3600_000).toISOString();
     const until = new Date(now).toISOString();
 
+    // ── phase profiler ────────────────────────────────────────
+    const t0 = Date.now();
+    const timings: Record<string, number> = {};
+    const mark = (label: string) => { timings[label] = Date.now() - t0; };
+
     // ── canonical_events ───────────────────────────────────────
     const events: any[] = [];
     const PAGE = 1000;
+    // PERF: one single pass over the window. The column list is the UNION of
+    // what the v1 envelope and the v2 bucket classifier need, so the v2 block
+    // below reuses these rows instead of re-paging the whole window a second
+    // time (that duplicate scan doubled the request cost).
+    //
+    // Do NOT filter canonical_events by `country = 'US'` here. The writer
+    // stores mixed values (`US`, `USA`, `United States`) and many rows are
+    // country-null until the visitor_activity geo enrichment below runs.
+    // Geo filtering is applied after enrichment on the per-session truth set.
+    const EVENT_COLUMNS =
+      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path," +
+      "utm_source,utm_medium,utm_campaign,referrer,country,city,device," +
+      "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
+    const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
-    while (true) {
-      let q = supabase
-        .from("canonical_events")
-        .select("canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,utm_source,utm_medium,utm_campaign,referrer,country,city,device")
-        .gte("occurred_at", since)
-        .lte("occurred_at", until)
-        .order("occurred_at", { ascending: false })
-        .range(from, from + PAGE - 1);
-      // Do NOT filter canonical_events by `country = 'US'` here. The writer
-      // stores mixed values (`US`, `USA`, `United States`) and many rows are
-      // country-null until the visitor_activity geo enrichment below runs.
-      // Geo filtering is applied after enrichment on the per-session truth set.
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      events.push(...data);
-      if (data.length < PAGE) break;
-      from += PAGE;
+    let pagingDone = false;
+    while (!pagingDone) {
+      const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
+      const wave = await Promise.all(
+        offsets.map((off) =>
+          supabase
+            .from("canonical_events")
+            .select(EVENT_COLUMNS)
+            .gte("occurred_at", since)
+            .lte("occurred_at", until)
+            .order("occurred_at", { ascending: false })
+            .range(off, off + PAGE - 1)
+        ),
+      );
+      for (const { data, error } of wave) {
+        if (error) throw error;
+        if (!data || data.length === 0) { pagingDone = true; continue; }
+        events.push(...data);
+        if (data.length < PAGE) pagingDone = true;
+      }
+      from += PAGE_WAVE * PAGE;
       if (from > 200_000) break;
     }
+    mark("events");
 
     // ── orders (paid) ──────────────────────────────────────────
     const { data: paidOrders, error: oErr } = await supabase
@@ -164,6 +212,7 @@ Deno.serve(async (req) => {
       .lte("created_at", until)
       .limit(5000);
     if (oErr) throw oErr;
+    mark("orders");
     let purchases = paidOrders ?? [];
     if (geo === "US") {
       purchases = purchases.filter((o: any) => {
@@ -340,24 +389,43 @@ Deno.serve(async (req) => {
     // different session_id namespaces (UUID vs `<epoch>-<rand>`). When the
     // session_id join yields nothing, fall back to visitor_id so the truth
     // envelope still carries geo/is_internal and the map can render markers.
-    const sessionIds = Array.from(sessionAgg.keys());
-    const CHUNK = 500;
-    for (let i = 0; i < sessionIds.length; i += CHUNK) {
-      const batch = sessionIds.slice(i, i + CHUNK);
-      const { data: va, error: vaErr } = await supabase
-        .from("visitor_activity")
-        .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
-        .in("session_id", batch)
-        // MONOTONICITY FIX: bound enrichment to the same time window as the
-        // canonical_events query. Without this, an unrelated historical
-        // visitor_activity row with is_internal=true can retroactively flag
-        // a session as internal — causing 24h totals to drop below 10h for
-        // the same filters (10h=26 → 24h=23 was the reported symptom).
-        .gte("created_at", since)
-        .lte("created_at", until)
-        .order("created_at", { ascending: false });
-      if (vaErr) continue; // enrichment failure must not break the truth envelope
-      for (const row of va ?? []) {
+    const CONCURRENCY = 6;
+    // PERF: instead of N chunked `.in(session_id, …)` lookups (each one a
+    // separate round trip against a saturated DB), scan visitor_activity ONCE
+    // over the same time window — the exact rows the two enrichment passes
+    // could ever match — and join in memory. Same monotonicity guarantee
+    // (window-bounded), a fraction of the round trips.
+    const vaRows: any[] = [];
+    {
+      const VA_PAGE = 1000;
+      const VA_WAVE = 6;
+      let vaFrom = 0;
+      let vaDone = false;
+      while (!vaDone) {
+        const offsets = Array.from({ length: VA_WAVE }, (_, i) => vaFrom + i * VA_PAGE);
+        const wave = await Promise.all(
+          offsets.map((off) =>
+            supabase
+              .from("visitor_activity")
+              .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
+              .gte("created_at", since)
+              .lte("created_at", until)
+              .order("created_at", { ascending: false })
+              .range(off, off + VA_PAGE - 1)
+          ),
+        );
+        for (const { data, error } of wave) {
+          if (error) { vaDone = true; continue; } // enrichment failure must not break truth
+          if (!data || data.length === 0) { vaDone = true; continue; }
+          vaRows.push(...data);
+          if (data.length < VA_PAGE) vaDone = true;
+        }
+        vaFrom += VA_WAVE * VA_PAGE;
+        if (vaFrom > 200_000) break;
+      }
+    }
+    {
+      for (const row of vaRows) {
         const s = sessionAgg.get(row.session_id as string);
         if (!s) continue;
         if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
@@ -371,6 +439,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    mark("va_by_session");
     // Fallback enrichment by visitor_id for sessions still missing geo.
     // Guarantees map markers cannot go to zero just because a session_id
     // namespace mismatch exists between the two writers.
@@ -382,19 +451,10 @@ Deno.serve(async (req) => {
       arr.push(s);
       byVisitor.set(s.visitor_id, arr);
     }
-    const visitorIds = Array.from(byVisitor.keys());
-    for (let i = 0; i < visitorIds.length; i += CHUNK) {
-      const batch = visitorIds.slice(i, i + CHUNK);
-      const { data: va, error: vaErr } = await supabase
-        .from("visitor_activity")
-        .select("visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
-        .in("visitor_id", batch)
-        // Same monotonicity guard as the session_id enrichment above.
-        .gte("created_at", since)
-        .lte("created_at", until)
-        .order("created_at", { ascending: false });
-      if (vaErr) continue;
-      for (const row of va ?? []) {
+    {
+      // Same window-scanned rows, joined by visitor_id this time. No extra
+      // network cost at all.
+      for (const row of vaRows) {
         const targets = byVisitor.get(row.visitor_id as string);
         if (!targets) continue;
         for (const s of targets) {
@@ -410,6 +470,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    mark("va_by_visitor");
     const allSessionsArr = Array.from(sessionAgg.values()).sort(
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
     );
@@ -435,12 +496,61 @@ Deno.serve(async (req) => {
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
-    for (let i = 0; i < sidsForFlags.length; i += 500) {
-      const batch = sidsForFlags.slice(i, i + 500);
-      const { data: csRows } = await supabase
+    // PERF + CORRECTNESS: a giant `.in(session_id, …)` list is both a slow
+    // round trip and — past a few hundred ids — long enough to be rejected at
+    // the URL level, which silently emptied `flagsMap` and let excluded
+    // traffic through as "commercial". Window-scan the sessions active in the
+    // request window instead, then join in memory.
+    const wantedSids = new Set(sidsForFlags);
+    let flagsScanError: string | null = null;
+    {
+      const CS_PAGE = 1000;
+      const CS_WAVE = 6;
+      let csFrom = 0;
+      let csDone = false;
+      while (!csDone) {
+        const offsets = Array.from({ length: CS_WAVE }, (_, i) => csFrom + i * CS_PAGE);
+        const wave = await Promise.all(
+          offsets.map((off) =>
+            supabase
+              .from("canonical_sessions")
+              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
+              .gte("last_seen_at", since)
+              .order("last_seen_at", { ascending: false })
+              .range(off, off + CS_PAGE - 1)
+          ),
+        );
+        for (const { data, error } of wave) {
+          if (error) { flagsScanError = error.message; csDone = true; continue; }
+          if (!data || data.length === 0) { csDone = true; continue; }
+          for (const r of data) {
+            if (!wantedSids.has(r.session_id as string)) continue;
+            flagsMap.set(r.session_id as string, {
+              is_internal: r.is_internal === true,
+              is_bot: r.is_bot === true,
+              technical_path: r.technical_path === true,
+              exclude_from_commercial: r.exclude_from_commercial === true,
+              traffic_class: (r.traffic_class as string | null) ?? null,
+              traffic_quality: (r.traffic_quality as string | null) ?? null,
+            });
+          }
+          if (data.length < CS_PAGE) csDone = true;
+        }
+        csFrom += CS_WAVE * CS_PAGE;
+        if (csFrom > 200_000) break;
+      }
+    }
+    // Any session whose flag row was not found in the window scan is looked
+    // up directly in small, URL-safe chunks so coverage stays complete.
+    const missingSids = sidsForFlags.filter((sid) => !flagsMap.has(sid));
+    const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
+      supabase
         .from("canonical_sessions")
         .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
-        .in("session_id", batch);
+        .in("session_id", batch)
+    );
+    for (const { data: csRows, error: csErr } of flagRows) {
+      if (csErr) { flagsScanError = flagsScanError ?? csErr.message; continue; }
       for (const r of csRows ?? []) {
         flagsMap.set(r.session_id as string, {
           is_internal: r.is_internal === true,
@@ -452,6 +562,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+    mark("canonical_sessions_flags");
     const HUMAN_CLASS = new Set([
       "CONFIRMED_HUMAN","PROBABLE_HUMAN","HUMAN_CONFIRMED","HUMAN_PROBABLE",
     ]);
@@ -611,6 +722,12 @@ Deno.serve(async (req) => {
       sessions: sessionsArr,
       sample_event: sample,
       diagnostics,
+      timings,
+      flags_coverage: {
+        sessions: sidsForFlags.length,
+        with_flag_row: flagsMap.size,
+        scan_error: flagsScanError,
+      },
       traffic_quality_breakdown,
       generated_at: new Date().toISOString(),
     };
@@ -644,24 +761,21 @@ Deno.serve(async (req) => {
           envelope_resolved: gate.allowV2 ? "v2" : "v1",
         };
         if (gate.allowV2) {
-          const rows: ClassifiableRow[] = [];
-          const PAGE2 = 1000;
-          let from2 = 0;
-          while (true) {
-            const { data, error } = await supabase
-              .from("canonical_events")
-              .select("session_id,visitor_id,occurred_at,ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version")
-              .gte("occurred_at", since)
-              .lte("occurred_at", until)
-              .order("occurred_at", { ascending: false })
-              .range(from2, from2 + PAGE2 - 1);
-            if (error) break;
-            if (!data || data.length === 0) break;
-            rows.push(...(data as ClassifiableRow[]));
-            if (data.length < PAGE2) break;
-            from2 += PAGE2;
-            if (from2 > 200_000) break;
-          }
+          // PERF: reuse the single canonical_events pass from above — the
+          // v1 select already carries every classifier column. This removes
+          // a full duplicate scan of the window per request.
+          const rows: ClassifiableRow[] = events.map((r) => ({
+            session_id: r.session_id ?? null,
+            visitor_id: r.visitor_id ?? null,
+            occurred_at: r.occurred_at,
+            ingested_at: r.ingested_at ?? null,
+            is_internal: r.is_internal ?? null,
+            technical_path: r.technical_path ?? null,
+            is_bot: r.is_bot ?? null,
+            bot_confidence: r.bot_confidence ?? null,
+            traffic_quality: r.traffic_quality ?? null,
+            classification_version: r.classification_version ?? null,
+          })) as ClassifiableRow[];
           // Authoritative session-level classification lives in
           // analytics_traffic_classification (ATC). canonical_events only
           // carries a schema DEFAULT of 'uncertain' — no classifier has
@@ -672,13 +786,14 @@ Deno.serve(async (req) => {
             rows.map((r) => r.session_id).filter((s): s is string => !!s),
           ));
           const atcMap = new Map<string, string>();
-          const CHUNK_ATC = 500;
-          for (let i = 0; i < uniqSids.length; i += CHUNK_ATC) {
-            const batch = uniqSids.slice(i, i + CHUNK_ATC);
-            const { data: atc, error: atcErr } = await supabase
+          const CHUNK_ATC = 200;
+          const atcChunks = await mapChunksParallel(uniqSids, CHUNK_ATC, 6, (batch) =>
+            supabase
               .from("analytics_traffic_classification")
               .select("session_id,traffic_type")
-              .in("session_id", batch);
+              .in("session_id", batch)
+          );
+          for (const { data: atc, error: atcErr } of atcChunks) {
             if (atcErr) continue;
             for (const r of atc ?? []) {
               if (r.session_id && r.traffic_type) atcMap.set(r.session_id, r.traffic_type as string);
@@ -751,6 +866,7 @@ Deno.serve(async (req) => {
         respBody.v2_error = (e as Error).message;
       }
     }
+    mark("v2_block");
     cache.set(key, { at: now, body: respBody });
     return new Response(JSON.stringify(respBody), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
