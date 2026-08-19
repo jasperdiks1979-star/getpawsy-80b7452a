@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     if (ids.length) {
       const { data: perf } = await supabase
         .from("pcie2_pin_performance")
-        .select("creative_id,impressions,outbound_clicks,saves,clicks")
+        .select("creative_id,impressions,outbound_clicks,saves")
         .in("creative_id", ids);
       const byId = new Map<string, { i: number; o: number; s: number; c: number }>();
       for (const p of (perf ?? []) as any[]) {
@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
         cur.i += Number(p.impressions ?? 0);
         cur.o += Number(p.outbound_clicks ?? 0);
         cur.s += Number(p.saves ?? 0);
-        cur.c += Number(p.clicks ?? 0);
+        cur.c += Number(p.outbound_clicks ?? 0);
         byId.set(p.creative_id, cur);
       }
       let totI = 0, totO = 0, totS = 0, totC = 0;
