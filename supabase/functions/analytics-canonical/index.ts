@@ -154,25 +154,42 @@ Deno.serve(async (req) => {
     // ── canonical_events ───────────────────────────────────────
     const events: any[] = [];
     const PAGE = 1000;
+    // PERF: one single pass over the window. The column list is the UNION of
+    // what the v1 envelope and the v2 bucket classifier need, so the v2 block
+    // below reuses these rows instead of re-paging the whole window a second
+    // time (that duplicate scan doubled the request cost).
+    //
+    // Do NOT filter canonical_events by `country = 'US'` here. The writer
+    // stores mixed values (`US`, `USA`, `United States`) and many rows are
+    // country-null until the visitor_activity geo enrichment below runs.
+    // Geo filtering is applied after enrichment on the per-session truth set.
+    const EVENT_COLUMNS =
+      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path," +
+      "utm_source,utm_medium,utm_campaign,referrer,country,city,device," +
+      "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
+    const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
-    while (true) {
-      let q = supabase
-        .from("canonical_events")
-        .select("canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,utm_source,utm_medium,utm_campaign,referrer,country,city,device")
-        .gte("occurred_at", since)
-        .lte("occurred_at", until)
-        .order("occurred_at", { ascending: false })
-        .range(from, from + PAGE - 1);
-      // Do NOT filter canonical_events by `country = 'US'` here. The writer
-      // stores mixed values (`US`, `USA`, `United States`) and many rows are
-      // country-null until the visitor_activity geo enrichment below runs.
-      // Geo filtering is applied after enrichment on the per-session truth set.
-      const { data, error } = await q;
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      events.push(...data);
-      if (data.length < PAGE) break;
-      from += PAGE;
+    let pagingDone = false;
+    while (!pagingDone) {
+      const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
+      const wave = await Promise.all(
+        offsets.map((off) =>
+          supabase
+            .from("canonical_events")
+            .select(EVENT_COLUMNS)
+            .gte("occurred_at", since)
+            .lte("occurred_at", until)
+            .order("occurred_at", { ascending: false })
+            .range(off, off + PAGE - 1)
+        ),
+      );
+      for (const { data, error } of wave) {
+        if (error) throw error;
+        if (!data || data.length === 0) { pagingDone = true; continue; }
+        events.push(...data);
+        if (data.length < PAGE) pagingDone = true;
+      }
+      from += PAGE_WAVE * PAGE;
       if (from > 200_000) break;
     }
 
