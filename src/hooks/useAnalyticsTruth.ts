@@ -106,11 +106,18 @@ export interface UseAnalyticsTruthOptions {
 export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
   const hours = opts.hours ?? 24;
   const geo = opts.geo ?? "all";
+  // Large windows (>= 72h) are backed by a 5-minute server cache and cost
+  // tens of seconds cold. Polling them every 60s only produces overlapping
+  // in-flight requests and a permanently "loading" UI on mobile, so align
+  // the client poll with the server cache TTL.
+  const defaultInterval = hours >= 72 ? 300_000 : 60_000;
   return useQuery<TruthResponse>({
     queryKey: ["analytics-truth", hours, geo],
     enabled: opts.enabled ?? true,
-    staleTime: 30_000,
-    refetchInterval: opts.refetchIntervalMs ?? 60_000,
+    staleTime: hours >= 72 ? 300_000 : 30_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: opts.refetchIntervalMs ?? defaultInterval,
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("analytics-canonical", {
         body: { hours, geo },
