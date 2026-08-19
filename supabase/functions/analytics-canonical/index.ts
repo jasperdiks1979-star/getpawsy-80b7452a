@@ -686,24 +686,21 @@ Deno.serve(async (req) => {
           envelope_resolved: gate.allowV2 ? "v2" : "v1",
         };
         if (gate.allowV2) {
-          const rows: ClassifiableRow[] = [];
-          const PAGE2 = 1000;
-          let from2 = 0;
-          while (true) {
-            const { data, error } = await supabase
-              .from("canonical_events")
-              .select("session_id,visitor_id,occurred_at,ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version")
-              .gte("occurred_at", since)
-              .lte("occurred_at", until)
-              .order("occurred_at", { ascending: false })
-              .range(from2, from2 + PAGE2 - 1);
-            if (error) break;
-            if (!data || data.length === 0) break;
-            rows.push(...(data as ClassifiableRow[]));
-            if (data.length < PAGE2) break;
-            from2 += PAGE2;
-            if (from2 > 200_000) break;
-          }
+          // PERF: reuse the single canonical_events pass from above — the
+          // v1 select already carries every classifier column. This removes
+          // a full duplicate scan of the window per request.
+          const rows: ClassifiableRow[] = events.map((r) => ({
+            session_id: r.session_id ?? null,
+            visitor_id: r.visitor_id ?? null,
+            occurred_at: r.occurred_at,
+            ingested_at: r.ingested_at ?? null,
+            is_internal: r.is_internal ?? null,
+            technical_path: r.technical_path ?? null,
+            is_bot: r.is_bot ?? null,
+            bot_confidence: r.bot_confidence ?? null,
+            traffic_quality: r.traffic_quality ?? null,
+            classification_version: r.classification_version ?? null,
+          })) as ClassifiableRow[];
           // Authoritative session-level classification lives in
           // analytics_traffic_classification (ATC). canonical_events only
           // carries a schema DEFAULT of 'uncertain' — no classifier has
@@ -715,12 +712,13 @@ Deno.serve(async (req) => {
           ));
           const atcMap = new Map<string, string>();
           const CHUNK_ATC = 500;
-          for (let i = 0; i < uniqSids.length; i += CHUNK_ATC) {
-            const batch = uniqSids.slice(i, i + CHUNK_ATC);
-            const { data: atc, error: atcErr } = await supabase
+          const atcChunks = await mapChunksParallel(uniqSids, CHUNK_ATC, 6, (batch) =>
+            supabase
               .from("analytics_traffic_classification")
               .select("session_id,traffic_type")
-              .in("session_id", batch);
+              .in("session_id", batch)
+          );
+          for (const { data: atc, error: atcErr } of atcChunks) {
             if (atcErr) continue;
             for (const r of atc ?? []) {
               if (r.session_id && r.traffic_type) atcMap.set(r.session_id, r.traffic_type as string);
