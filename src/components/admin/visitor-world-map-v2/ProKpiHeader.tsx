@@ -48,7 +48,7 @@ function filteredSessions(rows: TruthSession[], state: ProToolbarState): TruthSe
 
 export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   const isLive = state.timeRange === "live";
-  const { data: truth, isLoading } = useAnalyticsTruth({
+  const { data: truth, isLoading, isError, error, refetch } = useAnalyticsTruth({
     hours: proHoursForRange(state.timeRange),
     geo: state.usOnly ? "US" : "all",
   });
@@ -127,6 +127,23 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
         >
           Business KPIs are hidden while the map is in Live now. Live presence
           is realtime and NOT canonical. Switch to a time range to see truth.
+        </div>
+      ) : isError ? (
+        <div
+          data-testid="vwm-pro-kpi-error"
+          className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/5 p-4 text-xs text-rose-600 dark:text-rose-400"
+        >
+          <span>
+            Canonical analytics unavailable — this is an error, not zero traffic.{" "}
+            {(error as Error)?.message}
+          </span>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="rounded border border-rose-500/40 px-2 py-0.5 font-semibold"
+          >
+            Retry
+          </button>
         </div>
       ) : isLoading || !derived ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
