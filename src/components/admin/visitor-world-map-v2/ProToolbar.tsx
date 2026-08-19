@@ -9,8 +9,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CANONICAL_SOURCES, SOURCE_META, type CanonicalSource } from "@/lib/canonicalSource";
+import { ANALYTICS_WINDOWS } from "@/lib/analyticsWindows";
 
-export type ProTimeRange = "live" | "30m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "30d";
+export type ProTimeRange = "live" | "1h" | "24h" | "7d" | "14d" | "30d" | "90d";
 export type ProSourceFilter = "all" | CanonicalSource;
 export type ProActivityFilter = "all" | "browsing" | "cart" | "checkout";
 
@@ -22,16 +23,26 @@ export interface ProToolbarState {
   excludeInternal: boolean;
 }
 
+// Every non-live option maps 1:1 onto a precomputed/warmed canonical window
+// (see `src/lib/analyticsWindows.ts`). No ad-hoc hour values here — an
+// un-warmed window would force a slow synchronous full-window scan.
+const WINDOW_LABELS: Record<string, string> = {
+  "1h": "Last 1 h",
+  "24h": "Last 24 h",
+  "7d": "Last 7 d",
+  "14d": "Last 14 d",
+  "30d": "Last 30 d",
+  "90d": "Last 90 d",
+};
+
 export const PRO_TIME_RANGES: { value: ProTimeRange; label: string; hours: number }[] = [
-  { value: "live", label: "Live now",   hours: 1 },   // live mode; hours only used for canonical KPI query fallback
-  { value: "30m",  label: "Last 30 min", hours: 1 },
-  { value: "1h",   label: "Last 1 h",    hours: 1 },
-  { value: "2.5h", label: "Last 2.5 h",  hours: 3 },
-  { value: "5h",   label: "Last 5 h",    hours: 5 },
-  { value: "10h",  label: "Last 10 h",   hours: 10 },
-  { value: "24h",  label: "Last 24 h",   hours: 24 },
-  { value: "7d",   label: "Last 7 d",    hours: 24 * 7 },
-  { value: "30d",  label: "Last 30 d",   hours: 24 * 30 },
+  // live mode; hours only used for the canonical KPI query fallback
+  { value: "live", label: "Live now", hours: 1 },
+  ...ANALYTICS_WINDOWS.map((w) => ({
+    value: w.id as ProTimeRange,
+    label: WINDOW_LABELS[w.id] ?? w.id,
+    hours: w.hours,
+  })),
 ];
 
 export function proHoursForRange(range: ProTimeRange): number {

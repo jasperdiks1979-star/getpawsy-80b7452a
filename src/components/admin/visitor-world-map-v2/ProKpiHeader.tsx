@@ -35,6 +35,14 @@ function fmtMoney(n: number, currency: string): string {
   }
 }
 
+/** Human-readable cache freshness, e.g. "42s ago" / "6m ago". */
+function fmtAge(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds)) return "unknown";
+  if (seconds < 90) return `${Math.max(0, Math.round(seconds))}s ago`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)}m ago`;
+  return `${Math.round(seconds / 3600)}h ago`;
+}
+
 function filteredSessions(rows: TruthSession[], state: ProToolbarState): TruthSession[] {
   return rows.filter((s) => {
     if (state.excludeInternal && s.is_internal) return false;
@@ -112,6 +120,25 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           >
             {useV2 ? "v2" : "v1 (legacy)"}
           </span>
+          {!isLive && truth && (
+            <span
+              data-testid="vwm-pro-cache-age"
+              data-cache-status={truth.cache_status ?? "unknown"}
+              className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium normal-case ${
+                truth.cache_stale
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                  : "bg-muted text-muted-foreground"
+              }`}
+              title={
+                truth.cache_generated_at
+                  ? `Precomputed at ${new Date(truth.cache_generated_at).toLocaleString()}`
+                  : "Computed on request"
+              }
+            >
+              Data {fmtAge(truth.cache_age_seconds)}
+              {truth.cache_stale ? " · refreshing" : ""}
+            </span>
+          )}
         </div>
         {isLive && (
           <div className="text-[11px] font-medium uppercase tracking-wide text-red-600 dark:text-red-400">

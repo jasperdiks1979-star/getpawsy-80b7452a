@@ -870,9 +870,25 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
 // refresh runs. Beyond that the request computes inline rather than serving
 // indefinitely stale data. Zeros are never fabricated and there is no silent
 // V1 downgrade: on failure the caller gets a real error.
-const FRESH_MS = 300_000;      // 5 min — matches warmer cadence
-const MAX_STALE_MS = 1_800_000; // 30 min — bounded stale-serve window
+const FRESH_MS = 300_000;      // 5 min — hot-tier warmer cadence
+const MAX_STALE_MS = 1_800_000; // 30 min — bounded stale-serve window (hot)
 const LOCK_MS = 240_000;        // single-flight lock lease
+
+// Long windows are warmed on a slower tier (14d/10 min, 30d/15 min,
+// 90d/30 min) because they are far more expensive and move far more slowly.
+// Freshness thresholds must track that cadence, otherwise every dashboard
+// load would consider a perfectly current 90d payload "stale" and kick off a
+// needless rebuild.
+function freshMsFor(hours: number): number {
+  if (hours >= 2160) return 1_800_000; // 90d — 30 min
+  if (hours >= 720) return 900_000;    // 30d — 15 min
+  if (hours >= 336) return 600_000;    // 14d — 10 min
+  return FRESH_MS;
+}
+
+function maxStaleMsFor(hours: number): number {
+  return Math.max(MAX_STALE_MS, freshMsFor(hours) * 4);
+}
 
 function svc() {
   return createClient(
@@ -959,7 +975,7 @@ function withCacheMeta(
     cache_generated_at: meta.generatedAt,
     cache_age_seconds: meta.ageSeconds,
     cache_stale: meta.cache === "stale",
-    cache_max_lag_seconds: FRESH_MS / 1000,
+    cache_max_lag_seconds: freshMsFor(meta.hours) / 1000,
     cache_source_window_hours: meta.hours,
   };
 }
@@ -1018,13 +1034,13 @@ Deno.serve(async (req) => {
     if (row?.payload) {
       const ageMs = Date.now() - new Date(row.generated_at as string).getTime();
       const ageSeconds = Math.round(ageMs / 1000);
-      if (ageMs <= FRESH_MS) {
+      if (ageMs <= freshMsFor(hours)) {
         cache.set(key, { at: Date.now(), body: row.payload });
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
           cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours,
         }));
       }
-      if (ageMs <= MAX_STALE_MS) {
+      if (ageMs <= maxStaleMsFor(hours)) {
         // Serve last-known-good immediately, rebuild in the background under
         // a single-flight lock so concurrent admin loads cannot stampede.
         const bg = (async () => {

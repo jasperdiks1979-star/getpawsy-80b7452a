@@ -1,25 +1,26 @@
 // analytics-canonical-warmer — keeps the admin Visitor World Map fast.
 //
-// pg_cron calls this every 5 minutes with the internal function secret. It
-// asks `analytics-canonical` to rebuild the hot (hours, geo) combinations and
-// persist them into `public.analytics_canonical_cache`, so admin page loads
-// read one indexed row instead of re-scanning the whole window.
+// pg_cron calls this with the internal function secret and a `tier`. Each tier
+// has its own cron schedule so a slow/failing long window can never delay or
+// block the hot (1h/24h/7d) refreshes:
 //
-// Max data lag = the cron cadence (5 minutes).
+//   hot (1h, 24h, 7d)  — every  5 min
+//   d14 (14d)          — every 10 min
+//   d30 (30d)          — every 15 min
+//   d90 (90d)          — every 30 min
+//
+// Cadence is inversely proportional to compute cost: long windows scan far
+// more rows, and their numbers move proportionally slower, so a longer lag is
+// both cheaper and analytically harmless. Combos inside a tier run strictly
+// sequentially (US after all) — parallel rebuilds would multiply DB load,
+// which is exactly the saturation this warmer exists to avoid. Single-flight
+// locking in `analytics-canonical` prevents overlapping builds of the same key
+// when a run outlives its interval.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { combosForTier, WARMER_TIERS, type WarmerTier } from "../_shared/analyticsWindows.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
-
-// Hot combos rendered by /admin/analytics/visitor-world-map-pro.
-const COMBOS: Array<{ hours: number; geo: "US" | "all" }> = [
-  { hours: 1, geo: "all" },
-  { hours: 1, geo: "US" },
-  { hours: 24, geo: "all" },
-  { hours: 24, geo: "US" },
-  { hours: 168, geo: "all" },
-  { hours: 168, geo: "US" },
-];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,10 +33,20 @@ Deno.serve(async (req) => {
     });
   }
 
+  const url = new URL(req.url);
+  let body: Record<string, unknown> | null = null;
+  if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
+  const requested = String(body?.tier ?? url.searchParams.get("tier") ?? "hot").toLowerCase();
+  if (!WARMER_TIERS.includes(requested as WarmerTier)) {
+    return new Response(
+      JSON.stringify({ ok: false, error: `unknown tier "${requested}"`, allowed: WARMER_TIERS }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const tier = requested as WarmerTier;
+
   const results: Array<Record<string, unknown>> = [];
-  // Sequential on purpose: parallel rebuilds would multiply DB load, which is
-  // exactly the saturation this warmer exists to avoid.
-  for (const combo of COMBOS) {
+  for (const combo of combosForTier(tier)) {
     const started = Date.now();
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
@@ -46,14 +57,16 @@ Deno.serve(async (req) => {
       const ok = res.ok;
       const bodyText = ok ? "" : await res.text();
       results.push({ ...combo, status: res.status, ok, ms: Date.now() - started, error: ok ? null : bodyText.slice(0, 300) });
-      if (!ok) console.error(`[warmer] ${combo.hours}h/${combo.geo} failed [${res.status}]: ${bodyText}`);
+      if (!ok) console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} failed [${res.status}]: ${bodyText}`);
     } catch (e) {
+      // Never abort the tier: one failed combo must not starve the others.
       results.push({ ...combo, ok: false, ms: Date.now() - started, error: (e as Error).message });
-      console.error(`[warmer] ${combo.hours}h/${combo.geo} threw`, (e as Error).message);
+      console.error(`[warmer:${tier}] ${combo.hours}h/${combo.geo} threw`, (e as Error).message);
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, refreshed: results, generated_at: new Date().toISOString() }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ ok: true, tier, refreshed: results, generated_at: new Date().toISOString() }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 });
