@@ -496,13 +496,61 @@ Deno.serve(async (req) => {
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
-    const flagRows = await mapChunksParallel(sidsForFlags, 1000, CONCURRENCY, (batch) =>
+    // PERF + CORRECTNESS: a giant `.in(session_id, …)` list is both a slow
+    // round trip and — past a few hundred ids — long enough to be rejected at
+    // the URL level, which silently emptied `flagsMap` and let excluded
+    // traffic through as "commercial". Window-scan the sessions active in the
+    // request window instead, then join in memory.
+    const wantedSids = new Set(sidsForFlags);
+    let flagsScanError: string | null = null;
+    {
+      const CS_PAGE = 1000;
+      const CS_WAVE = 6;
+      let csFrom = 0;
+      let csDone = false;
+      while (!csDone) {
+        const offsets = Array.from({ length: CS_WAVE }, (_, i) => csFrom + i * CS_PAGE);
+        const wave = await Promise.all(
+          offsets.map((off) =>
+            supabase
+              .from("canonical_sessions")
+              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
+              .gte("last_seen_at", since)
+              .order("last_seen_at", { ascending: false })
+              .range(off, off + CS_PAGE - 1)
+          ),
+        );
+        for (const { data, error } of wave) {
+          if (error) { flagsScanError = error.message; csDone = true; continue; }
+          if (!data || data.length === 0) { csDone = true; continue; }
+          for (const r of data) {
+            if (!wantedSids.has(r.session_id as string)) continue;
+            flagsMap.set(r.session_id as string, {
+              is_internal: r.is_internal === true,
+              is_bot: r.is_bot === true,
+              technical_path: r.technical_path === true,
+              exclude_from_commercial: r.exclude_from_commercial === true,
+              traffic_class: (r.traffic_class as string | null) ?? null,
+              traffic_quality: (r.traffic_quality as string | null) ?? null,
+            });
+          }
+          if (data.length < CS_PAGE) csDone = true;
+        }
+        csFrom += CS_WAVE * CS_PAGE;
+        if (csFrom > 200_000) break;
+      }
+    }
+    // Any session whose flag row was not found in the window scan is looked
+    // up directly in small, URL-safe chunks so coverage stays complete.
+    const missingSids = sidsForFlags.filter((sid) => !flagsMap.has(sid));
+    const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
         .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
         .in("session_id", batch)
     );
-    for (const { data: csRows } of flagRows) {
+    for (const { data: csRows, error: csErr } of flagRows) {
+      if (csErr) { flagsScanError = flagsScanError ?? csErr.message; continue; }
       for (const r of csRows ?? []) {
         flagsMap.set(r.session_id as string, {
           is_internal: r.is_internal === true,
