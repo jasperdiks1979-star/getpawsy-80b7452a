@@ -99,6 +99,27 @@ function parseInput(url: URL, body: any): { hours: number; geo: "US" | "all" } {
 const cache = new Map<string, { at: number; body: any }>();
 const TTL_MS = 30_000;
 
+/**
+ * PERF: run chunked `.in()` lookups with bounded concurrency instead of
+ * strictly sequentially. Under DB saturation a single round trip costs
+ * 0.3–2s; a 7-day window needs dozens of them, which is what pushed the
+ * request past the 150s edge idle timeout.
+ */
+async function mapChunksParallel<T, R>(
+  items: T[],
+  size: number,
+  concurrency: number,
+  fn: (batch: T[]) => Promise<R>,
+): Promise<R[]> {
+  const batches: T[][] = [];
+  for (let i = 0; i < items.length; i += size) batches.push(items.slice(i, i + size));
+  const out: R[] = [];
+  for (let i = 0; i < batches.length; i += concurrency) {
+    out.push(...(await Promise.all(batches.slice(i, i + concurrency).map(fn))));
+  }
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
