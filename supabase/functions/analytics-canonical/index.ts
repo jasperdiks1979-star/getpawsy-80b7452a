@@ -155,6 +155,11 @@ Deno.serve(async (req) => {
     const since = new Date(now - hours * 3600_000).toISOString();
     const until = new Date(now).toISOString();
 
+    // ── phase profiler ────────────────────────────────────────
+    const t0 = Date.now();
+    const timings: Record<string, number> = {};
+    const mark = (label: string) => { timings[label] = Date.now() - t0; };
+
     // ── canonical_events ───────────────────────────────────────
     const events: any[] = [];
     const PAGE = 1000;
