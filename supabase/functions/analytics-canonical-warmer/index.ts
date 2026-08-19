@@ -21,14 +21,30 @@ import { combosForTier, WARMER_TIERS, type WarmerTier } from "../_shared/analyti
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
+// Dedicated cron credential. pg_cron cannot read edge-function env vars, so the
+// same value also lives in the `app.analytics_warmer_secret` database GUC and is
+// injected by the cron command. Kept separate from INTERNAL_FUNCTION_SECRET so a
+// rotation here never breaks the other internal callers. Never logged.
+const WARMER_SECRET = Deno.env.get("ANALYTICS_WARMER_SECRET") ?? "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const provided = req.headers.get("x-internal-secret") ?? "";
-  if (!INTERNAL_SECRET || provided !== INTERNAL_SECRET) {
+  // Constant set of accepted credentials; an empty/missing header can never match
+  // because empty candidates are filtered out first.
+  const accepted = [INTERNAL_SECRET, WARMER_SECRET].filter((s) => s.length > 0);
+  if (!provided || !accepted.includes(provided)) {
     return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
       status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  // analytics-canonical only accepts INTERNAL_FUNCTION_SECRET, so the warmer always
+  // uses that for its downstream calls regardless of which credential authorised it.
+  if (!INTERNAL_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "internal_secret_unconfigured" }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
