@@ -3166,10 +3166,16 @@ export const VisitorWorldMap = ({
             </div>
 
             {mapError ? (
-              <div className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}>
-                <div className="text-center text-muted-foreground">
+              <div
+                data-testid="vwm-map-error"
+                className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}
+              >
+                <div className="text-center text-muted-foreground px-4">
                   <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{mapError}</p>
+                  <p className="mb-3 max-w-sm text-sm">{mapError}</p>
+                  <Button variant="default" size="sm" onClick={retryMapInit} data-testid="vwm-map-retry">
+                    Retry map
+                  </Button>
                 </div>
               </div>
             ) : (
