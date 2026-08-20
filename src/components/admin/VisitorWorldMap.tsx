@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { PinterestTrafficPanel } from "./widgets/PinterestTrafficPanel";
+import { ANALYTICS_TRUTH_MAX_ATTEMPTS } from "@/hooks/useAnalyticsTruth";
 import { V2EnvelopeBadge } from "./V2EnvelopeBadge";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
