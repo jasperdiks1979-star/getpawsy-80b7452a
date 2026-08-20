@@ -7335,6 +7335,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_canonical_cache: {
+        Row: {
+          cache_key: string
+          compute_ms: number | null
+          envelope: string
+          generated_at: string
+          geo: string
+          hours: number
+          locked_until: string | null
+          payload: Json
+          refresh_error: string | null
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          compute_ms?: number | null
+          envelope: string
+          generated_at?: string
+          geo: string
+          hours: number
+          locked_until?: string | null
+          payload: Json
+          refresh_error?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          compute_ms?: number | null
+          envelope?: string
+          generated_at?: string
+          geo?: string
+          hours?: number
+          locked_until?: string | null
+          payload?: Json
+          refresh_error?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_daily_validation: {
         Row: {
           bot_pct: number | null
@@ -78644,6 +78683,7 @@ export type Database = {
         }
         Returns: Json
       }
+      gp_analytics_admin_gate: { Args: never; Returns: boolean }
       gp_analytics_cache_refresh: {
         Args: { p_windows?: number[] }
         Returns: Json
