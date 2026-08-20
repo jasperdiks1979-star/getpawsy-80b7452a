@@ -4,7 +4,8 @@ import { useLoadingPhase, type LoadingPhase } from "@/hooks/useLoadingPhase";
 /**
  * PanelLoadingState — the ONE loading/error surface for admin analytics
  * panels. Enforces the deterministic policy: normal skeleton (0–3s),
- * "Still loading…" (3–8s), retryable warning (8–12s), explicit error (>12s).
+ * "Still loading…" (3–8s), retryable warning (8–12s), "cache warming"
+ * (12–30s), explicit error (>30s).
  *
  * It never renders a zero value — an unavailable panel says so out loud.
  */
@@ -25,6 +26,8 @@ export function panelPhaseLabel(phase: LoadingPhase, label: string): string {
       return `Still loading ${label}…`;
     case "warn":
       return `${label} is taking longer than expected.`;
+    case "stalled":
+      return `${label} is still being computed — the analytics cache for this window is cold. It usually lands within ~30s.`;
     case "timeout":
       return `${label} did not respond in time. This is an error, not zero traffic.`;
     default:
@@ -71,15 +74,19 @@ export function PanelLoadingState({
     );
   }
 
-  if (phase === "warn") {
+  if (phase === "warn" || phase === "stalled") {
     return (
       <div
-        data-testid={`${testId}-warn`}
-        data-phase="warn"
+        data-testid={`${testId}-${phase}`}
+        data-phase={phase}
         className="flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400"
       >
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span>{panelPhaseLabel("warn", label)}</span>
+        {phase === "stalled" ? (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+        ) : (
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+        )}
+        <span>{panelPhaseLabel(phase, label)}</span>
         {onRetry && (
           <button
             type="button"
