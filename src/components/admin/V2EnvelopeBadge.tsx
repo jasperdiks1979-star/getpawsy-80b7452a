@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
+import { useAnalyticsTruth, ANALYTICS_TRUTH_MAX_ATTEMPTS } from "@/hooks/useAnalyticsTruth";
 import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
 import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
