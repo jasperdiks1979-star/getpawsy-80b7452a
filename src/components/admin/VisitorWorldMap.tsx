@@ -585,8 +585,14 @@ export const VisitorWorldMap = ({
       mapPerfMark("first-data-end");
       return all;
     },
-    // Live mode refreshes every 3 seconds for real-time feel
-    refetchInterval: timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
+    // Live mode refreshes every 3 seconds for real-time feel. Historical
+    // windows re-fetch far less often — the underlying rows are a diagnostic
+    // input (markers come from canonical truth), so a 30s poll of a 20k-row
+    // page was pure mobile cost with no truth benefit.
+    refetchInterval:
+      timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 15000 : 120000,
+    staleTime: timeRange === "live" ? 0 : 60_000,
+    refetchOnWindowFocus: false,
   });
 
   // Combine fetched activities with live activities (for live mode only)
