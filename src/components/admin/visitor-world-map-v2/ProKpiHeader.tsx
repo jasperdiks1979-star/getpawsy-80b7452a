@@ -7,6 +7,7 @@ import {
 import type { ProToolbarState } from "./ProToolbar";
 import { proHoursForRange } from "./ProToolbar";
 import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
+import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
 /**
  * Canonical KPI header for the Pro page.
@@ -59,6 +60,9 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   const { data: truth, isLoading, isError, error, refetch } = useAnalyticsTruth({
     hours: proHoursForRange(state.timeRange),
     geo: state.usOnly ? "US" : "all",
+    // PHASE 3 — live mode is presence-only. Never fire a canonical window
+    // query behind a blocked KPI panel.
+    enabled: !isLive,
   });
   const v2metrics = useMemo(() => getCanonicalAnalyticsMetrics(truth as any), [truth]);
 
