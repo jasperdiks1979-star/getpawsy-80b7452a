@@ -655,7 +655,14 @@ export const VisitorWorldMap = ({
   // ------------------------------------------------------------------
   const truthHoursRaw = getTimeRangeMs() / 3_600_000;
   const truthHours = Math.max(1, Math.round(truthHoursRaw)); // canonical fn floors sub-hour ranges to 1h
-  const { data: truth } = useAnalyticsTruth({
+  const {
+    data: truth,
+    isLoading: truthLoading,
+    isError: truthError,
+    error: truthErrorObj,
+    refetch: refetchTruth,
+    failureCount: truthFailureCount,
+  } = useAnalyticsTruth({
     hours: truthHours,
     geo: usOnly ? "US" : "all",
     // Non-live windows use the hook default, which scales with window size
