@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, Users, ShoppingCart, CreditCard } from "lucide-react";
+import { TrendingUp, Users, ShoppingCart, CreditCard } from "lucide-react";
+import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
+import { useDeferredVisible } from "@/hooks/useDeferredVisible";
 
 interface TrafficStats {
   total: number;
@@ -29,8 +31,15 @@ interface TrafficStats {
  *   cvr       = purchases / visitors * 100
  */
 export const PinterestTrafficWidget = () => {
-  const { data: stats, isLoading, error } = useQuery({
+  // Below-the-fold panel: don't compete with the map for mobile bandwidth.
+  const { ref: panelRef, visible } = useDeferredVisible<HTMLDivElement>();
+  const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ["pinterest-traffic-stats", "canonical", "30d"],
+    enabled: visible,
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
     queryFn: async (): Promise<TrafficStats> => {
       const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
 
@@ -55,22 +64,32 @@ export const PinterestTrafficWidget = () => {
       let purchases = 0;
 
       if (sessionIds.length > 0) {
-        // Chunk to stay under URL length limits.
+        // Chunk to stay under URL length limits. Chunks are INDEPENDENT, so
+        // they run in parallel instead of as a sequential waterfall — same
+        // rows, same formulas, just no serial round-trips.
         const chunkSize = 500;
+        const chunks: string[][] = [];
         for (let i = 0; i < sessionIds.length; i += chunkSize) {
-          const chunk = sessionIds.slice(i, i + chunkSize);
-          const { data: evRows, error: eErr } = await supabase
-            .from("canonical_events")
-            .select("canonical_name")
-            .in("session_id", chunk)
-            .in("canonical_name", [
-              "CANONICAL_ADD_TO_CART",
-              "CANONICAL_CHECKOUT",
-              "CANONICAL_PURCHASE",
-            ])
-            .gte("occurred_at", since);
-          if (eErr) throw eErr;
-          for (const r of evRows ?? []) {
+          chunks.push(sessionIds.slice(i, i + chunkSize));
+        }
+        const results = await Promise.all(
+          chunks.map(async (chunk) => {
+            const { data: evRows, error: eErr } = await supabase
+              .from("canonical_events")
+              .select("canonical_name")
+              .in("session_id", chunk)
+              .in("canonical_name", [
+                "CANONICAL_ADD_TO_CART",
+                "CANONICAL_CHECKOUT",
+                "CANONICAL_PURCHASE",
+              ])
+              .gte("occurred_at", since);
+            if (eErr) throw eErr;
+            return evRows ?? [];
+          }),
+        );
+        for (const evRows of results) {
+          for (const r of evRows) {
             if (r.canonical_name === "CANONICAL_ADD_TO_CART") cart++;
             else if (r.canonical_name === "CANONICAL_CHECKOUT") checkout++;
             else if (r.canonical_name === "CANONICAL_PURCHASE") purchases++;
@@ -93,30 +112,12 @@ export const PinterestTrafficWidget = () => {
 
       return { total: browsing, browsing, cart, checkout, purchases, campaigns };
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: visible ? 300_000 : false, // 5 min, only while on screen
   });
 
-  if (isLoading) {
+  if (!visible || isLoading || error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-red-600" fill="currentColor">
-              <path d="M12 0a12 12 0 0 0-4.373 23.178c-.07-.937-.133-2.377.028-3.4.145-.924 1.048-4.444 1.048-4.444s-.267-.536-.267-1.328c0-1.244.722-2.173 1.62-2.173.765 0 1.133.573 1.133 1.26 0 .768-.489 1.916-.74 2.98-.21.89.447 1.615 1.326 1.615 1.592 0 2.814-1.678 2.814-4.1 0-2.143-1.54-3.642-3.742-3.642-2.548 0-4.044 1.91-4.044 3.886 0 .77.297 1.596.667 2.045a.268.268 0 0 1 .062.258c-.068.283-.219.89-.249 1.014-.039.166-.13.2-.3.12-1.12-.521-1.82-2.157-1.82-3.472 0-2.825 2.053-5.42 5.922-5.42 3.11 0 5.527 2.216 5.527 5.178 0 3.09-1.949 5.577-4.652 5.577-.908 0-1.763-.472-2.056-.03 0 0-.45 1.71-.56 2.134-.202.78-.75 1.756-1.117 2.352A12 12 0 1 0 12 0"/>
-            </svg>
-            Pinterest Traffic
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
+      <Card ref={panelRef}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-red-600" fill="currentColor">
@@ -126,7 +127,21 @@ export const PinterestTrafficWidget = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Error loading data</p>
+          {!visible ? (
+            <p className="text-xs text-muted-foreground">
+              Pinterest traffic loads when this panel scrolls into view.
+            </p>
+          ) : (
+            <PanelLoadingState
+              isLoading={isLoading}
+              isError={!!error}
+              error={error}
+              onRetry={() => refetch()}
+              label="Pinterest traffic"
+              testId="pinterest-traffic-loading"
+              skeleton={<div className="h-24 animate-pulse rounded-md bg-muted/50" />}
+            />
+          )}
         </CardContent>
       </Card>
     );
@@ -138,7 +153,7 @@ export const PinterestTrafficWidget = () => {
     : "0";
 
   return (
-    <Card>
+    <Card ref={panelRef}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-red-600" fill="currentColor">
