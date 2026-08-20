@@ -167,15 +167,16 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/5 p-4 text-xs text-rose-600 dark:text-rose-400"
         >
           <span>
-            Canonical analytics unavailable — this is an error, not zero traffic.{" "}
-            {(error as Error)?.message}
+            Canonical analytics unavailable after {ANALYTICS_TRUTH_MAX_ATTEMPTS} attempts —
+            this is an error, not zero traffic. {(error as Error)?.message}
           </span>
           <button
             type="button"
+            data-testid="vwm-pro-kpi-retry"
             onClick={() => refetch()}
             className="rounded border border-rose-500/40 px-2 py-0.5 font-semibold"
           >
-            Retry
+            Retry now
           </button>
         </div>
       ) : isLoading || !derived ? (
@@ -184,6 +185,9 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           onRetry={() => refetch()}
           label="Canonical KPIs"
           testId="vwm-pro-kpi-loading"
+          attempt={failureCount + 1}
+          maxAttempts={ANALYTICS_TRUTH_MAX_ATTEMPTS}
+
           skeleton={
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
               {Array.from({ length: 8 }).map((_, i) => (
