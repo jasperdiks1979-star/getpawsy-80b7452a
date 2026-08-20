@@ -2297,13 +2297,18 @@ export const VisitorWorldMap = ({
             <div className="text-center text-muted-foreground">
               <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p className="mb-4">{mapError}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleFullscreen(false)}
-              >
-                Terug
-              </Button>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="default" size="sm" onClick={retryMapInit} data-testid="vwm-map-retry-fullscreen">
+                  Retry map
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleFullscreen(false)}
+                >
+                  Terug
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
