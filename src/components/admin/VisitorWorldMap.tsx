@@ -231,10 +231,13 @@ export const VisitorWorldMap = ({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapInitAttempt, setMapInitAttempt] = useState(0);
   const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
-  const mapTokenRef = useRef<string | null>(null);
+  // Token cache lives at module scope (see `getMapboxToken`), so the Pro page
+  // re-keying this component on every filter change does NOT re-fetch it.
+  const mapTokenRef = useRef<string | null>(cachedMapboxToken);
   const previousContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Reset perf marks once on mount (effect, not render — safe in StrictMode)
