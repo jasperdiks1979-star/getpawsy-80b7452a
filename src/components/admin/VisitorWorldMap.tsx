@@ -267,6 +267,8 @@ export const VisitorWorldMap = ({
   const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
+  // Collapsed "Bron-audit" panel gate — see the deferred raw query below.
+  const [auditOpen, setAuditOpen] = useState(false);
   // Token cache lives at module scope (see `getMapboxToken`), so the Pro page
   // re-keying this component on every filter change does NOT re-fetch it.
   const mapTokenRef = useRef<string | null>(cachedMapboxToken);
