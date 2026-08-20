@@ -3399,7 +3399,7 @@ export const VisitorWorldMap = ({
                 )}
               </div>
 
-              {/* Pinterest Traffic Widget */}
+              
               {/* Pinterest Traffic — derived from the SAME canonical payload */}
               <PinterestTrafficPanel
                 sessions={truth?.sessions}
