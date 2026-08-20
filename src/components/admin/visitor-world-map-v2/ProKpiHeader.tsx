@@ -2,8 +2,10 @@ import { useMemo } from "react";
 import {
   useAnalyticsTruth,
   countersFromSessions,
+  ANALYTICS_TRUTH_MAX_ATTEMPTS,
   type TruthSession,
 } from "@/hooks/useAnalyticsTruth";
+
 import type { ProToolbarState } from "./ProToolbar";
 import { proHoursForRange } from "./ProToolbar";
 import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
