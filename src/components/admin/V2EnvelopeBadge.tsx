@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
+import { useAnalyticsTruth, ANALYTICS_TRUTH_MAX_ATTEMPTS } from "@/hooks/useAnalyticsTruth";
 import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
 import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
@@ -28,7 +28,7 @@ function fmt(n: number | null | undefined): string {
 }
 
 export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label, enabled = true }: V2EnvelopeBadgeProps) {
-  const { data, error, isError, isLoading, refetch } = useAnalyticsTruth({ hours, geo, enabled });
+  const { data, error, isError, isLoading, refetch, failureCount } = useAnalyticsTruth({ hours, geo, enabled });
   const m = useMemo(() => getCanonicalAnalyticsMetrics(data as any), [data]);
   const useV2 = m?.envelope_resolved === "v2";
 
@@ -83,15 +83,17 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label, en
           className="flex flex-wrap items-center gap-2 rounded border border-rose-500/40 bg-rose-500/5 p-2 text-[11px] text-rose-600 dark:text-rose-400"
         >
           <span>
-            analytics-canonical request failed — numbers below are NOT zero traffic,
-            they are unavailable. {(error as Error)?.message}
+            analytics-canonical request failed after {ANALYTICS_TRUTH_MAX_ATTEMPTS} attempts —
+            numbers below are NOT zero traffic, they are unavailable.{" "}
+            {(error as Error)?.message}
           </span>
           <button
             type="button"
+            data-testid="v2-envelope-retry"
             onClick={() => refetch()}
             className="rounded border border-rose-500/40 px-2 py-0.5 font-semibold"
           >
-            Retry
+            Retry now
           </button>
         </div>
       ) : isLoading ? (
@@ -100,8 +102,11 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label, en
           onRetry={() => refetch()}
           label="Traffic quality"
           testId="v2-envelope-loading"
+          attempt={failureCount + 1}
+          maxAttempts={ANALYTICS_TRUTH_MAX_ATTEMPTS}
           skeleton={<div className="h-10 animate-pulse rounded bg-muted/50" />}
         />
+
       ) : useV2 && cards.length ? (
         <div className={`grid gap-2 ${compact ? "grid-cols-3 sm:grid-cols-5 lg:grid-cols-9" : "grid-cols-3 sm:grid-cols-5 md:grid-cols-9"}`}>
           {cards.map((c) => (
