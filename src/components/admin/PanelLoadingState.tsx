@@ -18,6 +18,10 @@ export interface PanelLoadingStateProps {
   skeleton?: React.ReactNode;
   label?: string;
   testId?: string;
+  /** Current attempt number (1-based) of the bounded retry sequence. */
+  attempt?: number;
+  /** Total attempts allowed before the panel gives up and shows an error. */
+  maxAttempts?: number;
 }
 
 export function panelPhaseLabel(phase: LoadingPhase, label: string): string {
@@ -27,12 +31,17 @@ export function panelPhaseLabel(phase: LoadingPhase, label: string): string {
     case "warn":
       return `${label} is taking longer than expected.`;
     case "stalled":
-      return `${label} is still being computed — the analytics cache for this window is cold. It usually lands within ~30s.`;
+      return `Still warming — ${label} is being computed because the analytics cache for this window is cold.`;
     case "timeout":
       return `${label} did not respond in time. This is an error, not zero traffic.`;
     default:
       return `Loading ${label}…`;
   }
+}
+
+function attemptSuffix(attempt?: number, maxAttempts?: number): string {
+  if (!attempt || !maxAttempts || attempt < 1) return "";
+  return ` (attempt ${Math.min(attempt, maxAttempts)} of ${maxAttempts})`;
 }
 
 export function PanelLoadingState({
@@ -43,7 +52,10 @@ export function PanelLoadingState({
   skeleton,
   label = "data",
   testId = "panel-loading-state",
+  attempt,
+  maxAttempts,
 }: PanelLoadingStateProps) {
+
   const phase = useLoadingPhase(isLoading && !isError);
   const hardError = isError || phase === "timeout";
 
