@@ -28,7 +28,7 @@ function fmt(n: number | null | undefined): string {
 }
 
 export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label, enabled = true }: V2EnvelopeBadgeProps) {
-  const { data, error, isError, isLoading, refetch } = useAnalyticsTruth({ hours, geo, enabled });
+  const { data, error, isError, isLoading, refetch, failureCount } = useAnalyticsTruth({ hours, geo, enabled });
   const m = useMemo(() => getCanonicalAnalyticsMetrics(data as any), [data]);
   const useV2 = m?.envelope_resolved === "v2";
 
