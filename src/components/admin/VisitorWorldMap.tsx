@@ -165,6 +165,38 @@ const ACTIVITY_WEIGHTS = {
 // Time range options
 type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "14d" | "30d" | "90d";
 
+// ---------------------------------------------------------------------------
+// Mapbox token — module-scoped cache.
+//
+// The Pro page re-mounts this component whenever a toolbar filter changes, so
+// a component-local cache re-fetched `get-mapbox-token` on every filter click.
+// The token is page-session stable, so cache it at module scope and dedupe
+// concurrent requests through a single in-flight promise.
+// ---------------------------------------------------------------------------
+let cachedMapboxToken: string | null = null;
+let mapboxTokenPromise: Promise<string | null> | null = null;
+
+/** Hard ceiling for the whole map startup chain (token + style load). */
+const MAP_INIT_TIMEOUT_MS = 15_000;
+
+async function getMapboxToken(): Promise<string | null> {
+  if (cachedMapboxToken) return cachedMapboxToken;
+  if (!mapboxTokenPromise) {
+    mapboxTokenPromise = (async () => {
+      const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+      if (error || !data?.token) {
+        console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
+        return null;
+      }
+      cachedMapboxToken = data.token as string;
+      return cachedMapboxToken;
+    })().finally(() => {
+      mapboxTokenPromise = null;
+    });
+  }
+  return mapboxTokenPromise;
+}
+
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
   { value: "live", label: "Live now", minutes: 2 },
   { value: "15m", label: "Laatste 15 min", minutes: 15 },
