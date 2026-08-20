@@ -165,6 +165,38 @@ const ACTIVITY_WEIGHTS = {
 // Time range options
 type TimeRange = "live" | "15m" | "1h" | "2.5h" | "5h" | "10h" | "24h" | "7d" | "14d" | "30d" | "90d";
 
+// ---------------------------------------------------------------------------
+// Mapbox token — module-scoped cache.
+//
+// The Pro page re-mounts this component whenever a toolbar filter changes, so
+// a component-local cache re-fetched `get-mapbox-token` on every filter click.
+// The token is page-session stable, so cache it at module scope and dedupe
+// concurrent requests through a single in-flight promise.
+// ---------------------------------------------------------------------------
+let cachedMapboxToken: string | null = null;
+let mapboxTokenPromise: Promise<string | null> | null = null;
+
+/** Hard ceiling for the whole map startup chain (token + style load). */
+const MAP_INIT_TIMEOUT_MS = 15_000;
+
+async function getMapboxToken(): Promise<string | null> {
+  if (cachedMapboxToken) return cachedMapboxToken;
+  if (!mapboxTokenPromise) {
+    mapboxTokenPromise = (async () => {
+      const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+      if (error || !data?.token) {
+        console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
+        return null;
+      }
+      cachedMapboxToken = data.token as string;
+      return cachedMapboxToken;
+    })().finally(() => {
+      mapboxTokenPromise = null;
+    });
+  }
+  return mapboxTokenPromise;
+}
+
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
   { value: "live", label: "Live now", minutes: 2 },
   { value: "15m", label: "Laatste 15 min", minutes: 15 },
@@ -231,10 +263,15 @@ export const VisitorWorldMap = ({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [mapInitAttempt, setMapInitAttempt] = useState(0);
   const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
-  const mapTokenRef = useRef<string | null>(null);
+  // Collapsed "Bron-audit" panel gate — see the deferred raw query below.
+  const [auditOpen, setAuditOpen] = useState(false);
+  // Token cache lives at module scope (see `getMapboxToken`), so the Pro page
+  // re-keying this component on every filter change does NOT re-fetch it.
+  const mapTokenRef = useRef<string | null>(cachedMapboxToken);
   const previousContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Reset perf marks once on mount (effect, not render — safe in StrictMode)
@@ -550,8 +587,14 @@ export const VisitorWorldMap = ({
       mapPerfMark("first-data-end");
       return all;
     },
-    // Live mode refreshes every 3 seconds for real-time feel
-    refetchInterval: timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 10000 : 30000,
+    // Live mode refreshes every 3 seconds for real-time feel. Historical
+    // windows re-fetch far less often — the underlying rows are a diagnostic
+    // input (markers come from canonical truth), so a 30s poll of a 20k-row
+    // page was pure mobile cost with no truth benefit.
+    refetchInterval:
+      timeRange === "live" ? 3000 : timeRange === "15m" || timeRange === "1h" ? 15000 : 120000,
+    staleTime: timeRange === "live" ? 0 : 60_000,
+    refetchOnWindowFocus: false,
   });
 
   // Combine fetched activities with live activities (for live mode only)
@@ -566,6 +609,12 @@ export const VisitorWorldMap = ({
   // honestly explain why visible counts shift when toggles change.
   const { data: rawActivities } = useQuery({
     queryKey: ["visitor-activities-raw", timeRange],
+    // Deferred: this 20k-row unfiltered pull only feeds the collapsed
+    // "Bron-audit" panel and its Pinterest drill-down. Fetching it on every
+    // page load was the single largest mobile payload with nothing rendered.
+    enabled: auditOpen,
+    staleTime: 120_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const timeRangeMs = getTimeRangeMs();
       const since = new Date(Date.now() - timeRangeMs).toISOString();
@@ -578,7 +627,7 @@ export const VisitorWorldMap = ({
       if (error) throw error;
       return (data ?? []) as unknown as AuditRow[];
     },
-    refetchInterval: 60000,
+    refetchInterval: auditOpen ? 300_000 : false,
   });
 
   // Helper to check if activity matches source filter
@@ -612,7 +661,10 @@ export const VisitorWorldMap = ({
     // Non-live windows use the hook default, which scales with window size
     // (>=72h aligns with the 5-minute server cache) — this prevents
     // overlapping expensive 7d refetches on mobile.
-    refetchIntervalMs: timeRange === "live" ? 10_000 : undefined,
+    // Live mode only needs canonical funnel FLAGS for overlap badges; the
+    // presence stream itself polls every 3s. Re-pulling the canonical
+    // envelope every 10s produced duplicate in-flight edge calls on mobile.
+    refetchIntervalMs: timeRange === "live" ? 60_000 : undefined,
   });
 
   // Canonical map model — the SAME truth session list powers counters, CSV,
@@ -912,6 +964,16 @@ export const VisitorWorldMap = ({
   useEffect(() => {
     if (!mapContainerRef.current || map.current) return;
 
+    let cancelled = false;
+    // Hard timeout: never leave a blank container without an explanation.
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      setMapError((prev) =>
+        prev ??
+        "Map did not finish loading within 15 seconds. Analytics data below is unaffected — retry to load the map.",
+      );
+    }, MAP_INIT_TIMEOUT_MS);
+
     const initMap = async () => {
       try {
         // Use cached token or fetch new one
@@ -919,23 +981,23 @@ export const VisitorWorldMap = ({
         
         if (!token) {
           mapPerfMark("token-fetch-start");
-          const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-          
-          if (error || !data?.token) {
-            console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
+          token = await getMapboxToken();
+
+          if (!token) {
             setMapError(
               "Map provider unavailable. Add MAPBOX_PUBLIC_TOKEN in Lovable Cloud → Settings → Secrets. " +
               "All other analytics on this dashboard continue to work."
             );
             return;
           }
-          token = data.token;
           mapTokenRef.current = token;
           mapPerfMark("token-fetch-end");
         } else {
           mapPerfMark("token-fetch-start");
           mapPerfMark("token-fetch-end");
         }
+
+        if (cancelled || !mapContainerRef.current || map.current) return;
 
         mapboxgl.accessToken = token;
 
@@ -973,7 +1035,13 @@ export const VisitorWorldMap = ({
             "high-color": "rgb(40, 40, 60)",
             "horizon-blend": 0.1,
           });
+          window.clearTimeout(timeoutId);
+          setMapError(null);
           setMapLoaded(true);
+        });
+
+        map.current.on("error", (e) => {
+          console.error("[VisitorWorldMap] mapbox error:", e?.error ?? e);
         });
 
         // Track user interaction
@@ -989,7 +1057,22 @@ export const VisitorWorldMap = ({
     };
 
     initMap();
-  }, [mapContainerReady]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [mapContainerReady, mapInitAttempt]);
+
+  /** Retry the full map startup chain after a timeout / provider error. */
+  const retryMapInit = useCallback(() => {
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+    setMapLoaded(false);
+    setMapError(null);
+    setMapInitAttempt((n) => n + 1);
+  }, []);
 
   // Cleanup map on unmount
   useEffect(() => {
@@ -2231,13 +2314,18 @@ export const VisitorWorldMap = ({
             <div className="text-center text-muted-foreground">
               <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p className="mb-4">{mapError}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleFullscreen(false)}
-              >
-                Terug
-              </Button>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="default" size="sm" onClick={retryMapInit} data-testid="vwm-map-retry-fullscreen">
+                  Retry map
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleFullscreen(false)}
+                >
+                  Terug
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -2467,7 +2555,11 @@ export const VisitorWorldMap = ({
             </details>
 
             {/* Enriched breakdown — raw / unfiltered, exposes internal/bot/preview splits */}
-            <details className="ml-2 text-xs border border-amber-500/40 rounded-md bg-amber-500/5" data-testid="source-audit-breakdown">
+            <details
+              className="ml-2 text-xs border border-amber-500/40 rounded-md bg-amber-500/5"
+              data-testid="source-audit-breakdown"
+              onToggle={(e) => setAuditOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
               <summary className="cursor-pointer px-2 py-1.5 select-none font-medium">
                 Bron-audit (verrijkt, ongefilterd)
               </summary>
@@ -3095,10 +3187,16 @@ export const VisitorWorldMap = ({
             </div>
 
             {mapError ? (
-              <div className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}>
-                <div className="text-center text-muted-foreground">
+              <div
+                data-testid="vwm-map-error"
+                className={`${isFullscreen ? "h-full" : "h-[500px]"} flex items-center justify-center bg-muted/50`}
+              >
+                <div className="text-center text-muted-foreground px-4">
                   <Globe className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>{mapError}</p>
+                  <p className="mb-3 max-w-sm text-sm">{mapError}</p>
+                  <Button variant="default" size="sm" onClick={retryMapInit} data-testid="vwm-map-retry">
+                    Retry map
+                  </Button>
                 </div>
               </div>
             ) : (

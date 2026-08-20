@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 import { Leaf, DollarSign, Users, ShieldOff, Bot, HelpCircle, Info } from "lucide-react";
 import {
   useTrafficClassSplit,
@@ -20,7 +21,7 @@ import {
  * Drop-in for any dashboard — no props required.
  */
 export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean }) {
-  const { data, isLoading, error } = useTrafficClassSplit();
+  const { data, isLoading, error, refetch } = useTrafficClassSplit();
 
   return (
     <Card>
@@ -34,12 +35,20 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isLoading ? (
-          <div className="grid grid-cols-3 gap-2">
-            <Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" />
-          </div>
-        ) : error ? (
-          <div className="text-sm text-rose-400">Failed to load traffic split: {(error as Error).message}</div>
+        {isLoading || error ? (
+          <PanelLoadingState
+            isLoading={isLoading}
+            isError={!!error}
+            error={error}
+            onRetry={() => refetch()}
+            label="Organic vs Paid split"
+            testId="traffic-class-split-loading"
+            skeleton={
+              <div className="grid grid-cols-3 gap-2">
+                <Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" />
+              </div>
+            }
+          />
         ) : !data ? null : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

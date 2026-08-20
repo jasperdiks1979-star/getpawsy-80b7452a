@@ -92,8 +92,10 @@ export default function VisitorWorldMapProPage() {
 
   // Canonical truth set for live↔canonical overlap. Read-only; never
   // contributes to KPI counters (those are owned by ProKpiHeader/useAnalyticsTruth).
+  // Hours = 1 so this shares ONE React-Query key with the map's live-mode
+  // canonical read instead of firing a second, wider window query.
   const truth = useAnalyticsTruth({
-    hours: 24,
+    hours: 1,
     geo: state.usOnly ? "US" : "all",
     enabled: isLive,
     refetchIntervalMs: 60_000,
@@ -187,17 +189,29 @@ export default function VisitorWorldMapProPage() {
               legacy KPI grid above stays intact so no admin loses context
               during rollout. */}
           <div className="mb-4">
-            <V2EnvelopeBadge
-              hours={proHoursForRange(state.timeRange)}
-              geo={state.usOnly ? "US" : "all"}
-              label="Traffic quality (Pro map)"
-            />
+            {isLive ? (
+              <div
+                data-testid="vwm-pro-live-presence-only"
+                className="rounded-md border border-dashed p-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Live presence only — canonical traffic-quality and Organic/Paid
+                panels are disabled while the map is in Live now.
+              </div>
+            ) : (
+              <V2EnvelopeBadge
+                hours={proHoursForRange(state.timeRange)}
+                geo={state.usOnly ? "US" : "all"}
+                label="Traffic quality (Pro map)"
+              />
+            )}
           </div>
 
           {/* Organic / Paid / Total split — canonical, excludes internal & bot */}
-          <div className="mb-4">
-            <TrafficClassSplitPanel />
-          </div>
+          {!isLive && (
+            <div className="mb-4">
+              <TrafficClassSplitPanel />
+            </div>
+          )}
 
           {/* Desktop grid: left filters | map | right feed.
               On <lg the columns collapse to a single stack so the mobile

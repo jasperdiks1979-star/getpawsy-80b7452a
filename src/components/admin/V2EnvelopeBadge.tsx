@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
+import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
 /**
  * Shared v2 envelope indicator + compact bucket strip for internal admin
@@ -17,6 +18,8 @@ export interface V2EnvelopeBadgeProps {
   geo?: "all" | "US";
   compact?: boolean;
   label?: string;
+  /** Set false in Live mode so no canonical window query is fired. */
+  enabled?: boolean;
 }
 
 function fmt(n: number | null | undefined): string {
@@ -24,8 +27,8 @@ function fmt(n: number | null | undefined): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
-export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: V2EnvelopeBadgeProps) {
-  const { data, error, isError, isLoading, refetch } = useAnalyticsTruth({ hours, geo });
+export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label, enabled = true }: V2EnvelopeBadgeProps) {
+  const { data, error, isError, isLoading, refetch } = useAnalyticsTruth({ hours, geo, enabled });
   const m = useMemo(() => getCanonicalAnalyticsMetrics(data as any), [data]);
   const useV2 = m?.envelope_resolved === "v2";
 
@@ -92,7 +95,13 @@ export function V2EnvelopeBadge({ hours, geo = "all", compact = false, label }: 
           </button>
         </div>
       ) : isLoading ? (
-        <div className="h-10 animate-pulse rounded bg-muted/50" />
+        <PanelLoadingState
+          isLoading
+          onRetry={() => refetch()}
+          label="Traffic quality"
+          testId="v2-envelope-loading"
+          skeleton={<div className="h-10 animate-pulse rounded bg-muted/50" />}
+        />
       ) : useV2 && cards.length ? (
         <div className={`grid gap-2 ${compact ? "grid-cols-3 sm:grid-cols-5 lg:grid-cols-9" : "grid-cols-3 sm:grid-cols-5 md:grid-cols-9"}`}>
           {cards.map((c) => (
