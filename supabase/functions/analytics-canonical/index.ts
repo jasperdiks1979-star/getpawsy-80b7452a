@@ -1048,9 +1048,16 @@ Deno.serve(async (req) => {
           cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours,
         }));
       }
-      if (ageMs <= maxStaleMsFor(hours)) {
+      const staleServable = ageMs <= maxStaleMsFor(hours) || (!internalTrusted && hours >= 24);
+      if (staleServable) {
         // Serve last-known-good immediately, rebuild in the background under
         // a single-flight lock so concurrent admin loads cannot stampede.
+        // For browser (non-internal) reads of the expensive windows the stale
+        // bound is intentionally unlimited: a marked, slightly old payload is
+        // strictly better for the admin than a 60–150s synchronous rebuild on
+        // a phone. Age is always surfaced via `cache_age_seconds`/`cache_stale`
+        // so no number is ever presented as fresher than it is, and the warmer
+        // owns the actual rebuild.
         const bg = (async () => {
           if (!(await acquireLock(key))) return;
           try { await refreshKey(opts); }
@@ -1063,7 +1070,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cold: nothing usable cached — compute inline and persist.
+    // Cold: nothing usable cached. Only the warmer (internal) and the cheap 1h
+    // window may compute inline; a browser request for a 24h+ window kicks the
+    // rebuild into the background and reports CACHE_NOT_READY instead of
+    // holding a mobile connection open for minutes.
+    if (!internalTrusted && hours >= 24) {
+      const bg = (async () => {
+        if (!(await acquireLock(key))) return;
+        try { await refreshKey(opts); }
+        catch (e) { await releaseLock(key, (e as Error).message); }
+      })();
+      try { (globalThis as any).EdgeRuntime?.waitUntil?.(bg); } catch { /* noop */ }
+      return json({
+        ok: false,
+        error: "CACHE_NOT_READY",
+        cache_status: "warming",
+        hours,
+        geo,
+        retry_after_seconds: 30,
+      }, 202);
+    }
     const payload = await refreshKey(opts);
     cache.set(key, { at: Date.now(), body: payload });
     return json(withCacheMeta(payload, {

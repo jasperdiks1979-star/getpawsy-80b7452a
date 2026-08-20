@@ -52,6 +52,22 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   let body: Record<string, unknown> | null = null;
   if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
+
+  // Single-combo mode. A whole tier can cost several minutes of sequential
+  // compute — more than the edge background budget — so cron now schedules one
+  // invocation per (hours, geo) combo and each run refreshes exactly one key.
+  // Tier mode is kept for manual/legacy calls.
+  const rawHours = body?.hours ?? url.searchParams.get("hours");
+  const rawGeo = String(body?.geo ?? url.searchParams.get("geo") ?? "").trim();
+  const singleHours = rawHours == null || rawHours === "" ? null : Number(rawHours);
+  if (singleHours != null) {
+    if (!Number.isFinite(singleHours) || singleHours <= 0 || (rawGeo !== "US" && rawGeo !== "all")) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid hours/geo", hours: rawHours, geo: rawGeo }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  }
   const requested = String(body?.tier ?? url.searchParams.get("tier") ?? "hot").toLowerCase();
   if (!WARMER_TIERS.includes(requested as WarmerTier)) {
     return new Response(
@@ -61,9 +77,13 @@ Deno.serve(async (req) => {
   }
   const tier = requested as WarmerTier;
 
+  const combos = singleHours != null
+    ? [{ hours: singleHours, geo: rawGeo as "US" | "all" }]
+    : null;
+
   const run = async () => {
     const results: Array<Record<string, unknown>> = [];
-    for (const combo of combosForTier(tier)) {
+    for (const combo of combos ?? combosForTier(tier)) {
       const started = Date.now();
       try {
         const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
