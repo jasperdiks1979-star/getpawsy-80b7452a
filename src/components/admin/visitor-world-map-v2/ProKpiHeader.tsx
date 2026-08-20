@@ -59,7 +59,7 @@ function filteredSessions(rows: TruthSession[], state: ProToolbarState): TruthSe
 
 export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   const isLive = state.timeRange === "live";
-  const { data: truth, isLoading, isError, error, refetch } = useAnalyticsTruth({
+  const { data: truth, isLoading, isError, error, refetch, failureCount } = useAnalyticsTruth({
     hours: proHoursForRange(state.timeRange),
     geo: state.usOnly ? "US" : "all",
     // PHASE 3 — live mode is presence-only. Never fire a canonical window
