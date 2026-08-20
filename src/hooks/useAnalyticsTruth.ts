@@ -131,10 +131,19 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
     refetchInterval: opts.refetchIntervalMs ?? defaultInterval,
+    // Bounded retries: a cold cache legitimately needs a second attempt, but a
+    // panel must never sit in the "warming" state forever. After
+    // ANALYTICS_TRUTH_MAX_ATTEMPTS attempts the query fails and the UI shows an
+    // explicit "Still warming — Retry now" surface instead of a spinner.
+    retry: ANALYTICS_TRUTH_MAX_ATTEMPTS - 1,
+    retryDelay: (attempt) => Math.min(2_000 * 2 ** attempt, 8_000),
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("analytics-canonical", {
-        body: { hours, geo },
-      });
+      const { data, error } = await withAttemptTimeout(
+        supabase.functions.invoke("analytics-canonical", {
+          body: { hours, geo },
+        }),
+        ANALYTICS_TRUTH_ATTEMPT_TIMEOUT_MS,
+      );
       if (error) throw new Error(error.message || "analytics-canonical failed");
       if (!data?.ok) throw new Error(data?.error || "analytics-canonical not ok");
       // Backward-compat: older cached responses may lack `sessions[]`. Coerce
@@ -144,6 +153,7 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
     },
   });
 }
+
 
 // -------------------------------------------------------------------------
 // Client-side derived aggregates. Every dashboard that filters the truth
