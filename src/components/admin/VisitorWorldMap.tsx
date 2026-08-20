@@ -947,6 +947,16 @@ export const VisitorWorldMap = ({
   useEffect(() => {
     if (!mapContainerRef.current || map.current) return;
 
+    let cancelled = false;
+    // Hard timeout: never leave a blank container without an explanation.
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      setMapError((prev) =>
+        prev ??
+        "Map did not finish loading within 15 seconds. Analytics data below is unaffected — retry to load the map.",
+      );
+    }, MAP_INIT_TIMEOUT_MS);
+
     const initMap = async () => {
       try {
         // Use cached token or fetch new one
@@ -954,23 +964,23 @@ export const VisitorWorldMap = ({
         
         if (!token) {
           mapPerfMark("token-fetch-start");
-          const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-          
-          if (error || !data?.token) {
-            console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
+          token = await getMapboxToken();
+
+          if (!token) {
             setMapError(
               "Map provider unavailable. Add MAPBOX_PUBLIC_TOKEN in Lovable Cloud → Settings → Secrets. " +
               "All other analytics on this dashboard continue to work."
             );
             return;
           }
-          token = data.token;
           mapTokenRef.current = token;
           mapPerfMark("token-fetch-end");
         } else {
           mapPerfMark("token-fetch-start");
           mapPerfMark("token-fetch-end");
         }
+
+        if (cancelled || !mapContainerRef.current || map.current) return;
 
         mapboxgl.accessToken = token;
 
@@ -1008,7 +1018,13 @@ export const VisitorWorldMap = ({
             "high-color": "rgb(40, 40, 60)",
             "horizon-blend": 0.1,
           });
+          window.clearTimeout(timeoutId);
+          setMapError(null);
           setMapLoaded(true);
+        });
+
+        map.current.on("error", (e) => {
+          console.error("[VisitorWorldMap] mapbox error:", e?.error ?? e);
         });
 
         // Track user interaction
@@ -1024,7 +1040,22 @@ export const VisitorWorldMap = ({
     };
 
     initMap();
-  }, [mapContainerReady]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [mapContainerReady, mapInitAttempt]);
+
+  /** Retry the full map startup chain after a timeout / provider error. */
+  const retryMapInit = useCallback(() => {
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
+    setMapLoaded(false);
+    setMapError(null);
+    setMapInitAttempt((n) => n + 1);
+  }, []);
 
   // Cleanup map on unmount
   useEffect(() => {
