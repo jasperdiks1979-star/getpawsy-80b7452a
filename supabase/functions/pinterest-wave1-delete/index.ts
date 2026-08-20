@@ -82,6 +82,17 @@ Deno.serve(async (req) => {
       return json({ ok: r.ok, status: r.status, data: j });
     }
 
+    // READ-ONLY: bulk multi-pin analytics (max 100 ids per call)
+    if (action === "pins_analytics_bulk") {
+      const ids = (body.pin_ids ?? []) as string[];
+      const u = `${PIN_API}/pins/analytics?pin_ids=${ids.join(",")}` +
+        `&start_date=${body.start_date}&end_date=${body.end_date}` +
+        `&metric_types=IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE&app_types=ALL`;
+      const r = await fetch(u, { headers: auth });
+      const j = await r.json().catch(() => ({}));
+      return json({ ok: r.ok, status: r.status, retry_after: r.headers.get("retry-after"), data: j });
+    }
+
     if (action === "list_boards") {
       const items: unknown[] = [];
       let bm = "";
@@ -111,6 +122,32 @@ Deno.serve(async (req) => {
         if (!bm) break;
       }
       return json({ ok: true, total, ids });
+    }
+
+    // READ-ONLY: full pin listing with metadata (id, created_at, link, board_id, title)
+    if (action === "list_pins_full") {
+      const items: Record<string, unknown>[] = [];
+      let bm = "";
+      for (let i = 0; i < 40; i++) {
+        const r = await fetch(
+          `${PIN_API}/pins?page_size=100&pin_metrics=false${bm ? `&bookmark=${encodeURIComponent(bm)}` : ""}`,
+          { headers: auth },
+        );
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return json({ ok: false, status: r.status, j, count: items.length });
+        for (const p of (j.items ?? []) as Record<string, unknown>[]) {
+          items.push({
+            id: p.id,
+            created_at: p.created_at,
+            link: p.link,
+            board_id: p.board_id,
+            title: p.title,
+          });
+        }
+        bm = j.bookmark ?? "";
+        if (!bm) break;
+      }
+      return json({ ok: true, count: items.length, pins: items });
     }
 
     if (action === "delete_pin") {
