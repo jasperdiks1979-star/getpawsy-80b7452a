@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { PinterestTrafficWidget } from "./widgets/PinterestTrafficWidget";
+import { PinterestTrafficPanel } from "./widgets/PinterestTrafficPanel";
+import { ANALYTICS_TRUTH_MAX_ATTEMPTS } from "@/hooks/useAnalyticsTruth";
 import { V2EnvelopeBadge } from "./V2EnvelopeBadge";
 import { mapPerfMark, resetMapPerf } from "@/lib/map-perf-tracker";
 import { MapPerfDashboard } from "./MapPerfDashboard";
@@ -655,7 +656,14 @@ export const VisitorWorldMap = ({
   // ------------------------------------------------------------------
   const truthHoursRaw = getTimeRangeMs() / 3_600_000;
   const truthHours = Math.max(1, Math.round(truthHoursRaw)); // canonical fn floors sub-hour ranges to 1h
-  const { data: truth } = useAnalyticsTruth({
+  const {
+    data: truth,
+    isLoading: truthLoading,
+    isError: truthError,
+    error: truthErrorObj,
+    refetch: refetchTruth,
+    failureCount: truthFailureCount,
+  } = useAnalyticsTruth({
     hours: truthHours,
     geo: usOnly ? "US" : "all",
     // Non-live windows use the hook default, which scales with window size
@@ -3391,8 +3399,21 @@ export const VisitorWorldMap = ({
                 )}
               </div>
 
-              {/* Pinterest Traffic Widget */}
-              <PinterestTrafficWidget />
+              
+              {/* Pinterest Traffic — derived from the SAME canonical payload */}
+              <PinterestTrafficPanel
+                sessions={truth?.sessions}
+                isLoading={truthLoading}
+                isError={truthError}
+                error={truthErrorObj}
+                onRetry={() => refetchTruth()}
+                attempt={Math.min(truthFailureCount + 1, ANALYTICS_TRUTH_MAX_ATTEMPTS)}
+                maxAttempts={ANALYTICS_TRUTH_MAX_ATTEMPTS}
+                usOnly={usOnly}
+                excludeInternal={excludeInternal}
+                windowLabel={timeRange}
+              />
+
 
               {/* Divider */}
               <div className="border-t border-border" />
