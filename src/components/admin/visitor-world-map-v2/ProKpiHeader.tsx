@@ -177,11 +177,19 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           </button>
         </div>
       ) : isLoading || !derived ? (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-md bg-muted/50" />
-          ))}
-        </div>
+        <PanelLoadingState
+          isLoading
+          onRetry={() => refetch()}
+          label="Canonical KPIs"
+          testId="vwm-pro-kpi-loading"
+          skeleton={
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-16 animate-pulse rounded-md bg-muted/50" />
+              ))}
+            </div>
+          }
+        />
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
           {cards.map((c) => (
