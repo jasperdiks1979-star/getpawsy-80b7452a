@@ -10,7 +10,7 @@ import type { TruthSession } from "@/hooks/useAnalyticsTruth";
  * Pinterest Traffic — DERIVED panel.
  *
  * Consumes the shared `analytics-canonical` payload already fetched for the
- * Visitor World Map. It performs NO request of its own: no supabase query,
+ * Visitor World Map. It performs NO request of its own: no database query,
  * no edge call, no independent timeout, no fallback path. State machine:
  *
  *   shared payload loading/erroring -> shared PanelLoadingState (retry = shared retry)
