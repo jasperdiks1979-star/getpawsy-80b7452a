@@ -3400,7 +3400,20 @@ export const VisitorWorldMap = ({
               </div>
 
               {/* Pinterest Traffic Widget */}
-              <PinterestTrafficWidget />
+              {/* Pinterest Traffic — derived from the SAME canonical payload */}
+              <PinterestTrafficPanel
+                sessions={truth?.sessions}
+                isLoading={truthLoading}
+                isError={truthError}
+                error={truthErrorObj}
+                onRetry={() => refetchTruth()}
+                attempt={Math.min(truthFailureCount + 1, ANALYTICS_TRUTH_MAX_ATTEMPTS)}
+                maxAttempts={ANALYTICS_TRUTH_MAX_ATTEMPTS}
+                usOnly={usOnly}
+                excludeInternal={excludeInternal}
+                windowLabel={timeRange}
+              />
+
 
               {/* Divider */}
               <div className="border-t border-border" />
