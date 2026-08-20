@@ -607,6 +607,12 @@ export const VisitorWorldMap = ({
   // honestly explain why visible counts shift when toggles change.
   const { data: rawActivities } = useQuery({
     queryKey: ["visitor-activities-raw", timeRange],
+    // Deferred: this 20k-row unfiltered pull only feeds the collapsed
+    // "Bron-audit" panel and its Pinterest drill-down. Fetching it on every
+    // page load was the single largest mobile payload with nothing rendered.
+    enabled: auditOpen,
+    staleTime: 120_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const timeRangeMs = getTimeRangeMs();
       const since = new Date(Date.now() - timeRangeMs).toISOString();
@@ -619,7 +625,7 @@ export const VisitorWorldMap = ({
       if (error) throw error;
       return (data ?? []) as unknown as AuditRow[];
     },
-    refetchInterval: 60000,
+    refetchInterval: auditOpen ? 300_000 : false,
   });
 
   // Helper to check if activity matches source filter
