@@ -103,6 +103,33 @@ export interface UseAnalyticsTruthOptions {
   enabled?: boolean;
 }
 
+/** Hard cap on attempts per query instance (initial + bounded retries). */
+export const ANALYTICS_TRUTH_MAX_ATTEMPTS = 3;
+/** Per-attempt deadline; a cold window that exceeds this is retried, not awaited forever. */
+export const ANALYTICS_TRUTH_ATTEMPT_TIMEOUT_MS = 45_000;
+
+export class AnalyticsWarmingTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`analytics-canonical did not respond within ${Math.round(ms / 1000)}s (cache still warming)`);
+    this.name = "AnalyticsWarmingTimeoutError";
+  }
+}
+
+async function withAttemptTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      p,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new AnalyticsWarmingTimeoutError(ms)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+
 /**
  * Sole entry point for canonical analytics. Returns totals + per-session
  * detail. Every derived number (counters, badges, CSV rows, Summary lines,
