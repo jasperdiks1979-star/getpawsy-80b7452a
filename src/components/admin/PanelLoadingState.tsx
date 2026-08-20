@@ -69,17 +69,18 @@ export function PanelLoadingState({
         <AlertTriangle className="h-4 w-4 shrink-0" />
         <span>
           {isError
-            ? `${label} unavailable — this is an error, not zero traffic.`
+            ? `${label} unavailable after ${maxAttempts ?? "all"} attempts — this is an error, not zero traffic.`
             : panelPhaseLabel("timeout", label)}{" "}
           {(error as Error)?.message ?? ""}
         </span>
         {onRetry && (
           <button
             type="button"
+            data-testid={`${testId}-retry`}
             onClick={onRetry}
             className="ml-auto inline-flex items-center gap-1 rounded border border-rose-500/40 px-2 py-0.5 font-semibold"
           >
-            <RefreshCw className="h-3 w-3" /> Retry
+            <RefreshCw className="h-3 w-3" /> Retry now
           </button>
         )}
       </div>
@@ -98,16 +99,21 @@ export function PanelLoadingState({
         ) : (
           <AlertTriangle className="h-4 w-4 shrink-0" />
         )}
-        <span>{panelPhaseLabel(phase, label)}</span>
+        <span>
+          {panelPhaseLabel(phase, label)}
+          {attemptSuffix(attempt, maxAttempts)}
+        </span>
         {onRetry && (
           <button
             type="button"
+            data-testid={`${testId}-retry`}
             onClick={onRetry}
             className="ml-auto inline-flex items-center gap-1 rounded border border-amber-500/40 px-2 py-0.5 font-semibold"
           >
-            <RefreshCw className="h-3 w-3" /> Retry
+            <RefreshCw className="h-3 w-3" /> Retry now
           </button>
         )}
+
       </div>
     );
   }
