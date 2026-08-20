@@ -2544,7 +2544,11 @@ export const VisitorWorldMap = ({
             </details>
 
             {/* Enriched breakdown — raw / unfiltered, exposes internal/bot/preview splits */}
-            <details className="ml-2 text-xs border border-amber-500/40 rounded-md bg-amber-500/5" data-testid="source-audit-breakdown">
+            <details
+              className="ml-2 text-xs border border-amber-500/40 rounded-md bg-amber-500/5"
+              data-testid="source-audit-breakdown"
+              onToggle={(e) => setAuditOpen((e.currentTarget as HTMLDetailsElement).open)}
+            >
               <summary className="cursor-pointer px-2 py-1.5 select-none font-medium">
                 Bron-audit (verrijkt, ongefilterd)
               </summary>
