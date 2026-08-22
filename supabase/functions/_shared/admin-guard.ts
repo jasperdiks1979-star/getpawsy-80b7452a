@@ -12,6 +12,36 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
+// Bound the GoTrue round trip: under saturation it has taken 10–33s, which
+// blows the caller's own request budget.
+const AUTH_TIMEOUT_MS = 6_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("auth_timeout")), ms)),
+  ]);
+}
+
+// Short-lived per-isolate memo of validated tokens so a burst of dashboard
+// panels does not hammer GoTrue with identical validations.
+type CachedUser = { id: string; email: string | null };
+const userCache = new Map<string, { at: number; user: CachedUser }>();
+const USER_CACHE_TTL_MS = 60_000;
+
+function getCachedUser(token: string): CachedUser | null {
+  const hit = userCache.get(token);
+  if (hit && Date.now() - hit.at < USER_CACHE_TTL_MS) return hit.user;
+  if (hit) userCache.delete(token);
+  return null;
+}
+
+function setCachedUser(token: string, user: CachedUser) {
+  if (userCache.size > 200) userCache.clear();
+  userCache.set(token, { at: Date.now(), user });
+}
+
+
 // Lazily-instantiated service-role client used exclusively for writing audit rows.
 let auditClient: ReturnType<typeof createClient> | null = null;
 function getAuditClient() {
@@ -114,14 +144,61 @@ export async function requireInternalOrAdmin(req: Request): Promise<Response | n
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
-    const { data: u } = await userClient.auth.getUser();
-    if (!u?.user) {
+
+    // Resolve the user from the JWT. GoTrue can be slow/saturated; a transport
+    // timeout is NOT proof of an invalid token, so retry once and, if the auth
+    // service never answers, return a retryable 503 instead of a misleading
+    // 401 (which is what took the admin analytics dashboards down).
+    const token = auth.slice(7).trim();
+    const cachedUser = getCachedUser(token);
+    let resolvedUser = cachedUser;
+    let authTransportError: string | null = null;
+    if (!resolvedUser) {
+      for (let attempt = 0; attempt < 2 && !resolvedUser; attempt++) {
+        try {
+          const res = await withTimeout(userClient.auth.getUser(), AUTH_TIMEOUT_MS);
+          if (res?.data?.user) {
+            resolvedUser = { id: res.data.user.id, email: res.data.user.email ?? null };
+            authTransportError = null;
+            break;
+          }
+          const msg = (res as any)?.error?.message ?? "";
+          // A definitive rejection from GoTrue (bad/expired token) — do not retry.
+          if (msg && !/fetch|network|timeout|abort|502|503|504/i.test(msg)) {
+            authTransportError = null;
+            break;
+          }
+          authTransportError = msg || "auth_no_response";
+        } catch (e) {
+          authTransportError = (e as Error)?.message ?? "auth_timeout";
+        }
+      }
+      if (resolvedUser) setCachedUser(token, resolvedUser);
+    }
+
+    if (!resolvedUser && authTransportError) {
+      console.error("[admin-guard] auth.getUser transport failure", authTransportError);
+      audit({
+        auth_mode: "admin_jwt",
+        outcome: "error",
+        status_code: 503,
+        reason: "auth_unavailable",
+        metadata: { auth_error: authTransportError },
+      });
+      return new Response(JSON.stringify({ ok: false, error: "auth_unavailable", retryable: true }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "5" },
+      });
+    }
+    if (!resolvedUser) {
       audit({ auth_mode: "admin_jwt", outcome: "unauthorized", status_code: 401, reason: "invalid_jwt" });
       return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const u = { user: resolvedUser };
+
     const adminClient = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: rpcIsAdmin, error: rpcErr } = await adminClient.rpc("has_role", {
       _user_id: u.user.id,

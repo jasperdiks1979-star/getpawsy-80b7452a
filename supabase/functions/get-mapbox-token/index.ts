@@ -32,14 +32,42 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    
-    if (authError || !user) {
+    // GoTrue can be slow under load; a transport timeout is not proof of an
+    // invalid token. Retry once, then report a retryable 503 instead of 401.
+    const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error("auth_timeout")), ms)),
+      ]);
+
+    let user: { id: string } | null = null;
+    let transportError: string | null = null;
+    for (let attempt = 0; attempt < 2 && !user; attempt++) {
+      try {
+        const res = await withTimeout(supabaseClient.auth.getUser(), 6000);
+        if (res?.data?.user) { user = res.data.user; transportError = null; break; }
+        const msg = res?.error?.message ?? "";
+        if (msg && !/fetch|network|timeout|abort|502|503|504/i.test(msg)) { transportError = null; break; }
+        transportError = msg || "auth_no_response";
+      } catch (e) {
+        transportError = (e as Error)?.message ?? "auth_timeout";
+      }
+    }
+
+    if (!user && transportError) {
+      return new Response(
+        JSON.stringify({ error: "auth_unavailable", retryable: true }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "5" } }
+      );
+    }
+
+    if (!user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
 
     // Check if user is admin
     const { data: roleData } = await supabaseClient
