@@ -12,6 +12,36 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
+// Bound the GoTrue round trip: under saturation it has taken 10–33s, which
+// blows the caller's own request budget.
+const AUTH_TIMEOUT_MS = 6_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("auth_timeout")), ms)),
+  ]);
+}
+
+// Short-lived per-isolate memo of validated tokens so a burst of dashboard
+// panels does not hammer GoTrue with identical validations.
+type CachedUser = { id: string; email: string | null };
+const userCache = new Map<string, { at: number; user: CachedUser }>();
+const USER_CACHE_TTL_MS = 60_000;
+
+function getCachedUser(token: string): CachedUser | null {
+  const hit = userCache.get(token);
+  if (hit && Date.now() - hit.at < USER_CACHE_TTL_MS) return hit.user;
+  if (hit) userCache.delete(token);
+  return null;
+}
+
+function setCachedUser(token: string, user: CachedUser) {
+  if (userCache.size > 200) userCache.clear();
+  userCache.set(token, { at: Date.now(), user });
+}
+
+
 // Lazily-instantiated service-role client used exclusively for writing audit rows.
 let auditClient: ReturnType<typeof createClient> | null = null;
 function getAuditClient() {
