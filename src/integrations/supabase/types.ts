@@ -74933,6 +74933,21 @@ export type Database = {
         }
         Relationships: []
       }
+      canonical_acquisition_funnel_24h: {
+        Row: {
+          acquisition_bucket: string | null
+          add_to_cart: number | null
+          checkout_started: number | null
+          commercial_included: boolean | null
+          page_views: number | null
+          product_views: number | null
+          purchases: number | null
+          revenue_cents: number | null
+          sessions: number | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
       canonical_attribution: {
         Row: {
           country: string | null
@@ -75143,6 +75158,26 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           total_amount?: number | null
+        }
+        Relationships: []
+      }
+      canonical_sessions_commercial_v2: {
+        Row: {
+          acquisition_bucket: string | null
+          classification_reason: string | null
+          classified_channel: string | null
+          commercial_included: boolean | null
+          country: string | null
+          device: string | null
+          exclude_from_commercial: boolean | null
+          first_seen_at: string | null
+          is_bot: boolean | null
+          is_internal: boolean | null
+          last_seen_at: string | null
+          session_id: string | null
+          technical_path: boolean | null
+          traffic_class_v2: string | null
+          visitor_id: string | null
         }
         Relationships: []
       }
