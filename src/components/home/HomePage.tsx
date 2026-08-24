@@ -16,6 +16,8 @@ import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
 import { UsOnlyTrustStrip } from "@/components/home/UsOnlyTrustStrip";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
+import { HeroProductSpotlight } from "@/components/home/HeroProductSpotlight";
+
 import { FeaturedCategories } from "@/components/home/FeaturedCategories";
 import { ProductRail } from "@/components/home/ProductRail";
 import { useQuery } from "@tanstack/react-query";
@@ -200,8 +202,12 @@ const HomePage = () => {
         </>
       )}
 
+      {/* 1d. First-Sale Strike — single clear, affordable entry purchase */}
+      <HeroProductSpotlight />
+
       {/* 2. Benefits */}
       <BenefitsSection />
+
 
       {/* 2b. Shop by category — real storefront navigation for a multi-product store */}
       <FeaturedCategories />

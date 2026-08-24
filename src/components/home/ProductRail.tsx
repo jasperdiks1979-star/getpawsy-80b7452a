@@ -38,9 +38,14 @@ export function ProductRail({
         .eq('is_active', true)
         .gt('stock', 0)
         .gte('price', 15)
-        .lte('price', 350)
+        // First-Sale Strike: cap the homepage rails at an approachable price
+        // band and lead with the most affordable in-stock items. The rails
+        // previously sorted price DESC, so a first-time visitor met a $397
+        // stroller before anything buyable on impulse.
+        .lte('price', 150)
         .not('is_duplicate', 'is', true)
-        .order('price', { ascending: false })
+        .order('price', { ascending: true })
+
         .limit(limit);
       if (species) q = q.eq('primary_species', species);
       const { data } = await q;
