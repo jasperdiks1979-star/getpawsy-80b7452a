@@ -200,8 +200,12 @@ const HomePage = () => {
         </>
       )}
 
+      {/* 1d. First-Sale Strike — single clear, affordable entry purchase */}
+      <HeroProductSpotlight />
+
       {/* 2. Benefits */}
       <BenefitsSection />
+
 
       {/* 2b. Shop by category — real storefront navigation for a multi-product store */}
       <FeaturedCategories />
