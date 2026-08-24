@@ -71,7 +71,10 @@ export function LiveDiagnosticsPanel({
         <dt>Geo lookup failures</dt><dd className="text-foreground">{diagnostics.geoLookupFailures}</dd>
       </dl>
       <p className="mt-2 text-[10px] text-muted-foreground">
-        Presence only. Canonical KPIs remain unaffected.
+        <strong>Live presence</strong> (&lt;120s heartbeat) is a separate realtime system from{" "}
+        <strong>canonical analytics</strong> (historical commercial truth). The join count above is
+        diagnostic only — the two systems are not equivalent populations and presence never
+        contributes to business KPIs.
       </p>
     </div>
   );
