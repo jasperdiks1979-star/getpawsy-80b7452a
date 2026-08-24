@@ -718,7 +718,7 @@ const GuidePage = () => {
         })()}
 
         {/* Answer-first commercial block for proven-discovery landing pages */}
-        <PriorityPickBlock slug={guide.slug} />
+        <PriorityPickBlock slug={guide.slug} hideAnswer={!!guide.quickAnswer} />
 
 
 

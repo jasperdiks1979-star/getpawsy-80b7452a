@@ -51,15 +51,19 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
   });
 
   if (!pick) return null;
+  if (hideAnswer && !product) return null;
 
   return (
     <section className="mb-10 rounded-2xl border border-border bg-card overflow-hidden">
-      <div className="p-5 md:p-6">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-primary mb-2">
-          Short answer
-        </h2>
-        <p className="text-base md:text-lg text-foreground leading-relaxed">{pick.answer}</p>
-      </div>
+      {!hideAnswer && (
+        <div className="p-5 md:p-6">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-primary mb-2">
+            Short answer
+          </h2>
+          <p className="text-base md:text-lg text-foreground leading-relaxed">{pick.answer}</p>
+        </div>
+      )}
+
 
       {product && (
         <div className="border-t border-border bg-muted/30 p-5 md:p-6 flex flex-col sm:flex-row gap-4">
