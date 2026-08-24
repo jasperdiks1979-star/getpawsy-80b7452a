@@ -51,7 +51,8 @@ export function LiveDiagnosticsPanel({
             <dt>Live clusters</dt><dd className="text-foreground">{liveClusters}</dd>
           </>
         )}
-        <dt>Live↔canonical overlap</dt><dd className="text-foreground">{liveCanonicalOverlap}</dd>
+        <dt>Sessions also seen in canonical (session_id join)</dt>
+        <dd className="text-foreground">{liveCanonicalOverlap}</dd>
         <dt>Selected visitor</dt>
         <dd className="text-foreground">
           {selectedLiveSessionId ? `${selectedLiveSessionId.slice(0, 8)}…` : "—"}
