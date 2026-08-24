@@ -16,6 +16,8 @@ import { BenefitsSection } from "@/components/home/BenefitsSection";
 import { HeroTrustStrip } from "@/components/home/HeroTrustStrip";
 import { UsOnlyTrustStrip } from "@/components/home/UsOnlyTrustStrip";
 import { CuratedProductSection } from "@/components/home/CuratedProductSection";
+import { HeroProductSpotlight } from "@/components/home/HeroProductSpotlight";
+
 import { FeaturedCategories } from "@/components/home/FeaturedCategories";
 import { ProductRail } from "@/components/home/ProductRail";
 import { useQuery } from "@tanstack/react-query";
