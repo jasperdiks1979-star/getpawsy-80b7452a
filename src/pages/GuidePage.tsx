@@ -22,6 +22,8 @@ import { ReadingProgressBar } from '@/components/reading/ReadingProgressBar';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { ReadNextGuideCTA } from '@/components/guides/ReadNextGuideCTA';
 import { GuideTopPick } from '@/components/guides/GuideTopPick';
+import { PriorityPickBlock } from '@/components/guides/PriorityPickBlock';
+
 import { GuideInlineProduct } from '@/components/guides/GuideInlineProduct';
 import { WhyTrustGetPawsy } from '@/components/seo/WhyTrustGetPawsy';
 import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
@@ -714,6 +716,11 @@ const GuidePage = () => {
             );
           } catch { return null; }
         })()}
+
+        {/* Answer-first commercial block for proven-discovery landing pages */}
+        <PriorityPickBlock slug={guide.slug} hideAnswer={!!guide.quickAnswer} />
+
+
 
 
         {guide.difficultyOverview && guide.difficultyOverview.length > 0 && (
