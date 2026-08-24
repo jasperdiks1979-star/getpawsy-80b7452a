@@ -1087,17 +1087,22 @@ const ProductDetail = () => {
     // Apply volume discount
     const cartPrice = volumeDiscount > 0 ? basePrice * (1 - volumeDiscount / 100) : basePrice;
 
+    // Suppress meaningless supplier variant labels ("option", "default", "-")
+    // so the cart never shows "Product name - option" to a buyer.
+    const rawVariantLabel = (selectedVariant?.variantKey || selectedVariant?.variantNameEn || "").trim();
+    const variantLabel = /^(option|default|standard|-|n\/a)$/i.test(rawVariantLabel) ? "" : rawVariantLabel;
+
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ""),
         slug: product.slug ?? undefined,
-        name:
-          product.name + (selectedVariant ? ` - ${selectedVariant.variantKey || selectedVariant.variantNameEn}` : ""),
+        name: product.name + (variantLabel ? ` - ${variantLabel}` : ""),
         price: Math.round(cartPrice * 100) / 100,
         image: selectedVariant?.variantImage || product.image_url || "/placeholder.svg",
-        variant: selectedVariant?.variantKey || selectedVariant?.variantNameEn,
+        variant: variantLabel || undefined,
       });
     }
+
 
     const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : "";
     toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
