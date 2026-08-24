@@ -79,6 +79,9 @@ describe("LiveDiagnosticsPanel", () => {
     expect(screen.getByTestId("live-diagnostics-panel")).toBeInTheDocument();
     expect(screen.getAllByText(/websocket/i).length).toBeGreaterThan(0);
     expect(screen.getByText("82ms")).toBeInTheDocument();
-    expect(screen.getByText("Presence only. Canonical KPIs remain unaffected.")).toBeInTheDocument();
+    // Live presence and canonical analytics must be presented as two separate systems.
+    expect(
+      screen.getByText(/separate realtime system from/i),
+    ).toBeInTheDocument();
   });
 });
