@@ -20,16 +20,24 @@ Deno.serve(async (req) => {
     const since7 = new Date(Date.now() - 7 * 86400000).toISOString();
 
     const [pinsRes, fevRes, ordersRes, pdpRes] = await Promise.all([
-      sb.from("pinterest_pins").select("id, status, created_at").gte("created_at", since30),
+      // NOTE: publish status lives on pinterest_pin_queue (pinterest_pins has no `status` column).
+      sb.from("pinterest_pin_queue").select("id, status, created_at").gte("created_at", since30),
       sb.from("pinterest_funnel_events").select("event_type, occurred_at").gte("occurred_at", since30),
       sb.from("orders").select("total_amount, created_at, utm_source").gte("created_at", since30),
       sb.from("pinterest_pdp_conversion_stats").select("views, atc, purchases, day").gte("day", since30.slice(0, 10)),
     ]);
 
+    // Fail loudly on schema/permission drift instead of silently scoring on empty data.
+    const readErrors = [pinsRes, fevRes, ordersRes, pdpRes]
+      .map((r: any) => r.error?.message)
+      .filter(Boolean);
+    if (readErrors.length) throw new Error(`prie-brain-sync read failure: ${readErrors.join(" | ")}`);
+
     const pins = pinsRes.data ?? [];
     const fev = fevRes.data ?? [];
     const orders = ordersRes.data ?? [];
     const pdp = pdpRes.data ?? [];
+
 
     const pinterestOrders = orders.filter((o: any) => (o.utm_source ?? "").toLowerCase().includes("pinterest"));
     const revenue30 = pinterestOrders.reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
