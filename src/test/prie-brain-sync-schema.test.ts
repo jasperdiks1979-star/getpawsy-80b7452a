@@ -44,3 +44,20 @@ describe("prie-brain-sync — Pinterest schema safety", () => {
     expect(src).toContain("prie-brain-sync read failure");
   });
 });
+
+describe("prie-brain-sync — related schema drift guards", () => {
+  const src = fs.readFileSync(
+    path.join(process.cwd(), "supabase/functions/prie-brain-sync/index.ts"),
+    "utf8",
+  );
+
+  it("uses event_name on pinterest_funnel_events (event_type does not exist)", () => {
+    expect(src).not.toMatch(/e\.event_type/);
+    expect(src).toMatch(/select\(["']event_name/);
+  });
+
+  it("reads attributed orders from canonical_orders, not orders.utm_source", () => {
+    expect(src).toContain('from("canonical_orders")');
+    expect(src).not.toMatch(/from\(["']orders["']\)/);
+  });
+});
