@@ -39,13 +39,14 @@ const PREFERRED_IMAGE =
 
 
 export function HeroProductSpotlight() {
+  const { addItem } = useCart();
   const { data: product } = useQuery({
     queryKey: ['hero-spotlight', HERO_SLUG],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
-        .select('name, slug, price, image_url, images, stock')
+        .select('id, name, slug, price, image_url, images, stock, category')
         .eq('slug', HERO_SLUG)
         .maybeSingle();
       return data;
@@ -55,6 +56,8 @@ export function HeroProductSpotlight() {
   if (!product || !product.image_url || !product.stock) return null;
   const price = Number(product.price) || 0;
   const href = `/products/${product.slug}`;
+  const shipsFree = price >= FREE_SHIPPING_THRESHOLD;
+
 
   const gallery = Array.isArray(product.images) ? (product.images as string[]) : [];
   const heroImage =
