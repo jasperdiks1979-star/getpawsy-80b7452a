@@ -25,6 +25,18 @@ const BULLETS = [
   'Mounts to the wall or door frame; hardware included',
 ];
 
+/**
+ * The catalog's primary image for this product is a 365x365 text-heavy promo
+ * graphic (supplier "Pinterest card"), which looked blurry and cheap when
+ * scaled into the spotlight container. This is the sharpest clean lifestyle
+ * photo in the same media set (582x481, no text overlay).
+ */
+const PREFERRED_IMAGE =
+  'https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/0b041496-f7a3-480c-83bb-fdba8ae840f3/e81f19da761d852f.jpg';
+
+/** Widths capped at the true source resolution so the browser never upscales. */
+const HERO_WIDTHS = [288, 384, 480, 582];
+
 export function HeroProductSpotlight() {
   const { data: product } = useQuery({
     queryKey: ['hero-spotlight', HERO_SLUG],
@@ -32,7 +44,7 @@ export function HeroProductSpotlight() {
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
-        .select('name, slug, price, image_url, stock')
+        .select('name, slug, price, image_url, images, stock')
         .eq('slug', HERO_SLUG)
         .maybeSingle();
       return data;
@@ -43,21 +55,28 @@ export function HeroProductSpotlight() {
   const price = Number(product.price) || 0;
   const href = `/products/${product.slug}`;
 
+  const gallery = Array.isArray(product.images) ? (product.images as string[]) : [];
+  const heroImage =
+    gallery.find((u) => u === PREFERRED_IMAGE) || PREFERRED_IMAGE || product.image_url;
+
   return (
     <section className="py-8 md:py-12 border-b border-border/40" aria-label="Featured product">
       <div className="container px-4 md:px-6">
         <div className="grid md:grid-cols-2 gap-6 md:gap-10 items-center rounded-3xl border border-border/50 bg-card p-4 md:p-8">
           <Link to={href} className="block overflow-hidden rounded-2xl bg-muted/30">
             <img
-              src={product.image_url}
-              alt={product.name}
-              width={800}
-              height={800}
+              src={buildOptimizedImageUrl(heroImage, { w: 582, q: 'auto', fit: 'contain' })}
+              srcSet={buildOptimizedSrcSet(heroImage, HERO_WIDTHS, { q: 'auto', fit: 'contain' })}
+              sizes="(max-width: 767px) calc(100vw - 3rem), (max-width: 1024px) 45vw, 480px"
+              alt="Wooden wall-mounted cat perch with two cats resting on its shelves"
+              width={582}
+              height={481}
               loading="lazy"
               decoding="async"
-              className="w-full h-auto aspect-square object-cover"
+              className="w-full h-auto aspect-[582/481] object-contain"
             />
           </Link>
+
 
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
