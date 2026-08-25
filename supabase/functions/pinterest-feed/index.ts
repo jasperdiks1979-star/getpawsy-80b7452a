@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
       <g:availability>${availability}</g:availability>
       <g:condition>${condition}</g:condition>
       <g:product_type>${esc(p.category)}</g:product_type>
-      <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>
+      <g:google_product_category>${esc(p.google_product_category || "Animals &amp; Pet Supplies")}</g:google_product_category>
       <g:brand>GetPawsy</g:brand>
     </item>`;
         })
