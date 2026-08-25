@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const creative_score = clamp(40 + publishedPins / 5);
 
     const automation_score = clamp(60 + (clicks30 / 100));
-    const health_score = clamp(100 - (fev.filter((e: any) => e.event_type === "error").length / Math.max(1, fev.length)) * 100);
+    const health_score = clamp(100 - (fev.filter((e: any) => e.event_name === "error").length / Math.max(1, fev.length)) * 100);
     const ai_confidence = clamp((revenue_score + growth_score + seo_score + creative_score + automation_score + health_score) / 6);
 
     const bottlenecks: { k: string; v: number }[] = [
