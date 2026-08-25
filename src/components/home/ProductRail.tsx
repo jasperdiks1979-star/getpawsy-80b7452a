@@ -104,11 +104,6 @@ export function ProductRail({
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-bold text-primary">${price.toFixed(2)}</span>
-                      {compare > price && (
-                        <span className="text-xs line-through text-muted-foreground">
-                          ${compare.toFixed(2)}
-                        </span>
-                      )}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">Free shipping over $35</p>
                   </div>

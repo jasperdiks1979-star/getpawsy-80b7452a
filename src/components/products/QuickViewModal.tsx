@@ -11,6 +11,8 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { useHaptic } from '@/hooks/useHaptic';
 import { toast } from 'sonner';
 import type { Product } from '@/components/products/ProductCard';
+import { getProductDiscount } from '@/lib/discount';
+
 
 interface ParsedVariant {
   vid: string;
@@ -101,9 +103,10 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
 
   // Use variant price if selected
   const displayPrice = selectedVariant?.variantSellPrice || Number(product.price);
-  const discount = product.compare_at_price
-    ? Math.round((1 - displayPrice / Number(product.compare_at_price)) * 100)
-    : null;
+  // Merchant-safe: discount badges are suppressed catalog-wide because
+  // compare_at_price is a generated anchor, not a documented former price.
+  const { percent: discount } = getProductDiscount(displayPrice, product.compare_at_price);
+
 
   const handleAddToCart = (e: React.MouseEvent) => {
     if (isOutOfStock) {
@@ -239,11 +242,8 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
               <span className="text-3xl font-bold text-primary">
                 ${displayPrice.toFixed(2)}
               </span>
-              {product.compare_at_price && (
-                <span className="text-lg text-muted-foreground line-through">
-                  ${Number(product.compare_at_price).toFixed(2)}
-                </span>
-              )}
+              {/* No compare-at strikethrough: catalog compare_at_price values are
+                  script-generated anchors, not documented former prices. */}
             </div>
 
             {/* Variant Selector */}

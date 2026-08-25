@@ -214,25 +214,22 @@ function extractFirstVariantPrice(variants: unknown): number | null {
 /**
  * Synthetic-anchor guard.
  *
- * Historically a batch of seeded products got `compare_at_price = price * 1.25`
- * written by an import script. That is fabricated price anchoring under GMC
- * rules and triggered the "every product is 20 % off" pattern flagged in the
- * PDP conversion audit.
+ * Every `compare_at_price` in this catalog was written by an import script as a
+ * multiplier on the live price (verified: ~99 % sit in a 1.20×–1.31× band, the
+ * remainder are one-off script variants). None of them is a documented former
+ * selling price, so displaying any of them as a strikethrough "was" price is
+ * fabricated price anchoring under Google Merchant Center's misrepresentation
+ * policy.
  *
- * Rules:
- *   - must be a real number above the live price
- *   - must beat a minimum gap (≥ 8 %) — anything closer is rounding noise
- *   - must not sit in the synthetic 1.20×–1.30× band centered on the seeded
- *     1.25× multiplier; that band is treated as auto-generated, not historical
+ * Until a real, dated sale-price history exists per product, NO compare-at
+ * price is displayed anywhere on the storefront, and the product feed emits no
+ * `g:sale_price`. This keeps site price === feed price === charged price.
+ *
+ * To re-enable honest sale pricing later: record the former price plus the date
+ * range it was actually charged, and gate this function on that record instead
+ * of on a ratio heuristic.
  */
-function isHonestCompareAt(compareAt: number, price: number): boolean {
-  if (!Number.isFinite(compareAt) || !Number.isFinite(price)) return false;
-  if (compareAt <= price) return false;
-  if (price <= 0) return false;
-  const ratio = compareAt / price;
-  if (ratio < 1.08) return false;
-  // Synthetic seed band — drop it. Real historical sale prices either come in
-  // tighter (cleared inventory) or wider (markdown / clearance) than this.
-  if (ratio >= 1.20 && ratio <= 1.30) return false;
-  return true;
+function isHonestCompareAt(_compareAt: number, _price: number): boolean {
+  return false;
 }
+

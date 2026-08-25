@@ -81,12 +81,6 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                       <span className="text-sm font-bold text-primary">
                         ${price.toFixed(2)}
                       </span>
-                      {p.compare_at_price &&
-                        Number(p.compare_at_price) > price && (
-                          <span className="text-xs line-through text-muted-foreground">
-                            ${Number(p.compare_at_price).toFixed(2)}
-                          </span>
-                        )}
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       Free shipping over $35

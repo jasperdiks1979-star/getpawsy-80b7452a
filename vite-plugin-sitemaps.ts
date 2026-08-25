@@ -16,6 +16,8 @@ const BASE_URL = 'https://getpawsy.pet';
 const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
 const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
+const FLAT_SHIPPING_RATE = 5.99; // Aligned with published Shipping Policy
+
 
 // ── Supabase REST helper ──────────────────────────────────────────────
 
@@ -362,7 +364,9 @@ interface MerchantProduct {
   slug: string | null;
   weight: number | null;
   is_active: boolean;
+  brand?: string | null;
 }
+
 
 // ── Title optimization helpers ────────────────────────────────────────
 
@@ -413,13 +417,15 @@ function extractBenefit(name: string, desc: string | null): string {
   return 'Everyday Comfort';
 }
 
-function extractVariant(name: string): string | null {
+/** Kept for diagnostics/reporting; feed titles no longer append size pipes. */
+export function extractVariant(name: string): string | null {
   const sizeMatch = name.match(/\b(X{0,2}[SML]|XXL|Small|Medium|Large|Extra Large)\b/i);
   if (sizeMatch) return sizeMatch[0];
   const dimMatch = name.match(/\b(\d+["'']?\s*[xX×]\s*\d+)/);
   if (dimMatch) return dimMatch[0];
   return null;
 }
+
 
 const CATEGORY_PRIMARY_KEYWORDS: Record<string, string> = {
   'dog-toys': 'Dog Toy',
@@ -465,28 +471,36 @@ function getKeywordQualifier(name: string, desc: string | null): string | null {
   return null;
 }
 
+/** Truncate on a word boundary so feed titles never end mid-word. */
+function truncateWords(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  const cut = slice.lastIndexOf(' ');
+  return (cut > max * 0.6 ? slice.slice(0, cut) : slice).replace(/[\s\-–|,]+$/, '');
+}
+
 function buildOptimizedTitle(p: MerchantProduct): string {
-  const cleanName = cleanProductName(p.name);
-  const pet = getPetType(p.category);
-  const benefit = extractBenefit(p.name, p.description);
-  const variant = extractVariant(p.name);
+  // Merchant Center titles must describe the product factually. We prefix the
+  // Google-relevant product keyword when it is missing from the name, but we do
+  // NOT append invented benefit phrases ("Maximum Comfort") or duplicated size
+  // pipes — those read as templated marketing copy, not product data.
+  const cleanName = cleanProductName(p.name).replace(/\s{2,}/g, ' ').trim();
   const catSlug = (p.category || '').toLowerCase().replace(/\s+/g, '-');
   const primaryKw = CATEGORY_PRIMARY_KEYWORDS[catSlug];
   const qualifier = getKeywordQualifier(p.name, p.description);
 
-  let title: string;
-  if (primaryKw && qualifier) {
-    title = `${qualifier} ${primaryKw} – ${cleanName} – ${benefit}`;
-  } else if (primaryKw) {
-    title = `${primaryKw} – ${cleanName} – ${benefit}`;
-  } else {
-    title = `${cleanName} for ${pet} – ${benefit}`;
+  const lowerName = cleanName.toLowerCase();
+  let title = cleanName;
+  if (primaryKw && !lowerName.includes(primaryKw.toLowerCase())) {
+    const prefix = qualifier && !lowerName.includes(qualifier.toLowerCase())
+      ? `${qualifier} ${primaryKw}`
+      : primaryKw;
+    title = `${prefix} – ${cleanName}`;
   }
-  if (variant && title.length + variant.length + 3 <= 150) {
-    title += ` | ${variant}`;
-  }
-  return truncate(title, 150);
+
+  return truncateWords(title, 150);
 }
+
 
 // ── Description optimization ──────────────────────────────────────────
 
@@ -504,9 +518,18 @@ function cleanDescription(html: string | null): string {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    // Strip markdown residue — Merchant Center descriptions are plain text and
+    // literal "**bold**" markers read as unfinished supplier copy.
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/[*_`#]{2,}/g, '')
+    // Remove supplier/marketplace references that must not reach shoppers.
+    .replace(/\b(cjdropshipping|aliexpress|alibaba|dropship(ping)?|oss-cf)\b/gi, '')
+    .replace(/\s+([,.!?])/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
 }
+
 
 function extractSpecs(cleaned: string): string[] {
   const specs: string[] = [];
@@ -640,11 +663,16 @@ function getProductType(cat: string | null): string {
   return t;
 }
 
-function getAvailability(_stock: number | null, isActive: boolean | null): string {
-  // Dropship model: only is_active=false marks OOS (stock is informational only)
+function getAvailability(stock: number | null, isActive: boolean | null): string {
+  // Merchant Center truth rule: availability must match what a shopper can
+  // actually buy. The public RLS policy hides products with stock <= 0, so any
+  // such product has NO reachable landing page and must never be advertised
+  // as "in stock".
   if (isActive === false) return 'out of stock';
+  if (stock !== null && stock !== undefined && stock <= 0) return 'out of stock';
   return 'in stock';
 }
+
 
 function getCurrentSeason(): string {
   const month = new Date().getMonth() + 1;
@@ -721,6 +749,10 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
   const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
   const isBestseller = bestsellersSet.has(p.id);
 
+  // Brand truth: the catalog stores no per-product brand, and every item is
+  // sold under the store's own brand, so GetPawsy is the accurate value.
+  const brand = (p.brand && p.brand.trim()) || 'GetPawsy';
+
   const tags: XmlNode[] = [
     xmlNode('g:id', [xmlText(p.id)]),
     xmlNode('g:title', [xmlCdata(title)]),
@@ -729,15 +761,27 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
     xmlNode('g:image_link', [xmlText(img)]),
     xmlNode('g:availability', [xmlText(avail)]),
     xmlNode('g:price', [xmlText(priceStr(p.price))]),
-    xmlNode('g:brand', [xmlText('GetPawsy')]),
+    xmlNode('g:brand', [xmlText(brand)]),
     xmlNode('g:condition', [xmlText('new')]),
     xmlNode('g:google_product_category', [xmlText(getGoogleProductCategory(p.name, p.category))]),
     xmlNode('g:shipping_weight', [xmlText(shippingWeight)]),
+    // Shipping must mirror the published Shipping Policy exactly:
+    // free over $35, otherwise a flat $5.99 rate, US only.
+    xmlNode('g:shipping', [
+      xmlNode('g:country', [xmlText('US')]),
+      xmlNode('g:service', [xmlText('Standard')]),
+      xmlNode('g:price', [xmlText(priceStr(p.price >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE))]),
+    ]),
+    xmlNode('g:min_handling_time', [xmlText('1')]),
+    xmlNode('g:max_handling_time', [xmlText('2')]),
+    xmlNode('g:min_transit_time', [xmlText('5')]),
+    xmlNode('g:max_transit_time', [xmlText('10')]),
   ];
 
-  if (p.compare_at_price && p.compare_at_price > p.price) {
-    tags.push(xmlNode('g:sale_price', [xmlText(priceStr(p.price))]));
-  }
+  // No g:sale_price is emitted. The catalog's compare_at_price values are
+  // internally derived markups, not documented former selling prices, so they
+  // must not be advertised as a discount.
+
 
   if (p.sku) {
     tags.push(xmlNode('g:mpn', [xmlText(p.sku)]));
@@ -754,6 +798,24 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
   return xmlNode('item', tags);
 }
 
+/**
+ * Off-niche guard — mirrors NON_PET_RE in scripts/generate-sitemaps.mjs so the
+ * product feed and the indexable sitemap cover exactly the same URLs.
+ */
+const OFF_NICHE_RE: RegExp[] = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+];
+
+function isOffNicheProduct(slug: string | null, name: string | null): boolean {
+  const text = `${slug || ''} ${name || ''}`;
+  return OFF_NICHE_RE.some(re => re.test(text));
+}
+
 async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const feedStartedAt = Date.now();
   console.log('[xml-plugin][feed] ▶ buildMerchantFeed() starting…');
@@ -765,14 +827,18 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
 
-  // Safety post-filter: exclude products missing required fields (stock is NOT a disqualifier for dropship)
-  // Track WHY each product is excluded so the build log explains a 0-item feed.
+  // Safety post-filter: exclude products missing required fields, plus any
+  // product the public RLS policy hides (stock <= 0) — those URLs have no
+  // reachable landing page, so submitting them would be a feed/landing-page
+  // mismatch in Merchant Center.
   const exclusionStats = {
     bad_price: 0,
     inactive: 0,
     no_image: 0,
     no_slug: 0,
     no_description: 0,
+    not_purchasable: 0,
+    off_niche: 0,
   };
   const eligibleProducts = rawProducts.filter(p => {
     let ok = true;
@@ -781,8 +847,16 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     if (!p.image_url || p.image_url.trim() === '') { exclusionStats.no_image++; ok = false; }
     if (!p.slug || p.slug.trim() === '') { exclusionStats.no_slug++; ok = false; }
     if (!p.description || p.description.trim() === '') { exclusionStats.no_description++; ok = false; }
+    if (p.stock !== null && p.stock !== undefined && p.stock <= 0) { exclusionStats.not_purchasable++; ok = false; }
+    // Feed / sitemap parity: scripts/generate-sitemaps.mjs keeps bird, reptile,
+    // rodent, fish and rabbit-hutch products out of the indexable sitemap, so
+    // advertising those same URLs would submit landing pages the site itself
+    // does not treat as indexable catalog. Same rule set, same outcome.
+    if (isOffNicheProduct(p.slug, p.name)) { exclusionStats.off_niche++; ok = false; }
     return ok;
   });
+
+
 
   const products = typeof maxItems === 'number' ? eligibleProducts.slice(0, maxItems) : eligibleProducts;
   const bestsellersSet = new Set(bestsellers.map(b => b.product_id));
@@ -796,7 +870,9 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     `[xml-plugin][feed] Exclusion breakdown: ` +
       `bad_price=${exclusionStats.bad_price}, inactive=${exclusionStats.inactive}, ` +
       `no_image=${exclusionStats.no_image}, no_slug=${exclusionStats.no_slug}, ` +
-      `no_description=${exclusionStats.no_description}`
+      `no_description=${exclusionStats.no_description}, ` +
+      `not_purchasable=${exclusionStats.not_purchasable}, off_niche=${exclusionStats.off_niche}`
+
   );
   if (rawProducts.length === 0) {
     console.warn(
