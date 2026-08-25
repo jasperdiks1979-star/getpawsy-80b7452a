@@ -40,8 +40,11 @@ Deno.serve(async (req) => {
       .not("image_url", "is", null)
       .not("slug", "is", null)
       .gt("price", 0)
+      // No arbitrary truncation: the previous 200-row cap silently dropped
+      // eligible products (ordering was newest-first), so older-but-live
+      // catalog items could disappear from the Pinterest datasource.
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(2000);
 
     if (error) throw error;
 
