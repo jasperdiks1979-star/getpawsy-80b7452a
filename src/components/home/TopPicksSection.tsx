@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getProductDiscount } from '@/lib/discount';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
 import { Button } from '@/components/ui/button';
 import { FadeInView } from '@/components/ui/FadeInView';
@@ -83,9 +84,9 @@ export function TopPicksSection() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 lg:gap-5">
             {products.map((product, idx) => {
-              const compareAt = product.compare_at_price ?? 0;
-              const discount =
-                compareAt > product.price ? Math.round((1 - product.price / compareAt) * 100) : 0;
+              // Merchant-safe: compare_at_price is a synthetic anchor, so no
+              // strikethrough price and no discount badge may be shown.
+              const discount = getProductDiscount(product.price, product.compare_at_price).percent ?? 0;
               return (
                 <a
                   key={product.id}
@@ -124,9 +125,6 @@ export function TopPicksSection() {
                     )}
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-sm font-bold text-foreground">${product.price.toFixed(2)}</span>
-                      {compareAt > product.price && (
-                        <span className="text-[10px] text-muted-foreground line-through">${compareAt.toFixed(2)}</span>
-                      )}
                     </div>
                   </div>
                 </a>
