@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         bottleneck,
         top_action,
         why_not_grow,
-        inputs: { revenue30, revenue7, clicks30, atc30, purchases30, views30, conv, pins_30d: pins.length },
+        inputs: { revenue30, revenue7, clicks30, atc30, purchases30, views30, conv, pins_30d: pins.length, published_pins_30d: publishedPins },
       })
       .select()
       .single();
