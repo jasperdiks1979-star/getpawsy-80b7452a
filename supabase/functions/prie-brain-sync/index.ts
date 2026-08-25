@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
     const growth_score = clamp(((revenue7 * 4) / Math.max(1, revenue30)) * 100);
     const conv = views30 ? purchases30 / views30 : 0;
     const seo_score = clamp(50 + (clicks30 / Math.max(1, views30)) * 200);
-    const creative_score = clamp(40 + pins.filter((p: any) => p.status === "published").length / 5);
+    const publishedPins = pins.filter((p: any) => p.status === "posted").length;
+    const creative_score = clamp(40 + publishedPins / 5);
+
     const automation_score = clamp(60 + (clicks30 / 100));
     const health_score = clamp(100 - (fev.filter((e: any) => e.event_type === "error").length / Math.max(1, fev.length)) * 100);
     const ai_confidence = clamp((revenue_score + growth_score + seo_score + creative_score + automation_score + health_score) / 6);
