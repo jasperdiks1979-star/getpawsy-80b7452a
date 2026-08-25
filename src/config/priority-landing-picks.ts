@@ -152,7 +152,75 @@ export const PRIORITY_LANDING_PICKS: Record<string, PriorityPick> = {
     maxPrice: 100,
     collection: { slug: 'cat-trees-and-condos', label: 'Shop cat trees' },
   },
+  // Qualified-traffic push — guides with verified Bing / DuckDuckGo / Yahoo /
+  // Copilot discovery in the last 14 days but no commercial path yet.
+  'puppy-chewing-solutions': {
+    answer:
+      'Puppies chew to soothe teething pain and boredom. The fix that works fastest is giving one durable rubber chew your puppy is allowed to destroy, then swapping the forbidden item for it every single time.',
+    keywords: ['chew', 'rubber ball', 'chew toy'],
+    categories: ['Dog Toys', 'Dog Training'],
+    maxPrice: 60,
+    collection: { slug: 'aggressive-chewer-dog-toys', label: 'Shop durable chew toys' },
+    ctaLabel: 'See the chew toy we recommend',
+  },
+  'cat-litter-box-guide': {
+    answer:
+      'The rule of thumb is one litter box per cat plus one spare, each at least 1.5x your cat\u2019s body length, placed away from food and high-traffic areas.',
+    keywords: ['litter box'],
+    categories: ['Cat Litter Boxes'],
+    collection: { slug: 'cat-litter-boxes', label: 'Shop litter boxes' },
+    ctaLabel: 'See the litter box we recommend',
+  },
+  'puppy-socialization-guide': {
+    answer:
+      'The core socialization window closes around 16 weeks. Short, positive exposures on a well-fitted collar and leash \u2014 a few minutes at a time \u2014 beat long outings.',
+    keywords: ['collar', 'leash', 'training'],
+    categories: ['Dog Collars & Leashes', 'Dog Training'],
+    maxPrice: 60,
+    collection: { slug: 'puppy-supplies', label: 'Shop puppy essentials' },
+  },
+  'remote-training-collars': {
+    answer:
+      'A remote training collar should only be used at the lowest level your dog notices, with a waterproof receiver and a clearly marked stop button \u2014 it is a recall aid, not a punishment tool.',
+    keywords: ['training collar', 'training'],
+    categories: ['Dog Training'],
+    maxPrice: 90,
+    collection: { slug: 'dog-training-tools', label: 'Shop training tools' },
+  },
+  'dog-grooming-tools': {
+    answer:
+      'For most coats you need three things: a slicker or rubber brush for loose hair, a bath brush for washing, and nail clippers. Anything else is optional.',
+    keywords: ['brush', 'grooming', 'comb'],
+    categories: ['Dog Grooming', 'Pet Grooming'],
+    maxPrice: 70,
+    collection: { slug: 'dog-grooming-tools', label: 'Shop dog grooming tools' },
+  },
+  'durable-cat-toys': {
+    answer:
+      'Cat toys last longest when they are one solid piece \u2014 no glued feathers or thin string. Self-play toys that move on their own keep an indoor cat busy without supervision.',
+    keywords: ['cat toy', 'ball', 'fish'],
+    categories: ['Cat Toys'],
+    maxPrice: 40,
+    collection: { slug: 'best-cat-toys-for-indoor-cats', label: 'Shop cat toys' },
+  },
+  'smart-cat-toys': {
+    answer:
+      'A smart cat toy earns its price when it moves unpredictably and shuts off on its own \u2014 automatic rolling balls and laser toys with timers do this best for indoor cats home alone.',
+    keywords: ['cat toy', 'ball', 'laser'],
+    categories: ['Cat Toys'],
+    maxPrice: 40,
+    collection: { slug: 'interactive-cat-toys', label: 'Shop interactive cat toys' },
+  },
+  'cat-toys-with-feathers': {
+    answer:
+      'Feather toys work because they mimic bird movement. Use them for short wand sessions with you, and keep a solid self-play toy for the hours your cat is alone.',
+    keywords: ['cat toy', 'teaser', 'wand', 'ball'],
+    categories: ['Cat Toys'],
+    maxPrice: 40,
+    collection: { slug: 'cat-toys', label: 'Shop cat toys' },
+  },
 };
+
 
 
 export function getPriorityPick(slug?: string): PriorityPick | null {
