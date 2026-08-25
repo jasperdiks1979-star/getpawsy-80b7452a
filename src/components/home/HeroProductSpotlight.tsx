@@ -63,11 +63,13 @@ export function HeroProductSpotlight() {
     <section className="py-8 md:py-12 border-b border-border/40" aria-label="Featured product">
       <div className="container px-4 md:px-6">
         <div className="grid md:grid-cols-2 gap-6 md:gap-10 items-center rounded-3xl border border-border/50 bg-card p-4 md:p-8">
-          <Link to={href} className="block overflow-hidden rounded-2xl bg-muted/30">
+          <Link
+            to={href}
+            className="block overflow-hidden rounded-2xl bg-muted/20 mx-auto w-full max-w-[582px]"
+          >
+            {/* Served at native resolution (582x481) — no CDN downscale, no upscaling. */}
             <img
-              src={buildOptimizedImageUrl(heroImage, { w: 582, q: 'auto', fit: 'contain' })}
-              srcSet={buildOptimizedSrcSet(heroImage, HERO_WIDTHS, { q: 'auto', fit: 'contain' })}
-              sizes="(max-width: 767px) calc(100vw - 3rem), (max-width: 1024px) 45vw, 480px"
+              src={heroImage}
               alt="Wooden wall-mounted cat perch with two cats resting on its shelves"
               width={582}
               height={481}
