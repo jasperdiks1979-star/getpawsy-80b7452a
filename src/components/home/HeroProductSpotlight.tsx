@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
-import { buildOptimizedImageUrl, buildOptimizedSrcSet } from '@/lib/image-optimizer';
+
 
 /**
  * First-Sale Strike — homepage hero product spotlight.
@@ -34,8 +34,6 @@ const BULLETS = [
 const PREFERRED_IMAGE =
   'https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/0b041496-f7a3-480c-83bb-fdba8ae840f3/e81f19da761d852f.jpg';
 
-/** Widths capped at the true source resolution so the browser never upscales. */
-const HERO_WIDTHS = [288, 384, 480, 582];
 
 export function HeroProductSpotlight() {
   const { data: product } = useQuery({
