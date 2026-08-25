@@ -125,8 +125,9 @@ export function HeroSectionPremium({
           <span aria-hidden="true" className="opacity-60">·</span>
           <span>30-day returns</span>
           <span aria-hidden="true" className="opacity-60">·</span>
-          <span>Free shipping on eligible orders $35+</span>
+          <span>Secure checkout</span>
         </p>
+
       </div>
     </section>
   );
