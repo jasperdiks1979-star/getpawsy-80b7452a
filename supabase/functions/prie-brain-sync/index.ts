@@ -20,24 +20,38 @@ Deno.serve(async (req) => {
     const since7 = new Date(Date.now() - 7 * 86400000).toISOString();
 
     const [pinsRes, fevRes, ordersRes, pdpRes] = await Promise.all([
-      sb.from("pinterest_pins").select("id, status, created_at").gte("created_at", since30),
-      sb.from("pinterest_funnel_events").select("event_type, occurred_at").gte("occurred_at", since30),
-      sb.from("orders").select("total_amount, created_at, utm_source").gte("created_at", since30),
+      // NOTE: publish status lives on pinterest_pin_queue (pinterest_pins has no `status` column).
+      sb.from("pinterest_pin_queue").select("id, status, created_at").gte("created_at", since30),
+      // pinterest_funnel_events uses `event_name` (not event_type).
+      sb.from("pinterest_funnel_events").select("event_name, occurred_at").gte("occurred_at", since30),
+      // canonical_orders is the attributed order view (orders itself carries no utm_source).
+      sb.from("canonical_orders").select("total_amount, paid_at, utm_source").gte("paid_at", since30),
       sb.from("pinterest_pdp_conversion_stats").select("views, atc, purchases, day").gte("day", since30.slice(0, 10)),
     ]);
+
+    // Fail loudly on schema/permission drift instead of silently scoring on empty data.
+    const readErrors = [pinsRes, fevRes, ordersRes, pdpRes]
+      .map((r: any) => r.error?.message)
+      .filter(Boolean);
+    if (readErrors.length) throw new Error(`prie-brain-sync read failure: ${readErrors.join(" | ")}`);
 
     const pins = pinsRes.data ?? [];
     const fev = fevRes.data ?? [];
     const orders = ordersRes.data ?? [];
     const pdp = pdpRes.data ?? [];
 
+
     const pinterestOrders = orders.filter((o: any) => (o.utm_source ?? "").toLowerCase().includes("pinterest"));
     const revenue30 = pinterestOrders.reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
     const revenue7 = pinterestOrders
-      .filter((o: any) => o.created_at >= since7)
+      .filter((o: any) => (o.paid_at ?? "") >= since7)
       .reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
-    const clicks30 = fev.filter((e: any) => e.event_type === "outbound_click").length;
+    // Pinterest-attributed landings on site = outbound clicks that actually arrived.
+    const LANDING_EVENTS = new Set(["outbound_click", "page_view", "product_view"]);
+    const clicks30 = fev.filter((e: any) => LANDING_EVENTS.has(e.event_name)).length;
+
+
     const atc30 = pdp.reduce((s: number, r: any) => s + (r.atc ?? 0), 0);
     const purchases30 = pdp.reduce((s: number, r: any) => s + (r.purchases ?? 0), 0);
     const views30 = pdp.reduce((s: number, r: any) => s + (r.views ?? 0), 0);
@@ -46,9 +60,11 @@ Deno.serve(async (req) => {
     const growth_score = clamp(((revenue7 * 4) / Math.max(1, revenue30)) * 100);
     const conv = views30 ? purchases30 / views30 : 0;
     const seo_score = clamp(50 + (clicks30 / Math.max(1, views30)) * 200);
-    const creative_score = clamp(40 + pins.filter((p: any) => p.status === "published").length / 5);
+    const publishedPins = pins.filter((p: any) => p.status === "posted").length;
+    const creative_score = clamp(40 + publishedPins / 5);
+
     const automation_score = clamp(60 + (clicks30 / 100));
-    const health_score = clamp(100 - (fev.filter((e: any) => e.event_type === "error").length / Math.max(1, fev.length)) * 100);
+    const health_score = clamp(100 - (fev.filter((e: any) => e.event_name === "error").length / Math.max(1, fev.length)) * 100);
     const ai_confidence = clamp((revenue_score + growth_score + seo_score + creative_score + automation_score + health_score) / 6);
 
     const bottlenecks: { k: string; v: number }[] = [
@@ -89,7 +105,7 @@ Deno.serve(async (req) => {
         bottleneck,
         top_action,
         why_not_grow,
-        inputs: { revenue30, revenue7, clicks30, atc30, purchases30, views30, conv, pins_30d: pins.length },
+        inputs: { revenue30, revenue7, clicks30, atc30, purchases30, views30, conv, pins_30d: pins.length, published_pins_30d: publishedPins },
       })
       .select()
       .single();
