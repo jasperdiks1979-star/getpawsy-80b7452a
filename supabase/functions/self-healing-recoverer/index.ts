@@ -3,7 +3,7 @@
 // static allow-list of handlers. Never invents actions; never publishes; never
 // duplicates work. Captures before/after state and dispatches the validator.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,6 +105,20 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    // Read-only deployment/cron probe. This must remain a valid no-op when
+    // there is no incident to recover, while still proving the DB contract is
+    // reachable with the function's service binding.
+    if (body.action === "health") {
+      const { error } = await admin()
+        .from("shil_incidents")
+        .select("id", { head: true, count: "exact" });
+      if (error) throw new Error(`shil_incidents_health_failed: ${error.message}`);
+      return new Response(JSON.stringify({ ok: true, outcome: "noop", mutations: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const incidentId: string | undefined = body.incident_id;
     const playbookName: string | undefined = body.playbook;
 
