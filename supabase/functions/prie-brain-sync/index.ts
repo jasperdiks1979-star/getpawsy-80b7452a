@@ -22,8 +22,10 @@ Deno.serve(async (req) => {
     const [pinsRes, fevRes, ordersRes, pdpRes] = await Promise.all([
       // NOTE: publish status lives on pinterest_pin_queue (pinterest_pins has no `status` column).
       sb.from("pinterest_pin_queue").select("id, status, created_at").gte("created_at", since30),
-      sb.from("pinterest_funnel_events").select("event_type, occurred_at").gte("occurred_at", since30),
-      sb.from("orders").select("total_amount, created_at, utm_source").gte("created_at", since30),
+      // pinterest_funnel_events uses `event_name` (not event_type).
+      sb.from("pinterest_funnel_events").select("event_name, occurred_at").gte("occurred_at", since30),
+      // canonical_orders is the attributed order view (orders itself carries no utm_source).
+      sb.from("canonical_orders").select("total_amount, paid_at, utm_source").gte("paid_at", since30),
       sb.from("pinterest_pdp_conversion_stats").select("views, atc, purchases, day").gte("day", since30.slice(0, 10)),
     ]);
 
@@ -42,10 +44,12 @@ Deno.serve(async (req) => {
     const pinterestOrders = orders.filter((o: any) => (o.utm_source ?? "").toLowerCase().includes("pinterest"));
     const revenue30 = pinterestOrders.reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
     const revenue7 = pinterestOrders
-      .filter((o: any) => o.created_at >= since7)
+      .filter((o: any) => (o.paid_at ?? "") >= since7)
       .reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
-    const clicks30 = fev.filter((e: any) => e.event_type === "outbound_click").length;
+    // Pinterest-attributed landings on site = outbound clicks that actually arrived.
+    const clicks30 = fev.filter((e: any) => e.event_name === "outbound_click" || e.event_name === "page_view").length;
+
     const atc30 = pdp.reduce((s: number, r: any) => s + (r.atc ?? 0), 0);
     const purchases30 = pdp.reduce((s: number, r: any) => s + (r.purchases ?? 0), 0);
     const views30 = pdp.reduce((s: number, r: any) => s + (r.views ?? 0), 0);
