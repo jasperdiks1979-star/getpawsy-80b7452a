@@ -27012,6 +27012,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gcd_backfill_state: {
+        Row: {
+          id: number
+          last_result: Json
+          last_run_at: string | null
+          paused: boolean
+          paused_at: string | null
+          paused_reason: string | null
+          resume_after: string | null
+        }
+        Insert: {
+          id?: number
+          last_result?: Json
+          last_run_at?: string | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_reason?: string | null
+          resume_after?: string | null
+        }
+        Update: {
+          id?: number
+          last_result?: Json
+          last_run_at?: string | null
+          paused?: boolean
+          paused_at?: string | null
+          paused_reason?: string | null
+          resume_after?: string | null
+        }
+        Relationships: []
+      }
       gcd_concept_history: {
         Row: {
           change_reason: string | null
@@ -27796,6 +27826,48 @@ export type Database = {
           visual_hierarchy?: string | null
           warmth?: number | null
           weather?: string | null
+        }
+        Relationships: []
+      }
+      gcd_visual_dna_backlog: {
+        Row: {
+          attempts: number
+          created_at: string
+          creative_id: string
+          deterministic_done: boolean
+          image_url: string | null
+          last_attempt_at: string | null
+          last_error: string | null
+          phash: string | null
+          reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          creative_id: string
+          deterministic_done?: boolean
+          image_url?: string | null
+          last_attempt_at?: string | null
+          last_error?: string | null
+          phash?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          creative_id?: string
+          deterministic_done?: boolean
+          image_url?: string | null
+          last_attempt_at?: string | null
+          last_error?: string | null
+          phash?: string | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
