@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { getGoogleProductCategoryPath } from "../_shared/google-product-category.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
