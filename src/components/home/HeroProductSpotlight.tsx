@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
+import { buildOptimizedImageUrl, buildOptimizedSrcSet } from '@/lib/image-optimizer';
 
 /**
  * First-Sale Strike — homepage hero product spotlight.
