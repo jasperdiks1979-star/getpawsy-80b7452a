@@ -48,7 +48,9 @@ Deno.serve(async (req) => {
       .reduce((s: number, o: any) => s + Math.round(Number(o.total_amount ?? 0) * 100), 0);
 
     // Pinterest-attributed landings on site = outbound clicks that actually arrived.
-    const clicks30 = fev.filter((e: any) => e.event_name === "outbound_click" || e.event_name === "page_view").length;
+    const LANDING_EVENTS = new Set(["outbound_click", "page_view", "product_view"]);
+    const clicks30 = fev.filter((e: any) => LANDING_EVENTS.has(e.event_name)).length;
+
 
     const atc30 = pdp.reduce((s: number, r: any) => s + (r.atc ?? 0), 0);
     const purchases30 = pdp.reduce((s: number, r: any) => s + (r.purchases ?? 0), 0);
