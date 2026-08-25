@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { getGoogleProductCategoryPath } from "../_shared/google-product-category.ts";
 
 const ALLOWED_ORIGINS = [
   "https://getpawsy.pet",
@@ -39,8 +40,11 @@ Deno.serve(async (req) => {
       .not("image_url", "is", null)
       .not("slug", "is", null)
       .gt("price", 0)
+      // No arbitrary truncation: the previous 200-row cap silently dropped
+      // eligible products (ordering was newest-first), so older-but-live
+      // catalog items could disappear from the Pinterest datasource.
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(2000);
 
     if (error) throw error;
 
@@ -66,6 +70,9 @@ Deno.serve(async (req) => {
         landing_page_url: `${BASE_URL}/products/${p.slug}`,
         image_url: p.image_url,
         category: p.category || "Pet Products",
+        // Full-depth taxonomy path — the flat "Animals & Pet Supplies" value
+        // triggered PRODUCT_CATEGORY_DEPTH_WARNING on every ingested item.
+        google_product_category: getGoogleProductCategoryPath(p.name, p.category, p.description),
         slug: p.slug,
         price: p.price,
         priority,
@@ -98,7 +105,7 @@ Deno.serve(async (req) => {
       <g:availability>${availability}</g:availability>
       <g:condition>${condition}</g:condition>
       <g:product_type>${esc(p.category)}</g:product_type>
-      <g:google_product_category>Animals &amp; Pet Supplies</g:google_product_category>
+      <g:google_product_category>${esc(p.google_product_category || "Animals &amp; Pet Supplies")}</g:google_product_category>
       <g:brand>GetPawsy</g:brand>
     </item>`;
         })
