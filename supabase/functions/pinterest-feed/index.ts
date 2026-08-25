@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
         landing_page_url: `${BASE_URL}/products/${p.slug}`,
         image_url: p.image_url,
         category: p.category || "Pet Products",
+        // Full-depth taxonomy path — the flat "Animals & Pet Supplies" value
+        // triggered PRODUCT_CATEGORY_DEPTH_WARNING on every ingested item.
+        google_product_category: getGoogleProductCategoryPath(p.name, p.category, p.description),
         slug: p.slug,
         price: p.price,
         priority,
