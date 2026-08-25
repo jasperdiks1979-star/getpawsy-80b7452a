@@ -130,6 +130,9 @@ export function PageChangelog({ pageKey, className }: PageChangelogProps) {
     };
   }, [isAdmin, buildTags]);
 
+  // Internal engineering metadata (build tags, commit refs, deployment notes)
+  // must never be exposed on public policy/contact/about pages. Admin-only.
+  if (!isAdmin) return null;
   if (!entries || entries.length === 0) return null;
 
   // Build a Dataset JSON-LD payload describing the page's changelog.
