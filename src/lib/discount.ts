@@ -5,6 +5,8 @@
  * New code should use getDisplayDiscount from merchant-safe-product.ts.
  */
 
+import { getDisplayDiscount, type MerchantProduct } from '@/lib/merchant-safe-product';
+
 export interface DiscountResult {
   percent: number | null;
   savings: number | null;
@@ -17,15 +19,14 @@ export function getProductDiscount(
   price: number | null | undefined,
   compareAt: number | null | undefined,
 ): DiscountResult {
-  const p = Number(price);
-  const c = Number(compareAt);
-
-  if (!price || !compareAt || isNaN(p) || isNaN(c) || c <= p || p <= 0) {
-    return { percent: null, savings: null };
-  }
-
-  return {
-    percent: Math.round((1 - p / c) * 100),
-    savings: Math.round((c - p) * 100) / 100,
-  };
+  // Merchant-safe: every compare_at_price in this catalog is a script-generated
+  // multiplier on the live price, never a documented former selling price, so no
+  // discount percentage or "you save" figure may be displayed. Delegates the
+  // decision to the single guard in merchant-safe-product.ts via getDisplayDiscount.
+  return getDisplayDiscount({
+    id: '',
+    name: '',
+    price: Number(price) || 0,
+    compare_at_price: compareAt ?? null,
+  } as MerchantProduct);
 }

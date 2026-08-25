@@ -1132,7 +1132,11 @@ const ProductDetail = () => {
     ? Number(selectedVariant.variantSellPrice)
     : Number(product.price);
   const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
-  const validCompareAt = compareAtPrice && compareAtPrice > activePrice ? compareAtPrice : null;
+  // Merchant-safe: only surface a compare-at price when the shared guard accepts
+  // it. Today that is never, because the catalog holds generated anchors only.
+  const validCompareAt =
+    getProductDiscount(activePrice, compareAtPrice).percent !== null ? compareAtPrice : null;
+
 
   // CANONICAL discount — always derived from BASE product.price, not variant price.
   // This keeps the gallery badge stable when variants change.
@@ -1434,18 +1438,14 @@ const ProductDetail = () => {
                 // Use the already-computed activePrice (base price unless user selected variant)
                 const displayPrice = activePrice;
                 const compareAt = product.compare_at_price ? Number(product.compare_at_price) : null;
-                // P0-3 (conversion sprint): block the synthetic 1.20×–1.30×
-                // anchor band (seeded by an old import that wrote
-                // compare_at = price * 1.25 on every row). Show compare-at
-                // only when the discount is real and material.
-                const ratio = compareAt && displayPrice > 0 ? compareAt / displayPrice : 0;
-                const isSyntheticAnchor = ratio >= 1.20 && ratio <= 1.30;
-                const showCompare =
-                  compareAt !== null &&
-                  compareAt > displayPrice &&
-                  ratio >= 1.08 &&
-                  !isSyntheticAnchor;
+                // Merchant-safe pricing: compare_at_price in this catalog is a
+                // script-generated multiplier on the live price, not a former
+                // selling price we ever charged. Advertising it as a discount is
+                // misrepresentation, so the strikethrough and savings badge stay
+                // hidden until a real dated sale history exists.
+                const showCompare = getProductDiscount(displayPrice, compareAt).percent !== null;
                 const currentDiscount = discount;
+
 
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
