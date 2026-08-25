@@ -114,7 +114,46 @@ export const PRIORITY_LANDING_PICKS: Record<string, PriorityPick> = {
     keywords: ['dog bed', 'pet bed'],
     collection: { slug: 'dog-beds', label: 'Shop dog beds' },
   },
+  // First-Sale Strike — guides confirmed to receive genuine (non-bot)
+  // discovery traffic in the last 72h. Each maps to a live, in-stock product.
+  'best-dog-bed-under-100': {
+    answer:
+      'Under $100 the two things that actually matter are a removable, machine-washable cover and a base thick enough that your dog does not bottom out on the floor.',
+    keywords: ['dog bed', 'pet bed'],
+    maxPrice: 100,
+    collection: { slug: 'dog-beds', label: 'Shop dog beds under $100' },
+    ctaLabel: 'See the dog bed we recommend',
+  },
+  'how-to-stop-cat-from-peeing-on-bed': {
+    answer:
+      'Cats usually pee outside the box because the box is dirty, too small, or in a high-traffic spot. Rule out a UTI first, then give one clean, enclosed box per cat plus one spare.',
+    keywords: ['litter box'],
+    categories: ['Cat Litter Boxes'],
+    collection: { slug: 'cat-litter-boxes', label: 'Shop litter boxes' },
+  },
+  'dog-travel-essentials-guide': {
+    answer:
+      'The short list for any road trip: a secured carrier or harness, a collapsible water bowl, waste bags, and a familiar blanket so the car smells like home.',
+    keywords: ['carrier', 'travel', 'water', 'collar', 'leash'],
+    maxPrice: 90,
+    collection: { slug: 'dog-travel', label: 'Shop dog travel gear' },
+  },
+  'pet-travel-checklist': {
+    answer:
+      'Pack ID tags, vaccination records, a leak-proof water dispenser, and enough food for the trip plus two extra days — swapping food mid-trip is the most common cause of travel stomach upset.',
+    keywords: ['carrier', 'water', 'collar', 'travel'],
+    maxPrice: 90,
+    collection: { slug: 'dog-travel', label: 'Shop travel essentials' },
+  },
+  'best-cat-tree-for-kittens': {
+    answer:
+      'Kittens need low platforms (under 16 in apart), a wide stable base, and sisal — not carpet — so they learn to scratch the post instead of your sofa.',
+    keywords: ['cat tree', 'perch', 'scratch'],
+    maxPrice: 100,
+    collection: { slug: 'cat-trees-and-condos', label: 'Shop cat trees' },
+  },
 };
+
 
 export function getPriorityPick(slug?: string): PriorityPick | null {
   if (!slug) return null;
