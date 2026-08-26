@@ -243,6 +243,14 @@ Deno.serve(async (req) => {
     return json({ ok: true, traceId, action, campaign_id: campaignId, ad_group_id: adGroupId, promotion_id: promoId, ledger });
   }
 
+  if (action === "disable_promotion") {
+    const res = await pin(`/ad_accounts/${AD_ACCOUNT}/product_group_promotions`, token, {
+      method: "PATCH",
+      body: JSON.stringify({ product_group_promotion: [{ id: String(payload.promotion_id), is_enabled: false }] }),
+    });
+    return json({ ok: res.ok, traceId, action, res });
+  }
+
   if (action === "readback") {
     const campaignId = String(payload.campaign_id ?? "");
     const [c, ags, ads, promos, pg] = await Promise.all([
