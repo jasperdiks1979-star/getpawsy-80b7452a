@@ -1796,7 +1796,7 @@ const App = () => {
                               path="pinterest-health"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
-                                  <PinterestHealthPage />
+                                  <PinterestHealth />
                                 </Suspense>
                               }
                             />
@@ -4320,14 +4320,6 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestBackdropPreviewPage />
-                                </Suspense>
-                              }
-                            />
-                            <Route
-                              path="pinterest-health"
-                              element={
-                                <Suspense fallback={<RouteLoader />}>
-                                  <PinterestHealth />
                                 </Suspense>
                               }
                             />
