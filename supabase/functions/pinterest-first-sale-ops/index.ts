@@ -98,6 +98,22 @@ Deno.serve(async (req) => {
     return json({ ok: true, traceId, action, res });
   }
 
+  // Safety-only write: force a promotion (product-group ad) to PAUSED.
+  // Cannot activate anything, cannot touch budgets.
+  if (action === "safe_pause_promotion") {
+    const promotionId = String(payload.promotion_id ?? "");
+    if (!/^\d+$/.test(promotionId)) return json({ ok: false, traceId, message: "promotion_id required" }, 400);
+    const adGroupId = String(payload.ad_group_id ?? "2680092042915");
+    const listPath = `/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_id=${adGroupId}`;
+    const before = await pin(listPath, token);
+    const res = await pin(`/ad_accounts/${AD_ACCOUNT}/product_group_promotions`, token, {
+      method: "PATCH",
+      body: JSON.stringify([{ id: promotionId, status: "PAUSED" }]),
+    });
+    const after = await pin(listPath, token);
+    return json({ ok: true, traceId, action, promotion_id: promotionId, before: before.body, res, after: after.body });
+  }
+
   if (action === "discover") {
     const core = await readCore();
     const existing = ((core.campaigns.body as any)?.items ?? []).filter((c: any) =>
