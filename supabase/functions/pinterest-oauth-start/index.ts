@@ -46,8 +46,14 @@ Deno.serve(async (req) => {
 
   // Allow caller to request extra scopes (e.g. catalogs:read/write) and
   // to ask the callback to auto-run the catalog sync after success.
+  // `additive` (default true) = never request LESS than what is already
+  // granted: the requested scope set is always a superset of the stored
+  // connection scopes, so existing boards/pins/user_accounts permissions
+  // are preserved and never revoked by the reconnect.
   let extraScopes: string[] = [];
   let autoSyncCatalog = false;
+  let additive = true;
+  let previewOnly = false;
   if (req.method === "POST") {
     try {
       const body = await req.json();
@@ -55,13 +61,18 @@ Deno.serve(async (req) => {
         extraScopes = body.extra_scopes.filter((s: unknown) => typeof s === "string");
       }
       autoSyncCatalog = Boolean(body?.auto_sync_catalog);
+      if (body?.additive === false) additive = false;
+      previewOnly = Boolean(body?.preview_only);
     } catch { /* no body */ }
   } else {
     const url = new URL(req.url);
     const qsScopes = url.searchParams.get("extra_scopes");
     if (qsScopes) extraScopes = qsScopes.split(",").map((s) => s.trim()).filter(Boolean);
     autoSyncCatalog = url.searchParams.get("auto_sync_catalog") === "1";
+    if (url.searchParams.get("additive") === "0") additive = false;
+    previewOnly = url.searchParams.get("preview_only") === "1";
   }
+
 
   const clientId = Deno.env.get("PINTEREST_CLIENT_ID");
   const redirectUri = Deno.env.get("PINTEREST_REDIRECT_URI") ||
