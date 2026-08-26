@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
   const error = url.searchParams.get("error");
 
   // Determine the frontend redirect base + post-success action
-  const { base: frontendBase, autoSyncCatalog } = decodeStateMeta(state);
+  const { base: frontendBase, autoSyncCatalog, expectedScopes } = decodeStateMeta(state);
   // Redirect back to the Health page when the user came in via the catalog reconnect flow.
   const adminUrl = autoSyncCatalog
     ? `${frontendBase}/admin/pinterest-health`
