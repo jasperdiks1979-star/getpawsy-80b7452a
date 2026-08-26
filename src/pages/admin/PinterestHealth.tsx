@@ -34,6 +34,14 @@ const empty: Kpi = {
   revenue: 0, capiOutboxPending: 0, capiOutboxSent: 0, topProducts: [],
 };
 
+type ScopeDiff = {
+  current_scopes: string[];
+  requested_scopes: string[];
+  added_scopes: string[];
+  dropped_scopes: string[];
+  account_name?: string | null;
+};
+
 export default function PinterestHealth() {
   const [kpi, setKpi] = useState<Kpi>(empty);
   const [loading, setLoading] = useState(true);
@@ -42,6 +50,34 @@ export default function PinterestHealth() {
   const [busy, setBusy] = useState<string | null>(null);
   const [adsDiag, setAdsDiag] = useState<any>(null);
   const [adsDiagBusy, setAdsDiagBusy] = useState(false);
+  const [scopeDiff, setScopeDiff] = useState<ScopeDiff | null>(null);
+  const [scopeDiffErr, setScopeDiffErr] = useState<string | null>(null);
+
+  // Read-only dry-run scope diff: shows exactly what a catalog-scope reconnect
+  // would add/drop BEFORE any OAuth URL exists. Reconnect stays disabled
+  // unless dropped_scopes is empty.
+  async function loadScopeDiff() {
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: { dry_run: true, extra_scopes: ["catalogs:read", "catalogs:write"] },
+      });
+      if (error) throw error;
+      if ((data as any)?.reconnect_blocked) {
+        setScopeDiff(null);
+        setScopeDiffErr((data as any)?.detail || (data as any)?.error || "Reconnect blocked");
+        return;
+      }
+      setScopeDiff(data as ScopeDiff);
+      setScopeDiffErr(null);
+    } catch (e: any) {
+      setScopeDiff(null);
+      setScopeDiffErr(e?.message ?? "Scope diff failed");
+    }
+  }
+
+  useEffect(() => { loadScopeDiff(); }, []);
+
+  const reconnectSafe = !!scopeDiff && scopeDiff.dropped_scopes.length === 0;
 
   async function runAdsDiagnostic() {
     setAdsDiagBusy(true);
@@ -203,42 +239,20 @@ export default function PinterestHealth() {
     }
   }
 
-  // Additive catalog reconnect: first ask the backend for a dry-run scope diff,
-  // show exactly what is added and what is preserved, then send the user to
-  // Pinterest. Existing boards/pins/user_accounts scopes are always replayed,
-  // so nothing is changed or revoked.
   async function reconnectWithCatalogScopes() {
+    if (!reconnectSafe) return; // hard gate: never reconnect when scopes would drop
     setBusy("reconnect");
     try {
-      const CATALOG_SCOPES = ["catalogs:read", "catalogs:write"];
-      const { data: preview, error: previewError } = await supabase.functions.invoke("pinterest-oauth-start", {
-        body: { extra_scopes: CATALOG_SCOPES, additive: true, preview_only: true },
-      });
-      if (previewError) throw previewError;
-      const p = preview as any;
-      const added: string[] = p?.added_scopes ?? CATALOG_SCOPES;
-      const preserved: string[] = p?.preserved_scopes ?? [];
-      const confirmed = window.confirm(
-        [
-          "Additive Pinterest reconnect",
-          "",
-          `Adds: ${added.length ? added.join(", ") : "(nothing new — already granted)"}`,
-          `Preserved (unchanged): ${preserved.length ? preserved.join(", ") : "—"}`,
-          "Revoked: none",
-          "",
-          "Approve every pre-checked permission on the Pinterest consent screen.",
-        ].join("\n")
-      );
-      if (!confirmed) { setBusy(null); return; }
-
       const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
         body: {
-          extra_scopes: CATALOG_SCOPES,
-          additive: true,
+          extra_scopes: ["catalogs:read", "catalogs:write"],
           auto_sync_catalog: true,
         },
       });
       if (error) throw error;
+      if ((data as any)?.reconnect_blocked) {
+        throw new Error((data as any)?.error || "Reconnect blocked by scope-drop guard");
+      }
       const authUrl = (data as any)?.auth_url;
       if (!authUrl) throw new Error("No auth_url returned");
       window.location.href = authUrl;
@@ -251,20 +265,6 @@ export default function PinterestHealth() {
   // Surface the result of the auto-catalog-sync that runs after OAuth callback.
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
-    const scopesLost = qs.get("scopes_lost");
-    const scopesAdded = qs.get("scopes_added");
-    if (scopesLost) {
-      toast({
-        title: "Scope regression detected",
-        description: `Pinterest did not return: ${scopesLost}. Reconnect again and approve all permissions.`,
-        variant: "destructive",
-      });
-    } else if (scopesAdded) {
-      toast({
-        title: "Scopes added",
-        description: `Granted: ${scopesAdded}. Existing permissions preserved.`,
-      });
-    }
     if (qs.get("oauth_success") === "true" && qs.has("catalog_synced")) {
       const ok = qs.get("catalog_synced") === "1";
       toast({
@@ -279,7 +279,6 @@ export default function PinterestHealth() {
       const cleaned = window.location.pathname;
       window.history.replaceState({}, "", cleaned);
     }
-
     // Auto-run Ads diagnostic immediately after an Ads-scope reconnect.
     if (qs.get("oauth_success") === "true" && sessionStorage.getItem("pinterest_ads_reconnect_pending") === "1") {
       sessionStorage.removeItem("pinterest_ads_reconnect_pending");
@@ -379,12 +378,14 @@ export default function PinterestHealth() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={busy !== null}
+              disabled={busy !== null || !reconnectSafe}
               onClick={reconnectWithCatalogScopes}
-              title="Additive reconnect: adds catalogs:read + catalogs:write while replaying all existing scopes (nothing revoked), then auto-runs feed sync"
+              title={reconnectSafe
+                ? "Reconnect Pinterest and request catalogs:read + catalogs:write, then auto-run feed sync. All existing scopes preserved."
+                : "Disabled until the dry-run scope diff confirms zero dropped scopes."}
             >
               {busy === "reconnect" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
-              Add catalog scopes (additive)
+              Reconnect + grant catalog scopes
             </Button>
             <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => callCatalog("status")}>
               <RefreshCw className={`h-3 w-3 mr-1 ${busy === "status" ? "animate-spin" : ""}`} />Check status
@@ -396,6 +397,31 @@ export default function PinterestHealth() {
           </div>
         </CardHeader>
         <CardContent className="text-sm space-y-1">
+          <div className="rounded border p-3 mb-3 space-y-1 bg-muted/30">
+            <div className="font-medium flex items-center justify-between">
+              <span>Reconnect scope preview (dry-run)</span>
+              <Button size="sm" variant="ghost" onClick={loadScopeDiff} title="Re-run read-only scope diff">
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+            {scopeDiffErr && (
+              <div className="text-destructive text-xs">Reconnect blocked: {scopeDiffErr}</div>
+            )}
+            {scopeDiff && (
+              <>
+                <div className="text-xs"><span className="text-muted-foreground">Current scopes: </span><span className="font-mono">{scopeDiff.current_scopes.join(", ")}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Requested scopes: </span><span className="font-mono">{scopeDiff.requested_scopes.join(", ")}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Added: </span><span className="font-mono">{scopeDiff.added_scopes.join(", ") || "none"}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Dropped: </span><span className={`font-mono ${scopeDiff.dropped_scopes.length ? "text-destructive" : ""}`}>{scopeDiff.dropped_scopes.join(", ") || "NONE"}</span></div>
+                {!reconnectSafe && (
+                  <div className="text-destructive text-xs font-medium">Scope-drop guard active — reconnect disabled.</div>
+                )}
+              </>
+            )}
+            {!scopeDiff && !scopeDiffErr && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Computing scope diff…</div>
+            )}
+          </div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed URL</span><span className="font-mono text-xs truncate max-w-[60%]" title={catalog?.feed_url || ""}>{catalog?.feed_url || "—"}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed ID</span><span className="font-mono text-xs">{catalog?.feed_id || "—"}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Items in feed</span><span>{catalog?.items_total ?? "—"}</span></div>
