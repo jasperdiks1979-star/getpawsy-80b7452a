@@ -39,15 +39,24 @@ function getCorsHeaders(req: Request) {
   };
 }
 
+function parseScopes(raw: unknown): string[] {
+  if (!raw || typeof raw !== "string") return [];
+  return Array.from(new Set(
+    raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean)
+  )).sort();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: getCorsHeaders(req) });
   }
 
-  // Allow caller to request extra scopes (e.g. catalogs:read/write) and
-  // to ask the callback to auto-run the catalog sync after success.
+  // Allow caller to request extra scopes (e.g. catalogs:read/write), to ask
+  // the callback to auto-run the catalog sync after success, and to request
+  // a read-only dry-run scope diff (no OAuth URL generated).
   let extraScopes: string[] = [];
   let autoSyncCatalog = false;
+  let dryRun = false;
   if (req.method === "POST") {
     try {
       const body = await req.json();
@@ -55,12 +64,14 @@ Deno.serve(async (req) => {
         extraScopes = body.extra_scopes.filter((s: unknown) => typeof s === "string");
       }
       autoSyncCatalog = Boolean(body?.auto_sync_catalog);
+      dryRun = Boolean(body?.dry_run);
     } catch { /* no body */ }
   } else {
     const url = new URL(req.url);
     const qsScopes = url.searchParams.get("extra_scopes");
     if (qsScopes) extraScopes = qsScopes.split(",").map((s) => s.trim()).filter(Boolean);
     autoSyncCatalog = url.searchParams.get("auto_sync_catalog") === "1";
+    dryRun = url.searchParams.get("dry_run") === "1";
   }
 
   const clientId = Deno.env.get("PINTEREST_CLIENT_ID");
@@ -86,17 +97,103 @@ Deno.serve(async (req) => {
     );
   }
 
+  const sb = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // ---- Authoritative current scopes -------------------------------------
+  // Read the scopes Pinterest actually granted, as stored on the active
+  // connection at callback time (pinterest_connection.scopes). Never derive
+  // "current" scopes from a hardcoded list: any extra scope the user granted
+  // in a previous consent (e.g. ads:*) must be preserved on reconnect.
+  const { data: runtime } = await sb
+    .from("pinterest_runtime_settings")
+    .select("active_pinterest_connection_id")
+    .eq("id", 1)
+    .maybeSingle();
+
+  let connQuery = sb.from("pinterest_connection").select("id, scopes, account_name, status");
+  if (runtime?.active_pinterest_connection_id) {
+    connQuery = connQuery.eq("id", runtime.active_pinterest_connection_id);
+  }
+  let { data: conn } = await connQuery.order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  if (!conn) {
+    const fallback = await sb.from("pinterest_connection")
+      .select("id, scopes, account_name, status")
+      .order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    conn = fallback.data;
+  }
+
+  const currentScopes = parseScopes(conn?.scopes);
+  if (currentScopes.length === 0) {
+    // Cannot determine currently granted scopes safely -> BLOCK reconnect.
+    return new Response(
+      JSON.stringify({
+        error: "current_scopes_unknown",
+        reconnect_blocked: true,
+        detail: "No stored granted scopes found on the active Pinterest connection. Refusing to build a reconnect URL that could silently drop existing permissions.",
+      }),
+      { status: 409, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
+  // ---- Requested scopes = CURRENT ∪ requested additions ------------------
+  // Catalog scopes are required for the production catalog datasource.
+  const REQUIRED_ADDITIONS = ["catalogs:read", "catalogs:write"];
+  const ALLOWED_EXTRA = new Set([
+    "catalogs:read", "catalogs:write",
+    "ads:read", "ads:write",
+    "billing:read", "billing:write",
+    "user_accounts:write",
+    "boards:read_secret", "boards:write_secret",
+    "pins:read_secret", "pins:write_secret",
+    "biz_access:read", "biz_access:write",
+  ]);
+  const sanitizedExtra = extraScopes.filter((s) => ALLOWED_EXTRA.has(s));
+  const requestedScopes = Array.from(new Set([
+    ...currentScopes,
+    ...REQUIRED_ADDITIONS,
+    ...sanitizedExtra,
+  ])).sort();
+
+  const addedScopes = requestedScopes.filter((s) => !currentScopes.includes(s));
+  const droppedScopes = currentScopes.filter((s) => !requestedScopes.includes(s));
+
+  const scopeDiff = {
+    current_scopes: currentScopes,
+    requested_scopes: requestedScopes,
+    added_scopes: addedScopes,
+    dropped_scopes: droppedScopes,
+    connection_id: conn?.id ?? null,
+    account_name: conn?.account_name ?? null,
+  };
+
+  // ---- Scope-drop guard (hard gate) --------------------------------------
+  if (droppedScopes.length > 0) {
+    return new Response(
+      JSON.stringify({
+        error: "scope_drop_blocked",
+        reconnect_blocked: true,
+        ...scopeDiff,
+      }),
+      { status: 409, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
+  // ---- Dry-run: return the diff only, never generate an OAuth URL --------
+  if (dryRun) {
+    return new Response(
+      JSON.stringify({ ok: true, dry_run: true, reconnect_blocked: false, ...scopeDiff }),
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
   // Generate a random state for CSRF protection (carries post-success metadata).
   const state = encodeState(crypto.randomUUID(), {
     base: resolveFrontendBase(req),
     autoSyncCatalog,
   });
-
-  // Store state in DB for verification during callback
-  const sb = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
 
   // Force a clean OAuth attempt: never let a stale cached state participate
   // in a reconnect after a token/auth failure.
@@ -109,36 +206,7 @@ Deno.serve(async (req) => {
   });
 
   // Pinterest OAuth 2.0 authorization URL
-  const baseScopes = [
-    "boards:read",
-    "boards:write",
-    "pins:read",
-    "pins:write",
-    "user_accounts:read",
-    // Catalog read/write is required for the production catalog datasource:
-    // without it the feed can be generated but cannot be refreshed, queried,
-    // or item-verified in Pinterest's ingested catalog.
-    "catalogs:read",
-    "catalogs:write",
-  ];
-  const ALLOWED_EXTRA = new Set([
-    "catalogs:read",
-    "catalogs:write",
-    "ads:read",
-    "ads:write",
-    "billing:read",
-    "billing:write",
-    "user_accounts:write",
-    "boards:read_secret",
-    "boards:write_secret",
-    "pins:read_secret",
-    "pins:write_secret",
-    "biz_access:read",
-    "biz_access:write",
-  ]);
-  const sanitizedExtra = extraScopes.filter((s) => ALLOWED_EXTRA.has(s));
-  const scopes = Array.from(new Set([...baseScopes, ...sanitizedExtra])).join(",");
-
+  const scopes = requestedScopes.join(",");
   const authUrl = new URL("https://www.pinterest.com/oauth/");
   authUrl.searchParams.set("client_id", clientId);
   authUrl.searchParams.set("redirect_uri", redirectUri);
@@ -147,7 +215,7 @@ Deno.serve(async (req) => {
   authUrl.searchParams.set("state", state);
 
   return new Response(
-    JSON.stringify({ auth_url: authUrl.toString(), state }),
+    JSON.stringify({ auth_url: authUrl.toString(), state, scope_diff: scopeDiff }),
     { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
 });
