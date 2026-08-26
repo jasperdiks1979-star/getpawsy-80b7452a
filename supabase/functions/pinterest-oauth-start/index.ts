@@ -115,6 +115,11 @@ Deno.serve(async (req) => {
     "pins:read",
     "pins:write",
     "user_accounts:read",
+    // Catalog read/write is required for the production catalog datasource:
+    // without it the feed can be generated but cannot be refreshed, queried,
+    // or item-verified in Pinterest's ingested catalog.
+    "catalogs:read",
+    "catalogs:write",
   ];
   const ALLOWED_EXTRA = new Set([
     "catalogs:read",

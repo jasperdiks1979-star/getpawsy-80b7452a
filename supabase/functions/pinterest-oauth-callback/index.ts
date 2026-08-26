@@ -334,7 +334,6 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
           },
           body: JSON.stringify({ action: "register" }),
         });
@@ -344,7 +343,6 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
           },
           body: JSON.stringify({ action: "status" }),
         });
