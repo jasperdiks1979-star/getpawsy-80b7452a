@@ -36,8 +36,14 @@ async function fetchPinterestJson(url: string, accessToken: string) {
   return { ok: res.ok, status: res.status, body, text };
 }
 
-function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog: boolean } {
-  const fallback = { base: DEFAULT_FRONTEND_BASE, autoSyncCatalog: false };
+function parseScopeList(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((s) => typeof s === "string");
+  if (typeof raw === "string") return raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
+function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog: boolean; expectedScopes: string[] } {
+  const fallback = { base: DEFAULT_FRONTEND_BASE, autoSyncCatalog: false, expectedScopes: [] as string[] };
   if (!state || !state.includes("::")) return fallback;
   try {
     const tail = state.split("::").slice(1).join("::");
@@ -48,11 +54,16 @@ function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog:
     const base = typeof meta?.base === "string" && ALLOWED_FRONTEND_BASES.includes(meta.base)
       ? meta.base
       : DEFAULT_FRONTEND_BASE;
-    return { base, autoSyncCatalog: Boolean(meta?.autoSyncCatalog) };
+    return {
+      base,
+      autoSyncCatalog: Boolean(meta?.autoSyncCatalog),
+      expectedScopes: parseScopeList(meta?.expectedScopes),
+    };
   } catch {
     return fallback;
   }
 }
+
 
 /**
  * Pinterest OAuth 2.0 Callback Handler
@@ -68,7 +79,7 @@ Deno.serve(async (req) => {
   const error = url.searchParams.get("error");
 
   // Determine the frontend redirect base + post-success action
-  const { base: frontendBase, autoSyncCatalog } = decodeStateMeta(state);
+  const { base: frontendBase, autoSyncCatalog, expectedScopes } = decodeStateMeta(state);
   // Redirect back to the Health page when the user came in via the catalog reconnect flow.
   const adminUrl = autoSyncCatalog
     ? `${frontendBase}/admin/pinterest-health`
@@ -191,11 +202,39 @@ Deno.serve(async (req) => {
     }
 
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString();
+
+    // Capture the previously granted scopes BEFORE the old row is removed, so
+    // we can prove the reconnect was additive (nothing silently revoked).
+    let previousScopes: string[] = [];
+    try {
+      const { data: prevConn } = await sb
+        .from("pinterest_connection")
+        .select("scopes, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      previousScopes = parseScopeList(prevConn?.scopes);
+    } catch (_e) { /* first connect */ }
+
+    const grantedScopes = parseScopeList(tokenData.scope);
+    const lostScopes = previousScopes.filter((s) => !grantedScopes.includes(s));
+    const gainedScopes = grantedScopes.filter((s) => !previousScopes.includes(s));
+    if (lostScopes.length > 0) {
+      console.warn("[pinterest-oauth-callback] scope regression detected", { lostScopes, grantedScopes });
+      await sb.from("pinterest_post_logs").insert({
+        action: "oauth_scope_regression",
+        status: "failed",
+        error_message: `Reconnect returned fewer scopes than before: missing ${lostScopes.join(", ")}`,
+        response_data: { previous_scopes: previousScopes, granted_scopes: grantedScopes, expected_scopes: expectedScopes },
+      });
+    }
+
     await sb.from("pinterest_runtime_settings").update({
       active_pinterest_connection_id: null,
       updated_at: new Date().toISOString(),
     }).eq("id", 1);
     await sb.from("pinterest_connection").delete().not("id", "is", null);
+
 
     const connectionPayload = {
       account_name: accountName,
@@ -358,10 +397,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const successQs = shouldSyncCatalog
-      ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
-      : `oauth_success=true`;
+    const scopeQs = [
+      gainedScopes.length ? `scopes_added=${encodeURIComponent(gainedScopes.join(","))}` : "",
+      lostScopes.length ? `scopes_lost=${encodeURIComponent(lostScopes.join(","))}` : "",
+    ].filter(Boolean).join("&");
+    const successQs = [
+      shouldSyncCatalog
+        ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
+        : `oauth_success=true`,
+      scopeQs,
+    ].filter(Boolean).join("&");
     return Response.redirect(`${adminUrl}?${successQs}`, 302);
+
 
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
