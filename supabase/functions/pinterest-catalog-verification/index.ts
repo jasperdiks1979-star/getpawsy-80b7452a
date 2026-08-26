@@ -130,13 +130,13 @@ Deno.serve(async (req) => {
 
     async function catalogItemsLookup(itemIds: string[]) {
       // Primary: GET /catalogs/items with item_ids query param
-      const getUrl = `${apiBase}/catalogs/items?country=US&language=en&item_ids=${encodeURIComponent(itemIds.join(","))}`;
+      const getUrl = `${apiBase}/catalogs/items?country=US&language=en-US&item_ids=${encodeURIComponent(itemIds.join(","))}`;
       const r = await pf(getUrl, headers);
       if (r.status !== 405) return r;
       // Fallback: POST /catalogs/items with filters body
-      return pf(`${apiBase}/catalogs/items?country=US&language=en`, headers, {
+      return pf(`${apiBase}/catalogs/items?country=US&language=en-US`, headers, {
         method: "POST",
-        body: JSON.stringify({ country: "US", language: "en", filters: { item_ids: itemIds, catalog_type: "RETAIL" } }),
+        body: JSON.stringify({ country: "US", language: "en-US", filters: { item_ids: itemIds, catalog_type: "RETAIL" } }),
       });
     }
 
