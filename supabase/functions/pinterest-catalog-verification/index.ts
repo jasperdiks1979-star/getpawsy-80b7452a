@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
       // POST /catalogs/items/batch (v5 batch lookup)
       return pf(`${apiBase}/catalogs/items/batch`, headers, {
         method: "POST",
-        body: JSON.stringify({ country: "US", language: "en", item_ids: itemIds, filters: { catalog_type: "RETAIL" } }),
+        body: JSON.stringify({ catalog_type: "RETAIL", country: "US", language: "en", item_ids: itemIds }),
       });
     }
 
