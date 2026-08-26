@@ -34,6 +34,14 @@ const empty: Kpi = {
   revenue: 0, capiOutboxPending: 0, capiOutboxSent: 0, topProducts: [],
 };
 
+type ScopeDiff = {
+  current_scopes: string[];
+  requested_scopes: string[];
+  added_scopes: string[];
+  dropped_scopes: string[];
+  account_name?: string | null;
+};
+
 export default function PinterestHealth() {
   const [kpi, setKpi] = useState<Kpi>(empty);
   const [loading, setLoading] = useState(true);
@@ -42,6 +50,34 @@ export default function PinterestHealth() {
   const [busy, setBusy] = useState<string | null>(null);
   const [adsDiag, setAdsDiag] = useState<any>(null);
   const [adsDiagBusy, setAdsDiagBusy] = useState(false);
+  const [scopeDiff, setScopeDiff] = useState<ScopeDiff | null>(null);
+  const [scopeDiffErr, setScopeDiffErr] = useState<string | null>(null);
+
+  // Read-only dry-run scope diff: shows exactly what a catalog-scope reconnect
+  // would add/drop BEFORE any OAuth URL exists. Reconnect stays disabled
+  // unless dropped_scopes is empty.
+  async function loadScopeDiff() {
+    try {
+      const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: { dry_run: true, extra_scopes: ["catalogs:read", "catalogs:write"] },
+      });
+      if (error) throw error;
+      if ((data as any)?.reconnect_blocked) {
+        setScopeDiff(null);
+        setScopeDiffErr((data as any)?.detail || (data as any)?.error || "Reconnect blocked");
+        return;
+      }
+      setScopeDiff(data as ScopeDiff);
+      setScopeDiffErr(null);
+    } catch (e: any) {
+      setScopeDiff(null);
+      setScopeDiffErr(e?.message ?? "Scope diff failed");
+    }
+  }
+
+  useEffect(() => { loadScopeDiff(); }, []);
+
+  const reconnectSafe = !!scopeDiff && scopeDiff.dropped_scopes.length === 0;
 
   async function runAdsDiagnostic() {
     setAdsDiagBusy(true);
@@ -204,6 +240,7 @@ export default function PinterestHealth() {
   }
 
   async function reconnectWithCatalogScopes() {
+    if (!reconnectSafe) return; // hard gate: never reconnect when scopes would drop
     setBusy("reconnect");
     try {
       const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
@@ -213,6 +250,9 @@ export default function PinterestHealth() {
         },
       });
       if (error) throw error;
+      if ((data as any)?.reconnect_blocked) {
+        throw new Error((data as any)?.error || "Reconnect blocked by scope-drop guard");
+      }
       const authUrl = (data as any)?.auth_url;
       if (!authUrl) throw new Error("No auth_url returned");
       window.location.href = authUrl;
