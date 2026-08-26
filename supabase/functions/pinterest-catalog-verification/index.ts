@@ -199,11 +199,12 @@ Deno.serve(async (req) => {
     const missing = idList.filter((id) => !foundSet.has(id));
 
     // ---------- 6. ITEM-LEVEL ISSUES from processing results ----------
+    const asArr = (v: any): any[] => Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v).flat() : [];
     const itemIssues: any[] = [];
     for (const pr of processingResults.slice(0, 3)) {
       const vd = pr.validation_details || {};
-      for (const e of vd.errors || []) itemIssues.push({ type: "error", ...e });
-      for (const w of vd.warnings || []) itemIssues.push({ type: "warning", ...w });
+      for (const e of asArr(vd.errors)) itemIssues.push({ type: "error", ...(typeof e === "object" ? e : { message: String(e) }) });
+      for (const w of asArr(vd.warnings)) itemIssues.push({ type: "warning", ...(typeof w === "object" ? w : { message: String(w) }) });
     }
 
     // ---------- 7. AD-READY TOP 10 ----------
