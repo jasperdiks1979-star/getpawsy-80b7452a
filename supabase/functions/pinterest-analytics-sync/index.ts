@@ -102,8 +102,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Pull last 7 days analytics for each known pin
-    const { data: pins, error: pinsErr } = await sb.from("pinterest_pin_dimensions").select("pin_id").limit(1000);
+    // Pull last 7 days analytics for each known pin (bounded per invocation so the
+    // isolate always returns a response instead of being killed on CPU/wall time).
+    let bodyOpts: Record<string, unknown> = {};
+    try { bodyOpts = await req.json(); } catch { /* cron sends {} */ }
+    const pinLimit = Math.max(1, Math.min(1000, Number(bodyOpts.limit) || 120));
+    const RUN_BUDGET_MS = 45_000;
+    const startedAt = Date.now();
+    const { data: pins, error: pinsErr } = await sb.from("pinterest_pin_dimensions").select("pin_id").limit(pinLimit);
     if (pinsErr) {
       return new Response(JSON.stringify({ ok: false, traceId, stage: "load_dimensions", message: pinsErr.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,7 +120,9 @@ Deno.serve(async (req) => {
     const endDay = isoDay(new Date());
     let synced = 0;
     let errors = 0;
+    let budgetStopped = false;
     for (const row of (pins as { pin_id: string }[] | null) ?? []) {
+      if (Date.now() - startedAt > RUN_BUDGET_MS) { budgetStopped = true; break; }
       try {
         const url = `${base}/v5/pins/${row.pin_id}/analytics?start_date=${startDay}&end_date=${endDay}&metric_types=IMPRESSION,OUTBOUND_CLICK,SAVE,PIN_CLICK,VIDEO_MRC_VIEW`;
         const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
