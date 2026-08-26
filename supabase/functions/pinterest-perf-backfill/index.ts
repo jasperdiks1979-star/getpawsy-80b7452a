@@ -103,8 +103,8 @@ Deno.serve(async (req) => {
     const token = (conn as { access_token?: string } | null)?.access_token;
     if (!token) return new Response(JSON.stringify({ ok: false, traceId, message: "no pinterest token" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { data: rt } = await sb.from("pinterest_runtime_settings").select("api_mode").limit(1).maybeSingle();
-    const base = ((rt as { api_mode?: string } | null)?.api_mode ?? "production") === "sandbox"
+    const { data: rt } = await sb.from("pinterest_runtime_settings").select("mode").limit(1).maybeSingle();
+    const base = ((rt as { mode?: string } | null)?.mode ?? "production") === "sandbox"
       ? "https://api-sandbox.pinterest.com" : "https://api.pinterest.com";
 
     // Eligible pins: posted with slug_repeat >= N, no row in pinterest_pin_performance

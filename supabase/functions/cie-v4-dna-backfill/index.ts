@@ -15,9 +15,11 @@ import { computeDeterministicDna, fetchImageBytes } from "../_shared/determinist
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
-const BATCH = 25;
+const BATCH = 6;
+/** Hard wall-clock budget per invocation — keeps the isolate under its CPU limit. */
+const RUN_BUDGET_MS = 20_000;
 /** How long the credit circuit breaker stays closed before one probe is allowed. */
-const CREDIT_PAUSE_MINUTES = 360;
+const CREDIT_PAUSE_MINUTES = 1440;
 
 const VISION_SCHEMA = `{
  "camera":"string","lens":"string","perspective":"string","lighting":"string",
@@ -102,7 +104,7 @@ Deno.serve(async (req) => {
     .select("id, image_url, product_id, family")
     .not("image_url", "is", null)
     .eq("status", "published")
-    .limit(BATCH * 4);
+    .limit(300);
   if (error) return json({ error: error.message }, 500);
 
   const ids = (candidates ?? []).map((c) => c.id);
@@ -113,7 +115,10 @@ Deno.serve(async (req) => {
   let deterministic = 0, enriched = 0, deferred = 0, failed = 0;
   let creditIncident: string | null = null;
 
+  const startedAt = Date.now();
+  let budgetStopped = false;
   for (const c of todo) {
+    if (Date.now() - startedAt > RUN_BUDGET_MS) { budgetStopped = true; break; }
     const imageUrl = c.image_url as string;
     try {
       const bytes = await fetchImageBytes(imageUrl);
@@ -218,6 +223,7 @@ Deno.serve(async (req) => {
     ai_enriched: enriched,
     deferred_due_to_credits: deferred,
     failed,
+    budget_stopped: budgetStopped,
     credit_incident: creditIncident,
   });
 });
