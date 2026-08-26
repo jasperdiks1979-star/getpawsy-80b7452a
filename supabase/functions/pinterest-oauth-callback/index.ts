@@ -36,8 +36,14 @@ async function fetchPinterestJson(url: string, accessToken: string) {
   return { ok: res.ok, status: res.status, body, text };
 }
 
-function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog: boolean } {
-  const fallback = { base: DEFAULT_FRONTEND_BASE, autoSyncCatalog: false };
+function parseScopeList(raw: unknown): string[] {
+  if (Array.isArray(raw)) return raw.filter((s) => typeof s === "string");
+  if (typeof raw === "string") return raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
+function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog: boolean; expectedScopes: string[] } {
+  const fallback = { base: DEFAULT_FRONTEND_BASE, autoSyncCatalog: false, expectedScopes: [] as string[] };
   if (!state || !state.includes("::")) return fallback;
   try {
     const tail = state.split("::").slice(1).join("::");
@@ -48,11 +54,16 @@ function decodeStateMeta(state: string | null): { base: string; autoSyncCatalog:
     const base = typeof meta?.base === "string" && ALLOWED_FRONTEND_BASES.includes(meta.base)
       ? meta.base
       : DEFAULT_FRONTEND_BASE;
-    return { base, autoSyncCatalog: Boolean(meta?.autoSyncCatalog) };
+    return {
+      base,
+      autoSyncCatalog: Boolean(meta?.autoSyncCatalog),
+      expectedScopes: parseScopeList(meta?.expectedScopes),
+    };
   } catch {
     return fallback;
   }
 }
+
 
 /**
  * Pinterest OAuth 2.0 Callback Handler
