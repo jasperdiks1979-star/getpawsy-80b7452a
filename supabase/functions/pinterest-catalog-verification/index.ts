@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
     let processingResults: any[] = [];
     let ingestionTriggered = false;
     let ingestionId: string | null = null;
+    let ingestionError: any = null;
 
     if (feed?.id) {
       const [fd, pr] = await Promise.all([
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
         } else {
           ingestionTriggered = false;
           ingestionId = `trigger_failed:${ing.status}`;
+          ingestionError = ing.body;
         }
       }
     }
@@ -127,13 +129,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     async function catalogItemsLookup(itemIds: string[]) {
-      // GET /catalogs/items with filters JSON
-      const filters = JSON.stringify({
-        item_ids: itemIds,
-        catalog_type: "RETAIL",
+      // POST /catalogs/items/batch (v5 batch lookup)
+      return pf(`${apiBase}/catalogs/items/batch`, headers, {
+        method: "POST",
+        body: JSON.stringify({ country: "US", language: "en", item_ids: itemIds, filters: { catalog_type: "RETAIL" } }),
       });
-      const url = `${apiBase}/catalogs/items?country=US&language=en&filters=${encodeURIComponent(filters)}`;
-      return pf(url, headers);
     }
 
     let perchResult: any = { found: false };
@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
       },
       ingestion_triggered: ingestionTriggered,
       ingestion_id: ingestionId,
+      ingestion_error: ingestionError,
       cat_wall_perch: perchResult,
       reconciliation: {
         expected_products: feedIds.length,
@@ -275,6 +276,8 @@ Deno.serve(async (req) => {
       },
       item_issues: itemIssues.slice(0, 50),
       item_issues_total: itemIssues.length,
+      raw_validation_details: processingResults[0]?.validation_details || null,
+      raw_feed_record: feedDetail ? { item_count: feedDetail.item_count, catalog_id: feedDetail.catalog_id, preferred_processing_schedule: feedDetail.preferred_processing_schedule, credentials: undefined } : null,
       ad_ready_top10: adReady,
     });
   } catch (e: any) {
