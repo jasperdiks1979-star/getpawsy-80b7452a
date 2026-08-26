@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       } catch { errors++; }
     }
 
-    return new Response(JSON.stringify({ ok: true, traceId, synced, errors, pins_scanned: (pins ?? []).length }), {
+    return new Response(JSON.stringify({ ok: true, traceId, synced, errors, budget_stopped: budgetStopped, pins_scanned: (pins ?? []).length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
