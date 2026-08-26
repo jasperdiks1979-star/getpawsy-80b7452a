@@ -223,6 +223,7 @@ Deno.serve(async (req) => {
     ai_enriched: enriched,
     deferred_due_to_credits: deferred,
     failed,
+    budget_stopped: budgetStopped,
     credit_incident: creditIncident,
   });
 });
