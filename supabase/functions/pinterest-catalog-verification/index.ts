@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     const feedXmlRes = await fetch(FEED_URL);
     const feedXml = await feedXmlRes.text();
     const feedIds = [...feedXml.matchAll(/<g:id>([^<]+)<\/g:id>/g)].map((m) => m[1].trim());
-    const feedLinkCount = [...feedXml.matchAll(/<g:link>/g)].length;
+    const feedLinkCount = [...feedXml.matchAll(/<link>/g)].length - 1; // minus channel link
     const feedImageCount = [...feedXml.matchAll(/<g:image_link>/g)].length;
     const uniqueIds = new Set(feedIds);
 
@@ -151,13 +151,13 @@ Deno.serve(async (req) => {
           found: true,
           item_id: hit.item_id,
           title: attrs.title || null,
-          price: attrs.price ? `${attrs.price} ${attrs.currency || "USD"}` : null,
+          price: attrs.price ? String(attrs.price) : null,
           availability: attrs.availability || null,
           link: attrs.link || null,
           image: attrs.image_link || attrs.additional_image_link || null,
           status: hit.status || null,
           errors: hit.errors || [],
-          searchable: (hit.status === "ACTIVE") && !(hit.errors || []).length,
+          searchable: !(hit.errors || []).length,
           expected: {
             price: Number(perch.price),
             slug: perch.slug,
@@ -273,8 +273,9 @@ Deno.serve(async (req) => {
         missing_products: missing.length,
         missing_item_ids: missing.slice(0, 50),
         rejected_products: rejectedItems.length,
+        rejected_items_detail: rejectedItems.slice(0, 20),
         duplicate_collisions: feedIds.length - uniqueIds.size,
-        url_collisions: feedIds.length - feedLinkCount,
+        url_collisions: Math.max(0, feedIds.length - feedLinkCount),
         image_collisions: feedIds.length - feedImageCount,
         lookup_errors: lookupErrors,
       },
