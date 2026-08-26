@@ -203,12 +203,38 @@ export default function PinterestHealth() {
     }
   }
 
+  // Additive catalog reconnect: first ask the backend for a dry-run scope diff,
+  // show exactly what is added and what is preserved, then send the user to
+  // Pinterest. Existing boards/pins/user_accounts scopes are always replayed,
+  // so nothing is changed or revoked.
   async function reconnectWithCatalogScopes() {
     setBusy("reconnect");
     try {
+      const CATALOG_SCOPES = ["catalogs:read", "catalogs:write"];
+      const { data: preview, error: previewError } = await supabase.functions.invoke("pinterest-oauth-start", {
+        body: { extra_scopes: CATALOG_SCOPES, additive: true, preview_only: true },
+      });
+      if (previewError) throw previewError;
+      const p = preview as any;
+      const added: string[] = p?.added_scopes ?? CATALOG_SCOPES;
+      const preserved: string[] = p?.preserved_scopes ?? [];
+      const confirmed = window.confirm(
+        [
+          "Additive Pinterest reconnect",
+          "",
+          `Adds: ${added.length ? added.join(", ") : "(nothing new — already granted)"}`,
+          `Preserved (unchanged): ${preserved.length ? preserved.join(", ") : "—"}`,
+          "Revoked: none",
+          "",
+          "Approve every pre-checked permission on the Pinterest consent screen.",
+        ].join("\n")
+      );
+      if (!confirmed) { setBusy(null); return; }
+
       const { data, error } = await supabase.functions.invoke("pinterest-oauth-start", {
         body: {
-          extra_scopes: ["catalogs:read", "catalogs:write"],
+          extra_scopes: CATALOG_SCOPES,
+          additive: true,
           auto_sync_catalog: true,
         },
       });
@@ -225,6 +251,20 @@ export default function PinterestHealth() {
   // Surface the result of the auto-catalog-sync that runs after OAuth callback.
   useEffect(() => {
     const qs = new URLSearchParams(window.location.search);
+    const scopesLost = qs.get("scopes_lost");
+    const scopesAdded = qs.get("scopes_added");
+    if (scopesLost) {
+      toast({
+        title: "Scope regression detected",
+        description: `Pinterest did not return: ${scopesLost}. Reconnect again and approve all permissions.`,
+        variant: "destructive",
+      });
+    } else if (scopesAdded) {
+      toast({
+        title: "Scopes added",
+        description: `Granted: ${scopesAdded}. Existing permissions preserved.`,
+      });
+    }
     if (qs.get("oauth_success") === "true" && qs.has("catalog_synced")) {
       const ok = qs.get("catalog_synced") === "1";
       toast({
@@ -239,6 +279,7 @@ export default function PinterestHealth() {
       const cleaned = window.location.pathname;
       window.history.replaceState({}, "", cleaned);
     }
+
     // Auto-run Ads diagnostic immediately after an Ads-scope reconnect.
     if (qs.get("oauth_success") === "true" && sessionStorage.getItem("pinterest_ads_reconnect_pending") === "1") {
       sessionStorage.removeItem("pinterest_ads_reconnect_pending");
