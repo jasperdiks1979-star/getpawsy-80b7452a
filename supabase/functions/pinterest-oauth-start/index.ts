@@ -97,40 +97,18 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Generate a random state for CSRF protection (carries post-success metadata).
-  const state = encodeState(crypto.randomUUID(), {
-    base: resolveFrontendBase(req),
-    autoSyncCatalog,
-  });
-
-  // Store state in DB for verification during callback
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Force a clean OAuth attempt: never let a stale cached state participate
-  // in a reconnect after a token/auth failure.
-  await sb.from("pinterest_oauth_states").delete().neq("state", state);
-
-  // Store state temporarily (we'll verify it during callback)
-  await sb.from("pinterest_oauth_states").upsert({
-    state,
-    created_at: new Date().toISOString(),
-  });
-
-  // Pinterest OAuth 2.0 authorization URL
+  // Minimum organic scopes this project always needs to keep working.
   const baseScopes = [
     "boards:read",
     "boards:write",
     "pins:read",
     "pins:write",
     "user_accounts:read",
-    // Catalog read/write is required for the production catalog datasource:
-    // without it the feed can be generated but cannot be refreshed, queried,
-    // or item-verified in Pinterest's ingested catalog.
-    "catalogs:read",
-    "catalogs:write",
   ];
   const ALLOWED_EXTRA = new Set([
     "catalogs:read",
@@ -147,8 +125,81 @@ Deno.serve(async (req) => {
     "biz_access:read",
     "biz_access:write",
   ]);
+  const KNOWN_SCOPES = new Set([...baseScopes, ...ALLOWED_EXTRA]);
+
+  // Currently granted scopes on the active connection. Pinterest re-issues a
+  // token with exactly the scopes requested here, so an additive reconnect
+  // MUST replay every scope already granted, plus the newly requested ones.
+  let currentScopes: string[] = [];
+  try {
+    const { data: conn } = await sb
+      .from("pinterest_connection")
+      .select("scopes, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const raw = typeof conn?.scopes === "string" ? conn.scopes : "";
+    currentScopes = raw
+      .split(/[,\s]+/)
+      .map((s) => s.trim())
+      .filter((s) => KNOWN_SCOPES.has(s));
+  } catch (_e) { /* no stored connection yet */ }
+
   const sanitizedExtra = extraScopes.filter((s) => ALLOWED_EXTRA.has(s));
-  const scopes = Array.from(new Set([...baseScopes, ...sanitizedExtra])).join(",");
+  const preservedScopes = additive
+    ? Array.from(new Set([...baseScopes, ...currentScopes]))
+    : baseScopes;
+  const requestedScopes = Array.from(new Set([...preservedScopes, ...sanitizedExtra]));
+  const addedScopes = sanitizedExtra.filter((s) => !preservedScopes.includes(s));
+  // Safety invariant: never request less than what is already granted.
+  const droppedScopes = additive ? currentScopes.filter((s) => !requestedScopes.includes(s)) : [];
+  if (droppedScopes.length > 0) {
+    return new Response(
+      JSON.stringify({
+        error: "additive_scope_violation",
+        message: "Reconnect would drop already granted scopes; aborted.",
+        dropped_scopes: droppedScopes,
+      }),
+      { status: 409, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
+  const scopePreview = {
+    additive,
+    current_scopes: currentScopes,
+    added_scopes: addedScopes,
+    preserved_scopes: preservedScopes,
+    requested_scopes: requestedScopes,
+    revoked_scopes: [] as string[],
+  };
+
+  // Dry run: let the UI show exactly what will change before sending the
+  // user to Pinterest. No state row is created for a preview.
+  if (previewOnly) {
+    return new Response(
+      JSON.stringify({ preview: true, ...scopePreview }),
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+    );
+  }
+
+  // Generate a random state for CSRF protection (carries post-success metadata).
+  const state = encodeState(crypto.randomUUID(), {
+    base: resolveFrontendBase(req),
+    autoSyncCatalog,
+    expectedScopes: requestedScopes,
+  });
+
+  // Force a clean OAuth attempt: never let a stale cached state participate
+  // in a reconnect after a token/auth failure.
+  await sb.from("pinterest_oauth_states").delete().neq("state", state);
+
+  // Store state temporarily (we'll verify it during callback)
+  await sb.from("pinterest_oauth_states").upsert({
+    state,
+    created_at: new Date().toISOString(),
+  });
+
+  const scopes = requestedScopes.join(",");
 
   const authUrl = new URL("https://www.pinterest.com/oauth/");
   authUrl.searchParams.set("client_id", clientId);
@@ -158,7 +209,8 @@ Deno.serve(async (req) => {
   authUrl.searchParams.set("state", state);
 
   return new Response(
-    JSON.stringify({ auth_url: authUrl.toString(), state }),
+    JSON.stringify({ auth_url: authUrl.toString(), state, ...scopePreview }),
     { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
   );
+
 });
