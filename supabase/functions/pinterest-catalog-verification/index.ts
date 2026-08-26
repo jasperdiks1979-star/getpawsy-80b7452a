@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       // Fallback: POST /catalogs/items with filters body
       return pf(`${apiBase}/catalogs/items?country=US&language=en`, headers, {
         method: "POST",
-        body: JSON.stringify({ item_ids: itemIds, catalog_type: "RETAIL" }),
+        body: JSON.stringify({ country: "US", language: "en", filters: { item_ids: itemIds, catalog_type: "RETAIL" } }),
       });
     }
 
