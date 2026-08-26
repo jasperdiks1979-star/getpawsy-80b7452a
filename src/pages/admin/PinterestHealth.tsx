@@ -397,6 +397,31 @@ export default function PinterestHealth() {
           </div>
         </CardHeader>
         <CardContent className="text-sm space-y-1">
+          <div className="rounded border p-3 mb-3 space-y-1 bg-muted/30">
+            <div className="font-medium flex items-center justify-between">
+              <span>Reconnect scope preview (dry-run)</span>
+              <Button size="sm" variant="ghost" onClick={loadScopeDiff} title="Re-run read-only scope diff">
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+            {scopeDiffErr && (
+              <div className="text-destructive text-xs">Reconnect blocked: {scopeDiffErr}</div>
+            )}
+            {scopeDiff && (
+              <>
+                <div className="text-xs"><span className="text-muted-foreground">Current scopes: </span><span className="font-mono">{scopeDiff.current_scopes.join(", ")}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Requested scopes: </span><span className="font-mono">{scopeDiff.requested_scopes.join(", ")}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Added: </span><span className="font-mono">{scopeDiff.added_scopes.join(", ") || "none"}</span></div>
+                <div className="text-xs"><span className="text-muted-foreground">Dropped: </span><span className={`font-mono ${scopeDiff.dropped_scopes.length ? "text-destructive" : ""}`}>{scopeDiff.dropped_scopes.join(", ") || "NONE"}</span></div>
+                {!reconnectSafe && (
+                  <div className="text-destructive text-xs font-medium">Scope-drop guard active — reconnect disabled.</div>
+                )}
+              </>
+            )}
+            {!scopeDiff && !scopeDiffErr && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Computing scope diff…</div>
+            )}
+          </div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed URL</span><span className="font-mono text-xs truncate max-w-[60%]" title={catalog?.feed_url || ""}>{catalog?.feed_url || "—"}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed ID</span><span className="font-mono text-xs">{catalog?.feed_id || "—"}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Items in feed</span><span>{catalog?.items_total ?? "—"}</span></div>
