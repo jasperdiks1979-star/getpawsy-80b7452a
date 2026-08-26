@@ -129,10 +129,14 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     async function catalogItemsLookup(itemIds: string[]) {
-      // POST /catalogs/items/batch (v5 batch lookup)
-      return pf(`${apiBase}/catalogs/items/batch`, headers, {
+      // Primary: GET /catalogs/items with item_ids query param
+      const getUrl = `${apiBase}/catalogs/items?country=US&language=en&item_ids=${encodeURIComponent(itemIds.join(","))}`;
+      const r = await pf(getUrl, headers);
+      if (r.status !== 405) return r;
+      // Fallback: POST /catalogs/items with filters body
+      return pf(`${apiBase}/catalogs/items?country=US&language=en`, headers, {
         method: "POST",
-        body: JSON.stringify({ catalog_type: "RETAIL", country: "US", language: "en", items: itemIds.map((id) => ({ item_id: id })) }),
+        body: JSON.stringify({ item_ids: itemIds, catalog_type: "RETAIL" }),
       });
     }
 
