@@ -397,10 +397,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const successQs = shouldSyncCatalog
-      ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
-      : `oauth_success=true`;
+    const scopeQs = [
+      gainedScopes.length ? `scopes_added=${encodeURIComponent(gainedScopes.join(","))}` : "",
+      lostScopes.length ? `scopes_lost=${encodeURIComponent(lostScopes.join(","))}` : "",
+    ].filter(Boolean).join("&");
+    const successQs = [
+      shouldSyncCatalog
+        ? `oauth_success=true&catalog_synced=${catalogSyncResult?.error ? "0" : "1"}`
+        : `oauth_success=true`,
+      scopeQs,
+    ].filter(Boolean).join("&");
     return Response.redirect(`${adminUrl}?${successQs}`, 302);
+
 
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
