@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
   if (action === "disable_promotion") {
     const res = await pin(`/ad_accounts/${AD_ACCOUNT}/product_group_promotions`, token, {
       method: "PATCH",
-      body: JSON.stringify({ product_group_promotion: [{ id: String(payload.promotion_id), is_enabled: false }] }),
+      body: JSON.stringify({ ad_group_id: String(payload.ad_group_id), product_group_promotion: [{ id: String(payload.promotion_id), is_enabled: false }] }),
     });
     return json({ ok: res.ok, traceId, action, res });
   }
