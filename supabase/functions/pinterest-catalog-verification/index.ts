@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     // ---------- 2. CATALOGS / FEEDS ----------
     const feedsRes = await pf(`${apiBase}/catalogs/feeds?page_size=50`, headers);
-    const feeds = feedsRes.body?.items || [];
+    const feeds = Array.isArray(feedsRes.body?.items) ? feedsRes.body.items : [];
     const feed = feeds.find((f: any) => f.location === FEED_URL) || feeds[0] || null;
 
     let feedDetail: any = null;
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         pf(`${apiBase}/catalogs/feeds/${feed.id}/processing_results?page_size=5`, headers),
       ]);
       feedDetail = fd.body;
-      processingResults = pr.body?.items || [];
+      processingResults = Array.isArray(pr.body?.items) ? pr.body.items : [];
 
       // ---------- 3. TRIGGER FRESH INGESTION ----------
       if (triggerIngest) {
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     let perchResult: any = { found: false };
     if (perch?.id) {
       const r = await catalogItemsLookup([perch.id]);
-      const items = r.body?.items || [];
+      const items = Array.isArray(r.body?.items) ? r.body.items : [];
       const hit = items.find((i: any) => i.item_id === perch.id);
       if (hit) {
         const attrs = hit.attributes || {};
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         lookupErrors.push({ batch: i / 100, status: r.status, body: r.body });
         continue;
       }
-      for (const it of r.body?.items || []) {
+      for (const it of (Array.isArray(r.body?.items) ? r.body.items : [])) {
         if (it.item_id) foundSet.add(it.item_id);
         if ((it.errors || []).length || (it.warnings || []).length) {
           rejectedItems.push({
