@@ -15,8 +15,8 @@ async function getPinterestToken(sb: ReturnType<typeof createClient>) {
 }
 
 async function getApiBase(sb: ReturnType<typeof createClient>) {
-  const { data } = await sb.from("pinterest_runtime_settings").select("api_mode").limit(1).maybeSingle();
-  const mode = (data as { api_mode?: string } | null)?.api_mode ?? "production";
+  const { data } = await sb.from("pinterest_runtime_settings").select("mode").limit(1).maybeSingle();
+  const mode = (data as { mode?: string } | null)?.mode ?? "production";
   return mode === "sandbox" ? "https://api-sandbox.pinterest.com" : "https://api.pinterest.com";
 }
 
