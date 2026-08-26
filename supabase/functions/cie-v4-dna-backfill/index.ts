@@ -15,9 +15,11 @@ import { computeDeterministicDna, fetchImageBytes } from "../_shared/determinist
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
-const BATCH = 25;
+const BATCH = 6;
+/** Hard wall-clock budget per invocation — keeps the isolate under its CPU limit. */
+const RUN_BUDGET_MS = 20_000;
 /** How long the credit circuit breaker stays closed before one probe is allowed. */
-const CREDIT_PAUSE_MINUTES = 360;
+const CREDIT_PAUSE_MINUTES = 1440;
 
 const VISION_SCHEMA = `{
  "camera":"string","lens":"string","perspective":"string","lighting":"string",
