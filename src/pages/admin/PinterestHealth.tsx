@@ -381,10 +381,10 @@ export default function PinterestHealth() {
               variant="secondary"
               disabled={busy !== null}
               onClick={reconnectWithCatalogScopes}
-              title="Reconnect Pinterest and request catalogs:read + catalogs:write, then auto-run feed sync"
+              title="Additive reconnect: adds catalogs:read + catalogs:write while replaying all existing scopes (nothing revoked), then auto-runs feed sync"
             >
               {busy === "reconnect" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
-              Reconnect + grant catalog scopes
+              Add catalog scopes (additive)
             </Button>
             <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => callCatalog("status")}>
               <RefreshCw className={`h-3 w-3 mr-1 ${busy === "status" ? "animate-spin" : ""}`} />Check status
