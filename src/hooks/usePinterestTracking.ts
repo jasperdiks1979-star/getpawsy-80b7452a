@@ -3,10 +3,13 @@ import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { getConsent, isMarketingAllowed } from '@/lib/cookieConsent';
 
 // Pinterest Tag ID — exposed via env var (publishable, safe to ship in client bundle).
-// Falls back to the canonical GetPawsy production tag if env is missing.
+// Canonical value MUST match the advertiser-owned conversion tag on ad account
+// 549770199501 (GetPawsy). Tag 2612897117846 was stale/foreign (403 on this
+// ad account) and produced unattributable conversions — do not restore it.
 const PINTEREST_TAG_ID: string =
   (typeof import.meta !== 'undefined' && (import.meta as ImportMeta).env?.VITE_PINTEREST_TAG_ID) ||
-  '2612897117846';
+  '2612820116727';
+
 
 const IS_DEV: boolean =
   typeof import.meta !== 'undefined' && !!(import.meta as ImportMeta).env?.DEV;
