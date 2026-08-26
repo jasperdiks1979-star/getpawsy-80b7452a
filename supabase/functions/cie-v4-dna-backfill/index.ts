@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     .select("id, image_url, product_id, family")
     .not("image_url", "is", null)
     .eq("status", "published")
-    .limit(BATCH * 4);
+    .limit(300);
   if (error) return json({ error: error.message }, 500);
 
   const ids = (candidates ?? []).map((c) => c.id);
