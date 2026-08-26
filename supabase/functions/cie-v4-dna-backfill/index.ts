@@ -115,7 +115,10 @@ Deno.serve(async (req) => {
   let deterministic = 0, enriched = 0, deferred = 0, failed = 0;
   let creditIncident: string | null = null;
 
+  const startedAt = Date.now();
+  let budgetStopped = false;
   for (const c of todo) {
+    if (Date.now() - startedAt > RUN_BUDGET_MS) { budgetStopped = true; break; }
     const imageUrl = c.image_url as string;
     try {
       const bytes = await fetchImageBytes(imageUrl);
