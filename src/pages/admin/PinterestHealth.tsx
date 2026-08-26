@@ -378,9 +378,11 @@ export default function PinterestHealth() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={busy !== null}
+              disabled={busy !== null || !reconnectSafe}
               onClick={reconnectWithCatalogScopes}
-              title="Reconnect Pinterest and request catalogs:read + catalogs:write, then auto-run feed sync"
+              title={reconnectSafe
+                ? "Reconnect Pinterest and request catalogs:read + catalogs:write, then auto-run feed sync. All existing scopes preserved."
+                : "Disabled until the dry-run scope diff confirms zero dropped scopes."}
             >
               {busy === "reconnect" ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Link2 className="h-3 w-3 mr-1" />}
               Reconnect + grant catalog scopes
