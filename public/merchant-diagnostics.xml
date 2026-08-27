@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-08-25T15:57:40.172Z" total_products="328">
+<merchant_diagnostics generated="2026-08-27T05:17:43.362Z" total_products="325">
   <summary>
     <missing_gtin>22</missing_gtin>
     <missing_image>0</missing_image>
@@ -12,11 +12,9 @@
   </summary>
   <issues>
     <issue type="missing_gtin" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." />
-    <issue type="missing_compare_at_price" product_id="07ad844f-3a96-4fef-b8cd-8a6309d3bee4" name="Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="missing_compare_at_price" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
-    <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
     <issue type="overlength_title" product_id="2041764d-a50a-4f49-930e-63c710c5a27a" name="Blue-Yellow Color Options -- 1Pc Dog Water Fountain Multifunctional Automatic..." length="157" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
@@ -27,6 +25,8 @@
     <issue type="overlength_title" product_id="417336ad-6576-451c-9fda-d514a759e0b5" name="PawHut Wooden Dog Agility Seesaw For Balance Training And Exercise, Platform ..." length="153" />
     <issue type="overlength_title" product_id="41d9da7b-156b-4d22-a1ce-7b8c0c90d3ac" name="59in Large Tall Christmas Tree Cat Tower With 2 Cat Condos &amp; Scratching Post,..." length="171" />
     <issue type="overlength_title" product_id="42823f27-f3ec-4494-a081-73c7fbc029e0" name="2 In 1 Wireless Electric Dog Fence Waterproof Pet Shock Boundary Containment ..." length="160" />
+    <issue type="missing_compare_at_price" product_id="42eb633a-5a59-4b27-a512-4291b85fda86" name=" 102&quot; Adjustable Height Floor to Ceiling Cat Tree, 5 Level Cat Tower with Scr..." />
+    <issue type="missing_gtin" product_id="42eddd95-6d8f-438c-a8ff-c1b320ccdd76" name="Dog Paw Balm – Moisturizing Paw Pad Protector for Dry &amp; Cracked Paws" />
     <issue type="missing_gtin" product_id="46ad1184-55d2-452b-9d7f-9f07b12520fd" name="Professional Dog Grooming Clippers With 2.5L Cup, 3 Suction Modes, Cordless C..." />
     <issue type="missing_gtin" product_id="516103ad-7294-4255-b29a-7bf2dae185ef" name="Elevated Dog Bowls With Storage, Two Stainless Steel Bowls For Large Dogs, Co..." />
     <issue type="overlength_title" product_id="5362f3a5-6d93-4fda-86c3-eb533e0825ce" name="1Pc Dog Car Seat Cover For Back Seat Waterproof Oxford Cloth Seat Cover Hammo..." length="177" />
