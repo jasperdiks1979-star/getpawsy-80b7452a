@@ -159,10 +159,22 @@ Deno.serve(async (req) => {
           catalog_product_group_id: gid,
           creative_type: "SHOPPING",
           status: "PAUSED",
+          customizable_cta_type: "SHOP_NOW",
+          grid_click_type: "DIRECT_TO_DESTINATION",
           included_product_count: 1,
-ds:          undefined,
         }]),
       });
+    }
+
+
+    if (phase === "verify") {
+      out.bubble_counts = await pin(`/catalogs/product_groups/4673049699886/product_counts`, token);
+      out.all_counts = await pin(`/catalogs/product_groups/4673044297940/product_counts`, token);
+      out.accordion_counts = await pin(`/catalogs/product_groups/4673049493396/product_counts`, token);
+      out.item_v1 = await pin(`/catalogs/items?catalog_id=${CATALOG}&country=US&language=EN&item_ids=${ITEM_ID}`, token);
+      out.item_v2 = await pin(`/catalogs/products/${ITEM_ID}`, token);
+      out.feeds = await pin(`/catalogs/feeds?catalog_id=${CATALOG}`, token);
+      out.processing = await pin(`/catalogs/feeds/${FEED}/processing_results?page_size=3`, token);
     }
 
     if (phase === "raw") {
