@@ -334,7 +334,7 @@ async function archiveDue(sb: any, limit = 50) {
 async function dashboard(sb: any) {
   const since = new Date(Date.now() - 30 * 86400000).toISOString();
   const [postedAgg, jobAgg, topHeadlines, recentRuns] = await Promise.all([
-    sb.from("pinterest_pin_performance").select("impressions,outbound_clicks,saves").gt("date", since.slice(0,10)),
+    sb.from("pinterest_pin_performance").select("impressions,outbound_clicks:clicks,saves").gt("date", since.slice(0,10)),
     sb.from("pinterest_overlay_replacement_jobs").select("status"),
     sb.from("pinterest_v2_live_usage").select("*").eq("kind", "headline").order("live_count", { ascending: false }).limit(15),
     sb.from("pinterest_v2_engine_runs").select("*").order("created_at", { ascending: false }).limit(20),

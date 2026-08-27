@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       sb.from("pinterest_eligibility_log").select("reason, eligible, media_score").gte("checked_at", since),
       sb.from("pinterest_replacement_log").select("id, created_at").gte("created_at", since),
       sb.from("pinterest_creative_winners").select("id, composite_score").order("composite_score", { ascending: false }).limit(20),
-      sb.from("pinterest_pin_performance").select("pin_id, ctr, outbound_clicks, saves, impressions").order("outbound_clicks", { ascending: false }).limit(20),
+      sb.from("pinterest_pin_performance").select("pin_id, ctr, outbound_clicks:clicks, saves, impressions").order("outbound_clicks", { ascending: false }).limit(20),
       sb.from("cinematic_ad_jobs").select("id, status, creative_source_tier, validation_v4_passed").gte("created_at", since),
     ]);
 

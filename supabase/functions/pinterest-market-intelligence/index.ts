@@ -38,7 +38,7 @@ async function aggregate() {
     sb.from("pinterest_competitor_opportunities").select("*").order("gap_score", { ascending: false }).limit(50),
     sb.from("market_gap_action_items").select("*").order("impact_score", { ascending: false }).limit(50),
     sb.from("pinterest_trend_signals").select("*").order("score", { ascending: false }).limit(60),
-    sb.from("pinterest_pin_performance").select("pin_id,product_id,impressions,saves,outbound_clicks,ctr").order("impressions", { ascending: false }).limit(100),
+    sb.from("pinterest_pin_performance").select("pin_id,product_id,impressions,saves,outbound_clicks:clicks,ctr").order("impressions", { ascending: false }).limit(100),
     sb.from("pinterest_board_performance").select("*").order("revenue", { ascending: false }).limit(20),
     sb.from("pmin_keyword_trends").select("*").order("trend_score", { ascending: false }).limit(100),
     sb.from("ee_p2_image_dna").select("*").limit(100),

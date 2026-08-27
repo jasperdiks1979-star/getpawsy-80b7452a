@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
     let pins: any[] = [];
     try {
       const { data: pinRows } = await sb.from("pinterest_pin_performance")
-        .select("pin_id,product_id,saves,clicks,impressions,outbound_clicks,revenue,updated_at")
+        .select("pin_id,product_id,saves,clicks,impressions,outbound_clicks:clicks,updated_at")
         .order("updated_at", { ascending: false })
         .limit(500);
       pins = (pinRows ?? []).map((p: any) => {

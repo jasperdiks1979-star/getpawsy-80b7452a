@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       const slice = pinIds.slice(i, i + 500);
       const { data: rows } = await supabase
         .from("pinterest_pin_performance")
-        .select("pin_id, impressions, outbound_clicks, saves, ctr")
+        .select("pin_id, impressions, outbound_clicks:clicks, saves, ctr")
         .in("pin_id", slice);
       for (const r of rows ?? []) {
         perf[r.pin_id as string] = {

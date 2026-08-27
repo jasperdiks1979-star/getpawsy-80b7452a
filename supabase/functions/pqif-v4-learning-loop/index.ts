@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const maxCtr = settings?.retire_max_ctr ?? 0.0025;
 
     const { data: perf } = await s.from("pinterest_pin_performance")
-      .select("pin_id, product_id, impressions, outbound_clicks, ctr, saves, updated_at")
+      .select("pin_id, product_id, impressions, outbound_clicks:clicks, ctr, saves, updated_at")
       .gte("impressions", minImpr)
       .lte("ctr", maxCtr)
       .limit(500);
