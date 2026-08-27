@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
   const { data: winners } = await sb
     .from("pinterest_pin_performance")
     .select("pin_id, outbound_clicks:clicks, saves, ctr, product_id")
-    .gte("outbound_clicks", 5)
-    .order("outbound_clicks", { ascending: false })
+    .gte("clicks", 5)
+    .order("clicks", { ascending: false })
     .limit(50);
 
   for (const w of winners ?? []) {
