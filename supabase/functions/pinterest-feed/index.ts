@@ -110,12 +110,17 @@ Deno.serve(async (req) => {
     </item>`;
         })
         .join("\n");
+      // Non-commerce feed marker: guarantees Pinterest sees a fresh content
+      // signature on every fetch (avoids FETCH_SAME_SIGNATURE incremental
+      // short-circuits). Does not alter any product-level field.
+      const builtAt = new Date().toISOString();
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>GetPawsy — Pinterest Catalog</title>
     <link>https://getpawsy.pet</link>
     <description>Premium pet products for cats and dogs, US-native catalog.</description>
+    <lastBuildDate>${builtAt}</lastBuildDate>
 ${items}
   </channel>
 </rss>`;
@@ -123,9 +128,11 @@ ${items}
         headers: {
           ...cors,
           "Content-Type": "application/xml; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, s-maxage=600",
+          // Short edge cache so the refreshed signature is not masked by CDN reuse.
+          "Cache-Control": "public, max-age=60, s-maxage=60",
         },
       });
+
     }
 
     return new Response(JSON.stringify(feed), {
