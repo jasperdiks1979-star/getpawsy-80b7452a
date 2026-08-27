@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     const since = new Date(Date.now() - 7 * 86400000).toISOString();
     const { data: pins } = await supabase
       .from("pinterest_pin_performance")
-      .select("pin_id, product_id, impressions, outbound_clicks, saves")
+      .select("pin_id, product_id, impressions, outbound_clicks:clicks, saves")
       .gte("created_at", since);
 
     // Aggregate per product

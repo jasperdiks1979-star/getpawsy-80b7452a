@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
     // Pin performance feed (last 7d for tier recomputation)
     const { data: pins } = await supabase
       .from("pinterest_pin_performance")
-      .select("pin_id, impressions, clicks, saves, outbound_clicks, day, product_id")
-      .gte("day", new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10))
+      .select("pin_id, impressions, clicks, saves, outbound_clicks:clicks, day:created_at, product_id")
+      .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString())
       .limit(5000);
 
     const pinRows = pins ?? [];

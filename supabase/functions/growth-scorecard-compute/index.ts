@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     // Pinterest health (CTR vs benchmark, queue depth)
     const { data: pinPerf } = await supabase
       .from("pinterest_pin_performance")
-      .select("impressions, outbound_clicks, saves")
+      .select("impressions, outbound_clicks:clicks, saves")
       .gte("created_at", since7);
     const imp = (pinPerf ?? []).reduce((s: number, r: any) => s + Number(r.impressions || 0), 0);
     const clk = (pinPerf ?? []).reduce((s: number, r: any) => s + Number(r.outbound_clicks || 0), 0);

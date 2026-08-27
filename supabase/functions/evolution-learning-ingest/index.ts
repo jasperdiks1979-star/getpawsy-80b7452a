@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     await step("ingest_history", async () => {
       const { data: rows } = await sb
         .from("pinterest_pin_performance")
-        .select("pin_id, product_id, board_id, impressions, saves, outbound_clicks, ctr, engagement, revenue, purchases, created_at")
+        .select("pin_id, product_id, impressions, saves, outbound_clicks:clicks, ctr, created_at")
         .order("created_at", { ascending: false })
         .limit(2000);
       if (!rows || rows.length === 0) return { rows: 0 };

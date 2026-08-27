@@ -68,7 +68,7 @@ async function ingestPerformance(sb: any, runId: string): Promise<number> {
   const pinIds = creatives.map((c: any) => c.pinterest_pin_id).filter(Boolean);
   const { data: perfRows } = await sb
     .from("pinterest_pin_performance")
-    .select("pin_id,impressions,saves,outbound_clicks,clicks")
+    .select("pin_id,impressions,saves,outbound_clicks:clicks,clicks")
     .in("pin_id", pinIds);
   const perfByPin = new Map<string, any>();
   for (const r of perfRows ?? []) perfByPin.set(r.pin_id, r);

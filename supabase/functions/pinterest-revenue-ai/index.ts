@@ -521,7 +521,7 @@ async function dashboard() {
     sb.from("lp_funnel_events").select("classification").gte("created_at", new Date(Date.now() - 7 * 86400 * 1000).toISOString()).limit(20000),
     sb.from("pinterest_pdp_conversion_stats").select("*").gte("day", new Date(Date.now() - 14 * 86400 * 1000).toISOString().slice(0, 10)).order("pinterest_clicks", { ascending: false }).limit(200),
     sb.from("monitoring_alerts").select("alert_key,severity,title,description,last_detected_at,is_active").eq("category", "pinterest_revenue_ai").eq("is_active", true).order("severity").limit(50),
-    sb.from("pinterest_pin_performance").select("pin_id,impressions,clicks,saves,outbound_clicks,conversion_score").order("clicks", { ascending: false }).limit(20),
+    sb.from("pinterest_pin_performance").select("pin_id,impressions,clicks,saves,outbound_clicks:clicks,conversion_score:performance_score").order("clicks", { ascending: false }).limit(20),
   ]);
 
   // Traffic-quality breakdown (Phase 1 / 5)

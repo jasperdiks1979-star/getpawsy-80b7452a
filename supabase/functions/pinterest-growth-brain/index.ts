@@ -36,8 +36,8 @@ async function computePredictions(sb: Sb, runId: string, dryRun: boolean) {
   const since = new Date(Date.now() - 14 * 86400_000).toISOString();
   const { data: perf } = await sb
     .from("pinterest_pin_performance")
-    .select("pin_id, product_id, impressions, saves, outbound_clicks, ctr, save_rate, dwell_ms, gallery_interactions, variant_selections, atc, last_seen_at")
-    .gte("last_seen_at", since)
+    .select("pin_id, product_id, impressions, saves, outbound_clicks:clicks, ctr, last_seen_at:updated_at")
+    .gte("updated_at", since)
     .limit(2000);
   const rows = perf ?? [];
   if (rows.length === 0) return { computed: 0, top: [] as Array<{ pin_id: string; product_id: string | null; winner_p: number; revenue_p: number; viral_p: number }> };

@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   const productIds = (products ?? []).map((p) => p.id);
   const { data: perf } = await sb
     .from("pinterest_pin_performance")
-    .select("product_id, impressions, outbound_clicks, saves, revenue, ctr")
+    .select("product_id, impressions, outbound_clicks:clicks, saves, ctr")
     .in("product_id", productIds)
     .gte("created_at", new Date(Date.now() - 7 * 24 * 3600_000).toISOString());
 

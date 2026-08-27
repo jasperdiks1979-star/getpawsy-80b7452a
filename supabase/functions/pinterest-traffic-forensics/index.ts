@@ -201,11 +201,11 @@ Deno.serve(async (req) => {
     const { count: pins30c } = await sb.from("pinterest_pins").select("id", { count: "exact", head: true })
       .gte("created_at", isoDaysAgo(30));
     const { data: topPerf } = await sb.from("pinterest_pin_performance")
-      .select("pin_id, impressions, outbound_clicks, saves, ctr, last_synced_at")
+      .select("pin_id, impressions, outbound_clicks:clicks, saves, ctr, last_synced_at:updated_at")
       .order("impressions", { ascending: false }).limit(20);
     const { data: topOutbound } = await sb.from("pinterest_pin_performance")
-      .select("pin_id, impressions, outbound_clicks")
-      .order("outbound_clicks", { ascending: false }).limit(20);
+      .select("pin_id, impressions, outbound_clicks:clicks")
+      .order("clicks", { ascending: false }).limit(20);
     const organic = {
       pins_24h: pins24c ?? 0,
       pins_7d: pins7c ?? 0,

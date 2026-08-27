@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       sb.from("frontend_error_logs").select("error_type,component_name").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(5000),
       sb.from("cro_findings").select("category,severity,title,recommendation").eq("status", "open").gte("created_at", new Date(Date.now() - 30 * 864e5).toISOString()).limit(500),
       sb.from("pdp_health_audits").select("overall_score,product_id").gte("audited_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(2000),
-      sb.from("pinterest_pin_performance").select("status,impressions,saves,pin_clicks,outbound_clicks").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(2000),
+      sb.from("pinterest_pin_performance").select("status,impressions,saves,outbound_clicks:clicks").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(2000),
       sb.from("orders").select("id,status,created_at,total_amount").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(500),
       sb.from("pre_evaluations").select("product_visibility_score,click_intent_score").gte("created_at", new Date(Date.now() - 14 * 864e5).toISOString()).limit(1000),
     ]);
