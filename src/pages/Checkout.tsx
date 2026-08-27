@@ -554,16 +554,14 @@ const Checkout = () => {
         .then((m) => m.trackPinterestEvent('begin_checkout', { value: totalPrice, currency: 'USD' }))
         .catch(() => {});
 
-      // Pinterest CAPI server-side mirror — no-op if no Pinterest session cookie.
-      import('@/lib/pinterest-conversion-intel')
-        .then((m) => m.enqueueCapiEvent('checkout', {
-          value: totalPrice,
-          currency: 'USD',
-          custom_data: {
-            item_count: items.reduce((s, i) => s + i.quantity, 0),
-          },
-        }))
-        .catch(() => {});
+      // NOTE: no Pinterest CAPI mirror here on purpose.
+      // Pinterest's server-side `checkout` event is the COMPLETED ecommerce
+      // conversion (it is what the ad group's CHECKOUT optimization goal
+      // counts). Firing it when the customer merely starts checkout would
+      // report unpaid, abandoned sessions as purchases. The completed
+      // conversion is enqueued from PaymentSuccess after Stripe confirms
+      // payment, using the Stripe session id as the shared event_id.
+
       
       // Pinterest Checkout tracking — deferred, non-blocking
       // Fires as a Pinterest `custom` event (event_name: initiate_checkout)
