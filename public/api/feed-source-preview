@@ -7,7 +7,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-08-25T15:57:39.775Z</lastBuildDate>",
+    "    <lastBuildDate>2026-08-27T05:17:42.868Z</lastBuildDate>",
     "    <item>",
     "      <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>",
     "      <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>",
@@ -33,7 +33,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-08-25T15:57:39.775Z</lastBuildDate>",
+    "    <lastBuildDate>2026-08-27T05:17:42.868Z</lastBuildDate>",
     "    <item>",
     "      <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>",
     "      <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>",
@@ -50,5 +50,5 @@
   ],
   "contains_rss_tag": true,
   "contains_item_tag": true,
-  "deployed_at": "2026-08-25T15:57:39.830Z"
+  "deployed_at": "2026-08-27T05:17:42.913Z"
 }
