@@ -127,8 +127,13 @@ const PaymentSuccess = () => {
         }))
         .catch(() => {});
       // Pinterest CAPI server-side mirror — no-op if no Pinterest session cookie.
+      // Must use the SAME event_name (`checkout` = Pinterest's completed
+      // ecommerce conversion) and the SAME event_id (Stripe session id) as the
+      // browser-side pintrk 'checkout' below, so Pinterest dedupes them into
+      // exactly one attributed conversion per real order.
       import('@/lib/pinterest-conversion-intel')
-        .then((m) => m.enqueueCapiEvent('purchase', {
+        .then((m) => m.enqueueCapiEvent('checkout', {
+          event_id: sessionId ?? undefined,
           value: typeof totalPrice === 'number' ? totalPrice : null,
           currency: 'USD',
           custom_data: {
@@ -137,6 +142,7 @@ const PaymentSuccess = () => {
           },
         }))
         .catch(() => {});
+
     } catch {
       /* analytics never breaks UX */
     }
