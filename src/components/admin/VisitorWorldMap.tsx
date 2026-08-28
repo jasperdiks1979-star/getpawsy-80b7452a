@@ -2095,6 +2095,7 @@ export const VisitorWorldMap = ({
         "referrer", "page_path",
         "has_product_view", "has_add_to_cart", "has_view_cart",
         "has_checkout", "has_purchase", "order_value", "is_internal",
+        ...TRAFFIC_QUALITY_CSV_HEADERS,
       ];
       const escape = (v: unknown): string => {
         if (v === null || v === undefined) return "";
@@ -2102,7 +2103,9 @@ export const VisitorWorldMap = ({
         if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
         return s;
       };
-      const rows = truthSessions.map((s) => {
+      // Additive classifier columns — raw source fields stay untouched.
+      const classified = classifySessions(truthSessions);
+      const rows = truthSessions.map((s, i) => {
         const dur = Math.max(0, Math.round(
           (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
         ));
@@ -2114,6 +2117,7 @@ export const VisitorWorldMap = ({
           s.referrer ?? "", s.page_path ?? "",
           s.has_product_view, s.has_add_to_cart, s.has_view_cart,
           s.has_checkout, s.has_purchase, s.order_value, s.is_internal,
+          ...trafficQualityCsvValues(classified[i]),
         ].map(escape).join(";");
       });
       const csvContent = [headers.join(";"), ...rows].join("\n");
