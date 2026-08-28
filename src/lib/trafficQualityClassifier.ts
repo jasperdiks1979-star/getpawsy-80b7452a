@@ -559,16 +559,121 @@ export interface TrafficQualitySummary {
   };
   top_human_sessions: ClassifiedSession[];
   bot_clusters: BotCluster[];
+  /** Source × quality reporting matrix (additive, never mutates classification). */
+  source_matrix: SourceQualityRow[];
 }
 
+export interface SourceCommerce {
+  product_views: number;
+  add_to_cart: number;
+  checkout: number;
+  purchases: number;
+  revenue: number;
+}
+
+export interface SourceQualityRow {
+  source_class: SourceClass;
+  raw_sessions: number;
+  probable_human: number;
+  possible_human: number;
+  bot: number;
+  internal: number;
+  unknown: number;
+  /** PROBABLE_HUMAN / raw. 0 when raw = 0. */
+  conservative_human_rate: number;
+  /** (PROBABLE + POSSIBLE) / raw. 0 when raw = 0. */
+  expanded_human_rate: number;
+  /** 0-100 weighted quality score (100 probable, 50 possible). */
+  quality_score: number;
+  /** Commerce for PROBABLE_HUMAN only. */
+  commerce_probable: SourceCommerce;
+  /** Commerce for PROBABLE + POSSIBLE human. */
+  commerce_expanded: SourceCommerce;
+}
 
 const QUALITY_KEYS: TrafficQualityClass[] = [
   "PROBABLE_HUMAN", "POSSIBLE_HUMAN", "PROBABLE_BOT_OR_AUTOMATION", "INTERNAL_OR_TEST", "UNKNOWN",
 ];
-const SOURCE_KEYS: SourceClass[] = [
+export const SOURCE_KEYS: SourceClass[] = [
   "PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "DIRECT",
   "REFERRAL", "TIKTOK", "META", "OTHER_PAID", "UNKNOWN",
 ];
+
+function emptyCommerce(): SourceCommerce {
+  return { product_views: 0, add_to_cart: 0, checkout: 0, purchases: 0, revenue: 0 };
+}
+
+function addCommerce(bucket: SourceCommerce, c: ClassifiedSession) {
+  if (c.facts.product_view) bucket.product_views += 1;
+  if (c.facts.add_to_cart) bucket.add_to_cart += 1;
+  if (c.facts.checkout) bucket.checkout += 1;
+  if (c.facts.purchase) bucket.purchases += 1;
+  bucket.revenue += c.facts.revenue;
+}
+
+/**
+ * Source × quality matrix. Pure reporting: every classified session lands in
+ * exactly one source row, so row totals always reconcile with the classifier.
+ */
+export function buildSourceQualityMatrix(classified: ClassifiedSession[]): SourceQualityRow[] {
+  const rows = new Map<SourceClass, SourceQualityRow>();
+  for (const k of SOURCE_KEYS) {
+    rows.set(k, {
+      source_class: k,
+      raw_sessions: 0,
+      probable_human: 0,
+      possible_human: 0,
+      bot: 0,
+      internal: 0,
+      unknown: 0,
+      conservative_human_rate: 0,
+      expanded_human_rate: 0,
+      quality_score: 0,
+      commerce_probable: emptyCommerce(),
+      commerce_expanded: emptyCommerce(),
+    });
+  }
+
+  for (const c of classified) {
+    const row = rows.get(c.source_class)!;
+    row.raw_sessions += 1;
+    switch (c.traffic_quality_class) {
+      case "PROBABLE_HUMAN": row.probable_human += 1; break;
+      case "POSSIBLE_HUMAN": row.possible_human += 1; break;
+      case "PROBABLE_BOT_OR_AUTOMATION": row.bot += 1; break;
+      case "INTERNAL_OR_TEST": row.internal += 1; break;
+      default: row.unknown += 1; break;
+    }
+    // Internal and bot traffic NEVER contributes to human commerce.
+    if (c.traffic_quality_class === "PROBABLE_HUMAN") {
+      addCommerce(row.commerce_probable, c);
+      addCommerce(row.commerce_expanded, c);
+    } else if (c.traffic_quality_class === "POSSIBLE_HUMAN") {
+      addCommerce(row.commerce_expanded, c);
+    }
+  }
+
+  const out = [...rows.values()];
+  for (const r of out) {
+    if (r.raw_sessions > 0) {
+      r.conservative_human_rate = Math.round((r.probable_human / r.raw_sessions) * 1000) / 10;
+      r.expanded_human_rate =
+        Math.round(((r.probable_human + r.possible_human) / r.raw_sessions) * 1000) / 10;
+      r.quality_score = Math.max(
+        0,
+        Math.min(100, Math.round((r.probable_human * 100 + r.possible_human * 50) / r.raw_sessions)),
+      );
+    }
+  }
+
+  return out.sort(
+    (a, b) =>
+      b.probable_human - a.probable_human ||
+      b.possible_human - a.possible_human ||
+      b.raw_sessions - a.raw_sessions,
+  );
+}
+
 
 export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQualitySummary {
   const classified = classifySessions(rows);
