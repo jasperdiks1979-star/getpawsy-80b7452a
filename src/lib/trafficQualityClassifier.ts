@@ -548,9 +548,19 @@ export interface TrafficQualitySummary {
     purchases: number;
     revenue: number;
   };
+  /** Probable + possible human (expanded view). Never includes internal/bot. */
+  commerce_expanded: {
+    product_views: number;
+    add_to_cart: number;
+    view_cart: number;
+    checkout: number;
+    purchases: number;
+    revenue: number;
+  };
   top_human_sessions: ClassifiedSession[];
   bot_clusters: BotCluster[];
 }
+
 
 const QUALITY_KEYS: TrafficQualityClass[] = [
   "PROBABLE_HUMAN", "POSSIBLE_HUMAN", "PROBABLE_BOT_OR_AUTOMATION", "INTERNAL_OR_TEST", "UNKNOWN",
