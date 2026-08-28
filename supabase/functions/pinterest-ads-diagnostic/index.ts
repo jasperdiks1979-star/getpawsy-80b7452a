@@ -173,11 +173,68 @@ Deno.serve(async (req) => {
         status: r.status,
         code: (r.body as any)?.code ?? null,
         message: (r.body as any)?.message ?? null,
+        ...classifyEndpointFailure(r.status, r.body),
         manual_action: ENDPOINT_MANUAL_ACTION[name] ?? null,
       }));
+
+    // Endpoint entitlement matrix — separates OAuth scope status from Pinterest
+    // app feature entitlements. A granted scope does NOT imply endpoint access.
+    const entitlement_matrix = Object.entries(endpoints).map(([name, r]) => {
+      const scope = ENDPOINT_MANUAL_ACTION[name]?.scope ?? null;
+      const cls = r.ok
+        ? { entitlement_status: "OK" as const, restricted_feature: null, reconnect_can_fix: false }
+        : classifyEndpointFailure(r.status, r.body);
+      return {
+        endpoint: name,
+        http_status: r.status,
+        scope_required: scope,
+        scope_status: scope ? (grantedScopes.includes(scope) ? "PRESENT" : "MISSING") : "N/A",
+        ...cls,
+      };
+    });
+
+    const restrictedFeatures = Array.from(new Set(
+      entitlement_matrix
+        .filter((e) => e.entitlement_status === "RESTRICTED_FEATURE_401")
+        .map((e) => e.restricted_feature || "unknown"),
+    ));
+
     out.verification = {
       all_endpoints_200: failedEndpoints.length === 0,
+      // Failures that OAuth re-consent can actually fix.
+      auth_fixable_failures: failedEndpoints.filter((f) => f.reconnect_can_fix),
+      restricted_feature_failures: failedEndpoints.filter((f) => f.entitlement_status === "RESTRICTED_FEATURE_401"),
       failed: failedEndpoints,
+    };
+    out.entitlements = {
+      matrix: entitlement_matrix,
+      restricted_features_unavailable: restrictedFeatures,
+      restricted_feature_access: restrictedFeatures.length === 0 ? "FULL" : "PARTIAL",
+      summary: restrictedFeatures.length === 0
+        ? "No restricted-feature rejections observed."
+        : `Pinterest rejects ${restrictedFeatures.join(", ")} — restricted app feature, not an OAuth scope problem.`,
+    };
+
+    // OAuth diagnosis: reconnect is only a valid fix for missing scopes,
+    // invalid/expired tokens, or explicit re-consentable auth failures.
+    const tokenExpiry = (conn as any)?.token_expires_at ? Date.parse((conn as any).token_expires_at) : null;
+    const tokenExpired = tokenExpiry !== null && Number.isFinite(tokenExpiry) && tokenExpiry < Date.now();
+    const authFailure = failedEndpoints.some((f) => f.reconnect_can_fix);
+    const reconnectRecommended = missingScopes.length > 0 || tokenExpired || authFailure;
+    out.oauth_diagnosis = {
+      scopes_complete: missingScopes.length === 0,
+      missing_scopes: missingScopes,
+      token_expired: tokenExpired,
+      auth_or_scope_endpoint_failure: authFailure,
+      reconnect_recommended: reconnectRecommended,
+      headline: missingScopes.length === 0 && !tokenExpired && !authFailure
+        ? "OAuth scopes already complete."
+        : "OAuth reconnect required.",
+      detail: reconnectRecommended
+        ? "Re-consent can resolve the listed scope/token issues."
+        : restrictedFeatures.length > 0
+          ? `Remaining endpoint failures are restricted app features (${restrictedFeatures.join(", ")}). Pinterest Developer / Support entitlement may be required. Reconnecting OAuth will not add this entitlement.`
+          : "No OAuth action required.",
     };
 
     out.capabilities = {
@@ -190,10 +247,47 @@ Deno.serve(async (req) => {
       can_edit_pins_patch: false, // requires pin_edit restricted feature; verified separately
     };
     out.requires_pinterest_approval = [
-      ...(endpoints.billing_profiles?.ok ? [] : ["commerce_integration (Advanced Access) for billing reads"]),
+      ...(endpoints.billing_profiles?.ok
+        ? []
+        : ["commerce_integration (restricted feature) for billing_profiles — entitlement, not scope"]),
       "pin_edit restricted feature for in-place pin PATCH",
       ...(grantedScopes.includes("biz_access:read") ? [] : ["biz_access:* (business manager access)"]),
     ];
+
+    // ---- Catalog item-count sources (never reconciled by guessing) ----
+    try {
+      const { data: catStatus } = await sb.from("pinterest_catalog_status").select("*").eq("id", 1).maybeSingle();
+      const { count: localProducts } = await sb.from("products").select("id", { count: "exact", head: true });
+      let liveXmlItems: number | null = null;
+      const feedUrl = (catStatus as any)?.feed_url;
+      if (feedUrl) {
+        try {
+          const xml = await (await fetch(feedUrl)).text();
+          liveXmlItems = (xml.match(/<item[\s>]/g) || []).length || null;
+        } catch { liveXmlItems = null; }
+      }
+      out.catalog_counts = {
+        live_feed_xml: { value: liveXmlItems, source: "live XML fetch of registered feed URL" },
+        pinterest_ingested: {
+          value: (catStatus as any)?.items_total ?? null,
+          source: "Pinterest feed processing report (items_total)",
+        },
+        pinterest_invalid: {
+          value: (catStatus as any)?.items_invalid ?? null,
+          source: "Pinterest feed processing report (items_invalid)",
+        },
+        local_products: { value: localProducts ?? null, source: "local products table" },
+        timestamps: {
+          feed_registered_accepted_at: (catStatus as any)?.accepted_at ?? null,
+          last_checked_at: (catStatus as any)?.last_checked_at ?? null,
+          latest_feed_ingestion: (catStatus as any)?.raw?.last_ingestion_at
+            ?? (catStatus as any)?.raw?.completed_at
+            ?? null,
+        },
+        note: "Counts come from different systems and are reported separately. Differences are not reconciled.",
+      };
+    } catch { /* diagnostic only */ }
+
 
     const campaignsRes = endpoints.campaigns;
 
