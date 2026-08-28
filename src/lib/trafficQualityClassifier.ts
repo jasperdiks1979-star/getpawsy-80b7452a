@@ -511,10 +511,11 @@ export function applyClusterBoost(
     if (c.traffic_quality_class === "PROBABLE_BOT_OR_AUTOMATION") {
       return {
         ...c,
-        traffic_quality_confidence: Math.min(0.95, c.traffic_quality_confidence + 0.1),
+        traffic_quality_confidence: Math.max(0.8, Math.min(0.95, c.traffic_quality_confidence + 0.1)),
         classification_reasons: [...c.classification_reasons, "cluster:repeated_pattern"],
       };
     }
+
     if (c.traffic_quality_class === "UNKNOWN" && (c.facts.duration_seconds ?? 99) <= 2) {
       return {
         ...c,
