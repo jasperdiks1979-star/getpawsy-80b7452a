@@ -169,16 +169,27 @@ Deno.serve(async (req) => {
 
     const failedEndpoints = Object.entries(endpoints)
       .filter(([, r]) => !r.ok)
-      .map(([name, r]) => ({
-        name,
-        status: r.status,
-        code: (r.body as any)?.code ?? null,
-        message: (r.body as any)?.message ?? null,
-        manual_action: ENDPOINT_MANUAL_ACTION[name] ?? null,
-      }));
+      .map(([name, r]) => {
+        const classification = classifyEndpointFailure(name, r.status, r.body);
+        return {
+          name,
+          status: r.status,
+          code: (r.body as any)?.code ?? null,
+          message: classification.message ?? (r.body as any)?.message ?? null,
+          label: classification.label,
+          restricted_feature: classification.restricted_feature,
+          recommend_reconnect: classification.recommend_reconnect,
+          manual_action: classification.recommend_reconnect ? (ENDPOINT_MANUAL_ACTION[name] ?? null) : null,
+          entitlement_action: classification.recommend_reconnect ? null : (ENDPOINT_MANUAL_ACTION[name] ?? null),
+        };
+      });
     out.verification = {
       all_endpoints_200: failedEndpoints.length === 0,
       failed: failedEndpoints,
+      auth_fixable_failures: failedEndpoints.filter((f) => f.recommend_reconnect).map((f) => f.name),
+      restricted_feature_failures: failedEndpoints.filter((f) => f.label === "RESTRICTED_FEATURE_401").map((f) => ({
+        name: f.name, status: f.status, restricted_feature: f.restricted_feature,
+      })),
     };
 
     out.capabilities = {
