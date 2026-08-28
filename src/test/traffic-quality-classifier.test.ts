@@ -22,9 +22,38 @@ describe("human classification", () => {
     expect(classifySession(base).traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
   });
 
-  it("20s+ session is human without any conversion", () => {
+  it("20s+ single-page heartbeat alone is only POSSIBLE_HUMAN", () => {
     const r = classifySession({ ...base, last_seen_at: "2026-08-28T08:00:30Z" });
+    expect(r.traffic_quality_class).toBe("POSSIBLE_HUMAN");
+  });
+
+  it("20s+ plus a second signal is human without any conversion", () => {
+    const r = classifySession({
+      ...base, last_seen_at: "2026-08-28T08:00:30Z", page_views: 2,
+    });
     expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+  });
+
+  it("pageviews>=3 alone (0-2s burst) is NOT human", () => {
+    const r = classifySession({ ...base, page_views: 4, last_seen_at: "2026-08-28T08:00:01Z" });
+    expect(r.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+  });
+
+  it("pageviews>=3 with plausible timing is human", () => {
+    const r = classifySession({ ...base, page_views: 3, last_seen_at: "2026-08-28T08:00:20Z" });
+    expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+  });
+
+  it("implausible pageviews-per-second is automation unless hard commerce", () => {
+    expect(
+      classifySession({ ...base, page_views: 8, last_seen_at: "2026-08-28T08:00:03Z" })
+        .traffic_quality_class,
+    ).toBe("PROBABLE_BOT_OR_AUTOMATION");
+    expect(
+      classifySession({
+        ...base, page_views: 8, last_seen_at: "2026-08-28T08:00:03Z", has_add_to_cart: true,
+      }).traffic_quality_class,
+    ).toBe("PROBABLE_HUMAN");
   });
 
   it("add_to_cart is human even when short", () => {
@@ -41,9 +70,23 @@ describe("human classification", () => {
   it("city alone never makes a session a bot", () => {
     const r = classifySession({
       ...base, city: "Ashburn", last_seen_at: "2026-08-28T08:01:00Z", device: "mobile",
+      page_views: 2,
     });
     expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
   });
+
+  it("lovable preview markers are INTERNAL_OR_TEST at confidence 1", () => {
+    const q = classifySession({ ...base, landing_page: "/?__lovable_sha=abc" });
+    expect(q.traffic_quality_class).toBe("INTERNAL_OR_TEST");
+    expect(q.traffic_quality_confidence).toBe(1);
+    expect(classifySession({ ...base, referrer: "https://preview.lovable.dev/x" }).traffic_quality_class)
+      .toBe("INTERNAL_OR_TEST");
+    expect(classifySession({ ...base, landing_page: "/admin/visitor-world-map-pro" }).traffic_quality_class)
+      .toBe("INTERNAL_OR_TEST");
+    expect(classifySession({ ...base, landing_page: "/dashboard" }).traffic_quality_class)
+      .toBe("INTERNAL_OR_TEST");
+  });
+
 
   it("internal flag wins", () => {
     expect(classifySession({ ...base, is_internal: true }).traffic_quality_class).toBe("INTERNAL_OR_TEST");
