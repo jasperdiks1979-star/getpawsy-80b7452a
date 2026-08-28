@@ -295,12 +295,26 @@ Deno.serve(async (req) => {
     const perCampaign: any[] = [];
     for (const c of campaigns) {
       const cid = c.id;
+      const isShopping = CATALOG_OBJECTIVES.has(String(c.objective_type || "").toUpperCase());
       const adGroups = await pin(`/ad_accounts/${AD_ACCOUNT}/ad_groups?campaign_ids=${cid}&page_size=100`, token);
       const ags: any[] = (adGroups.body as any)?.items ?? [];
       const adsPer: any[] = [];
+      const promotionsPer: any[] = [];
       for (const ag of ags) {
         const ads = await pin(`/ad_accounts/${AD_ACCOUNT}/ads?ad_group_ids=${ag.id}&page_size=100`, token);
         adsPer.push({ ad_group_id: ag.id, ad_group_status: ag.status, ads: ads.body });
+        // SHOPPING ad groups serve through product_group_promotions, NOT /ads.
+        const promos = await pin(
+          `/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_id=${ag.id}&page_size=100`,
+          token,
+        );
+        promotionsPer.push({
+          ad_group_id: ag.id,
+          ad_group_status: ag.status,
+          http_status: promos.status,
+          items: (promos.body as any)?.items ?? [],
+          error: promos.ok ? null : ((promos.body as any)?.message ?? null),
+        });
       }
       // Delivery diagnostics (analytics last 7d)
       const end = new Date().toISOString().slice(0, 10);
@@ -314,6 +328,7 @@ Deno.serve(async (req) => {
         name: c.name,
         status: c.status,
         objective_type: c.objective_type,
+        is_shopping_architecture: isShopping,
         daily_spend_cap: c.daily_spend_cap,
         lifetime_spend_cap: c.lifetime_spend_cap,
         start_time: c.start_time,
@@ -329,35 +344,87 @@ Deno.serve(async (req) => {
           pacing_delivery_type: g.pacing_delivery_type,
         })),
         ads: adsPer,
+        product_group_promotions: promotionsPer,
         analytics_7d: analytics,
       });
     }
     out.campaigns = perCampaign;
 
-    // Diagnose root cause of zero delivery for each campaign.
+    // Explicit diagnostic states. We never claim a root cause the API does not prove.
     out.root_cause_summary = perCampaign.map((c: any) => {
-      const reasons: string[] = [];
-      if (c.status !== "ACTIVE") reasons.push(`campaign status = ${c.status}`);
+      const labels: string[] = [];
+      const evidence: string[] = [];
+      const isShopping = !!c.is_shopping_architecture;
+
       const activeAg = (c.ad_groups || []).filter((g: any) => g.status === "ACTIVE");
-      if ((c.ad_groups || []).length === 0) reasons.push("no ad groups");
-      else if (activeAg.length === 0) reasons.push("no ACTIVE ad groups");
-      const totalAds = (c.ads || []).reduce(
-        (n: number, x: any) => n + ((x?.ads?.items?.length) || 0), 0,
-      );
+      const totalAds = (c.ads || []).reduce((n: number, x: any) => n + ((x?.ads?.items?.length) || 0), 0);
       const activeAds = (c.ads || []).reduce(
         (n: number, x: any) => n + ((x?.ads?.items || []).filter((a: any) => a.status === "ACTIVE").length), 0,
       );
-      if (totalAds === 0) reasons.push("no ads created");
-      else if (activeAds === 0) reasons.push("no ACTIVE ads");
+      const allPromos = (c.product_group_promotions || []).flatMap((p: any) => p.items || []);
+      const activePromos = allPromos.filter(
+        (p: any) => String(p.status || "").toUpperCase() === "ACTIVE",
+      );
+      const promoApiBlocked = (c.product_group_promotions || []).some(
+        (p: any) => p.http_status === 401 || p.http_status === 403,
+      );
+
       const ana = (c.analytics_7d?.body as any);
       const imp = Array.isArray(ana) ? (ana[0]?.IMPRESSION_1 ?? 0) : 0;
-      if (imp === 0) reasons.push("0 impressions in last 7 days");
+      const spend = Array.isArray(ana) ? (ana[0]?.SPEND_IN_DOLLAR ?? 0) : 0;
+
+      if (c.status !== "ACTIVE") { labels.push("CAMPAIGN_PAUSED"); evidence.push(`campaign status = ${c.status}`); }
+      if ((c.ad_groups || []).length === 0) { labels.push("AD_GROUP_PAUSED"); evidence.push("no ad groups"); }
+      else if (activeAg.length === 0) { labels.push("AD_GROUP_PAUSED"); evidence.push("no ACTIVE ad groups"); }
+
+      if (isShopping) {
+        if (promoApiBlocked) {
+          labels.push("API_RESTRICTED_FEATURE");
+          evidence.push("product_group_promotions read returned 401/403");
+        } else if (allPromos.length === 0) {
+          labels.push("NO_SHOPPING_PROMOTION");
+          evidence.push("no product_group_promotions on any ad group");
+        } else {
+          labels.push("SHOPPING_PROMOTION_PRESENT");
+          evidence.push(`${allPromos.length} product_group_promotion(s), ${activePromos.length} ACTIVE`);
+        }
+      } else {
+        if (totalAds === 0) { labels.push("NO_ADS_CREATED"); evidence.push("0 ads on a non-shopping campaign"); }
+        else if (activeAds === 0) { labels.push("NO_ACTIVE_ADS"); evidence.push(`${totalAds} ads, 0 ACTIVE`); }
+      }
+
+      if (imp === 0) { labels.push("NO_IMPRESSIONS_LAST_7D"); evidence.push(`impressions_7d = 0, spend_7d = ${spend}`); }
+
+      const shoppingStalled =
+        isShopping && c.status === "ACTIVE" && activeAg.length > 0 && activePromos.length > 0 && imp === 0;
+      if (shoppingStalled) labels.push("SHOPPING_PROMOTION_PRESENT_NO_DELIVERY");
+
+      let diagnosis: string;
+      if (imp > 0) diagnosis = "Delivering.";
+      else if (shoppingStalled) {
+        diagnosis = "SHOPPING promotion present but not delivering — serving/review/entitlement cause not exposed by API.";
+      } else if (labels.length > 0) {
+        diagnosis = `Blocked by: ${labels.filter((l) => l !== "NO_IMPRESSIONS_LAST_7D").join(", ") || "UNKNOWN_SERVING_BLOCKER"}.`;
+      } else {
+        labels.push("UNKNOWN_SERVING_BLOCKER");
+        diagnosis = "No API-proven blocker found.";
+      }
+
       return {
         id: c.id, name: c.name, status: c.status,
+        objective_type: c.objective_type,
+        architecture: isShopping ? "CATALOG_SALES_SHOPPING" : "STANDARD_ADS",
         impressions_7d: imp,
-        root_cause: reasons.length ? reasons.join("; ") : "Delivering",
+        spend_7d: spend,
+        ads_count: totalAds,
+        shopping_promotions_count: allPromos.length,
+        shopping_promotions_active: activePromos.length,
+        labels,
+        evidence,
+        root_cause: diagnosis,
       };
     });
+
 
     // Persist diagnostic snapshot for audit trail.
     try {
