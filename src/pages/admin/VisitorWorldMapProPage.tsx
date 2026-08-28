@@ -16,6 +16,7 @@ import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVis
 import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
 import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
+import { TrafficQualityBlock } from "@/components/admin/TrafficQualityBlock";
 import { useLivePresence } from "@/hooks/useLivePresence";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
@@ -208,7 +209,11 @@ export default function VisitorWorldMapProPage() {
 
           {/* Organic / Paid / Total split — canonical, excludes internal & bot */}
           {!isLive && (
-            <div className="mb-4">
+            <div className="mb-4 space-y-4">
+              <TrafficQualityBlock
+                hours={(proHoursForRange(state.timeRange) >= 24 ? 24 : 10) as 10 | 24}
+                geo={state.usOnly ? "US" : "all"}
+              />
               <TrafficClassSplitPanel />
             </div>
           )}
