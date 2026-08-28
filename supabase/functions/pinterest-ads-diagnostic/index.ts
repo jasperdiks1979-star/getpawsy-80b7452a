@@ -260,6 +260,8 @@ Deno.serve(async (req) => {
           pacing_delivery_type: g.pacing_delivery_type,
         })),
         ads: adsPer,
+        is_shopping: isShopping,
+        shopping_promotions: shoppingPromotions,
         analytics_7d: analytics,
       });
     }
