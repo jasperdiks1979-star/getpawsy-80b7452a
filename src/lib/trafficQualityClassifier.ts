@@ -625,8 +625,9 @@ export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQuali
     sources_human,
     commerce_human,
     commerce_expanded,
-
+    top_human_sessions,
     bot_clusters: detectBotClusters(classified),
+
   };
 }
 
