@@ -1508,14 +1508,8 @@ function _OAuthRecoveryPanel({
           <KeyRound className="h-5 w-5 text-amber-600" />
           <h2 className="font-semibold">Pinterest OAuth Final Recovery</h2>
           <Badge className={fullAccess ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}>
-            OAuth scopes {fullAccess ? "complete" : "incomplete"}
+            Full Access: {fullAccess ? "Yes" : "No"}
           </Badge>
-          {fullAccess && (
-            <Badge variant="outline" className="text-[10px]">
-              Restricted app features (commerce_integration, pin_edit) are separate entitlements
-            </Badge>
-          )}
-
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={onRunRecovery} disabled={recoveryRunning}>
