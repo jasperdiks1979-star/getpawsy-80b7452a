@@ -524,17 +524,52 @@ export default function PinterestHealth() {
                   })}
                 </div>
               </div>
+              {adsDiag.oauth_diagnosis && (
+                <div className="rounded border p-2 text-xs bg-muted/20">
+                  <div className="font-medium">{adsDiag.oauth_diagnosis.headline}</div>
+                  <div className="text-muted-foreground">{adsDiag.oauth_diagnosis.detail}</div>
+                  {!adsDiag.oauth_diagnosis.reconnect_recommended && (
+                    <div className="text-muted-foreground mt-1">
+                      Reconnect is not a fix here — Pinterest Developer / Support entitlement may be required.
+                    </div>
+                  )}
+                </div>
+              )}
               <div>
-                <div className="text-xs uppercase text-muted-foreground mb-1">Endpoints</div>
+                <div className="text-xs uppercase text-muted-foreground mb-1">Endpoints · scope vs entitlement</div>
                 <table className="w-full text-xs">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="text-left p-1">Endpoint</th>
+                      <th className="text-right p-1">HTTP</th>
+                      <th className="text-left p-1">Scope</th>
+                      <th className="text-left p-1">Entitlement</th>
+                      <th className="text-left p-1">Message</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {Object.entries(adsDiag.endpoints || {}).map(([name, r]: [string, any]) => (
-                      <tr key={name} className="border-t">
-                        <td className="p-1 font-mono">{name}</td>
+                    {(adsDiag.entitlements?.matrix
+                      ?? Object.entries(adsDiag.endpoints || {}).map(([endpoint, r]: [string, any]) => ({
+                        endpoint, http_status: r.status, scope_required: null,
+                        scope_status: "N/A", entitlement_status: r.ok ? "OK" : "OTHER_ERROR",
+                      }))
+                    ).map((e: any) => (
+                      <tr key={e.endpoint} className="border-t">
+                        <td className="p-1 font-mono">{e.endpoint}</td>
                         <td className="p-1 text-right">
-                          <Badge variant={r.ok ? "secondary" : "destructive"}>{r.status}</Badge>
+                          <Badge variant={e.http_status < 400 ? "secondary" : "destructive"}>{e.http_status}</Badge>
                         </td>
-                        <td className="p-1 text-muted-foreground truncate max-w-[60%]">{(r.body as any)?.message || ""}</td>
+                        <td className="p-1 font-mono">
+                          {e.scope_required ? `${e.scope_required} = ${e.scope_status}` : "—"}
+                        </td>
+                        <td className="p-1 font-mono">
+                          {e.entitlement_status === "RESTRICTED_FEATURE_401"
+                            ? `RESTRICTED_FEATURE_401 (${e.restricted_feature})`
+                            : e.entitlement_status}
+                        </td>
+                        <td className="p-1 text-muted-foreground truncate max-w-[240px]">
+                          {(adsDiag.endpoints?.[e.endpoint]?.body as any)?.message || ""}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -548,33 +583,69 @@ export default function PinterestHealth() {
                       <tr>
                         <th className="text-left p-1">Name</th>
                         <th className="text-left p-1">Status</th>
+                        <th className="text-left p-1">Architecture</th>
                         <th className="text-right p-1">Impr. 7d</th>
-                        <th className="text-left p-1">Root cause</th>
+                        <th className="text-left p-1">Diagnostic labels</th>
+                        <th className="text-left p-1">Diagnosis</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(adsDiag.root_cause_summary || []).map((c: any) => (
-                        <tr key={c.id} className="border-t">
+                        <tr key={c.id} className="border-t align-top">
                           <td className="p-1">{c.name}</td>
                           <td className="p-1">{c.status}</td>
+                          <td className="p-1 font-mono text-[10px]">{c.architecture ?? "—"}</td>
                           <td className="p-1 text-right">{c.impressions_7d}</td>
+                          <td className="p-1">
+                            <div className="flex flex-wrap gap-1">
+                              {(c.labels || []).map((l: string) => (
+                                <Badge key={l} variant="outline" className="text-[10px] font-mono">{l}</Badge>
+                              ))}
+                            </div>
+                          </td>
                           <td className="p-1">{c.root_cause}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Catalog Sales / SHOPPING campaigns serve via product-group promotions, not <code>/ads</code>.
+                    An empty <code>/ads</code> list is not evidence of a broken campaign.
+                  </p>
                 </div>
               )}
-              {adsDiag.verification?.failed?.length > 0 && (
+              {(adsDiag.verification?.auth_fixable_failures || []).length > 0 && (
                 <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs">
-                  <strong>Blocked.</strong> The following endpoints still return 401/403. Click <em>Reconnect Pinterest Ads</em> and on the Pinterest consent screen approve every requested scope. If <code>billing:read</code> stays unavailable, the Pinterest app (1567611) needs Standard Access for the <code>commerce_integration</code> feature — request via Pinterest developer support.
+                  <strong>Auth/scope failure.</strong> These endpoints can be fixed by reconnecting and approving every requested scope:
                   <ul className="list-disc ml-4 mt-1">
-                    {adsDiag.verification.failed.map((f: any) => (
+                    {adsDiag.verification.auth_fixable_failures.map((f: any) => (
                       <li key={f.name}><code>{f.name}</code> → {f.status} {f.message ? `· ${f.message}` : ""}</li>
                     ))}
                   </ul>
                 </div>
               )}
+              {(adsDiag.verification?.restricted_feature_failures || []).length > 0 && (
+                <div className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+                  <strong>Restricted Pinterest app feature.</strong>{" "}
+                  {adsDiag.verification.restricted_feature_failures.some((f: any) => f.name === "billing_profiles") && (
+                    <>
+                      <code>billing:read</code> is granted, but Pinterest rejects the <code>billing_profiles</code> endpoint
+                      because this app does not have access to the restricted <code>commerce_integration</code> feature.
+                      Reconnecting OAuth will not add this entitlement.{" "}
+                    </>
+                  )}
+                  Pinterest Developer / Support entitlement may be required.
+                  <ul className="list-disc ml-4 mt-1">
+                    {adsDiag.verification.restricted_feature_failures.map((f: any) => (
+                      <li key={f.name}>
+                        <code>{f.name}</code> → {f.status} · RESTRICTED_FEATURE_401
+                        {f.restricted_feature ? ` (${f.restricted_feature})` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
             </>
           )}
         </CardContent>
