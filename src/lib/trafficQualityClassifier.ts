@@ -579,20 +579,27 @@ export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQuali
   const commerce_human = {
     product_views: 0, add_to_cart: 0, view_cart: 0, checkout: 0, purchases: 0, revenue: 0,
   };
+  const commerce_expanded = {
+    product_views: 0, add_to_cart: 0, view_cart: 0, checkout: 0, purchases: 0, revenue: 0,
+  };
 
   for (const c of classified) {
     quality[c.traffic_quality_class] += 1;
     sources_raw[c.source_class] += 1;
-    if (c.traffic_quality_class === "PROBABLE_HUMAN") {
-      sources_human[c.source_class] += 1;
-      if (c.facts.product_view) commerce_human.product_views += 1;
-      if (c.facts.add_to_cart) commerce_human.add_to_cart += 1;
-      if (c.facts.view_cart) commerce_human.view_cart += 1;
-      if (c.facts.checkout) commerce_human.checkout += 1;
-      if (c.facts.purchase) commerce_human.purchases += 1;
-      commerce_human.revenue += c.facts.revenue;
+    const isHuman = c.traffic_quality_class === "PROBABLE_HUMAN";
+    const isExpanded = isHuman || c.traffic_quality_class === "POSSIBLE_HUMAN";
+    for (const [bucket, active] of [[commerce_human, isHuman], [commerce_expanded, isExpanded]] as const) {
+      if (!active) continue;
+      if (c.facts.product_view) bucket.product_views += 1;
+      if (c.facts.add_to_cart) bucket.add_to_cart += 1;
+      if (c.facts.view_cart) bucket.view_cart += 1;
+      if (c.facts.checkout) bucket.checkout += 1;
+      if (c.facts.purchase) bucket.purchases += 1;
+      bucket.revenue += c.facts.revenue;
     }
+    if (isHuman) sources_human[c.source_class] += 1;
   }
+
 
   const quality_pct = Object.fromEntries(
     QUALITY_KEYS.map((k) => [k, total ? Math.round((quality[k] / total) * 1000) / 10 : 0]),
