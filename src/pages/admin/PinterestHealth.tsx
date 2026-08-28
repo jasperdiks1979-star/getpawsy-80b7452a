@@ -454,15 +454,29 @@ export default function PinterestHealth() {
             {adsDiag?.verification?.all_endpoints_200 ? (
               <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />All endpoints 200</Badge>
             ) : adsDiag ? (
-              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Endpoints failing</Badge>
+              <Badge variant={(adsDiag.verification?.auth_fixable_failures || []).length > 0 ? "destructive" : "secondary"}>
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {(adsDiag.verification?.auth_fixable_failures || []).length > 0
+                  ? "Endpoints failing (auth)"
+                  : "Endpoints limited (restricted feature)"}
+              </Badge>
             ) : (
               <Badge variant="outline">Not verified</Badge>
             )}
-            {adsDiag?.scope_check && (
-              <Badge variant={adsDiag.scope_check.full_access ? "secondary" : "destructive"}>
-                Full Access: {adsDiag.scope_check.full_access ? "YES" : "NO"}
+            {adsDiag?.oauth_diagnosis && (
+              <Badge variant={adsDiag.oauth_diagnosis.scopes_complete ? "secondary" : "destructive"}>
+                {adsDiag.oauth_diagnosis.scopes_complete ? "OAuth scopes complete" : "OAuth scopes incomplete"}
               </Badge>
             )}
+            {adsDiag?.entitlements && (
+              <Badge variant="outline" title={adsDiag.entitlements.summary}>
+                Restricted feature access: {adsDiag.entitlements.restricted_feature_access}
+                {(adsDiag.entitlements.restricted_features_unavailable || []).length > 0
+                  ? ` · ${adsDiag.entitlements.restricted_features_unavailable.join(", ")} unavailable`
+                  : ""}
+              </Badge>
+            )}
+
           </CardTitle>
           <div className="flex gap-2">
             <Button
