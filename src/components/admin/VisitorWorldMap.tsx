@@ -29,6 +29,11 @@ import { buildEnrichedBreakdown, buildPinterestDrilldown, type VisitorRow as Aud
 import { DynamicSourceFilter, type DynamicSourceValue } from "./DynamicSourceFilter";
 import { SOURCE_META } from "@/lib/canonicalSource";
 import {
+  classifySessions,
+  trafficQualityCsvValues,
+  TRAFFIC_QUALITY_CSV_HEADERS,
+} from "@/lib/trafficQualityClassifier";
+import {
   resolveMarkerVisual,
   markerMatchesGroupFilter,
   MARKER_GROUP_CHIPS,
