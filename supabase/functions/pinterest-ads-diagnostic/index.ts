@@ -296,8 +296,10 @@ Deno.serve(async (req) => {
       }
       return {
         id: c.id, name: c.name, status: c.status,
+        architecture: c.is_shopping ? "CATALOG_SALES_SHOPPING" : "STANDARD_ADS",
+        shopping_promotion: c.shopping_promotions,
         impressions_7d: imp,
-        root_cause: reasons.length ? reasons.join("; ") : "Delivering",
+        root_cause: rootCause,
       };
     });
 
