@@ -62,10 +62,78 @@ describe("human classification", () => {
     expect(r.commercial_intent_score).toBeGreaterThanOrEqual(25);
   });
 
-  it("3-19s session is possible human", () => {
+  it("strict v3: 3-19s single-page direct desktop is no longer human", () => {
     const r = classifySession({ ...base, last_seen_at: "2026-08-28T08:00:08Z" });
+    expect(["UNKNOWN", "PROBABLE_BOT_OR_AUTOMATION"]).toContain(r.traffic_quality_class);
+  });
+
+  it("strict v3: weak direct needs >=5s AND >=2 distinct paths for POSSIBLE_HUMAN", () => {
+    const r = classifySession({
+      ...base, last_seen_at: "2026-08-28T08:00:09Z", page_views: 2, distinct_paths: 2,
+    });
     expect(r.traffic_quality_class).toBe("POSSIBLE_HUMAN");
   });
+
+  it("strict v3: ultra-short direct desktop PDP sweep is automation, not possible human", () => {
+    const r = classifySession({
+      ...base,
+      landing_page: "/products/cat-scratcher",
+      has_product_view: true,
+      last_seen_at: "2026-08-28T08:00:02Z",
+    });
+    expect(r.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+    expect(r.product_interest_confirmed).toBe(false);
+  });
+
+  it("strict v3: burst guard trips above 0.6 pageviews/second", () => {
+    const r = classifySession({
+      ...base, page_views: 3, last_seen_at: "2026-08-28T08:00:04Z",
+    });
+    expect(r.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+  });
+
+  it("strict v3: mobile direct PDP with no other evidence stays UNKNOWN, not human", () => {
+    const r = classifySession({
+      ...base,
+      device: "mobile",
+      user_agent: "Mozilla/5.0 (iPhone) Safari",
+      landing_page: "/products/cat-scratcher",
+      has_product_view: true,
+      last_seen_at: "2026-08-28T08:00:02Z",
+    });
+    expect(["UNKNOWN", "PROBABLE_BOT_OR_AUTOMATION"]).toContain(r.traffic_quality_class);
+  });
+
+  it("product interest is confirmed only with corroborating engagement", () => {
+    const bare = classifySession({
+      ...base, landing_page: "/products/x", has_product_view: true,
+      last_seen_at: "2026-08-28T08:00:01Z",
+    });
+    expect(bare.product_interest_confirmed).toBe(false);
+
+    const dwell = classifySession({
+      ...base, landing_page: "/products/x", has_product_view: true,
+      last_seen_at: "2026-08-28T08:00:15Z",
+    });
+    expect(dwell.product_interest_confirmed).toBe(true);
+
+    const cart = classifySession({
+      ...base, landing_page: "/products/x", has_product_view: true, has_add_to_cart: true,
+    });
+    expect(cart.product_interest_confirmed).toBe(true);
+  });
+
+  it("external search sessions stay human", () => {
+    const r = classifySession({
+      ...base,
+      referrer: "https://www.google.com/",
+      landing_page: "/products/x",
+      page_views: 2,
+      last_seen_at: "2026-08-28T08:00:12Z",
+    });
+    expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+  });
+
 
   it("city alone never makes a session a bot", () => {
     const r = classifySession({
