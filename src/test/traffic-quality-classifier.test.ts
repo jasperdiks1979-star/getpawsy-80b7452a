@@ -1,0 +1,99 @@
+import { describe, it, expect } from "vitest";
+import {
+  classifySession,
+  classifySource,
+  summarizeTrafficQuality,
+  type ClassifierSession,
+} from "@/lib/trafficQualityClassifier";
+
+const base: ClassifierSession = {
+  session_id: "s1",
+  first_seen_at: "2026-08-28T08:00:00Z",
+  last_seen_at: "2026-08-28T08:00:01Z",
+  country: "US",
+  city: "Ashburn",
+  device: "desktop",
+  page_views: 1,
+  source: "direct",
+};
+
+describe("human classification", () => {
+  it("0-2s desktop direct single page with no events -> bot", () => {
+    expect(classifySession(base).traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+  });
+
+  it("20s+ session is human without any conversion", () => {
+    const r = classifySession({ ...base, last_seen_at: "2026-08-28T08:00:30Z" });
+    expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+  });
+
+  it("add_to_cart is human even when short", () => {
+    const r = classifySession({ ...base, has_add_to_cart: true });
+    expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+    expect(r.commercial_intent_score).toBeGreaterThanOrEqual(25);
+  });
+
+  it("3-19s session is possible human", () => {
+    const r = classifySession({ ...base, last_seen_at: "2026-08-28T08:00:08Z" });
+    expect(r.traffic_quality_class).toBe("POSSIBLE_HUMAN");
+  });
+
+  it("city alone never makes a session a bot", () => {
+    const r = classifySession({
+      ...base, city: "Ashburn", last_seen_at: "2026-08-28T08:01:00Z", device: "mobile",
+    });
+    expect(r.traffic_quality_class).toBe("PROBABLE_HUMAN");
+  });
+
+  it("internal flag wins", () => {
+    expect(classifySession({ ...base, is_internal: true }).traffic_quality_class).toBe("INTERNAL_OR_TEST");
+  });
+
+  it("bot user agent -> bot", () => {
+    const r = classifySession({ ...base, user_agent: "Mozilla/5.0 (compatible; Googlebot/2.1)" });
+    expect(r.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+  });
+});
+
+describe("source classification", () => {
+  it("generic pinterest referrer is organic, not paid", () => {
+    expect(classifySource({ referrer: "https://www.pinterest.com/pin/123" }).source_class)
+      .toBe("PINTEREST_ORGANIC");
+  });
+  it("pinterest + cpc medium is paid", () => {
+    expect(classifySource({ utm_source: "pinterest", utm_medium: "cpc" }).source_class)
+      .toBe("PINTEREST_PAID");
+  });
+  it("google organic", () => {
+    expect(classifySource({ referrer: "https://www.google.com/" }).source_class).toBe("GOOGLE_ORGANIC");
+  });
+  it("bing -> other search", () => {
+    expect(classifySource({ referrer: "https://www.bing.com/" }).source_class).toBe("OTHER_SEARCH");
+  });
+  it("no referrer/utm -> direct", () => {
+    expect(classifySource({}).source_class).toBe("DIRECT");
+  });
+});
+
+describe("intent + summary", () => {
+  it("purchase session is HIGH tier", () => {
+    const r = classifySession({
+      ...base, has_product_view: true, has_add_to_cart: true, has_checkout: true,
+      has_purchase: true, order_value: 44.9,
+    });
+    expect(r.commercial_intent_tier).toBe("HIGH");
+    expect(r.commercial_intent_score).toBe(100);
+  });
+
+  it("summary keeps zero commerce at zero and does not inflate humans", () => {
+    const rows: ClassifierSession[] = Array.from({ length: 40 }, (_, i) => ({
+      ...base, session_id: `bot-${i}`,
+    }));
+    const s = summarizeTrafficQuality(rows);
+    expect(s.total_sessions).toBe(40);
+    expect(s.conservative_humans).toBe(0);
+    expect(s.commerce_human.add_to_cart).toBe(0);
+    expect(s.quality.PROBABLE_BOT_OR_AUTOMATION).toBe(40);
+    expect(s.bot_clusters[0].sessions).toBe(40);
+  });
+});
