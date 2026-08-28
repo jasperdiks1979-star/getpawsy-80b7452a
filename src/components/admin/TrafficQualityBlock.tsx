@@ -85,11 +85,13 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
             <span>Expanded human estimate: {summary.expanded_humans}</span>
             {summary.bot_clusters.length > 0 && (
               <span>
-                Largest synthetic cluster: {summary.bot_clusters[0].city}/{summary.bot_clusters[0].device}/
-                {summary.bot_clusters[0].duration_bucket} — {summary.bot_clusters[0].sessions} sessions (
-                {summary.bot_clusters[0].share_of_raw}% of raw)
+                Largest synthetic fingerprint: {summary.bot_clusters[0].landing_page}/
+                {summary.bot_clusters[0].device}/{summary.bot_clusters[0].duration_bucket}/
+                {summary.bot_clusters[0].page_views}pv/{summary.bot_clusters[0].source_class} —{" "}
+                {summary.bot_clusters[0].sessions} sessions ({summary.bot_clusters[0].share_of_raw}% of raw)
               </span>
             )}
+
           </div>
         </>
       )}
