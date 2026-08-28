@@ -209,7 +209,11 @@ export default function VisitorWorldMapProPage() {
 
           {/* Organic / Paid / Total split — canonical, excludes internal & bot */}
           {!isLive && (
-            <div className="mb-4">
+            <div className="mb-4 space-y-4">
+              <TrafficQualityBlock
+                hours={(proHoursForRange(state.timeRange) >= 24 ? 24 : 10) as 10 | 24}
+                geo={state.usOnly ? "US" : "all"}
+              />
               <TrafficClassSplitPanel />
             </div>
           )}
