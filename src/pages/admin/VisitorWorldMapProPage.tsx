@@ -16,6 +16,7 @@ import { LiveVisitorFeed } from "@/components/admin/visitor-world-map-v2/LiveVis
 import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveVisitorDrawer";
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
 import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
+import { TrafficQualityBlock } from "@/components/admin/TrafficQualityBlock";
 import { useLivePresence } from "@/hooks/useLivePresence";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
