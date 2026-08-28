@@ -96,20 +96,38 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
             <Kpi label="Unknown" value={summary.quality.UNKNOWN} />
           </div>
 
+          {/* ---------------- PRODUCT INTEREST (3 LEVELS) ---------------- */}
+          <div className="mt-3 rounded-md border">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-1.5">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide">Product interest</h3>
+              <span className="text-[10px] text-muted-foreground">
+                A raw product_view alone is never counted as confirmed interest
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4">
+              <Kpi
+                label="Strict product interest"
+                value={summary.product_interest.strict}
+                tone="good"
+              />
+              <Kpi label="Conservative product interest" value={summary.product_interest.conservative} />
+              <Kpi label="Broad product-view upper bound" value={summary.product_interest.broad_upper_bound} />
+              <Kpi label="Raw product-view sessions" value={summary.product_interest.raw_product_view_sessions} />
+            </div>
+            <div className="border-t px-3 py-1 text-[10px] text-muted-foreground">
+              Strict = confirmed interest from probable humans · Conservative = confirmed interest from
+              probable + possible humans · Broad = <strong>upper bound only</strong>, every product-view
+              session still classified probable or possible — not proven human interest. Weak product
+              interest: {summary.product_interest.weak}.
+            </div>
+          </div>
+
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Kpi label="Human product views" value={summary.commerce_human.product_views} />
             <Kpi label="Human ATC" value={summary.commerce_human.add_to_cart} />
             <Kpi label="Human checkout" value={summary.commerce_human.checkout} />
             <Kpi label="Human purchases" value={summary.commerce_human.purchases} tone="good" />
-          </div>
-
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Kpi label="Expanded product views" value={summary.commerce_expanded.product_views} />
             <Kpi label="Expanded ATC" value={summary.commerce_expanded.add_to_cart} />
-            <Kpi label="Expanded checkout" value={summary.commerce_expanded.checkout} />
-            <Kpi label="Expanded purchases" value={summary.commerce_expanded.purchases} />
           </div>
-
 
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
             <span>
@@ -118,7 +136,10 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
               {summary.quality_pct.PROBABLE_BOT_OR_AUTOMATION}% bot ·{" "}
               {summary.quality_pct.UNKNOWN}% unknown
             </span>
-            <span>Expanded human estimate: {summary.expanded_humans}</span>
+            <span title="Expanded includes uncertain sessions and should not be interpreted as verified human traffic.">
+              Human range: {summary.conservative_humans} strict / {summary.expanded_humans} expanded —
+              expanded includes uncertain sessions and should not be interpreted as verified human traffic.
+            </span>
             {summary.bot_clusters.length > 0 && (
               <span>
                 Largest synthetic fingerprint: {summary.bot_clusters[0].landing_page}/
@@ -129,6 +150,7 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
             )}
 
           </div>
+
 
           {/* ---------------- SOURCE QUALITY ---------------- */}
           <div className="mt-4 rounded-md border">
