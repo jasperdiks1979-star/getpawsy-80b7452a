@@ -653,8 +653,14 @@ export default function PinterestHealth() {
 
       <div className="flex items-center gap-2 pt-2">
         <h2 className="text-sm font-semibold text-muted-foreground">Pinterest-attributed activity (last 30d)</h2>
-        <Badge variant="secondary" className="text-[10px]">Diagnostic only · not a business KPI · source: pinterest_funnel_events</Badge>
+        <Badge variant="secondary" className="text-[10px]">Diagnostic attribution events — not verified human sessions · source: pinterest_funnel_events</Badge>
       </div>
+      {kpi.sessions > 0 && kpi.pdpViews === 0 && (
+        <div className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+          Attribution events exist without corroborated PDP activity; do not interpret as confirmed Pinterest shopper traffic.
+        </div>
+      )}
+
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 opacity-90">
         {[
           { label: "Pin-attributed sessions", value: kpi.sessions, icon: Activity },
