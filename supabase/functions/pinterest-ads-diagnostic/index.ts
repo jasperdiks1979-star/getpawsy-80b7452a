@@ -220,6 +220,19 @@ Deno.serve(async (req) => {
         const ads = await pin(`/ad_accounts/${AD_ACCOUNT}/ads?ad_group_ids=${ag.id}&page_size=100`, token);
         adsPer.push({ ad_group_id: ag.id, ad_group_status: ag.status, ads: ads.body });
       }
+      // Catalog Sales / Shopping campaigns serve via product_group_promotions,
+      // not standard /ads — check them before concluding "no ads created".
+      const isShopping = c.objective_type === "CATALOG_SALES" || c.objective_type === "SHOPPING";
+      let shoppingPromotions: { total: number; active: number } | null = null;
+      if (isShopping && ags.length > 0) {
+        const agIds = ags.map((g: any) => g.id).join(",");
+        const promos = await pin(`/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_ids=${agIds}&page_size=100`, token);
+        const items: any[] = (promos.body as any)?.items ?? [];
+        shoppingPromotions = {
+          total: items.length,
+          active: items.filter((p: any) => p.status === "ACTIVE").length,
+        };
+      }
       // Delivery diagnostics (analytics last 7d)
       const end = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
