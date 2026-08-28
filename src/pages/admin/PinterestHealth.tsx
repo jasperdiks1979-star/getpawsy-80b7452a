@@ -424,10 +424,23 @@ export default function PinterestHealth() {
           </div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed URL</span><span className="font-mono text-xs truncate max-w-[60%]" title={catalog?.feed_url || ""}>{catalog?.feed_url || "—"}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Feed ID</span><span className="font-mono text-xs">{catalog?.feed_id || "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Items in feed</span><span>{catalog?.items_total ?? "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Invalid items</span><span>{catalog?.items_invalid ?? "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Accepted at</span><span>{catalog?.accepted_at ? new Date(catalog.accepted_at).toLocaleString() : "—"}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Last checked</span><span>{catalog?.last_checked_at ? new Date(catalog.last_checked_at).toLocaleString() : "—"}</span></div>
+          <div className="rounded border p-2 space-y-1 bg-muted/20">
+            <div className="text-xs font-medium">Item counts — reported per source, never reconciled</div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Live feed XML (fetched from feed URL)</span><span>{adsDiag?.catalog_counts?.live_feed_xml?.value ?? "— (run diagnostic)"}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Pinterest ingested (feed processing report)</span><span>{catalog?.items_total ?? "—"}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Pinterest invalid items (processing report)</span><span>{catalog?.items_invalid ?? "—"}</span></div>
+            <div className="flex justify-between text-xs"><span className="text-muted-foreground">Local products (database)</span><span>{adsDiag?.catalog_counts?.local_products?.value ?? "— (run diagnostic)"}</span></div>
+          </div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Feed registered/accepted at</span><span>{catalog?.accepted_at ? new Date(catalog.accepted_at).toLocaleString() : "—"}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Last checked at</span><span>{catalog?.last_checked_at ? new Date(catalog.last_checked_at).toLocaleString() : "—"}</span></div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Latest feed ingestion</span>
+            <span>{adsDiag?.catalog_counts?.timestamps?.latest_feed_ingestion
+              ? new Date(adsDiag.catalog_counts.timestamps.latest_feed_ingestion).toLocaleString()
+              : "not exposed by API"}</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">“Feed registered/accepted at” is the acceptance timestamp, not the latest ingestion run.</p>
+
           {catalog?.last_error && (
             <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs mt-2">{catalog.last_error}</div>
           )}
