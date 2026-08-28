@@ -181,7 +181,9 @@ export default function PinterestHealth() {
     line("Pinterest Full Access Diagnostic", 16, true);
     line(`Generated: ${adsDiag.generated_at ?? new Date().toISOString()}`);
     line(`Ad Account: ${adsDiag.ad_account_id ?? ""}`);
-    line(`Full Access: ${adsDiag.scope_check?.full_access ? "YES" : "NO"}`, 12, true);
+    line(`OAuth scopes complete: ${adsDiag.oauth_diagnosis?.scopes_complete ? "YES" : "NO"}`, 12, true);
+    line(`Restricted feature access: ${adsDiag.entitlements?.restricted_feature_access ?? "UNKNOWN"}${(adsDiag.entitlements?.restricted_features_unavailable || []).length ? ` — ${adsDiag.entitlements.restricted_features_unavailable.join(", ")} unavailable` : ""}`, 12, true);
+    line(`Reconnect recommended: ${adsDiag.oauth_diagnosis?.reconnect_recommended ? "YES" : "NO"} — ${adsDiag.oauth_diagnosis?.detail ?? ""}`);
     y += 6; line("Granted scopes", 12, true);
     line((adsDiag.scope_check?.granted || []).join(", ") || "(none)");
     y += 4; line("Missing scopes (required)", 12, true);
