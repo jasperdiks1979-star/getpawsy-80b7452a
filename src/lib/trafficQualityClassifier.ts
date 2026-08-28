@@ -299,15 +299,29 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
     facts,
   });
 
-  // 1. Internal / test — explicit markers only.
-  const internalHaystack = `${lower(sid)} ${lower(s.utm_source)} ${lower(s.utm_medium)} ${lower(s.utm_campaign)} ${lower(landing)}`;
+  // 1. Internal / test — explicit markers only. Always wins.
+  const landingLower = lower(landing);
+  const refLower = lower(s.referrer);
+  const internalHaystack = `${lower(sid)} ${lower(s.utm_source)} ${lower(s.utm_medium)} ${lower(s.utm_campaign)} ${landingLower}`;
   if (s.is_internal === true) {
     reasons.push("explicit_internal_flag");
-    return finish("INTERNAL_OR_TEST", 0.99);
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (landingLower.includes("__lovable_sha") || landingLower.includes("__lovable_load_id")) {
+    reasons.push("internal:lovable_preview_param");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (/(^|\/\/|\.)lovable\.dev/.test(refLower) || refLower.includes("lovable.app")) {
+    reasons.push("internal:lovable_referrer");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (/^\/(admin|dashboard)(\/|$|\?)/.test(landingLower) || landingLower.includes("/admin/")) {
+    reasons.push("internal:admin_or_dashboard_route");
+    return finish("INTERNAL_OR_TEST", 1);
   }
   if (INTERNAL_TOKENS.some((t) => internalHaystack.includes(`${t}_`) || internalHaystack.includes(`${t}=`) || internalHaystack.includes(`${t}-`))) {
     reasons.push("internal_marker_token");
-    return finish("INTERNAL_OR_TEST", 0.9);
+    return finish("INTERNAL_OR_TEST", 0.95);
   }
 
   // 2. Declared automation.
@@ -316,15 +330,29 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
     return finish("PROBABLE_BOT_OR_AUTOMATION", 0.97);
   }
 
-  // 3. Strong human signals — a conversion is not required.
-  const strong: string[] = [];
-  if (atc) strong.push("add_to_cart");
-  if (viewCart) strong.push("view_cart");
-  if (checkout) strong.push("checkout");
-  if (purchase) strong.push("purchase");
-  if (duration !== null && duration >= 20) strong.push("duration>=20s");
-  if (pv >= 3) strong.push("pageviews>=3");
-  if (productView && pv >= 2) strong.push("product_view_with_navigation");
+  // 3. Authenticated commerce — the only signal that overrides burst guards.
+  const hardCommerce = atc || checkout || purchase;
+
+  // 4. Burst / automation guard — implausible navigation timing.
+  const pvPerSecond = pv > 0 && duration !== null ? pv / Math.max(duration, 1) : 0;
+  if (!hardCommerce) {
+    if (pv >= 2 && duration !== null && pvPerSecond > 1) {
+      reasons.push("bot:pageviews_per_second>1", `bot:pv=${pv}`, `bot:duration=${duration}s`);
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.82);
+    }
+    if (
+      duration !== null && duration <= 2 &&
+      device === "desktop" &&
+      (source_class === "DIRECT" || source_class === "UNKNOWN") &&
+      pv >= 2 && !productView && !viewCart
+    ) {
+      reasons.push("bot:direct_desktop_burst_no_commerce");
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.8);
+    }
+  }
+
+  // 5. Strong human signals — a conversion is NEVER required, but no single
+  //    weak metric (raw pageviews or raw duration) qualifies on its own.
   const coherentSearchOrReferral =
     (source_class === "GOOGLE_ORGANIC" ||
       source_class === "OTHER_SEARCH" ||
@@ -332,31 +360,59 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
       source_class === "PINTEREST_ORGANIC" ||
       source_class === "PINTEREST_PAID") &&
     !!landing && landing !== "" &&
-    (device === "mobile" || device === "tablet" || device === "desktop") &&
-    (duration === null || duration >= 3);
-  if (coherentSearchOrReferral && pv >= 2) strong.push("coherent_source_with_navigation");
+    (device === "mobile" || device === "tablet" || device === "desktop");
+
+  const strong: string[] = [];
+  if (atc) strong.push("add_to_cart");
+  if (viewCart) strong.push("view_cart");
+  if (checkout) strong.push("checkout");
+  if (purchase) strong.push("purchase");
+
+  // Navigation signal: needs volume AND plausible timing.
+  if (pv >= 3 && duration !== null && duration >= 5 && pvPerSecond <= 1) {
+    strong.push("pageviews>=3_with_duration>=5s");
+  }
+  // Dwell signal: 20s+ is only human with a second positive signal.
+  if (duration !== null && duration >= 20) {
+    const second =
+      pv >= 2 ? "pageviews>=2" :
+      coherentSearchOrReferral ? "coherent_source" :
+      productView ? "product_engagement" : null;
+    if (second) strong.push(`duration>=20s_plus_${second}`);
+  }
+  if (coherentSearchOrReferral && pv >= 2 && (duration === null || duration >= 3)) {
+    strong.push("coherent_source_with_navigation");
+  }
+  if (productView && pv >= 2 && duration !== null && duration >= 5 && pvPerSecond <= 1) {
+    strong.push("product_view_with_plausible_navigation");
+  }
 
   if (strong.length > 0) {
     reasons.push(...strong.map((r) => `human:${r}`));
-    const confidence = Math.min(0.98, 0.6 + 0.12 * strong.length);
+    const confidence =
+      strong.length === 1 ? 0.55 :
+      strong.length === 2 ? 0.7 :
+      Math.min(0.95, 0.8 + 0.05 * (strong.length - 3));
     return finish("PROBABLE_HUMAN", confidence);
   }
 
-  // 4. Possible human.
+  // 6. Possible human — plausible but insufficient evidence.
   const possible: string[] = [];
+  if (coherentSearchOrReferral) possible.push("external_source_landing");
   if (duration !== null && duration >= 3 && duration <= 19) possible.push("duration_3_19s");
-  if (pv >= 2) possible.push("pageviews>=2");
-  if (coherentSearchOrReferral) possible.push("real_source_single_page");
+  if (duration !== null && duration >= 20 && pv <= 1) possible.push("single_page_dwell");
+  if (productView) possible.push("product_view");
+  if (pv === 2 && (duration === null || duration >= 2)) possible.push("two_pageviews_plausible_timing");
   if ((device === "mobile" || device === "tablet") && source_class === "DIRECT" && !!landing && landing !== "/") {
     possible.push("mobile_direct_content_landing");
   }
-  if (productView) possible.push("product_view");
   if (possible.length > 0) {
     reasons.push(...possible.map((r) => `possible:${r}`));
-    return finish("POSSIBLE_HUMAN", Math.min(0.75, 0.35 + 0.12 * possible.length));
+    const confidence = possible.length === 1 ? 0.55 : Math.min(0.75, 0.6 + 0.05 * (possible.length - 2));
+    return finish("POSSIBLE_HUMAN", confidence);
   }
 
-  // 5. Probable bot / automation — requires MULTIPLE weak synthetic signals.
+  // 7. Probable bot / automation — requires MULTIPLE weak synthetic signals.
   const weak: string[] = [];
   if (duration !== null && duration <= 2) weak.push("duration<=2s");
   if (device === "desktop") weak.push("desktop");
@@ -371,6 +427,7 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
   reasons.push("insufficient_evidence");
   return finish("UNKNOWN", 0.3);
 }
+
 
 export function classifySessions(rows: ClassifierSession[]): ClassifiedSession[] {
   return applyClusterBoost(rows.map(classifySession), rows);
