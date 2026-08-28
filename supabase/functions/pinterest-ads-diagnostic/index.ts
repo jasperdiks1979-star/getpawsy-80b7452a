@@ -44,14 +44,42 @@ const ENDPOINT_MANUAL_ACTION: Record<string, { scope: string; access: string; ac
   campaigns:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ad_groups:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ads:               { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
-  billing_profiles:  { scope: "billing:read",   access: "Advanced (commerce_integration)", action: "Request commerce_integration / Advanced Access for app 1567611 via Pinterest developer support, then reconnect." },
+  billing_profiles:  { scope: "billing:read",   access: "Restricted feature (commerce_integration)", action: "Pinterest Developer / Support entitlement required for the restricted `commerce_integration` feature on app 1567611. Reconnecting OAuth will NOT add this entitlement." },
   catalogs:          { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   product_groups:    { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   conversion_tags:   { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
-  pin_edit_probe:    { scope: "pins:write",     access: "Advanced (pin_edit)",  action: "Pin PATCH requires the restricted pin_edit feature on app 1567611. Request via Pinterest developer support." },
+  pin_edit_probe:    { scope: "pins:write",     access: "Restricted feature (pin_edit)",  action: "Pin PATCH requires the restricted pin_edit feature on app 1567611. Request via Pinterest developer support." },
   user_account:      { scope: "user_accounts:read", access: "Standard", action: "Reconnect and approve user_accounts:read." },
   boards:            { scope: "boards:read",    access: "Standard", action: "Reconnect and approve boards:read." },
 };
+
+/**
+ * Distinguish a real auth/scope failure (fixable by re-consent) from a
+ * Pinterest *app entitlement* failure (restricted feature — reconnect can
+ * never fix it).
+ */
+function classifyEndpointFailure(status: number, body: unknown): {
+  entitlement_status: "OK" | "RESTRICTED_FEATURE_401" | "AUTH_OR_SCOPE_FAILURE" | "OTHER_ERROR";
+  restricted_feature: string | null;
+  reconnect_can_fix: boolean;
+} {
+  const msg = String((body as any)?.message ?? "");
+  const m = msg.match(/restricted feature:\s*([a-z0-9_]+)/i);
+  if (m || /does not have access to this restricted feature/i.test(msg)) {
+    return {
+      entitlement_status: "RESTRICTED_FEATURE_401",
+      restricted_feature: m?.[1] ?? "unknown",
+      reconnect_can_fix: false,
+    };
+  }
+  if (status === 401 || status === 403) {
+    return { entitlement_status: "AUTH_OR_SCOPE_FAILURE", restricted_feature: null, reconnect_can_fix: true };
+  }
+  return { entitlement_status: "OTHER_ERROR", restricted_feature: null, reconnect_can_fix: false };
+}
+
+const CATALOG_OBJECTIVES = new Set(["CATALOG_SALES", "SHOPPING", "CONSIDERATION_SHOPPING"]);
+
 
 async function isAuthed(req: Request): Promise<boolean> {
   const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET");
@@ -145,11 +173,68 @@ Deno.serve(async (req) => {
         status: r.status,
         code: (r.body as any)?.code ?? null,
         message: (r.body as any)?.message ?? null,
+        ...classifyEndpointFailure(r.status, r.body),
         manual_action: ENDPOINT_MANUAL_ACTION[name] ?? null,
       }));
+
+    // Endpoint entitlement matrix — separates OAuth scope status from Pinterest
+    // app feature entitlements. A granted scope does NOT imply endpoint access.
+    const entitlement_matrix = Object.entries(endpoints).map(([name, r]) => {
+      const scope = ENDPOINT_MANUAL_ACTION[name]?.scope ?? null;
+      const cls = r.ok
+        ? { entitlement_status: "OK" as const, restricted_feature: null, reconnect_can_fix: false }
+        : classifyEndpointFailure(r.status, r.body);
+      return {
+        endpoint: name,
+        http_status: r.status,
+        scope_required: scope,
+        scope_status: scope ? (grantedScopes.includes(scope) ? "PRESENT" : "MISSING") : "N/A",
+        ...cls,
+      };
+    });
+
+    const restrictedFeatures = Array.from(new Set(
+      entitlement_matrix
+        .filter((e) => e.entitlement_status === "RESTRICTED_FEATURE_401")
+        .map((e) => e.restricted_feature || "unknown"),
+    ));
+
     out.verification = {
       all_endpoints_200: failedEndpoints.length === 0,
+      // Failures that OAuth re-consent can actually fix.
+      auth_fixable_failures: failedEndpoints.filter((f) => f.reconnect_can_fix),
+      restricted_feature_failures: failedEndpoints.filter((f) => f.entitlement_status === "RESTRICTED_FEATURE_401"),
       failed: failedEndpoints,
+    };
+    out.entitlements = {
+      matrix: entitlement_matrix,
+      restricted_features_unavailable: restrictedFeatures,
+      restricted_feature_access: restrictedFeatures.length === 0 ? "FULL" : "PARTIAL",
+      summary: restrictedFeatures.length === 0
+        ? "No restricted-feature rejections observed."
+        : `Pinterest rejects ${restrictedFeatures.join(", ")} — restricted app feature, not an OAuth scope problem.`,
+    };
+
+    // OAuth diagnosis: reconnect is only a valid fix for missing scopes,
+    // invalid/expired tokens, or explicit re-consentable auth failures.
+    const tokenExpiry = (conn as any)?.token_expires_at ? Date.parse((conn as any).token_expires_at) : null;
+    const tokenExpired = tokenExpiry !== null && Number.isFinite(tokenExpiry) && tokenExpiry < Date.now();
+    const authFailure = failedEndpoints.some((f) => f.reconnect_can_fix);
+    const reconnectRecommended = missingScopes.length > 0 || tokenExpired || authFailure;
+    out.oauth_diagnosis = {
+      scopes_complete: missingScopes.length === 0,
+      missing_scopes: missingScopes,
+      token_expired: tokenExpired,
+      auth_or_scope_endpoint_failure: authFailure,
+      reconnect_recommended: reconnectRecommended,
+      headline: missingScopes.length === 0 && !tokenExpired && !authFailure
+        ? "OAuth scopes already complete."
+        : "OAuth reconnect required.",
+      detail: reconnectRecommended
+        ? "Re-consent can resolve the listed scope/token issues."
+        : restrictedFeatures.length > 0
+          ? `Remaining endpoint failures are restricted app features (${restrictedFeatures.join(", ")}). Pinterest Developer / Support entitlement may be required. Reconnecting OAuth will not add this entitlement.`
+          : "No OAuth action required.",
     };
 
     out.capabilities = {
@@ -162,10 +247,47 @@ Deno.serve(async (req) => {
       can_edit_pins_patch: false, // requires pin_edit restricted feature; verified separately
     };
     out.requires_pinterest_approval = [
-      ...(endpoints.billing_profiles?.ok ? [] : ["commerce_integration (Advanced Access) for billing reads"]),
+      ...(endpoints.billing_profiles?.ok
+        ? []
+        : ["commerce_integration (restricted feature) for billing_profiles — entitlement, not scope"]),
       "pin_edit restricted feature for in-place pin PATCH",
       ...(grantedScopes.includes("biz_access:read") ? [] : ["biz_access:* (business manager access)"]),
     ];
+
+    // ---- Catalog item-count sources (never reconciled by guessing) ----
+    try {
+      const { data: catStatus } = await sb.from("pinterest_catalog_status").select("*").eq("id", 1).maybeSingle();
+      const { count: localProducts } = await sb.from("products").select("id", { count: "exact", head: true });
+      let liveXmlItems: number | null = null;
+      const feedUrl = (catStatus as any)?.feed_url;
+      if (feedUrl) {
+        try {
+          const xml = await (await fetch(feedUrl)).text();
+          liveXmlItems = (xml.match(/<item[\s>]/g) || []).length || null;
+        } catch { liveXmlItems = null; }
+      }
+      out.catalog_counts = {
+        live_feed_xml: { value: liveXmlItems, source: "live XML fetch of registered feed URL" },
+        pinterest_ingested: {
+          value: (catStatus as any)?.items_total ?? null,
+          source: "Pinterest feed processing report (items_total)",
+        },
+        pinterest_invalid: {
+          value: (catStatus as any)?.items_invalid ?? null,
+          source: "Pinterest feed processing report (items_invalid)",
+        },
+        local_products: { value: localProducts ?? null, source: "local products table" },
+        timestamps: {
+          feed_registered_accepted_at: (catStatus as any)?.accepted_at ?? null,
+          last_checked_at: (catStatus as any)?.last_checked_at ?? null,
+          latest_feed_ingestion: (catStatus as any)?.raw?.last_ingestion_at
+            ?? (catStatus as any)?.raw?.completed_at
+            ?? null,
+        },
+        note: "Counts come from different systems and are reported separately. Differences are not reconciled.",
+      };
+    } catch { /* diagnostic only */ }
+
 
     const campaignsRes = endpoints.campaigns;
 
@@ -173,12 +295,26 @@ Deno.serve(async (req) => {
     const perCampaign: any[] = [];
     for (const c of campaigns) {
       const cid = c.id;
+      const isShopping = CATALOG_OBJECTIVES.has(String(c.objective_type || "").toUpperCase());
       const adGroups = await pin(`/ad_accounts/${AD_ACCOUNT}/ad_groups?campaign_ids=${cid}&page_size=100`, token);
       const ags: any[] = (adGroups.body as any)?.items ?? [];
       const adsPer: any[] = [];
+      const promotionsPer: any[] = [];
       for (const ag of ags) {
         const ads = await pin(`/ad_accounts/${AD_ACCOUNT}/ads?ad_group_ids=${ag.id}&page_size=100`, token);
         adsPer.push({ ad_group_id: ag.id, ad_group_status: ag.status, ads: ads.body });
+        // SHOPPING ad groups serve through product_group_promotions, NOT /ads.
+        const promos = await pin(
+          `/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_id=${ag.id}&page_size=100`,
+          token,
+        );
+        promotionsPer.push({
+          ad_group_id: ag.id,
+          ad_group_status: ag.status,
+          http_status: promos.status,
+          items: (promos.body as any)?.items ?? [],
+          error: promos.ok ? null : ((promos.body as any)?.message ?? null),
+        });
       }
       // Delivery diagnostics (analytics last 7d)
       const end = new Date().toISOString().slice(0, 10);
@@ -192,6 +328,7 @@ Deno.serve(async (req) => {
         name: c.name,
         status: c.status,
         objective_type: c.objective_type,
+        is_shopping_architecture: isShopping,
         daily_spend_cap: c.daily_spend_cap,
         lifetime_spend_cap: c.lifetime_spend_cap,
         start_time: c.start_time,
@@ -207,35 +344,87 @@ Deno.serve(async (req) => {
           pacing_delivery_type: g.pacing_delivery_type,
         })),
         ads: adsPer,
+        product_group_promotions: promotionsPer,
         analytics_7d: analytics,
       });
     }
     out.campaigns = perCampaign;
 
-    // Diagnose root cause of zero delivery for each campaign.
+    // Explicit diagnostic states. We never claim a root cause the API does not prove.
     out.root_cause_summary = perCampaign.map((c: any) => {
-      const reasons: string[] = [];
-      if (c.status !== "ACTIVE") reasons.push(`campaign status = ${c.status}`);
+      const labels: string[] = [];
+      const evidence: string[] = [];
+      const isShopping = !!c.is_shopping_architecture;
+
       const activeAg = (c.ad_groups || []).filter((g: any) => g.status === "ACTIVE");
-      if ((c.ad_groups || []).length === 0) reasons.push("no ad groups");
-      else if (activeAg.length === 0) reasons.push("no ACTIVE ad groups");
-      const totalAds = (c.ads || []).reduce(
-        (n: number, x: any) => n + ((x?.ads?.items?.length) || 0), 0,
-      );
+      const totalAds = (c.ads || []).reduce((n: number, x: any) => n + ((x?.ads?.items?.length) || 0), 0);
       const activeAds = (c.ads || []).reduce(
         (n: number, x: any) => n + ((x?.ads?.items || []).filter((a: any) => a.status === "ACTIVE").length), 0,
       );
-      if (totalAds === 0) reasons.push("no ads created");
-      else if (activeAds === 0) reasons.push("no ACTIVE ads");
+      const allPromos = (c.product_group_promotions || []).flatMap((p: any) => p.items || []);
+      const activePromos = allPromos.filter(
+        (p: any) => String(p.status || "").toUpperCase() === "ACTIVE",
+      );
+      const promoApiBlocked = (c.product_group_promotions || []).some(
+        (p: any) => p.http_status === 401 || p.http_status === 403,
+      );
+
       const ana = (c.analytics_7d?.body as any);
       const imp = Array.isArray(ana) ? (ana[0]?.IMPRESSION_1 ?? 0) : 0;
-      if (imp === 0) reasons.push("0 impressions in last 7 days");
+      const spend = Array.isArray(ana) ? (ana[0]?.SPEND_IN_DOLLAR ?? 0) : 0;
+
+      if (c.status !== "ACTIVE") { labels.push("CAMPAIGN_PAUSED"); evidence.push(`campaign status = ${c.status}`); }
+      if ((c.ad_groups || []).length === 0) { labels.push("AD_GROUP_PAUSED"); evidence.push("no ad groups"); }
+      else if (activeAg.length === 0) { labels.push("AD_GROUP_PAUSED"); evidence.push("no ACTIVE ad groups"); }
+
+      if (isShopping) {
+        if (promoApiBlocked) {
+          labels.push("API_RESTRICTED_FEATURE");
+          evidence.push("product_group_promotions read returned 401/403");
+        } else if (allPromos.length === 0) {
+          labels.push("NO_SHOPPING_PROMOTION");
+          evidence.push("no product_group_promotions on any ad group");
+        } else {
+          labels.push("SHOPPING_PROMOTION_PRESENT");
+          evidence.push(`${allPromos.length} product_group_promotion(s), ${activePromos.length} ACTIVE`);
+        }
+      } else {
+        if (totalAds === 0) { labels.push("NO_ADS_CREATED"); evidence.push("0 ads on a non-shopping campaign"); }
+        else if (activeAds === 0) { labels.push("NO_ACTIVE_ADS"); evidence.push(`${totalAds} ads, 0 ACTIVE`); }
+      }
+
+      if (imp === 0) { labels.push("NO_IMPRESSIONS_LAST_7D"); evidence.push(`impressions_7d = 0, spend_7d = ${spend}`); }
+
+      const shoppingStalled =
+        isShopping && c.status === "ACTIVE" && activeAg.length > 0 && activePromos.length > 0 && imp === 0;
+      if (shoppingStalled) labels.push("SHOPPING_PROMOTION_PRESENT_NO_DELIVERY");
+
+      let diagnosis: string;
+      if (imp > 0) diagnosis = "Delivering.";
+      else if (shoppingStalled) {
+        diagnosis = "SHOPPING promotion present but not delivering — serving/review/entitlement cause not exposed by API.";
+      } else if (labels.length > 0) {
+        diagnosis = `Blocked by: ${labels.filter((l) => l !== "NO_IMPRESSIONS_LAST_7D").join(", ") || "UNKNOWN_SERVING_BLOCKER"}.`;
+      } else {
+        labels.push("UNKNOWN_SERVING_BLOCKER");
+        diagnosis = "No API-proven blocker found.";
+      }
+
       return {
         id: c.id, name: c.name, status: c.status,
+        objective_type: c.objective_type,
+        architecture: isShopping ? "CATALOG_SALES_SHOPPING" : "STANDARD_ADS",
         impressions_7d: imp,
-        root_cause: reasons.length ? reasons.join("; ") : "Delivering",
+        spend_7d: spend,
+        ads_count: totalAds,
+        shopping_promotions_count: allPromos.length,
+        shopping_promotions_active: activePromos.length,
+        labels,
+        evidence,
+        root_cause: diagnosis,
       };
     });
+
 
     // Persist diagnostic snapshot for audit trail.
     try {
