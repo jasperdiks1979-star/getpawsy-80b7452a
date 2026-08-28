@@ -280,11 +280,20 @@ Deno.serve(async (req) => {
       const activeAds = (c.ads || []).reduce(
         (n: number, x: any) => n + ((x?.ads?.items || []).filter((a: any) => a.status === "ACTIVE").length), 0,
       );
-      if (totalAds === 0) reasons.push("no ads created");
+      if (c.is_shopping && (c.shopping_promotions?.active ?? 0) > 0) {
+        // SHOPPING promotion present — /ads is empty by architecture, not by error.
+      } else if (c.is_shopping && (c.shopping_promotions?.total ?? 0) > 0) {
+        reasons.push("shopping promotion exists but none ACTIVE");
+      } else if (totalAds === 0) reasons.push("no ads created");
       else if (activeAds === 0) reasons.push("no ACTIVE ads");
       const ana = (c.analytics_7d?.body as any);
       const imp = Array.isArray(ana) ? (ana[0]?.IMPRESSION_1 ?? 0) : 0;
-      if (imp === 0) reasons.push("0 impressions in last 7 days");
+      const shoppingPromoActive = c.is_shopping && (c.shopping_promotions?.active ?? 0) > 0;
+      if (imp === 0 && !(shoppingPromoActive && reasons.length === 0)) reasons.push("0 impressions in last 7 days");
+      let rootCause = reasons.length ? reasons.join("; ") : "Delivering";
+      if (shoppingPromoActive && imp === 0 && c.status === "ACTIVE" && activeAg.length > 0) {
+        rootCause = "SHOPPING promotion present; zero delivery cause not exposed by API";
+      }
       return {
         id: c.id, name: c.name, status: c.status,
         impressions_7d: imp,
