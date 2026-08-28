@@ -435,8 +435,9 @@ export function classifySessions(rows: ClassifierSession[]): ClassifiedSession[]
 
 // ---------------------------------------------------------------------------
 // Cluster analysis — raises bot confidence, never demotes a human.
-// City alone is NEVER sufficient: a cluster must share city + device +
-// near-identical duration bucket AND consist of non-human-classified rows.
+// Behavioural fingerprint only: normalized landing page + device + duration
+// bucket + pageview count + source class. City is NEVER a key (geo enrichment
+// is frequently empty) and is reported additively when present.
 // ---------------------------------------------------------------------------
 
 export interface BotCluster {
@@ -445,14 +446,21 @@ export interface BotCluster {
   device: string;
   duration_bucket: string;
   landing_page: string;
+  page_views: number;
+  source_class: string;
   sessions: number;
   share_of_raw: number;
+}
+
+function normalizeLanding(p: string): string {
+  const path = (p || "/").split("?")[0].split("#")[0];
+  return path.replace(/\/+$/, "") || "/";
 }
 
 function clusterKey(c: ClassifiedSession): string {
   const d = c.facts.duration_seconds;
   const bucket = d === null ? "na" : d <= 2 ? "0-2s" : d <= 5 ? "3-5s" : d <= 19 ? "6-19s" : "20s+";
-  return `${c.facts.city || "unknown"}|${c.facts.device}|${bucket}|${c.facts.landing_page || "/"}`;
+  return `${normalizeLanding(c.facts.landing_page)}|${c.facts.device}|${bucket}|${c.facts.page_views}|${c.source_class}`;
 }
 
 export function detectBotClusters(
@@ -473,15 +481,22 @@ export function detectBotClusters(
     if (rows.length < minSize) continue;
     const humanish = rows.filter((r) => r.traffic_quality_class === "PROBABLE_HUMAN").length;
     if (humanish / rows.length > 0.3) continue; // real audience cluster
-    const [city, device, duration_bucket, landing_page] = key.split("|");
+    const [landing_page, device, duration_bucket, pvStr, source_class] = key.split("|");
     out.push({
-      key, city, device, duration_bucket, landing_page,
+      key,
+      city: rows.find((r) => r.facts.city)?.facts.city ?? "",
+      device,
+      duration_bucket,
+      landing_page,
+      page_views: Number(pvStr) || 0,
+      source_class,
       sessions: rows.length,
       share_of_raw: Math.round((rows.length / total) * 1000) / 10,
     });
   }
   return out.sort((a, b) => b.sessions - a.sessions);
 }
+
 
 /** Bumps confidence (and UNKNOWN → bot) for members of synthetic clusters. */
 export function applyClusterBoost(
