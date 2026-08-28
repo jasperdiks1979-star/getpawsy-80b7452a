@@ -44,14 +44,42 @@ const ENDPOINT_MANUAL_ACTION: Record<string, { scope: string; access: string; ac
   campaigns:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ad_groups:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ads:               { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
-  billing_profiles:  { scope: "billing:read",   access: "Advanced (commerce_integration)", action: "Request commerce_integration / Advanced Access for app 1567611 via Pinterest developer support, then reconnect." },
+  billing_profiles:  { scope: "billing:read",   access: "Restricted feature (commerce_integration)", action: "Pinterest Developer / Support entitlement required for the restricted `commerce_integration` feature on app 1567611. Reconnecting OAuth will NOT add this entitlement." },
   catalogs:          { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   product_groups:    { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   conversion_tags:   { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
-  pin_edit_probe:    { scope: "pins:write",     access: "Advanced (pin_edit)",  action: "Pin PATCH requires the restricted pin_edit feature on app 1567611. Request via Pinterest developer support." },
+  pin_edit_probe:    { scope: "pins:write",     access: "Restricted feature (pin_edit)",  action: "Pin PATCH requires the restricted pin_edit feature on app 1567611. Request via Pinterest developer support." },
   user_account:      { scope: "user_accounts:read", access: "Standard", action: "Reconnect and approve user_accounts:read." },
   boards:            { scope: "boards:read",    access: "Standard", action: "Reconnect and approve boards:read." },
 };
+
+/**
+ * Distinguish a real auth/scope failure (fixable by re-consent) from a
+ * Pinterest *app entitlement* failure (restricted feature — reconnect can
+ * never fix it).
+ */
+function classifyEndpointFailure(status: number, body: unknown): {
+  entitlement_status: "OK" | "RESTRICTED_FEATURE_401" | "AUTH_OR_SCOPE_FAILURE" | "OTHER_ERROR";
+  restricted_feature: string | null;
+  reconnect_can_fix: boolean;
+} {
+  const msg = String((body as any)?.message ?? "");
+  const m = msg.match(/restricted feature:\s*([a-z0-9_]+)/i);
+  if (m || /does not have access to this restricted feature/i.test(msg)) {
+    return {
+      entitlement_status: "RESTRICTED_FEATURE_401",
+      restricted_feature: m?.[1] ?? "unknown",
+      reconnect_can_fix: false,
+    };
+  }
+  if (status === 401 || status === 403) {
+    return { entitlement_status: "AUTH_OR_SCOPE_FAILURE", restricted_feature: null, reconnect_can_fix: true };
+  }
+  return { entitlement_status: "OTHER_ERROR", restricted_feature: null, reconnect_can_fix: false };
+}
+
+const CATALOG_OBJECTIVES = new Set(["CATALOG_SALES", "SHOPPING", "CONSIDERATION_SHOPPING"]);
+
 
 async function isAuthed(req: Request): Promise<boolean> {
   const internal = Deno.env.get("INTERNAL_FUNCTION_SECRET");
