@@ -710,13 +710,22 @@ export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQuali
     QUALITY_KEYS.map((k) => [k, total ? Math.round((quality[k] / total) * 1000) / 10 : 0]),
   ) as Record<TrafficQualityClass, number>;
 
+  // Top human sessions: probable + possible, internal/bot always excluded.
+  const rank = (c: ClassifiedSession) =>
+    (c.facts.purchase ? 8 : 0) + (c.facts.checkout ? 4 : 0) + (c.facts.add_to_cart ? 2 : 0) +
+    (c.traffic_quality_class === "PROBABLE_HUMAN" ? 1 : 0);
   const top_human_sessions = classified
-    .filter((c) => c.traffic_quality_class === "PROBABLE_HUMAN")
+    .filter(
+      (c) =>
+        c.traffic_quality_class === "PROBABLE_HUMAN" ||
+        c.traffic_quality_class === "POSSIBLE_HUMAN",
+    )
     .sort(
       (a, b) =>
-        b.commercial_intent_score - a.commercial_intent_score ||
+        rank(b) - rank(a) ||
         b.traffic_quality_confidence - a.traffic_quality_confidence ||
-        (b.facts.duration_seconds ?? 0) - (a.facts.duration_seconds ?? 0),
+        (b.facts.duration_seconds ?? 0) - (a.facts.duration_seconds ?? 0) ||
+        b.commercial_intent_score - a.commercial_intent_score,
     )
     .slice(0, 10);
 
@@ -732,6 +741,9 @@ export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQuali
     commerce_expanded,
     top_human_sessions,
     bot_clusters: detectBotClusters(classified),
+    source_matrix: buildSourceQualityMatrix(classified),
+
+
 
   };
 }
