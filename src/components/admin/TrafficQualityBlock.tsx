@@ -53,17 +53,27 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            <Kpi label="Real humans" value={summary.conservative_humans} tone="good" />
-            <Kpi label="Possible humans" value={summary.quality.POSSIBLE_HUMAN} />
+            <Kpi label="Probable human" value={summary.quality.PROBABLE_HUMAN} tone="good" />
+            <Kpi label="Possible human" value={summary.quality.POSSIBLE_HUMAN} />
             <Kpi label="Bot / automation" value={summary.quality.PROBABLE_BOT_OR_AUTOMATION} tone="warn" />
-            <Kpi label="Pinterest paid humans" value={summary.sources_human.PINTEREST_PAID} />
-            <Kpi label="Pinterest organic humans" value={summary.sources_human.PINTEREST_ORGANIC} />
+            <Kpi label="Internal / test" value={summary.quality.INTERNAL_OR_TEST} />
+            <Kpi label="Unknown" value={summary.quality.UNKNOWN} />
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Kpi label="Human product views" value={summary.commerce_human.product_views} />
             <Kpi label="Human ATC" value={summary.commerce_human.add_to_cart} />
             <Kpi label="Human checkout" value={summary.commerce_human.checkout} />
             <Kpi label="Human purchases" value={summary.commerce_human.purchases} tone="good" />
-            <Kpi label="Internal / test" value={summary.quality.INTERNAL_OR_TEST} />
           </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Kpi label="Expanded product views" value={summary.commerce_expanded.product_views} />
+            <Kpi label="Expanded ATC" value={summary.commerce_expanded.add_to_cart} />
+            <Kpi label="Expanded checkout" value={summary.commerce_expanded.checkout} />
+            <Kpi label="Expanded purchases" value={summary.commerce_expanded.purchases} />
+          </div>
+
 
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
             <span>
