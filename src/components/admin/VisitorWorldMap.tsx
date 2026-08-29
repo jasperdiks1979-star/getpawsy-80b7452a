@@ -2313,7 +2313,8 @@ export const VisitorWorldMap = ({
                 {totalVisitors}
               </div>
               <div className="text-xs text-gray-400 mt-0.5">
-                {timeRange === "live" ? "Nu online" : "Bezoekers"}
+                {timeRange === "live" ? "Nu online" : "Ruwe visitor-ID's"}
+
               </div>
             </div>
           </div>
