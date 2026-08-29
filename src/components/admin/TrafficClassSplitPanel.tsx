@@ -65,33 +65,39 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
         ) : !data ? null : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <ClassCard
-                label="Organic (unpaid channels)"
+              <HumanClassCard
+                label="Organic human sessions"
                 icon={Leaf}
                 accent="text-emerald-400 border-emerald-800/60 bg-emerald-500/5"
+                probable={human.organic.probable}
+                expanded={human.organic.expanded}
                 row={data.organic}
                 priority
               />
-              <ClassCard
-                label="Paid"
+              <HumanClassCard
+                label="Paid human sessions"
                 icon={DollarSign}
                 accent="text-amber-400 border-amber-800/60 bg-amber-500/5"
+                probable={human.paid.probable}
+                expanded={human.paid.expanded}
                 row={data.paid}
               />
-              <ClassCard
-                label="Commercial total"
+              <HumanClassCard
+                label="Commercial human total"
                 icon={Users}
                 accent="text-primary border-primary/40 bg-primary/5"
+                probable={human.commercial.probable}
+                expanded={human.commercial.expanded}
                 row={data.commercial}
                 total
               />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <MiniStat label="Organic search" value={data.byBucket.ORGANIC_SEARCH?.sessions ?? 0} icon={Leaf} />
-              <MiniStat label="Pinterest organic" value={data.byBucket.PINTEREST_ORGANIC?.sessions ?? 0} icon={MousePointerClick} />
-              <MiniStat label="Referral" value={data.referral.sessions} icon={Link2} />
-              <MiniStat label="Direct (human-evidence)" value={data.direct.sessions} icon={Users} />
+              <MiniStat label="Raw · organic search" value={data.byBucket.ORGANIC_SEARCH?.sessions ?? 0} icon={Leaf} />
+              <MiniStat label="Raw · Pinterest organic" value={data.byBucket.PINTEREST_ORGANIC?.sessions ?? 0} icon={MousePointerClick} />
+              <MiniStat label="Raw · referral" value={data.referral.sessions} icon={Link2} />
+              <MiniStat label="Raw · direct" value={data.direct.sessions} icon={Users} />
             </div>
 
             <div
@@ -102,10 +108,12 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
                 Human eligibility · traffic classifier: strict v3 (last 24h)
               </div>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
-                {(["PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "REFERRAL", "DIRECT"] as const).map((k) => {
+                {(["PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "REFERRAL", "DIRECT", "TIKTOK", "META", "OTHER_PAID", "UNKNOWN"] as const).map((k) => {
                   const r = v3.source_matrix.find((m) => m.source_class === k);
                   const probable = r?.probable_human ?? 0;
                   const expanded = probable + (r?.possible_human ?? 0);
+                  const raw = r?.sessions ?? 0;
+                  if (raw === 0 && probable === 0 && expanded === 0 && !["PINTEREST_PAID", "PINTEREST_ORGANIC", "OTHER_SEARCH", "DIRECT"].includes(k)) return null;
                   return (
                     <li key={k} className="flex items-center justify-between">
                       <span className="text-muted-foreground">{k.replace(/_/g, " ").toLowerCase()}</span>
@@ -115,13 +123,14 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
                 })}
               </ul>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                Notation: probable human / expanded (probable + possible). Bot, internal/test and
-                unknown sessions are excluded from both figures. Source and human-quality are
-                separate dimensions: a Pinterest referrer without UTM or ad-click evidence stays
-                Pinterest organic. Counts above the fold use the server acquisition contract and
-                may differ — strict v3 is authoritative for human eligibility.
+                Notation: probable human / expanded (probable + possible, estimate only). Bot,
+                internal/test and unknown-quality sessions are excluded from both figures. Human
+                eligibility is derived from Traffic Classifier strict v3. Source classification and
+                human quality are separate dimensions: a Pinterest referrer without UTM or ad-click
+                evidence stays Pinterest organic.
               </p>
             </div>
+
 
 
             {!compact && (
