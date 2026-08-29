@@ -94,6 +94,36 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
               <MiniStat label="Direct (human-evidence)" value={data.direct.sessions} icon={Users} />
             </div>
 
+            <div
+              data-testid="acquisition-strict-v3"
+              className="rounded-md border bg-background/40 px-3 py-2 text-[11px]"
+            >
+              <div className="mb-1 font-semibold uppercase tracking-wide text-muted-foreground">
+                Human eligibility · traffic classifier: strict v3 (last 24h)
+              </div>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
+                {(["PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "REFERRAL", "DIRECT"] as const).map((k) => {
+                  const r = v3.source_matrix.find((m) => m.source_class === k);
+                  const probable = r?.probable_human ?? 0;
+                  const expanded = probable + (r?.possible_human ?? 0);
+                  return (
+                    <li key={k} className="flex items-center justify-between">
+                      <span className="text-muted-foreground">{k.replace(/_/g, " ").toLowerCase()}</span>
+                      <span className="tabular-nums font-semibold">{probable} / {expanded}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Notation: probable human / expanded (probable + possible). Bot, internal/test and
+                unknown sessions are excluded from both figures. Source and human-quality are
+                separate dimensions: a Pinterest referrer without UTM or ad-click evidence stays
+                Pinterest organic. Counts above the fold use the server acquisition contract and
+                may differ — strict v3 is authoritative for human eligibility.
+              </p>
+            </div>
+
+
             {!compact && (
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="flex items-center gap-1">
