@@ -44,7 +44,7 @@ const ENDPOINT_MANUAL_ACTION: Record<string, { scope: string; access: string; ac
   campaigns:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ad_groups:         { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
   ads:               { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
-  billing_profiles:  { scope: "billing:read",   access: "Restricted feature (commerce_integration)", action: "Pinterest app lacks restricted `commerce_integration` entitlement. Reconnecting OAuth will NOT fix this — request the entitlement via Pinterest Developer / Support." },
+  billing_profiles:  { scope: "billing:read",   access: "Restricted feature (commerce_integration)", action: "OAuth scopes are already complete. This endpoint requires Pinterest app entitlement for `commerce_integration`; reconnecting will not resolve it." },
   catalogs:          { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   product_groups:    { scope: "catalogs:read",  access: "Standard", action: "Reconnect Pinterest Full Access and approve catalogs:read." },
   conversion_tags:   { scope: "ads:read",       access: "Standard", action: "Reconnect Pinterest Full Access and approve ads:read." },
@@ -53,33 +53,41 @@ const ENDPOINT_MANUAL_ACTION: Record<string, { scope: string; access: string; ac
   boards:            { scope: "boards:read",    access: "Standard", action: "Reconnect and approve boards:read." },
 };
 
+// Endpoints that are restricted Pinterest app features rather than plain scopes.
+const RESTRICTED_FEATURE_ENDPOINTS: Record<string, string> = {
+  billing_profiles: "commerce_integration",
+  pin_edit_probe: "pin_edit",
+};
+
 /**
- * Classify a failed endpoint call: a Pinterest *restricted feature* rejection
- * (app entitlement — reconnect can never fix it) vs a real auth/scope failure
- * (fixable by re-consent) vs anything else.
+ * Classify a failed endpoint: a Pinterest *restricted feature* rejection
+ * (app entitlement — reconnect can never fix it) vs a real auth/scope failure.
  */
 function classifyEndpointFailure(endpoint: string, status: number, body: unknown): {
-  label: "RESTRICTED_FEATURE_401" | "AUTH_OR_SCOPE_FAILURE" | "OTHER_ERROR";
+  failure_type: "RESTRICTED_FEATURE_401" | "AUTH_OR_SCOPE_FAILURE" | "OTHER_ERROR";
   restricted_feature: string | null;
   recommend_reconnect: boolean;
   message: string | null;
 } {
-  const msg = String((body as any)?.message ?? "") || null;
-  const restrictedMatch = msg?.match(/restricted feature[:\s`]*([a-z0-9_]+)/i);
-  const isRestricted = !!restrictedMatch || /does not have access to this restricted feature/i.test(msg ?? "");
+  const raw = String((body as any)?.message ?? "") || null;
+  const match = raw?.match(/restricted feature[:\s`]*([a-z0-9_]+)/i);
+  const knownRestricted = RESTRICTED_FEATURE_ENDPOINTS[endpoint];
+  const isRestricted = !!match
+    || /does not have access to this restricted feature/i.test(raw ?? "")
+    || (!!knownRestricted && (status === 401 || status === 403));
   if (isRestricted) {
-    const feature = restrictedMatch?.[1] ?? (endpoint === "billing_profiles" ? "commerce_integration" : null);
+    const feature = match?.[1] ?? knownRestricted ?? "unknown";
     return {
-      label: "RESTRICTED_FEATURE_401",
+      failure_type: "RESTRICTED_FEATURE_401",
       restricted_feature: feature,
       recommend_reconnect: false,
-      message: `Pinterest app lacks restricted \`${feature ?? "unknown"}\` entitlement`,
+      message: `Pinterest app lacks restricted \`${feature}\` entitlement`,
     };
   }
   if (status === 401 || status === 403) {
-    return { label: "AUTH_OR_SCOPE_FAILURE", restricted_feature: null, recommend_reconnect: true, message: msg };
+    return { failure_type: "AUTH_OR_SCOPE_FAILURE", restricted_feature: null, recommend_reconnect: true, message: raw };
   }
-  return { label: "OTHER_ERROR", restricted_feature: null, recommend_reconnect: false, message: msg };
+  return { failure_type: "OTHER_ERROR", restricted_feature: null, recommend_reconnect: false, message: raw };
 }
 
 async function isAuthed(req: Request): Promise<boolean> {
@@ -170,26 +178,42 @@ Deno.serve(async (req) => {
     const failedEndpoints = Object.entries(endpoints)
       .filter(([, r]) => !r.ok)
       .map(([name, r]) => {
-        const classification = classifyEndpointFailure(name, r.status, r.body);
+        const cls = classifyEndpointFailure(name, r.status, r.body);
         return {
           name,
           status: r.status,
           code: (r.body as any)?.code ?? null,
-          message: classification.message ?? (r.body as any)?.message ?? null,
-          label: classification.label,
-          restricted_feature: classification.restricted_feature,
-          recommend_reconnect: classification.recommend_reconnect,
-          manual_action: classification.recommend_reconnect ? (ENDPOINT_MANUAL_ACTION[name] ?? null) : null,
-          entitlement_action: classification.recommend_reconnect ? null : (ENDPOINT_MANUAL_ACTION[name] ?? null),
+          message: cls.message ?? (r.body as any)?.message ?? null,
+          failure_type: cls.failure_type,
+          restricted_feature: cls.restricted_feature,
+          recommend_reconnect: cls.recommend_reconnect,
+          manual_action: cls.recommend_reconnect ? (ENDPOINT_MANUAL_ACTION[name] ?? null) : null,
+          entitlement_action: cls.recommend_reconnect ? null : (ENDPOINT_MANUAL_ACTION[name] ?? null),
         };
       });
+
+    const authFixableFailures = failedEndpoints.filter((f) => f.recommend_reconnect);
+    const restrictedFailures = failedEndpoints.filter((f) => f.failure_type === "RESTRICTED_FEATURE_401");
+    const otherFailures = failedEndpoints.filter(
+      (f) => f.failure_type === "OTHER_ERROR",
+    );
+
     out.verification = {
       all_endpoints_200: failedEndpoints.length === 0,
       failed: failedEndpoints,
-      auth_fixable_failures: failedEndpoints.filter((f) => f.recommend_reconnect).map((f) => f.name),
-      restricted_feature_failures: failedEndpoints.filter((f) => f.label === "RESTRICTED_FEATURE_401").map((f) => ({
-        name: f.name, status: f.status, restricted_feature: f.restricted_feature,
-      })),
+      auth_fixable_failures: authFixableFailures,
+      restricted_feature_failures: restrictedFailures,
+      other_failures: otherFailures,
+      // Restricted-feature 401s must NOT mark the whole Ads API as failing.
+      api_operational: authFixableFailures.length === 0 && otherFailures.length === 0,
+      api_status_label:
+        authFixableFailures.length === 0 && otherFailures.length === 0
+          ? "Pinterest Ads API operational"
+          : "Pinterest Ads API failing",
+      restricted_endpoint_notes: restrictedFailures.map(
+        (f) => `Restricted endpoint unavailable: ${f.name} (${f.restricted_feature} entitlement)`,
+      ),
+      reconnect_recommended: authFixableFailures.length > 0 || missingScopes.length > 0,
     };
 
     out.capabilities = {
@@ -202,7 +226,7 @@ Deno.serve(async (req) => {
       can_edit_pins_patch: false, // requires pin_edit restricted feature; verified separately
     };
     out.requires_pinterest_approval = [
-      ...(endpoints.billing_profiles?.ok ? [] : ["commerce_integration (Advanced Access) for billing reads"]),
+      ...(endpoints.billing_profiles?.ok ? [] : ["commerce_integration entitlement for billing reads"]),
       "pin_edit restricted feature for in-place pin PATCH",
       ...(grantedScopes.includes("biz_access:read") ? [] : ["biz_access:* (business manager access)"]),
     ];
@@ -221,12 +245,15 @@ Deno.serve(async (req) => {
         adsPer.push({ ad_group_id: ag.id, ad_group_status: ag.status, ads: ads.body });
       }
       // Catalog Sales / Shopping campaigns serve via product_group_promotions,
-      // not standard /ads — check them before concluding "no ads created".
+      // not standard /ads — inspect them before concluding "no ads created".
       const isShopping = c.objective_type === "CATALOG_SALES" || c.objective_type === "SHOPPING";
       let shoppingPromotions: { total: number; active: number } | null = null;
       if (isShopping && ags.length > 0) {
         const agIds = ags.map((g: any) => g.id).join(",");
-        const promos = await pin(`/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_ids=${agIds}&page_size=100`, token);
+        const promos = await pin(
+          `/ad_accounts/${AD_ACCOUNT}/product_group_promotions?ad_group_ids=${agIds}&page_size=100`,
+          token,
+        );
         const items: any[] = (promos.body as any)?.items ?? [];
         shoppingPromotions = {
           total: items.length,
@@ -280,24 +307,35 @@ Deno.serve(async (req) => {
       const activeAds = (c.ads || []).reduce(
         (n: number, x: any) => n + ((x?.ads?.items || []).filter((a: any) => a.status === "ACTIVE").length), 0,
       );
-      if (c.is_shopping && (c.shopping_promotions?.active ?? 0) > 0) {
-        // SHOPPING promotion present — /ads is empty by architecture, not by error.
-      } else if (c.is_shopping && (c.shopping_promotions?.total ?? 0) > 0) {
-        reasons.push("shopping promotion exists but none ACTIVE");
-      } else if (totalAds === 0) reasons.push("no ads created");
-      else if (activeAds === 0) reasons.push("no ACTIVE ads");
       const ana = (c.analytics_7d?.body as any);
       const imp = Array.isArray(ana) ? (ana[0]?.IMPRESSION_1 ?? 0) : 0;
-      const shoppingPromoActive = c.is_shopping && (c.shopping_promotions?.active ?? 0) > 0;
-      if (imp === 0 && !(shoppingPromoActive && reasons.length === 0)) reasons.push("0 impressions in last 7 days");
-      let rootCause = reasons.length ? reasons.join("; ") : "Delivering";
-      if (shoppingPromoActive && imp === 0 && c.status === "ACTIVE" && activeAg.length > 0) {
-        rootCause = "SHOPPING promotion present; zero delivery cause not exposed by API";
+      const promoTotal = c.shopping_promotions?.total ?? 0;
+      const promoActive = c.shopping_promotions?.active ?? 0;
+
+      if (c.is_shopping) {
+        // Shopping/Catalog Sales never serves through /ads — do not infer
+        // "no ads created" from an empty /ads list.
+        if (promoTotal === 0 && imp === 0) reasons.push("no shopping promotion found");
+      } else {
+        if (totalAds === 0) reasons.push("no ads created");
+        else if (activeAds === 0) reasons.push("no ACTIVE ads");
+        if (imp === 0) reasons.push("0 impressions in last 7 days");
       }
+
+      let rootCause = reasons.length ? reasons.join("; ") : "Delivering";
+      if (c.is_shopping) {
+        if (imp > 0) {
+          rootCause = "Delivering via Shopping architecture";
+        } else if (promoTotal > 0 || promoActive > 0) {
+          rootCause = "SHOPPING promotion present; zero delivery cause not exposed by API";
+        }
+      }
+
       return {
         id: c.id, name: c.name, status: c.status,
         architecture: c.is_shopping ? "CATALOG_SALES_SHOPPING" : "STANDARD_ADS",
         shopping_promotion: c.shopping_promotions,
+        shopping_promotion_label: c.is_shopping && promoTotal > 0 ? "SHOPPING promotion present" : null,
         impressions_7d: imp,
         root_cause: rootCause,
       };
@@ -307,10 +345,10 @@ Deno.serve(async (req) => {
     try {
       await sb.from("pinterest_post_logs").insert({
         action: "ads_diagnostic",
-        status: (out.verification as any).all_endpoints_200 ? "success" : "failed",
-        error_message: (out.verification as any).all_endpoints_200
+        status: (out.verification as any).api_operational ? "success" : "failed",
+        error_message: (out.verification as any).api_operational
           ? null
-          : `failed endpoints: ${failedEndpoints.map((f) => `${f.name}=${f.status}`).join(", ")}`,
+          : `failed endpoints: ${authFixableFailures.concat(otherFailures).map((f) => `${f.name}=${f.status}`).join(", ")}`,
         response_data: {
           ad_account_id: AD_ACCOUNT,
           scope_check: out.scope_check,

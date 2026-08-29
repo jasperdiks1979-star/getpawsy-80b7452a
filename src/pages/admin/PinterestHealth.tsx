@@ -440,16 +440,22 @@ export default function PinterestHealth() {
             Pinterest Ads API
             {adsDiag?.verification?.all_endpoints_200 ? (
               <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />All endpoints 200</Badge>
+            ) : adsDiag?.verification?.api_operational ? (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />Pinterest Ads API operational</Badge>
             ) : adsDiag ? (
-              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Endpoints failing</Badge>
+              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Pinterest Ads API failing</Badge>
             ) : (
               <Badge variant="outline">Not verified</Badge>
             )}
+            {(adsDiag?.verification?.restricted_endpoint_notes || []).map((note: string) => (
+              <Badge key={note} variant="outline" className="text-[10px] font-normal">{note}</Badge>
+            ))}
             {adsDiag?.scope_check && (
-              <Badge variant={adsDiag.scope_check.full_access ? "secondary" : "destructive"}>
-                Full Access: {adsDiag.scope_check.full_access ? "YES" : "NO"}
+              <Badge variant={adsDiag.scope_check.all_granted ? "secondary" : "destructive"}>
+                OAuth scopes {adsDiag.scope_check.all_granted ? "complete" : "incomplete"}
               </Badge>
             )}
+
           </CardTitle>
           <div className="flex gap-2">
             <Button
@@ -521,6 +527,7 @@ export default function PinterestHealth() {
                       <tr>
                         <th className="text-left p-1">Name</th>
                         <th className="text-left p-1">Status</th>
+                        <th className="text-left p-1">Architecture</th>
                         <th className="text-right p-1">Impr. 7d</th>
                         <th className="text-left p-1">Root cause</th>
                       </tr>
@@ -530,24 +537,64 @@ export default function PinterestHealth() {
                         <tr key={c.id} className="border-t">
                           <td className="p-1">{c.name}</td>
                           <td className="p-1">{c.status}</td>
+                          <td className="p-1">
+                            {c.architecture === "CATALOG_SALES_SHOPPING" ? (
+                              <span className="flex flex-col">
+                                <span className="font-mono text-[10px]">SHOPPING</span>
+                                {c.shopping_promotion_label && (
+                                  <span className="text-[10px] text-muted-foreground">{c.shopping_promotion_label}</span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="font-mono text-[10px]">{c.architecture ?? "STANDARD_ADS"}</span>
+                            )}
+                          </td>
                           <td className="p-1 text-right">{c.impressions_7d}</td>
                           <td className="p-1">{c.root_cause}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Catalog Sales / Shopping campaigns serve through product group promotions, not <code>/ads</code>;
+                    an empty <code>/ads</code> list is never used as a root cause for them.
+                  </p>
                 </div>
               )}
-              {adsDiag.verification?.failed?.length > 0 && (
+              {(adsDiag.verification?.auth_fixable_failures || []).length > 0 && (
                 <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs">
-                  <strong>Blocked.</strong> The following endpoints still return 401/403. Click <em>Reconnect Pinterest Ads</em> and on the Pinterest consent screen approve every requested scope. If <code>billing:read</code> stays unavailable, the Pinterest app (1567611) needs Standard Access for the <code>commerce_integration</code> feature — request via Pinterest developer support.
+                  <strong>Blocked (auth/scope).</strong> These endpoints return 401/403 for scope reasons. Click <em>Reconnect Pinterest Ads</em> and approve every requested scope on the consent screen.
                   <ul className="list-disc ml-4 mt-1">
-                    {adsDiag.verification.failed.map((f: any) => (
+                    {adsDiag.verification.auth_fixable_failures.map((f: any) => (
                       <li key={f.name}><code>{f.name}</code> → {f.status} {f.message ? `· ${f.message}` : ""}</li>
                     ))}
                   </ul>
                 </div>
               )}
+              {(adsDiag.verification?.restricted_feature_failures || []).length > 0 && (
+                <div className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+                  <strong>Restricted endpoint unavailable.</strong> OAuth scopes are already complete. This endpoint requires Pinterest app entitlement for <code>commerce_integration</code>; reconnecting will not resolve it.
+                  <ul className="list-disc ml-4 mt-1">
+                    {adsDiag.verification.restricted_feature_failures.map((f: any) => (
+                      <li key={f.name}>
+                        <code>{f.name}</code> → {f.status} · RESTRICTED_FEATURE_401
+                        {f.restricted_feature ? ` (${f.restricted_feature} entitlement)` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {(adsDiag.verification?.other_failures || []).length > 0 && (
+                <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs">
+                  <strong>Other endpoint errors.</strong>
+                  <ul className="list-disc ml-4 mt-1">
+                    {adsDiag.verification.other_failures.map((f: any) => (
+                      <li key={f.name}><code>{f.name}</code> → {f.status} {f.message ? `· ${f.message}` : ""}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
             </>
           )}
         </CardContent>
