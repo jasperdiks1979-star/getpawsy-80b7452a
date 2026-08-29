@@ -35,6 +35,27 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
     [truth.data],
   );
 
+  // Human-eligible counts per business grouping — derived from the SAME strict
+  // v3 classified population as the Source Quality block. The server
+  // acquisition contract is never authoritative for human eligibility.
+  const human = useMemo(() => {
+    const pick = (classes: readonly string[]) => {
+      let probable = 0;
+      let possible = 0;
+      for (const r of v3.source_matrix) {
+        if (!classes.includes(r.source_class)) continue;
+        probable += r.probable_human;
+        possible += r.possible_human;
+      }
+      return { probable, expanded: probable + possible };
+    };
+    const ORGANIC = ["GOOGLE_ORGANIC", "OTHER_SEARCH", "PINTEREST_ORGANIC", "REFERRAL"] as const;
+    const PAID = ["PINTEREST_PAID", "OTHER_PAID", "TIKTOK", "META"] as const;
+    const COMMERCIAL = [...ORGANIC, ...PAID, "DIRECT"] as const;
+    return { organic: pick(ORGANIC), paid: pick(PAID), commercial: pick(COMMERCIAL) };
+  }, [v3]);
+
+
 
   return (
     <Card>
@@ -65,33 +86,39 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
         ) : !data ? null : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <ClassCard
-                label="Organic (unpaid channels)"
+              <HumanClassCard
+                label="Organic human sessions"
                 icon={Leaf}
                 accent="text-emerald-400 border-emerald-800/60 bg-emerald-500/5"
+                probable={human.organic.probable}
+                expanded={human.organic.expanded}
                 row={data.organic}
                 priority
               />
-              <ClassCard
-                label="Paid"
+              <HumanClassCard
+                label="Paid human sessions"
                 icon={DollarSign}
                 accent="text-amber-400 border-amber-800/60 bg-amber-500/5"
+                probable={human.paid.probable}
+                expanded={human.paid.expanded}
                 row={data.paid}
               />
-              <ClassCard
-                label="Commercial total"
+              <HumanClassCard
+                label="Commercial human total"
                 icon={Users}
                 accent="text-primary border-primary/40 bg-primary/5"
+                probable={human.commercial.probable}
+                expanded={human.commercial.expanded}
                 row={data.commercial}
                 total
               />
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <MiniStat label="Organic search" value={data.byBucket.ORGANIC_SEARCH?.sessions ?? 0} icon={Leaf} />
-              <MiniStat label="Pinterest organic" value={data.byBucket.PINTEREST_ORGANIC?.sessions ?? 0} icon={MousePointerClick} />
-              <MiniStat label="Referral" value={data.referral.sessions} icon={Link2} />
-              <MiniStat label="Direct (human-evidence)" value={data.direct.sessions} icon={Users} />
+              <MiniStat label="Raw · organic search" value={data.byBucket.ORGANIC_SEARCH?.sessions ?? 0} icon={Leaf} />
+              <MiniStat label="Raw · Pinterest organic" value={data.byBucket.PINTEREST_ORGANIC?.sessions ?? 0} icon={MousePointerClick} />
+              <MiniStat label="Raw · referral" value={data.referral.sessions} icon={Link2} />
+              <MiniStat label="Raw · direct" value={data.direct.sessions} icon={Users} />
             </div>
 
             <div
@@ -102,10 +129,12 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
                 Human eligibility · traffic classifier: strict v3 (last 24h)
               </div>
               <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
-                {(["PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "REFERRAL", "DIRECT"] as const).map((k) => {
+                {(["PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "REFERRAL", "DIRECT", "TIKTOK", "META", "OTHER_PAID", "UNKNOWN"] as const).map((k) => {
                   const r = v3.source_matrix.find((m) => m.source_class === k);
                   const probable = r?.probable_human ?? 0;
                   const expanded = probable + (r?.possible_human ?? 0);
+                  const raw = r?.raw_sessions ?? 0;
+                  if (raw === 0 && probable === 0 && expanded === 0 && !["PINTEREST_PAID", "PINTEREST_ORGANIC", "OTHER_SEARCH", "DIRECT"].includes(k)) return null;
                   return (
                     <li key={k} className="flex items-center justify-between">
                       <span className="text-muted-foreground">{k.replace(/_/g, " ").toLowerCase()}</span>
@@ -115,13 +144,14 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
                 })}
               </ul>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                Notation: probable human / expanded (probable + possible). Bot, internal/test and
-                unknown sessions are excluded from both figures. Source and human-quality are
-                separate dimensions: a Pinterest referrer without UTM or ad-click evidence stays
-                Pinterest organic. Counts above the fold use the server acquisition contract and
-                may differ — strict v3 is authoritative for human eligibility.
+                Notation: probable human / expanded (probable + possible, estimate only). Bot,
+                internal/test and unknown-quality sessions are excluded from both figures. Human
+                eligibility is derived from Traffic Classifier strict v3. Source classification and
+                human quality are separate dimensions: a Pinterest referrer without UTM or ad-click
+                evidence stays Pinterest organic.
               </p>
             </div>
+
 
 
             {!compact && (
@@ -169,13 +199,15 @@ function MiniStat({ label, value, icon: Icon }: { label: string; value: number; 
   );
 }
 
-function ClassCard({
-  label, icon: Icon, accent, row, priority, total,
+function HumanClassCard({
+  label, icon: Icon, accent, row, probable, expanded, priority, total,
 }: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   accent: string;
   row: AcquisitionRow;
+  probable: number;
+  expanded: number;
   priority?: boolean;
   total?: boolean;
 }) {
@@ -198,8 +230,17 @@ function ClassCard({
           </span>
         )}
       </div>
-      <div className="text-2xl font-semibold leading-tight">{row.sessions.toLocaleString()}</div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">commercial sessions</div>
+      <div className="text-2xl font-semibold leading-tight tabular-nums">{probable.toLocaleString()}</div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        probable human sessions · strict v3
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">
+        Expanded estimate (prob + poss): <span className="font-semibold tabular-nums text-foreground">{expanded.toLocaleString()}</span>
+      </div>
+      <div className="mt-2 border-t pt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        Raw source sessions (server contract): <span className="tabular-nums">{row.sessions.toLocaleString()}</span>
+      </div>
+
       <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
         <Stat label="Visitors" value={row.visitors.toLocaleString()} />
         <Stat label="Page views" value={row.page_views.toLocaleString()} />

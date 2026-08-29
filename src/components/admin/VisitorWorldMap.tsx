@@ -2225,7 +2225,7 @@ export const VisitorWorldMap = ({
       lines.push("## Totalen");
       lines.push("");
       lines.push(`- Sessies: **${truthCounters.sessions}**`);
-      lines.push(`- Unieke bezoekers: **${truthCounters.visitors}**`);
+      lines.push(`- Unieke visitor-ID's (ruw): **${truthCounters.visitors}**`);
       lines.push(`- Pageviews: ${truthCounters.page_views}`);
       lines.push(`- Add to Cart: **${truthCounters.add_to_cart}** (${fmtPct(truthCounters.add_to_cart, truthCounters.sessions)})`);
       lines.push(`- View Cart: ${truthCounters.view_cart}`);
@@ -2313,7 +2313,8 @@ export const VisitorWorldMap = ({
                 {totalVisitors}
               </div>
               <div className="text-xs text-gray-400 mt-0.5">
-                {timeRange === "live" ? "Nu online" : "Bezoekers"}
+                {timeRange === "live" ? "Nu online" : "Ruwe visitor-ID's"}
+
               </div>
             </div>
           </div>
@@ -3005,7 +3006,7 @@ export const VisitorWorldMap = ({
             className={`flex items-center gap-1 ${isLiveNow ? "border-green-500 text-green-700 dark:text-green-300" : ""}`}
           >
             <Users className="w-3 h-3" />
-            {totalVisitors} {isLiveNow ? "live bezoekers" : "unieke bezoekers"}
+            {totalVisitors} {isLiveNow ? "live presence-ID's" : "gemapte unieke visitor-ID's (ruw)"}
           </Badge>
           {isLiveNow && (
             <Badge variant="outline" className="flex items-center gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300">
@@ -3191,7 +3192,7 @@ export const VisitorWorldMap = ({
                     {totalVisitors}
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    {timeRange === "live" ? "Nu online" : "Bezoekers"}
+                    {timeRange === "live" ? "Nu online" : "Ruwe visitor-ID's"}
                   </div>
                 </div>
               </div>
@@ -3280,7 +3281,8 @@ export const VisitorWorldMap = ({
                     <div className="flex items-center justify-between text-xs">
                       <span className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.browsing }} />
-                        Bezoekers
+                        Ruwe sessies
+
                       </span>
                       <span className="font-medium">{topLocations.summary.totalVisitors}</span>
                     </div>
