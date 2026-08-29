@@ -8,7 +8,12 @@ import {
 
 import type { ProToolbarState } from "./ProToolbar";
 import { proHoursForRange } from "./ProToolbar";
-import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
+import { getCanonicalAnalyticsMetrics } from "@/lib/analyticsV2Adapter";
+import {
+  summarizeTrafficQuality,
+  type ClassifierSession,
+} from "@/lib/trafficQualityClassifier";
+
 import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
 /**
@@ -68,36 +73,37 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   });
   const v2metrics = useMemo(() => getCanonicalAnalyticsMetrics(truth as any), [truth]);
 
+  const scopedRows = useMemo(
+    () => (truth?.sessions ? filteredSessions(truth.sessions, state) : []),
+    [truth, state],
+  );
+
   const derived = useMemo(() => {
     if (!truth?.sessions) return null;
-    const rows = filteredSessions(truth.sessions, state);
-    return countersFromSessions(rows);
-  }, [truth, state]);
+    return countersFromSessions(scopedRows);
+  }, [truth, scopedRows]);
+
+  // STRICT V3 — the single source of truth for traffic quality on this page.
+  // Computed from the same canonical session rows the business KPIs use, so
+  // every category reconciles to the same raw total.
+  const v3 = useMemo(() => summarizeTrafficQuality(scopedRows as ClassifierSession[]), [scopedRows]);
 
   const currency = truth?.totals?.currency ?? "USD";
   const useV2 = v2metrics?.envelope_resolved === "v2";
-  const cards: { label: string; value: string; testid: string }[] = useV2 && v2metrics
+  const cards: { label: string; value: string; testid: string }[] = derived
     ? [
-        { label: V2_LABELS_NL.human, value: fmtInt(v2metrics.human_sessions ?? 0), testid: "kpi-human" },
-        { label: V2_LABELS_NL.commercial, value: fmtInt(v2metrics.commercial_sessions ?? 0), testid: "kpi-commercial" },
-        { label: V2_LABELS_NL.uncertain, value: fmtInt(v2metrics.genuine_uncertain_sessions ?? 0), testid: "kpi-uncertain" },
-        { label: V2_LABELS_NL.crawler, value: fmtInt(v2metrics.crawler_sessions ?? 0), testid: "kpi-crawler" },
-        { label: V2_LABELS_NL.bot, value: fmtInt(v2metrics.bot_sessions ?? 0), testid: "kpi-bot" },
-        { label: V2_LABELS_NL.technical, value: fmtInt(v2metrics.technical_sessions ?? 0), testid: "kpi-technical" },
-        { label: V2_LABELS_NL.internal, value: fmtInt(v2metrics.internal_sessions ?? 0), testid: "kpi-internal" },
-        { label: V2_LABELS_NL.legacy, value: fmtInt(v2metrics.legacy_unclassified_sessions ?? 0), testid: "kpi-legacy" },
-        { label: V2_LABELS_NL.raw, value: fmtInt(v2metrics.raw_sessions ?? 0), testid: "kpi-raw" },
-        { label: "Purchases", value: fmtInt(v2metrics.purchases), testid: "kpi-purchases" },
-        { label: "Revenue", value: fmtMoney(v2metrics.revenue, currency), testid: "kpi-revenue" },
-      ]
-    : derived
-    ? [
-        { label: "Visitors", value: fmtInt(derived.visitors), testid: "kpi-visitors" },
+        { label: "Echte bezoekers", value: fmtInt(v3.quality.PROBABLE_HUMAN), testid: "kpi-v3-probable-human" },
+        { label: "Mogelijke bezoekers", value: fmtInt(v3.quality.POSSIBLE_HUMAN), testid: "kpi-v3-possible-human" },
+        { label: "Bots / automation", value: fmtInt(v3.quality.PROBABLE_BOT_OR_AUTOMATION), testid: "kpi-v3-bot" },
+        { label: "Intern / test", value: fmtInt(v3.quality.INTERNAL_OR_TEST), testid: "kpi-v3-internal" },
+        { label: "Onzeker", value: fmtInt(v3.quality.UNKNOWN), testid: "kpi-v3-unknown" },
+        { label: "Ruw totaal", value: fmtInt(v3.total_sessions), testid: "kpi-v3-raw" },
         { label: "Sessions", value: fmtInt(derived.sessions), testid: "kpi-sessions" },
         { label: "Pageviews", value: fmtInt(derived.page_views), testid: "kpi-pageviews" },
         { label: "Add to cart", value: fmtInt(derived.add_to_cart), testid: "kpi-atc" },
         { label: "View cart", value: fmtInt(derived.view_cart), testid: "kpi-view-cart" },
         { label: "Checkout", value: fmtInt(derived.checkout_started), testid: "kpi-checkout" },
+
         { label: "Purchases", value: fmtInt(derived.purchases), testid: "kpi-purchases" },
         { label: "Revenue", value: fmtMoney(derived.revenue, currency), testid: "kpi-revenue" },
       ]
@@ -117,15 +123,21 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           Business KPIs · analytics-canonical
           <span
             data-testid="vwm-pro-envelope"
-            className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-              useV2
-                ? "bg-emerald-500/15 text-emerald-600"
-                : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-            }`}
-            title={useV2 ? "traffic-quality v2 (Phase 4C)" : "legacy v1 envelope"}
+            className="ml-2 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600"
+            title="Traffic-quality categories computed with the strict v3 classifier over the same canonical sessions as the business KPIs"
           >
-            {useV2 ? "v2" : "v1 (legacy)"}
+            Traffic classifier: strict v3
           </span>
+          {useV2 && (
+            <span
+              data-testid="vwm-pro-ingest-envelope"
+              className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium normal-case text-muted-foreground"
+              title="Server ingest envelope (legacy v2 buckets). Diagnostic only — not used for any KPI card on this page."
+            >
+              ingest envelope v2 (diagnostic)
+            </span>
+          )}
+
           {!isLive && truth && (
             <span
               data-testid="vwm-pro-cache-age"
@@ -197,23 +209,63 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-          {cards.map((c) => (
-            <div
-              key={c.label}
-              data-testid={c.testid}
-              className="rounded-md border bg-background/50 p-2"
-            >
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {c.label}
+        <>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            {cards.map((c) => (
+              <div
+                key={c.label}
+                data-testid={c.testid}
+                className="rounded-md border bg-background/50 p-2"
+              >
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {c.label}
+                </div>
+                <div className="mt-1 text-lg font-semibold tabular-nums">
+                  {c.value}
+                </div>
               </div>
-              <div className="mt-1 text-lg font-semibold tabular-nums">
-                {c.value}
-              </div>
+            ))}
+          </div>
+          <div
+            data-testid="vwm-pro-kpi-v3-note"
+            className="mt-2 space-y-0.5 text-[10px] normal-case text-muted-foreground"
+          >
+            <div>
+              Echte bezoekers = PROBABLE_HUMAN only. Expanded human estimate
+              (probable + possible) = <strong>{fmtInt(v3.expanded_humans)}</strong> — an estimate,
+              not verified human traffic.
             </div>
-          ))}
-        </div>
+            <div>
+              Echte + Mogelijke + Bots/automation + Intern/test + Onzeker ={" "}
+              {fmtInt(
+                v3.quality.PROBABLE_HUMAN +
+                  v3.quality.POSSIBLE_HUMAN +
+                  v3.quality.PROBABLE_BOT_OR_AUTOMATION +
+                  v3.quality.INTERNAL_OR_TEST +
+                  v3.quality.UNKNOWN,
+              )}{" "}
+              = Ruw totaal {fmtInt(v3.total_sessions)} (full period, no sampling).
+              {truth?.totals?.raw_sessions_all != null &&
+                truth.totals.raw_sessions_all !== v3.total_sessions && (
+                  <>
+                    {" "}Scope: {fmtInt(v3.total_sessions)} of{" "}
+                    {fmtInt(truth.totals.raw_sessions_all)} canonical sessions after the active
+                    geo/source/activity filters.
+                  </>
+                )}
+            </div>
+            <div>
+              Known-crawler sessions are already inside Bots / automation under strict v3 and are
+              never shown as a separate additive bucket here.
+              {useV2 && v2metrics?.crawler_sessions != null && (
+                <> Legacy ingest envelope flags {fmtInt(v2metrics.crawler_sessions)} crawler
+                sessions — diagnostic only, not added to the totals above.</>
+              )}
+            </div>
+          </div>
+        </>
       )}
+
     </section>
   );
 }
