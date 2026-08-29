@@ -27,6 +27,14 @@ import {
  */
 export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean }) {
   const { data, isLoading, error, refetch } = useTrafficClassSplit();
+  // Source classification stays server-side; human eligibility is strict v3.
+  // Same React-Query key as the rest of the 24h page — no extra pipeline.
+  const truth = useAnalyticsTruth({ hours: 24, geo: "all" });
+  const v3 = useMemo(
+    () => summarizeTrafficQuality((truth.data?.sessions ?? []) as ClassifierSession[]),
+    [truth.data],
+  );
+
 
   return (
     <Card>
