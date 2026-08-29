@@ -3005,7 +3005,7 @@ export const VisitorWorldMap = ({
             className={`flex items-center gap-1 ${isLiveNow ? "border-green-500 text-green-700 dark:text-green-300" : ""}`}
           >
             <Users className="w-3 h-3" />
-            {totalVisitors} {isLiveNow ? "live bezoekers" : "unieke bezoekers"}
+            {totalVisitors} {isLiveNow ? "live presence-ID's" : "gemapte unieke visitor-ID's (ruw)"}
           </Badge>
           {isLiveNow && (
             <Badge variant="outline" className="flex items-center gap-1 border-amber-500/50 text-amber-700 dark:text-amber-300">
