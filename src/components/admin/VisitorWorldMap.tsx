@@ -2225,7 +2225,7 @@ export const VisitorWorldMap = ({
       lines.push("## Totalen");
       lines.push("");
       lines.push(`- Sessies: **${truthCounters.sessions}**`);
-      lines.push(`- Unieke bezoekers: **${truthCounters.visitors}**`);
+      lines.push(`- Unieke visitor-ID's (ruw): **${truthCounters.visitors}**`);
       lines.push(`- Pageviews: ${truthCounters.page_views}`);
       lines.push(`- Add to Cart: **${truthCounters.add_to_cart}** (${fmtPct(truthCounters.add_to_cart, truthCounters.sessions)})`);
       lines.push(`- View Cart: ${truthCounters.view_cart}`);
