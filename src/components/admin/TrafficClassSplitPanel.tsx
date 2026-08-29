@@ -133,7 +133,7 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
                   const r = v3.source_matrix.find((m) => m.source_class === k);
                   const probable = r?.probable_human ?? 0;
                   const expanded = probable + (r?.possible_human ?? 0);
-                  const raw = r?.sessions ?? 0;
+                  const raw = r?.raw_sessions ?? 0;
                   if (raw === 0 && probable === 0 && expanded === 0 && !["PINTEREST_PAID", "PINTEREST_ORGANIC", "OTHER_SEARCH", "DIRECT"].includes(k)) return null;
                   return (
                     <li key={k} className="flex items-center justify-between">
