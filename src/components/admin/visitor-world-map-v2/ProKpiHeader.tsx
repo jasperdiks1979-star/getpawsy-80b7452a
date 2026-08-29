@@ -118,15 +118,21 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           Business KPIs · analytics-canonical
           <span
             data-testid="vwm-pro-envelope"
-            className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-              useV2
-                ? "bg-emerald-500/15 text-emerald-600"
-                : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-            }`}
-            title={useV2 ? "traffic-quality v2 (Phase 4C)" : "legacy v1 envelope"}
+            className="ml-2 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600"
+            title="Traffic-quality categories computed with the strict v3 classifier over the same canonical sessions as the business KPIs"
           >
-            {useV2 ? "v2" : "v1 (legacy)"}
+            Traffic classifier: strict v3
           </span>
+          {useV2 && (
+            <span
+              data-testid="vwm-pro-ingest-envelope"
+              className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium normal-case text-muted-foreground"
+              title="Server ingest envelope (legacy v2 buckets). Diagnostic only — not used for any KPI card on this page."
+            >
+              ingest envelope v2 (diagnostic)
+            </span>
+          )}
+
           {!isLive && truth && (
             <span
               data-testid="vwm-pro-cache-age"
