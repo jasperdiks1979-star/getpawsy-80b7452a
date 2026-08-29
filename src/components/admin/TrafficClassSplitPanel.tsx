@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +10,12 @@ import {
   convRate,
   type AcquisitionRow,
 } from "@/hooks/useTrafficClassSplit";
+import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
+import {
+  summarizeTrafficQuality,
+  type ClassifierSession,
+} from "@/lib/trafficQualityClassifier";
+
 
 /**
  * TrafficClassSplitPanel — acquisition split (24h) on the v2 commercial
