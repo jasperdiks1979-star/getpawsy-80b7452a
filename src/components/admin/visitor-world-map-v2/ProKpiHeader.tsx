@@ -68,36 +68,37 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
   });
   const v2metrics = useMemo(() => getCanonicalAnalyticsMetrics(truth as any), [truth]);
 
+  const scopedRows = useMemo(
+    () => (truth?.sessions ? filteredSessions(truth.sessions, state) : []),
+    [truth, state],
+  );
+
   const derived = useMemo(() => {
     if (!truth?.sessions) return null;
-    const rows = filteredSessions(truth.sessions, state);
-    return countersFromSessions(rows);
-  }, [truth, state]);
+    return countersFromSessions(scopedRows);
+  }, [truth, scopedRows]);
+
+  // STRICT V3 — the single source of truth for traffic quality on this page.
+  // Computed from the same canonical session rows the business KPIs use, so
+  // every category reconciles to the same raw total.
+  const v3 = useMemo(() => summarizeTrafficQuality(scopedRows as ClassifierSession[]), [scopedRows]);
 
   const currency = truth?.totals?.currency ?? "USD";
   const useV2 = v2metrics?.envelope_resolved === "v2";
-  const cards: { label: string; value: string; testid: string }[] = useV2 && v2metrics
+  const cards: { label: string; value: string; testid: string }[] = derived
     ? [
-        { label: V2_LABELS_NL.human, value: fmtInt(v2metrics.human_sessions ?? 0), testid: "kpi-human" },
-        { label: V2_LABELS_NL.commercial, value: fmtInt(v2metrics.commercial_sessions ?? 0), testid: "kpi-commercial" },
-        { label: V2_LABELS_NL.uncertain, value: fmtInt(v2metrics.genuine_uncertain_sessions ?? 0), testid: "kpi-uncertain" },
-        { label: V2_LABELS_NL.crawler, value: fmtInt(v2metrics.crawler_sessions ?? 0), testid: "kpi-crawler" },
-        { label: V2_LABELS_NL.bot, value: fmtInt(v2metrics.bot_sessions ?? 0), testid: "kpi-bot" },
-        { label: V2_LABELS_NL.technical, value: fmtInt(v2metrics.technical_sessions ?? 0), testid: "kpi-technical" },
-        { label: V2_LABELS_NL.internal, value: fmtInt(v2metrics.internal_sessions ?? 0), testid: "kpi-internal" },
-        { label: V2_LABELS_NL.legacy, value: fmtInt(v2metrics.legacy_unclassified_sessions ?? 0), testid: "kpi-legacy" },
-        { label: V2_LABELS_NL.raw, value: fmtInt(v2metrics.raw_sessions ?? 0), testid: "kpi-raw" },
-        { label: "Purchases", value: fmtInt(v2metrics.purchases), testid: "kpi-purchases" },
-        { label: "Revenue", value: fmtMoney(v2metrics.revenue, currency), testid: "kpi-revenue" },
-      ]
-    : derived
-    ? [
-        { label: "Visitors", value: fmtInt(derived.visitors), testid: "kpi-visitors" },
+        { label: "Echte bezoekers", value: fmtInt(v3.quality.PROBABLE_HUMAN), testid: "kpi-v3-probable-human" },
+        { label: "Mogelijke bezoekers", value: fmtInt(v3.quality.POSSIBLE_HUMAN), testid: "kpi-v3-possible-human" },
+        { label: "Bots / automation", value: fmtInt(v3.quality.PROBABLE_BOT_OR_AUTOMATION), testid: "kpi-v3-bot" },
+        { label: "Intern / test", value: fmtInt(v3.quality.INTERNAL_OR_TEST), testid: "kpi-v3-internal" },
+        { label: "Onzeker", value: fmtInt(v3.quality.UNKNOWN), testid: "kpi-v3-unknown" },
+        { label: "Ruw totaal", value: fmtInt(v3.total_sessions), testid: "kpi-v3-raw" },
         { label: "Sessions", value: fmtInt(derived.sessions), testid: "kpi-sessions" },
         { label: "Pageviews", value: fmtInt(derived.page_views), testid: "kpi-pageviews" },
         { label: "Add to cart", value: fmtInt(derived.add_to_cart), testid: "kpi-atc" },
         { label: "View cart", value: fmtInt(derived.view_cart), testid: "kpi-view-cart" },
         { label: "Checkout", value: fmtInt(derived.checkout_started), testid: "kpi-checkout" },
+
         { label: "Purchases", value: fmtInt(derived.purchases), testid: "kpi-purchases" },
         { label: "Revenue", value: fmtMoney(derived.revenue, currency), testid: "kpi-revenue" },
       ]
