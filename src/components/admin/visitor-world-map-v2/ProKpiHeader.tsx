@@ -209,23 +209,63 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-          {cards.map((c) => (
-            <div
-              key={c.label}
-              data-testid={c.testid}
-              className="rounded-md border bg-background/50 p-2"
-            >
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {c.label}
+        <>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            {cards.map((c) => (
+              <div
+                key={c.label}
+                data-testid={c.testid}
+                className="rounded-md border bg-background/50 p-2"
+              >
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {c.label}
+                </div>
+                <div className="mt-1 text-lg font-semibold tabular-nums">
+                  {c.value}
+                </div>
               </div>
-              <div className="mt-1 text-lg font-semibold tabular-nums">
-                {c.value}
-              </div>
+            ))}
+          </div>
+          <div
+            data-testid="vwm-pro-kpi-v3-note"
+            className="mt-2 space-y-0.5 text-[10px] normal-case text-muted-foreground"
+          >
+            <div>
+              Echte bezoekers = PROBABLE_HUMAN only. Expanded human estimate
+              (probable + possible) = <strong>{fmtInt(v3.expanded_humans)}</strong> — an estimate,
+              not verified human traffic.
             </div>
-          ))}
-        </div>
+            <div>
+              Echte + Mogelijke + Bots/automation + Intern/test + Onzeker ={" "}
+              {fmtInt(
+                v3.quality.PROBABLE_HUMAN +
+                  v3.quality.POSSIBLE_HUMAN +
+                  v3.quality.PROBABLE_BOT_OR_AUTOMATION +
+                  v3.quality.INTERNAL_OR_TEST +
+                  v3.quality.UNKNOWN,
+              )}{" "}
+              = Ruw totaal {fmtInt(v3.total_sessions)} (full period, no sampling).
+              {truth?.totals?.raw_sessions_all != null &&
+                truth.totals.raw_sessions_all !== v3.total_sessions && (
+                  <>
+                    {" "}Scope: {fmtInt(v3.total_sessions)} of{" "}
+                    {fmtInt(truth.totals.raw_sessions_all)} canonical sessions after the active
+                    geo/source/activity filters.
+                  </>
+                )}
+            </div>
+            <div>
+              Known-crawler sessions are already inside Bots / automation under strict v3 and are
+              never shown as a separate additive bucket here.
+              {useV2 && v2metrics?.crawler_sessions != null && (
+                <> Legacy ingest envelope flags {fmtInt(v2metrics.crawler_sessions)} crawler
+                sessions — diagnostic only, not added to the totals above.</>
+              )}
+            </div>
+          </div>
+        </>
       )}
+
     </section>
   );
 }
