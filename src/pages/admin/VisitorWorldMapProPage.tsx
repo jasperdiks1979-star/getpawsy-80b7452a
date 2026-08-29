@@ -195,8 +195,10 @@ export default function VisitorWorldMapProPage() {
                 data-testid="vwm-pro-live-presence-only"
                 className="rounded-md border border-dashed p-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                Live presence only — canonical traffic-quality and Organic/Paid
-                panels are disabled while the map is in Live now.
+                Realtime presence — not a canonical performance KPI. Canonical
+                strict-v3 traffic quality and Organic/Paid panels are disabled
+                while the map is in Live now.
+
               </div>
             ) : (
               <V2EnvelopeBadge
