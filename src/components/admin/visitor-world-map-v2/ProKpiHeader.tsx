@@ -8,7 +8,12 @@ import {
 
 import type { ProToolbarState } from "./ProToolbar";
 import { proHoursForRange } from "./ProToolbar";
-import { getCanonicalAnalyticsMetrics, V2_LABELS_NL } from "@/lib/analyticsV2Adapter";
+import { getCanonicalAnalyticsMetrics } from "@/lib/analyticsV2Adapter";
+import {
+  summarizeTrafficQuality,
+  type ClassifierSession,
+} from "@/lib/trafficQualityClassifier";
+
 import { PanelLoadingState } from "@/components/admin/PanelLoadingState";
 
 /**
