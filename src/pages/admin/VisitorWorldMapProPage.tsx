@@ -202,8 +202,9 @@ export default function VisitorWorldMapProPage() {
               <V2EnvelopeBadge
                 hours={proHoursForRange(state.timeRange)}
                 geo={state.usOnly ? "US" : "all"}
-                label="Traffic quality (Pro map)"
+                label="Ingest classification envelope (legacy v2) — diagnostic only, NOT strict v3 traffic quality"
               />
+
             )}
           </div>
 
