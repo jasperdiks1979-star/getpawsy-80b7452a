@@ -35,6 +35,27 @@ export function TrafficClassSplitPanel({ compact = false }: { compact?: boolean 
     [truth.data],
   );
 
+  // Human-eligible counts per business grouping — derived from the SAME strict
+  // v3 classified population as the Source Quality block. The server
+  // acquisition contract is never authoritative for human eligibility.
+  const human = useMemo(() => {
+    const pick = (classes: readonly string[]) => {
+      let probable = 0;
+      let possible = 0;
+      for (const r of v3.source_matrix) {
+        if (!classes.includes(r.source_class)) continue;
+        probable += r.probable_human;
+        possible += r.possible_human;
+      }
+      return { probable, expanded: probable + possible };
+    };
+    const ORGANIC = ["GOOGLE_ORGANIC", "OTHER_SEARCH", "PINTEREST_ORGANIC", "REFERRAL"] as const;
+    const PAID = ["PINTEREST_PAID", "OTHER_PAID", "TIKTOK", "META"] as const;
+    const COMMERCIAL = [...ORGANIC, ...PAID, "DIRECT"] as const;
+    return { organic: pick(ORGANIC), paid: pick(PAID), commercial: pick(COMMERCIAL) };
+  }, [v3]);
+
+
 
   return (
     <Card>
