@@ -440,16 +440,22 @@ export default function PinterestHealth() {
             Pinterest Ads API
             {adsDiag?.verification?.all_endpoints_200 ? (
               <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />All endpoints 200</Badge>
+            ) : adsDiag?.verification?.api_operational ? (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600"><CheckCircle2 className="h-3 w-3 mr-1" />Pinterest Ads API operational</Badge>
             ) : adsDiag ? (
-              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Endpoints failing</Badge>
+              <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Pinterest Ads API failing</Badge>
             ) : (
               <Badge variant="outline">Not verified</Badge>
             )}
+            {(adsDiag?.verification?.restricted_endpoint_notes || []).map((note: string) => (
+              <Badge key={note} variant="outline" className="text-[10px] font-normal">{note}</Badge>
+            ))}
             {adsDiag?.scope_check && (
-              <Badge variant={adsDiag.scope_check.full_access ? "secondary" : "destructive"}>
-                Full Access: {adsDiag.scope_check.full_access ? "YES" : "NO"}
+              <Badge variant={adsDiag.scope_check.all_granted ? "secondary" : "destructive"}>
+                OAuth scopes {adsDiag.scope_check.all_granted ? "complete" : "incomplete"}
               </Badge>
             )}
+
           </CardTitle>
           <div className="flex gap-2">
             <Button
