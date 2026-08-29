@@ -3281,7 +3281,8 @@ export const VisitorWorldMap = ({
                     <div className="flex items-center justify-between text-xs">
                       <span className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.browsing }} />
-                        Bezoekers
+                        Ruwe sessies
+
                       </span>
                       <span className="font-medium">{topLocations.summary.totalVisitors}</span>
                     </div>
