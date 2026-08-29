@@ -79,8 +79,8 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
           Traffic quality · last {hours}h
         </h2>
         <span className="text-[10px] text-muted-foreground">
-          Realtime presence — not a canonical performance KPI · classifier v1 ·{" "}
-          {summary.total_sessions} raw sessions
+          Canonical completed sessions ({geo === "US" ? "US" : "all geos"}) · Traffic classifier:
+          strict v3 · {summary.total_sessions} raw sessions (full period, no sampling)
         </span>
       </div>
 
@@ -88,13 +88,20 @@ export function TrafficQualityBlock({ hours = 24, geo = "all" }: Props) {
         <div className="py-6 text-center text-xs text-muted-foreground">Loading canonical sessions…</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            <Kpi label="Probable human" value={summary.quality.PROBABLE_HUMAN} tone="good" />
-            <Kpi label="Possible human" value={summary.quality.POSSIBLE_HUMAN} />
-            <Kpi label="Bot / automation" value={summary.quality.PROBABLE_BOT_OR_AUTOMATION} tone="warn" />
-            <Kpi label="Internal / test" value={summary.quality.INTERNAL_OR_TEST} />
-            <Kpi label="Unknown" value={summary.quality.UNKNOWN} />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <Kpi label="Echte bezoekers (probable human)" value={summary.quality.PROBABLE_HUMAN} tone="good" />
+            <Kpi label="Mogelijke bezoekers (possible human)" value={summary.quality.POSSIBLE_HUMAN} />
+            <Kpi label="Bots / automation" value={summary.quality.PROBABLE_BOT_OR_AUTOMATION} tone="warn" />
+            <Kpi label="Intern / test" value={summary.quality.INTERNAL_OR_TEST} />
+            <Kpi label="Onzeker (unknown)" value={summary.quality.UNKNOWN} />
+            <Kpi label="Ruw totaal" value={summary.total_sessions} />
           </div>
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            Categories reconcile to the raw total. Expanded human estimate (probable + possible) ={" "}
+            {summary.expanded_humans} — estimate only, never "verified" traffic. Crawlers are
+            already contained in Bots / automation.
+          </div>
+
 
           {/* ---------------- PRODUCT INTEREST (3 LEVELS) ---------------- */}
           <div className="mt-3 rounded-md border">
