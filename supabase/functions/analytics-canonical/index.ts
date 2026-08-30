@@ -722,7 +722,22 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       funnel,
       countries,
       sources,
-      sessions: sessionsArr,
+      // SHADOW (read-time, non-persisted): each session carries the stored v2
+      // verdict for diagnostics plus a normalized country code. Eligibility
+      // itself is computed client-side by the strict-v3 shadow layer.
+      sessions: sessionsArr.map((s) => {
+        const f = flagsMap.get(s.session_id);
+        return {
+          ...s,
+          stored_traffic_class_v2: f?.traffic_class ?? null,
+          stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
+          stored_is_bot: f?.is_bot ?? null,
+          stored_is_internal: f?.is_internal ?? null,
+          stored_technical_path: f?.technical_path ?? null,
+          country_iso2: toIso2(s.country),
+        };
+      }),
+
       sample_event: sample,
       diagnostics,
       timings,
