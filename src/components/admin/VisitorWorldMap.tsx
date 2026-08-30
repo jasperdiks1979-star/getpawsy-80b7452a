@@ -2195,12 +2195,13 @@ export const VisitorWorldMap = ({
         if (s.has_checkout) c.checkout++;
         c.revenue += s.order_value;
         byCountry.set(country, c);
-        const src = bySource.get(s.source) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
+        const sourceKey = summaryClassified[i]?.source_class ?? s.source;
+        const src = bySource.get(sourceKey) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
         src.sessions++;
         if (s.has_add_to_cart || s.has_view_cart) src.cart++;
         if (s.has_checkout) src.checkout++;
         src.revenue += s.order_value;
-        bySource.set(s.source, src);
+        bySource.set(sourceKey, src);
       }
       const sortedDur = [...durations].sort((a, b) => a - b);
       const avgDuration = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
