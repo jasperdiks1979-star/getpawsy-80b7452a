@@ -70,6 +70,43 @@ const US_VALUES = new Set([
 ]);
 const isUS = (c?: string | null) => !!c && US_VALUES.has(c.trim().toLowerCase());
 
+/**
+ * SHADOW-ONLY geo normalization. Never written back to the DB; it exists so
+ * `"United States"` and `geo='US'` stop disagreeing in downstream reporting.
+ * Eligibility must NEVER depend on this value.
+ */
+const ISO2_MAP: Record<string, string> = {
+  "united states": "US", "united states of america": "US", "usa": "US", "us": "US",
+  "u.s.": "US", "u.s.a.": "US",
+  "sweden": "SE", "se": "SE",
+  "netherlands": "NL", "the netherlands": "NL", "nl": "NL",
+  "germany": "DE", "de": "DE",
+  "united kingdom": "GB", "great britain": "GB", "uk": "GB", "gb": "GB",
+  "canada": "CA", "ca": "CA",
+  "france": "FR", "fr": "FR",
+  "spain": "ES", "es": "ES",
+  "italy": "IT", "it": "IT",
+  "belgium": "BE", "be": "BE",
+  "australia": "AU", "au": "AU",
+  "ireland": "IE", "ie": "IE",
+  "denmark": "DK", "dk": "DK",
+  "norway": "NO", "no": "NO",
+  "finland": "FI", "fi": "FI",
+  "poland": "PL", "pl": "PL",
+  "india": "IN", "in": "IN",
+  "brazil": "BR", "br": "BR",
+  "japan": "JP", "jp": "JP",
+};
+function toIso2(country?: string | null): string | null {
+  if (!country) return null;
+  const k = country.trim().toLowerCase();
+  if (!k) return null;
+  if (ISO2_MAP[k]) return ISO2_MAP[k];
+  if (/^[a-z]{2}$/.test(k)) return k.toUpperCase();
+  return null;
+}
+
+
 function classifySource(row: { utm_source?: string | null; referrer?: string | null; utm_medium?: string | null }) {
   const us = (row.utm_source || "").toLowerCase();
   const um = (row.utm_medium || "").toLowerCase();
@@ -722,7 +759,22 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       funnel,
       countries,
       sources,
-      sessions: sessionsArr,
+      // SHADOW (read-time, non-persisted): each session carries the stored v2
+      // verdict for diagnostics plus a normalized country code. Eligibility
+      // itself is computed client-side by the strict-v3 shadow layer.
+      sessions: sessionsArr.map((s) => {
+        const f = flagsMap.get(s.session_id);
+        return {
+          ...s,
+          stored_traffic_class_v2: f?.traffic_class ?? null,
+          stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
+          stored_is_bot: f?.is_bot ?? null,
+          stored_is_internal: f?.is_internal ?? null,
+          stored_technical_path: f?.technical_path ?? null,
+          country_iso2: toIso2(s.country),
+        };
+      }),
+
       sample_event: sample,
       diagnostics,
       timings,
