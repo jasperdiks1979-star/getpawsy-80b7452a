@@ -2178,7 +2178,12 @@ export const VisitorWorldMap = ({
       const byCountry = new Map<string, Bucket>();
       const bySource = new Map<string, Bucket>();
       const durations: number[] = [];
-      for (const s of truthSessions) {
+      // Source counts use the SAME strict-v3 classified session objects as the
+      // CSV (single source-classification implementation), so Pinterest paid
+      // click evidence in `landing_page` no longer inflates PINTEREST_ORGANIC.
+      const summaryClassified = classifySessions(truthSessions);
+      for (let i = 0; i < truthSessions.length; i++) {
+        const s = truthSessions[i];
         const dur = Math.max(0, Math.round(
           (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
         ));
