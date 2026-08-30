@@ -70,6 +70,43 @@ const US_VALUES = new Set([
 ]);
 const isUS = (c?: string | null) => !!c && US_VALUES.has(c.trim().toLowerCase());
 
+/**
+ * SHADOW-ONLY geo normalization. Never written back to the DB; it exists so
+ * `"United States"` and `geo='US'` stop disagreeing in downstream reporting.
+ * Eligibility must NEVER depend on this value.
+ */
+const ISO2_MAP: Record<string, string> = {
+  "united states": "US", "united states of america": "US", "usa": "US", "us": "US",
+  "u.s.": "US", "u.s.a.": "US",
+  "sweden": "SE", "se": "SE",
+  "netherlands": "NL", "the netherlands": "NL", "nl": "NL",
+  "germany": "DE", "de": "DE",
+  "united kingdom": "GB", "great britain": "GB", "uk": "GB", "gb": "GB",
+  "canada": "CA", "ca": "CA",
+  "france": "FR", "fr": "FR",
+  "spain": "ES", "es": "ES",
+  "italy": "IT", "it": "IT",
+  "belgium": "BE", "be": "BE",
+  "australia": "AU", "au": "AU",
+  "ireland": "IE", "ie": "IE",
+  "denmark": "DK", "dk": "DK",
+  "norway": "NO", "no": "NO",
+  "finland": "FI", "fi": "FI",
+  "poland": "PL", "pl": "PL",
+  "india": "IN", "in": "IN",
+  "brazil": "BR", "br": "BR",
+  "japan": "JP", "jp": "JP",
+};
+function toIso2(country?: string | null): string | null {
+  if (!country) return null;
+  const k = country.trim().toLowerCase();
+  if (!k) return null;
+  if (ISO2_MAP[k]) return ISO2_MAP[k];
+  if (/^[a-z]{2}$/.test(k)) return k.toUpperCase();
+  return null;
+}
+
+
 function classifySource(row: { utm_source?: string | null; referrer?: string | null; utm_medium?: string | null }) {
   const us = (row.utm_source || "").toLowerCase();
   const um = (row.utm_medium || "").toLowerCase();
