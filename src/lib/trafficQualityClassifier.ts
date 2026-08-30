@@ -179,6 +179,17 @@ export function classifySource(s: ClassifierSession): { source_class: SourceClas
 
   const isPinterest = utmSource.includes("pinterest") || ref.includes("pinterest.") || ref.includes("pin.it");
   if (isPinterest) {
+    // Strong paid click evidence on the landing URL. `pins_campaign_id` and
+    // `epik` are Pinterest Ads click parameters and take precedence over an
+    // organic-looking `utm_medium=social`. `pp` alone is NOT sufficient.
+    const landingLower = `${lower(s.landing_page)} ${lower(s.page_path)}`;
+    const pinsPaidEvidence =
+      /[?&#](pins_campaign_id|epik)=/.test(landingLower) ||
+      /(^|[?&#\s])(pins_campaign_id|epik)=/.test(`${campaign} ${content}`);
+    if (pinsPaidEvidence) {
+      reasons.push("pinterest_paid_click_param");
+      return { source_class: "PINTEREST_PAID", reasons };
+    }
     if (paidMedium || adIdentifier) {
       reasons.push(paidMedium ? "pinterest_paid_medium" : "pinterest_ad_identifier");
       return { source_class: "PINTEREST_PAID", reasons };
