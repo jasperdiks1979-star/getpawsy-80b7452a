@@ -2097,7 +2097,7 @@ export const VisitorWorldMap = ({
         "session_duration_seconds", "page_views",
         "country", "city", "latitude", "longitude",
         "source", "device", "utm_source", "utm_medium", "utm_campaign",
-        "referrer", "page_path",
+        "referrer", "page_path", "landing_page",
         "has_product_view", "has_add_to_cart", "has_view_cart",
         "has_checkout", "has_purchase", "order_value", "is_internal",
         ...TRAFFIC_QUALITY_CSV_HEADERS,
@@ -2119,7 +2119,7 @@ export const VisitorWorldMap = ({
           dur, s.page_views,
           s.country ?? "", s.city ?? "", s.latitude ?? "", s.longitude ?? "",
           s.source, s.device ?? "", s.utm_source ?? "", s.utm_medium ?? "", s.utm_campaign ?? "",
-          s.referrer ?? "", s.page_path ?? "",
+          s.referrer ?? "", s.page_path ?? "", s.landing_page ?? "",
           s.has_product_view, s.has_add_to_cart, s.has_view_cart,
           s.has_checkout, s.has_purchase, s.order_value, s.is_internal,
           ...trafficQualityCsvValues(classified[i]),
@@ -2178,7 +2178,12 @@ export const VisitorWorldMap = ({
       const byCountry = new Map<string, Bucket>();
       const bySource = new Map<string, Bucket>();
       const durations: number[] = [];
-      for (const s of truthSessions) {
+      // Source counts use the SAME strict-v3 classified session objects as the
+      // CSV (single source-classification implementation), so Pinterest paid
+      // click evidence in `landing_page` no longer inflates PINTEREST_ORGANIC.
+      const summaryClassified = classifySessions(truthSessions);
+      for (let i = 0; i < truthSessions.length; i++) {
+        const s = truthSessions[i];
         const dur = Math.max(0, Math.round(
           (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
         ));
@@ -2190,12 +2195,13 @@ export const VisitorWorldMap = ({
         if (s.has_checkout) c.checkout++;
         c.revenue += s.order_value;
         byCountry.set(country, c);
-        const src = bySource.get(s.source) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
+        const sourceKey = summaryClassified[i]?.source_class ?? s.source;
+        const src = bySource.get(sourceKey) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
         src.sessions++;
         if (s.has_add_to_cart || s.has_view_cart) src.cart++;
         if (s.has_checkout) src.checkout++;
         src.revenue += s.order_value;
-        bySource.set(s.source, src);
+        bySource.set(sourceKey, src);
       }
       const sortedDur = [...durations].sort((a, b) => a - b);
       const avgDuration = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;

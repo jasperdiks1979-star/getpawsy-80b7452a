@@ -162,8 +162,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // country-null until the visitor_activity geo enrichment below runs.
     // Geo filtering is applied after enrichment on the per-session truth set.
     const EVENT_COLUMNS =
-      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path," +
-      "utm_source,utm_medium,utm_campaign,referrer,country,city,device," +
+      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
+      "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
       "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
     const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
@@ -313,8 +313,12 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       utm_source: string | null;
       utm_medium: string | null;
       utm_campaign: string | null;
+      utm_content: string | null;
       referrer: string | null;
       page_path: string | null;
+      /** First-touch full landing URL incl. query string (paid click evidence). */
+      landing_page: string | null;
+      landing_page_at: string | null;
       has_product_view: boolean;
       has_add_to_cart: boolean;
       has_view_cart: boolean;
@@ -345,8 +349,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           utm_source: r.utm_source ?? null,
           utm_medium: r.utm_medium ?? null,
           utm_campaign: r.utm_campaign ?? null,
+          utm_content: r.utm_content ?? null,
           referrer: r.referrer ?? null,
           page_path: r.page_path ?? null,
+          landing_page: r.landing_page ?? null,
+          landing_page_at: r.landing_page ? r.occurred_at : null,
           has_product_view: false,
           has_add_to_cart: false,
           has_view_cart: false,
@@ -359,6 +366,12 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       }
       if (r.occurred_at < s.first_seen_at) s.first_seen_at = r.occurred_at;
       if (r.occurred_at > s.last_seen_at) s.last_seen_at = r.occurred_at;
+      // First-touch landing URL (full path + query) — keeps paid click
+      // evidence (`pins_campaign_id`, `epik`) alive for the classifier.
+      if (r.landing_page && (!s.landing_page || !s.landing_page_at || r.occurred_at < s.landing_page_at)) {
+        s.landing_page = r.landing_page;
+        s.landing_page_at = r.occurred_at;
+      }
       if (stage === "CANONICAL_PAGE_VIEW") s.page_views += 1;
       if (stage === "CANONICAL_PRODUCT_VIEW") s.has_product_view = true;
       if (stage === "CANONICAL_ADD_TO_CART") s.has_add_to_cart = true;
@@ -368,6 +381,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       if (!s.visitor_id && r.visitor_id) s.visitor_id = r.visitor_id;
       if (!s.country && r.country) s.country = r.country;
       if (!s.city && r.city) s.city = r.city;
+      if (!s.utm_content && r.utm_content) s.utm_content = r.utm_content;
     }
 
     // Enrich with lat/lng + is_internal from visitor_activity for the same
