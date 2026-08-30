@@ -313,8 +313,12 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       utm_source: string | null;
       utm_medium: string | null;
       utm_campaign: string | null;
+      utm_content: string | null;
       referrer: string | null;
       page_path: string | null;
+      /** First-touch full landing URL incl. query string (paid click evidence). */
+      landing_page: string | null;
+      landing_page_at: string | null;
       has_product_view: boolean;
       has_add_to_cart: boolean;
       has_view_cart: boolean;
