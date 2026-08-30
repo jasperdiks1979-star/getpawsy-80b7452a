@@ -162,8 +162,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // country-null until the visitor_activity geo enrichment below runs.
     // Geo filtering is applied after enrichment on the per-session truth set.
     const EVENT_COLUMNS =
-      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path," +
-      "utm_source,utm_medium,utm_campaign,referrer,country,city,device," +
+      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
+      "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
       "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
     const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
