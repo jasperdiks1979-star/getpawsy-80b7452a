@@ -2097,7 +2097,7 @@ export const VisitorWorldMap = ({
         "session_duration_seconds", "page_views",
         "country", "city", "latitude", "longitude",
         "source", "device", "utm_source", "utm_medium", "utm_campaign",
-        "referrer", "page_path",
+        "referrer", "page_path", "landing_page",
         "has_product_view", "has_add_to_cart", "has_view_cart",
         "has_checkout", "has_purchase", "order_value", "is_internal",
         ...TRAFFIC_QUALITY_CSV_HEADERS,
