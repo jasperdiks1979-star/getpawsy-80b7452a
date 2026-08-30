@@ -2119,7 +2119,7 @@ export const VisitorWorldMap = ({
           dur, s.page_views,
           s.country ?? "", s.city ?? "", s.latitude ?? "", s.longitude ?? "",
           s.source, s.device ?? "", s.utm_source ?? "", s.utm_medium ?? "", s.utm_campaign ?? "",
-          s.referrer ?? "", s.page_path ?? "",
+          s.referrer ?? "", s.page_path ?? "", s.landing_page ?? "",
           s.has_product_view, s.has_add_to_cart, s.has_view_cart,
           s.has_checkout, s.has_purchase, s.order_value, s.is_internal,
           ...trafficQualityCsvValues(classified[i]),
