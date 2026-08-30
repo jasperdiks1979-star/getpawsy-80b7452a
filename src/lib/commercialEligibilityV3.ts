@@ -178,7 +178,7 @@ export function reconcileShadowGates(
 
   rows.forEach((r, i) => {
     const src = sessions[i] ?? {};
-    class_counts[r.traffic_quality_class] += 1;
+    class_counts[r.traffic_quality_class_v3] += 1;
     if (r.hard_veto) hard_vetoes += 1;
     accumulate(raw, r.classified);
     if (legacyEligible(r, src)) accumulate(legacy, r.classified);
