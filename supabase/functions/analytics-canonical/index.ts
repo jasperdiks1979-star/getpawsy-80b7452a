@@ -639,7 +639,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     };
     const eligibilityBySid = new Map<string, Verdict>();
     {
-      const CHUNK = 4000;
+      const CHUNK = 1_000_000; // single pass: cluster analysis must see the whole population
       for (let i = 0; i < sessionsArr.length; i += CHUNK) {
         const slice = sessionsArr.slice(i, i + CHUNK);
         const rows = buildShadowEligibility(
