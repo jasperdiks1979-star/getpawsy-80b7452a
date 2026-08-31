@@ -81,9 +81,23 @@ Deno.serve(async (req) => {
     ? [{ hours: singleHours, geo: rawGeo as "US" | "all" }]
     : null;
 
+  // `analytics-canonical` clamps any requested window to this ceiling, so a
+  // longer request (the 90d tier asks for 2160h) silently rebuilds the 720h
+  // key. Clamping + de-duplicating here keeps the warmer honest about which
+  // key it actually refreshes and stops two tiers racing the same rebuild.
+  const CANONICAL_MAX_HOURS = 720;
+
   const run = async () => {
     const results: Array<Record<string, unknown>> = [];
-    for (const combo of combos ?? combosForTier(tier)) {
+    const seen = new Set<string>();
+    for (const raw of combos ?? combosForTier(tier)) {
+      const combo = { ...raw, hours: Math.min(raw.hours, CANONICAL_MAX_HOURS) };
+      const comboKey = `${combo.hours}|${combo.geo}`;
+      if (seen.has(comboKey)) {
+        results.push({ ...combo, ok: true, skipped: "duplicate_after_clamp", requested_hours: raw.hours });
+        continue;
+      }
+      seen.add(comboKey);
       const started = Date.now();
       try {
         const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
