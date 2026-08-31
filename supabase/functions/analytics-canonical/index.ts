@@ -666,9 +666,18 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         });
       }
     }
+    // SAFETY HOLD: the strict-v3 gate diverged from the validated shadow
+    // result (ATC 22 vs 30, checkout 18 vs 23) on the post-switch 30d
+    // validation run, so the production KPI gate stays on the legacy
+    // predicate until that divergence is explained. The strict-v3 verdict is
+    // still computed and exposed per session for inspection.
+    const V3_GATE_ACTIVE = false;
     function isCommercial(s: SessionAgg): boolean {
-      return eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true;
+      return V3_GATE_ACTIVE
+        ? eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true
+        : isCommercialLegacy(s);
     }
+
 
 
     // Buckets for the traffic-quality breakdown card (legacy ingest metadata).
