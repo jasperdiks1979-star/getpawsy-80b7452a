@@ -106,18 +106,60 @@ Deno.serve(async (req) => {
     // isolate always returns a response instead of being killed on CPU/wall time).
     let bodyOpts: Record<string, unknown> = {};
     try { bodyOpts = await req.json(); } catch { /* cron sends {} */ }
-    const pinLimit = Math.max(1, Math.min(1000, Number(bodyOpts.limit) || 120));
+    const pinLimit = Math.max(1, Math.min(2000, Number(bodyOpts.limit) || 1000));
     const RUN_BUDGET_MS = 45_000;
     const startedAt = Date.now();
-    const { data: pins, error: pinsErr } = await sb.from("pinterest_pin_dimensions").select("pin_id").limit(pinLimit);
+
+    // ROOT-CAUSE FIX: the pin universe used to come ONLY from
+    // `pinterest_pin_dimensions` (queue-derived). Pins published outside the
+    // video/pin queues (e.g. the homepage_product_push cohort) were therefore
+    // never requested and `pinterest_analytics_daily` stayed empty for them.
+    // We now enumerate the LIVE owned-pin universe from the Pinterest API with
+    // full bookmark pagination and union it with the queue-derived set.
+    const universe = new Set<string>();
+    const liveIds = new Set<string>();
+    let enumerated = 0;
+    let pagesFetched = 0;
+    let enumError: string | null = null;
+    try {
+      let bookmark: string | null = null;
+      do {
+        const u = new URL(`${base}/v5/pins`);
+        u.searchParams.set("page_size", "100");
+        if (bookmark) u.searchParams.set("bookmark", bookmark);
+        const r = await fetch(u.toString(), { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) { enumError = `pins_list_${r.status}`; break; }
+        const j = await r.json() as { items?: Array<{ id?: string }>; bookmark?: string | null };
+        for (const it of j.items ?? []) {
+          if (it?.id) { enumerated++; universe.add(String(it.id)); liveIds.add(String(it.id)); }
+        }
+        pagesFetched++;
+        bookmark = j.bookmark ?? null;
+        if (Date.now() - startedAt > RUN_BUDGET_MS) break;
+      } while (bookmark && pagesFetched < 50);
+    } catch (e) {
+      enumError = (e as Error).message;
+    }
+
+    const { data: dimPins, error: pinsErr } = await sb
+      .from("pinterest_pin_dimensions").select("pin_id").limit(pinLimit);
     if (pinsErr) {
       return new Response(JSON.stringify({ ok: false, traceId, stage: "load_dimensions", message: pinsErr.message }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    for (const r of (dimPins as { pin_id: string }[] | null) ?? []) universe.add(String(r.pin_id));
+    const pins = [...universe].slice(0, pinLimit).map((pin_id) => ({ pin_id }));
+
+    // Optional explicit historical window (existing analytics-sync semantics:
+    // day-level, upsert on (pin_id, day) — never invents rows for days the API
+    // does not return).
+    const bodyStart = typeof bodyOpts.start_date === "string" ? bodyOpts.start_date : null;
+    const bodyEnd = typeof bodyOpts.end_date === "string" ? bodyOpts.end_date : null;
     const start = new Date(Date.now() - 7 * 86400000);
-    const startDay = isoDay(start);
-    const endDay = isoDay(new Date());
+    const startDay = bodyStart ?? isoDay(start);
+    const endDay = bodyEnd ?? isoDay(new Date());
+
     let synced = 0;
     let errors = 0;
     let budgetStopped = false;
@@ -157,7 +199,17 @@ Deno.serve(async (req) => {
       } catch { errors++; }
     }
 
-    return new Response(JSON.stringify({ ok: true, traceId, synced, errors, budget_stopped: budgetStopped, pins_scanned: (pins ?? []).length }), {
+    return new Response(JSON.stringify({
+      ok: true, traceId, synced, errors, budget_stopped: budgetStopped,
+      pins_scanned: pins.length,
+      live_enumerated: enumerated,
+      live_unique: liveIds.size,
+      live_duplicates: enumerated - liveIds.size,
+      universe_size: universe.size,
+      pages_fetched: pagesFetched,
+      enum_error: enumError,
+      window: { start: startDay, end: endDay },
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

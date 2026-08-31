@@ -51,6 +51,25 @@ function dedup(parts: Array<string | null | undefined>): string {
 }
 
 /**
+ * Exact UTM extraction from a stored URL / path+query.
+ * Used ONLY as a fallback when the event payload did not carry the value in
+ * `meta` — never fuzzy, never inferred: the value must be literally present
+ * in the stored query string.
+ */
+function utmFromUrl(url: string | null | undefined, key: string): string | null {
+  if (!url || typeof url !== "string") return null;
+  const q = url.indexOf("?");
+  if (q < 0) return null;
+  try {
+    const v = new URLSearchParams(url.slice(q + 1)).get(key);
+    return v && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+
+/**
  * Semantic dedup key — collapses repeated clicks / redirects / page-reloads
  * inside a short window into a single canonical event.
  *
@@ -127,7 +146,18 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         utm_source: e.source,
         utm_medium: e.medium,
         utm_campaign: e.campaign,
-        utm_content: (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ?? null,
+        // utm_content: payload meta first, then the EXACT value stored in the
+        // landing/page URL query string. Same semantics as source/medium/
+        // campaign — no inference, no fuzzy matching.
+        utm_content:
+          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ??
+          utmFromUrl(e.landing_page, "utm_content") ??
+          utmFromUrl(e.page_path, "utm_content") ??
+          null,
+        utm_term:
+          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_term : null) ??
+          utmFromUrl(e.landing_page, "utm_term") ??
+          null,
         country: e.country,
         device: e.device,
         meta: e.meta ?? {},
