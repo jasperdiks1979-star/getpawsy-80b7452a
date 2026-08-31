@@ -146,7 +146,18 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         utm_source: e.source,
         utm_medium: e.medium,
         utm_campaign: e.campaign,
-        utm_content: (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ?? null,
+        // utm_content: payload meta first, then the EXACT value stored in the
+        // landing/page URL query string. Same semantics as source/medium/
+        // campaign — no inference, no fuzzy matching.
+        utm_content:
+          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ??
+          utmFromUrl(e.landing_page, "utm_content") ??
+          utmFromUrl(e.page_path, "utm_content") ??
+          null,
+        utm_term:
+          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_term : null) ??
+          utmFromUrl(e.landing_page, "utm_term") ??
+          null,
         country: e.country,
         device: e.device,
         meta: e.meta ?? {},
