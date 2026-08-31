@@ -14,6 +14,21 @@ Deno.serve(async (req) => {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  if (url.searchParams.get("mode") === "pins") {
+    const ids = (url.searchParams.get("ids") || "").split(",").filter(Boolean);
+    const tok = Deno.env.get("PINTEREST_ACCESS_TOKEN") ?? "";
+    const out: unknown[] = [];
+    for (const id of ids) {
+      const pr = await fetch(`https://api.pinterest.com/v5/pins/${id}`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      });
+      const pj: any = await pr.json().catch(() => ({}));
+      out.push({ id, status: pr.status, link: pj?.link ?? null, created_at: pj?.created_at ?? null, board_id: pj?.board_id ?? null });
+    }
+    return new Response(JSON.stringify({ ok: true, pins: out }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const hours = Number(url.searchParams.get("hours") || 720);
   const geo = url.searchParams.get("geo") || "all";
   const base = Deno.env.get("SUPABASE_URL")!;
