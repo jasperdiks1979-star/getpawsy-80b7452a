@@ -804,11 +804,12 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       funnel,
       countries,
       sources,
-      // SHADOW (read-time, non-persisted): each session carries the stored v2
-      // verdict for diagnostics plus a normalized country code. Eligibility
-      // itself is computed client-side by the strict-v3 shadow layer.
+      // Raw/audit population (un-gated). Stored v2 flags are legacy ingest
+      // metadata for diagnostics only; the authoritative business gate is the
+      // read-time `commercial_eligible_v3_strict` flag also carried here.
       sessions: sessionsArr.map((s) => {
         const f = flagsMap.get(s.session_id);
+        const e = eligibilityBySid.get(s.session_id);
         return {
           ...s,
           stored_traffic_class_v2: f?.traffic_class ?? null,
@@ -817,8 +818,13 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           stored_is_internal: f?.is_internal ?? null,
           stored_technical_path: f?.technical_path ?? null,
           country_iso2: toIso2(s.country),
+          traffic_quality_class_v3: e?.traffic_quality_class_v3 ?? null,
+          commercial_eligible_v3_strict: e?.commercial_eligible_v3_strict ?? false,
+          commercial_eligible_v3_expanded: e?.commercial_eligible_v3_expanded ?? false,
         };
       }),
+      eligibility_gate,
+
 
       sample_event: sample,
       diagnostics,
