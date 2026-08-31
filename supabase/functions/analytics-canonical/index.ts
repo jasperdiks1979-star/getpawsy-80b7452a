@@ -367,6 +367,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       has_purchase: boolean;
       order_value: number;
       is_internal: boolean;
+      /** DIAGNOSTIC ONLY — visitor_activity.is_internal (geo heuristic: NL).
+       *  Never an input to the strict-v3 traffic-quality classifier. */
+      va_is_internal: boolean;
     };
     const sessionAgg = new Map<string, SessionAgg>();
     for (const r of events) {
@@ -402,6 +405,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           has_purchase: false,
           order_value: 0,
           is_internal: false,
+          va_is_internal: false,
         };
         sessionAgg.set(sid, s);
       }
@@ -476,7 +480,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
         if (!s.country && row.country) s.country = row.country;
         if (!s.city && row.city) s.city = row.city;
-        if (row.is_internal === true) s.is_internal = true;
+        if (row.is_internal === true) s.va_is_internal = true; // diagnostic only
         if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
         const ov = Number(row.order_value || 0);
         if (ov > s.order_value) s.order_value = ov;
@@ -506,7 +510,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
           if (!s.country && row.country) s.country = row.country;
           if (!s.city && row.city) s.city = row.city;
-          if (row.is_internal === true) s.is_internal = true;
+          if (row.is_internal === true) s.va_is_internal = true; // diagnostic only
           if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
           const ov = Number(row.order_value || 0);
           if (ov > s.order_value) s.order_value = ov;
@@ -622,7 +626,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         }
         return true;
       }
-      return !s.is_internal;
+      return !(s.is_internal || s.va_is_internal);
     }
 
     // ── PRODUCTION BUSINESS KPI GATE — commercial_eligible_v3_strict ───
