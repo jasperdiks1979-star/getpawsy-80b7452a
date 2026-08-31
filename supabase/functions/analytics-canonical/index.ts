@@ -629,28 +629,47 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // Geo-independent by construction: the classifier never sees country as an
     // eligibility input. Geo filtering already happened above (sessionsArr) and
     // only narrows the population, never the verdict.
-    const shadowRows = buildShadowEligibility(
-      sessionsArr.map((s) => {
-        const f = flagsMap.get(s.session_id);
-        return {
-          ...s,
-          stored_traffic_class_v2: f?.traffic_class ?? null,
-          stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
-          stored_is_bot: f?.is_bot ?? null,
-          stored_is_internal: f?.is_internal ?? null,
-          stored_technical_path: f?.technical_path ?? null,
-          country_iso2: toIso2(s.country),
-        } as any;
-      }),
-    );
-    const eligibilityBySid = new Map<string, (typeof shadowRows)[number]>();
-    shadowRows.forEach((r, i) => {
-      const sid = sessionsArr[i]?.session_id;
-      if (sid) eligibilityBySid.set(sid, r);
-    });
+    // Memory-safe: classify in bounded chunks and retain only the compact
+    // verdict per session (the full ClassifiedSession objects for 24k+ rows
+    // exhaust the edge worker on the 30d window).
+    type Verdict = {
+      traffic_quality_class_v3: string;
+      commercial_eligible_v3_strict: boolean;
+      commercial_eligible_v3_expanded: boolean;
+    };
+    const eligibilityBySid = new Map<string, Verdict>();
+    {
+      const CHUNK = 4000;
+      for (let i = 0; i < sessionsArr.length; i += CHUNK) {
+        const slice = sessionsArr.slice(i, i + CHUNK);
+        const rows = buildShadowEligibility(
+          slice.map((s) => {
+            const f = flagsMap.get(s.session_id);
+            return {
+              ...s,
+              stored_traffic_class_v2: f?.traffic_class ?? null,
+              stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
+              stored_is_bot: f?.is_bot ?? null,
+              stored_is_internal: f?.is_internal ?? null,
+              stored_technical_path: f?.technical_path ?? null,
+            } as any;
+          }),
+        );
+        rows.forEach((r, j) => {
+          const sid = slice[j]?.session_id;
+          if (!sid) return;
+          eligibilityBySid.set(sid, {
+            traffic_quality_class_v3: r.traffic_quality_class_v3,
+            commercial_eligible_v3_strict: r.commercial_eligible_v3_strict,
+            commercial_eligible_v3_expanded: r.commercial_eligible_v3_expanded,
+          });
+        });
+      }
+    }
     function isCommercial(s: SessionAgg): boolean {
       return eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true;
     }
+
 
     // Buckets for the traffic-quality breakdown card (legacy ingest metadata).
     let excluded_internal = 0, excluded_bot = 0, excluded_technical = 0,
