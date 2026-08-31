@@ -689,14 +689,16 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const cleanSessionsArr = sessionsArr.filter(isCommercial);
     const legacyEligibleCount = sessionsArr.filter(isCommercialLegacy).length;
     const v3_class_counts: Record<string, number> = {};
-    for (const r of shadowRows) {
+    let expandedCount = 0;
+    for (const r of eligibilityBySid.values()) {
       v3_class_counts[r.traffic_quality_class_v3] = (v3_class_counts[r.traffic_quality_class_v3] ?? 0) + 1;
+      if (r.commercial_eligible_v3_expanded) expandedCount++;
     }
     const eligibility_gate = {
       gate: "commercial_eligible_v3_strict",
       legacy_gate_sessions: legacyEligibleCount,
       strict_v3_sessions: cleanSessionsArr.length,
-      expanded_v3_sessions: shadowRows.filter((r) => r.commercial_eligible_v3_expanded).length,
+      expanded_v3_sessions: expandedCount,
       class_counts: v3_class_counts,
       legacy_fields_are_diagnostic_only: true,
     };
