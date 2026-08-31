@@ -198,7 +198,16 @@ Deno.serve(async (req) => {
       } catch { errors++; }
     }
 
-    return new Response(JSON.stringify({ ok: true, traceId, synced, errors, budget_stopped: budgetStopped, pins_scanned: (pins ?? []).length }), {
+    return new Response(JSON.stringify({
+      ok: true, traceId, synced, errors, budget_stopped: budgetStopped,
+      pins_scanned: pins.length,
+      live_enumerated: enumerated,
+      live_unique: enumerated - (enumerated - new Set([...universe]).size),
+      universe_size: universe.size,
+      pages_fetched: pagesFetched,
+      enum_error: enumError,
+      window: { start: startDay, end: endDay },
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
