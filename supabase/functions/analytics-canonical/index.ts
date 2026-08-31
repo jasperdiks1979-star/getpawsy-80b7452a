@@ -629,28 +629,56 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // Geo-independent by construction: the classifier never sees country as an
     // eligibility input. Geo filtering already happened above (sessionsArr) and
     // only narrows the population, never the verdict.
-    const shadowRows = buildShadowEligibility(
-      sessionsArr.map((s) => {
-        const f = flagsMap.get(s.session_id);
-        return {
-          ...s,
-          stored_traffic_class_v2: f?.traffic_class ?? null,
-          stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
-          stored_is_bot: f?.is_bot ?? null,
-          stored_is_internal: f?.is_internal ?? null,
-          stored_technical_path: f?.technical_path ?? null,
-          country_iso2: toIso2(s.country),
-        } as any;
-      }),
-    );
-    const eligibilityBySid = new Map<string, (typeof shadowRows)[number]>();
-    shadowRows.forEach((r, i) => {
-      const sid = sessionsArr[i]?.session_id;
-      if (sid) eligibilityBySid.set(sid, r);
-    });
-    function isCommercial(s: SessionAgg): boolean {
-      return eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true;
+    // Memory-safe: classify in bounded chunks and retain only the compact
+    // verdict per session (the full ClassifiedSession objects for 24k+ rows
+    // exhaust the edge worker on the 30d window).
+    type Verdict = {
+      traffic_quality_class_v3: string;
+      commercial_eligible_v3_strict: boolean;
+      commercial_eligible_v3_expanded: boolean;
+    };
+    const eligibilityBySid = new Map<string, Verdict>();
+    {
+      const CHUNK = 1_000_000; // single pass: cluster analysis must see the whole population
+      for (let i = 0; i < sessionsArr.length; i += CHUNK) {
+        const slice = sessionsArr.slice(i, i + CHUNK);
+        const rows = buildShadowEligibility(
+          slice.map((s) => {
+            const f = flagsMap.get(s.session_id);
+            return {
+              ...s,
+              stored_traffic_class_v2: f?.traffic_class ?? null,
+              stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
+              stored_is_bot: f?.is_bot ?? null,
+              stored_is_internal: f?.is_internal ?? null,
+              stored_technical_path: f?.technical_path ?? null,
+            } as any;
+          }),
+        );
+        rows.forEach((r, j) => {
+          const sid = slice[j]?.session_id;
+          if (!sid) return;
+          eligibilityBySid.set(sid, {
+            traffic_quality_class_v3: r.traffic_quality_class_v3,
+            commercial_eligible_v3_strict: r.commercial_eligible_v3_strict,
+            commercial_eligible_v3_expanded: r.commercial_eligible_v3_expanded,
+          });
+        });
+      }
     }
+    // SAFETY HOLD: the strict-v3 gate diverged from the validated shadow
+    // result (ATC 22 vs 30, checkout 18 vs 23) on the post-switch 30d
+    // validation run, so the production KPI gate stays on the legacy
+    // predicate until that divergence is explained. The strict-v3 verdict is
+    // still computed and exposed per session for inspection.
+    const V3_GATE_ACTIVE = false;
+    function isCommercial(s: SessionAgg): boolean {
+      return V3_GATE_ACTIVE
+        ? eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true
+        : isCommercialLegacy(s);
+    }
+
+
 
     // Buckets for the traffic-quality breakdown card (legacy ingest metadata).
     let excluded_internal = 0, excluded_bot = 0, excluded_technical = 0,
@@ -670,14 +698,16 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const cleanSessionsArr = sessionsArr.filter(isCommercial);
     const legacyEligibleCount = sessionsArr.filter(isCommercialLegacy).length;
     const v3_class_counts: Record<string, number> = {};
-    for (const r of shadowRows) {
+    let expandedCount = 0;
+    for (const r of eligibilityBySid.values()) {
       v3_class_counts[r.traffic_quality_class_v3] = (v3_class_counts[r.traffic_quality_class_v3] ?? 0) + 1;
+      if (r.commercial_eligible_v3_expanded) expandedCount++;
     }
     const eligibility_gate = {
-      gate: "commercial_eligible_v3_strict",
+      gate: V3_GATE_ACTIVE ? "commercial_eligible_v3_strict" : "legacy_stored_exclude_from_commercial",
       legacy_gate_sessions: legacyEligibleCount,
       strict_v3_sessions: cleanSessionsArr.length,
-      expanded_v3_sessions: shadowRows.filter((r) => r.commercial_eligible_v3_expanded).length,
+      expanded_v3_sessions: expandedCount,
       class_counts: v3_class_counts,
       legacy_fields_are_diagnostic_only: true,
     };
