@@ -1,0 +1,910 @@
+/**
+ * Permanent Traffic-Quality Classifier — GetPawsy visitor analytics.
+ *
+ * Pure, dependency-free scoring layer that turns any session-shaped row
+ * (canonical `TruthSession`, CSV export row, live dataset) into:
+ *
+ *   - traffic_quality_class  (human / bot / internal / unknown)
+ *   - traffic_quality_confidence (0-1)
+ *   - source_class           (paid vs organic vs direct, per channel)
+ *   - commercial_intent_score (0-100) + tier
+ *   - classification_reasons (audit trail — never silently dropped)
+ *
+ * Rules are intentionally conservative:
+ *   - a conversion is NEVER required to qualify as human;
+ *   - city is NEVER, on its own, evidence of automation;
+ *   - internal/test only via explicit markers;
+ *   - a generic Pinterest referrer is organic until paid evidence exists.
+ *
+ * Nothing here mutates or removes data. Cluster analysis only *raises*
+ * bot confidence for sessions that already look synthetic.
+ */
+
+export type TrafficQualityClass =
+  | "PROBABLE_HUMAN"
+  | "POSSIBLE_HUMAN"
+  | "PROBABLE_BOT_OR_AUTOMATION"
+  | "INTERNAL_OR_TEST"
+  | "UNKNOWN";
+
+export type SourceClass =
+  | "PINTEREST_PAID"
+  | "PINTEREST_ORGANIC"
+  | "GOOGLE_ORGANIC"
+  | "OTHER_SEARCH"
+  | "DIRECT"
+  | "REFERRAL"
+  | "TIKTOK"
+  | "META"
+  | "OTHER_PAID"
+  | "UNKNOWN";
+
+export type IntentTier = "HIGH" | "MEDIUM" | "LOW" | "NONE";
+
+export interface ClassifierSession {
+  session_id?: string | null;
+  visitor_id?: string | null;
+  first_seen_at?: string | Date | null;
+  last_seen_at?: string | Date | null;
+  timestamp?: string | Date | null;
+  country?: string | null;
+  city?: string | null;
+  device?: string | null;
+  device_type?: string | null;
+  browser?: string | null;
+  user_agent?: string | null;
+  referrer?: string | null;
+  source?: string | null;
+  medium?: string | null;
+  campaign?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
+  landing_page?: string | null;
+  page_path?: string | null;
+  page_views?: number | null;
+  pages_viewed?: number | null;
+  /** Number of distinct URL paths seen in the session (navigation shape). */
+  distinct_paths?: number | null;
+  /** Non-pageview interaction events (scroll, click, search, filter…). */
+  interaction_count?: number | null;
+  session_duration_seconds?: number | null;
+
+  has_product_view?: boolean | null;
+  has_add_to_cart?: boolean | null;
+  has_view_cart?: boolean | null;
+  has_checkout?: boolean | null;
+  has_purchase?: boolean | null;
+  product_view?: boolean | null;
+  add_to_cart?: boolean | null;
+  view_cart?: boolean | null;
+  checkout?: boolean | null;
+  purchase?: boolean | null;
+  order_value?: number | null;
+  revenue?: number | null;
+  is_internal?: boolean | null;
+  is_bot?: boolean | null;
+  bot_reason?: string | null;
+}
+
+export interface ClassifiedSession {
+  session_id: string;
+  traffic_quality_class: TrafficQualityClass;
+  traffic_quality_confidence: number;
+  source_class: SourceClass;
+  commercial_intent_score: number;
+  commercial_intent_tier: IntentTier;
+  classification_reasons: string[];
+  /**
+   * TRUE only when a product view has corroborating engagement
+   * (>=10s PDP dwell, second distinct product-scoped interaction, cart/checkout/
+   * purchase, or coherent navigation into/out of the PDP with realistic timing).
+   * A raw `product_view` alone NEVER sets this.
+   */
+  product_interest_confirmed: boolean;
+  /** product_view + some engagement evidence, but below the confirmed bar. */
+  product_interest_weak: boolean;
+  /** Normalized facts used for the decision (handy for drill-downs). */
+  facts: {
+    duration_seconds: number | null;
+    page_views: number;
+    distinct_paths: number;
+    device: string;
+    city: string;
+    country: string;
+    landing_page: string;
+    product_view: boolean;
+    add_to_cart: boolean;
+    view_cart: boolean;
+    checkout: boolean;
+    purchase: boolean;
+    revenue: number;
+    /** No UA/browser evidence AND no referrer AND no UTM — automation suspicion. */
+    missing_metadata: boolean;
+  };
+}
+
+
+const BOT_UA_RE =
+  /(bot|crawler|spider|googlebot|bingbot|yandex|baiduspider|duckduckbot|facebookexternalhit|pinterestbot|tiktokbot|ahrefsbot|semrushbot|mj12bot|petalbot|applebot|uptimerobot|prerender|headless|phantom|slurp|lighthouse|python-requests|curl\/|wget|axios|node-fetch|go-http-client)/i;
+
+const INTERNAL_TOKENS = [
+  "smoke", "internal", "admin", "synthetic", "e2e", "qa", "lovable", "ci", "test",
+];
+
+const PAID_MEDIUMS = new Set([
+  "cpc", "ppc", "paid", "paidsocial", "paid_social", "paid-social", "ads", "ad",
+  "display", "cpm", "cpv", "retargeting",
+]);
+
+const SEARCH_HOSTS: Array<[RegExp, SourceClass]> = [
+  [/google\./i, "GOOGLE_ORGANIC"],
+  [/bing\.|yahoo\.|duckduckgo\.|ecosia\.|search\.brave|startpage\.|qwant\./i, "OTHER_SEARCH"],
+];
+
+function toSeconds(s: ClassifierSession): number | null {
+  if (typeof s.session_duration_seconds === "number" && Number.isFinite(s.session_duration_seconds)) {
+    return Math.max(0, s.session_duration_seconds);
+  }
+  const a = s.first_seen_at ? new Date(s.first_seen_at).getTime() : NaN;
+  const b = s.last_seen_at ? new Date(s.last_seen_at).getTime() : NaN;
+  if (Number.isFinite(a) && Number.isFinite(b)) return Math.max(0, Math.round((b - a) / 1000));
+  return null;
+}
+
+function bool(...vals: Array<boolean | null | undefined>): boolean {
+  return vals.some((v) => v === true);
+}
+
+function lower(v: unknown): string {
+  return typeof v === "string" ? v.toLowerCase() : "";
+}
+
+// ---------------------------------------------------------------------------
+// Source classification
+// ---------------------------------------------------------------------------
+
+export function classifySource(s: ClassifierSession): { source_class: SourceClass; reasons: string[] } {
+  const reasons: string[] = [];
+  const utmSource = lower(s.utm_source) || lower(s.source);
+  const utmMedium = lower(s.utm_medium) || lower(s.medium);
+  const campaign = lower(s.utm_campaign) || lower(s.campaign);
+  const content = lower(s.utm_content);
+  const ref = lower(s.referrer);
+  const paidMedium = PAID_MEDIUMS.has(utmMedium) || /(^|[_-])(cpc|paid|ads?)([_-]|$)/.test(utmMedium);
+  const adIdentifier = /(adgroup|ad_id|adid|adset|campaign_id|promoted|pin_promotion|\bad\b)/.test(
+    `${campaign} ${content} ${ref}`,
+  );
+
+  const isPinterest = utmSource.includes("pinterest") || ref.includes("pinterest.") || ref.includes("pin.it");
+  if (isPinterest) {
+    // Strong paid click evidence on the landing URL. `pins_campaign_id` and
+    // `epik` are Pinterest Ads click parameters and take precedence over an
+    // organic-looking `utm_medium=social`. `pp` alone is NOT sufficient.
+    const landingLower = `${lower(s.landing_page)} ${lower(s.page_path)}`;
+    const pinsPaidEvidence =
+      /[?&#](pins_campaign_id|epik)=/.test(landingLower) ||
+      /(^|[?&#\s])(pins_campaign_id|epik)=/.test(`${campaign} ${content}`);
+    if (pinsPaidEvidence) {
+      reasons.push("pinterest_paid_click_param");
+      return { source_class: "PINTEREST_PAID", reasons };
+    }
+    if (paidMedium || adIdentifier) {
+      reasons.push(paidMedium ? "pinterest_paid_medium" : "pinterest_ad_identifier");
+      return { source_class: "PINTEREST_PAID", reasons };
+    }
+    reasons.push("pinterest_no_paid_evidence");
+    return { source_class: "PINTEREST_ORGANIC", reasons };
+  }
+
+  if (utmSource.includes("tiktok") || ref.includes("tiktok.")) {
+    reasons.push("tiktok_source");
+    return { source_class: "TIKTOK", reasons };
+  }
+  if (/facebook|instagram|meta\b|fb\b/.test(utmSource) || /facebook\.|instagram\.|fb\./.test(ref)) {
+    reasons.push("meta_source");
+    return { source_class: "META", reasons };
+  }
+
+  if (utmSource.includes("google") || ref.includes("google.")) {
+    if (paidMedium || adIdentifier || /gclid/.test(`${content} ${ref}`)) {
+      reasons.push("google_paid_evidence");
+      return { source_class: "OTHER_PAID", reasons };
+    }
+    reasons.push("google_organic");
+    return { source_class: "GOOGLE_ORGANIC", reasons };
+  }
+
+  for (const [re, cls] of SEARCH_HOSTS) {
+    if (re.test(ref) || re.test(utmSource)) {
+      reasons.push("other_search_engine");
+      return { source_class: cls, reasons };
+    }
+  }
+
+  if (paidMedium) {
+    reasons.push("generic_paid_medium");
+    return { source_class: "OTHER_PAID", reasons };
+  }
+
+  if (ref && !ref.includes("getpawsy")) {
+    reasons.push("external_referrer");
+    return { source_class: "REFERRAL", reasons };
+  }
+
+  const declaredDirect = lower(s.source) === "direct" || (!ref && !utmSource);
+  if (declaredDirect) {
+    reasons.push("no_referrer_no_utm");
+    return { source_class: "DIRECT", reasons };
+  }
+
+  reasons.push("source_indeterminate");
+  return { source_class: "UNKNOWN", reasons };
+}
+
+// ---------------------------------------------------------------------------
+// Commercial intent
+// ---------------------------------------------------------------------------
+
+export function commercialIntentScore(
+  s: ClassifierSession,
+  sourceClass: SourceClass,
+): { score: number; tier: IntentTier } {
+  const duration = toSeconds(s);
+  const pv = Number(s.page_views ?? s.pages_viewed ?? 0) || 0;
+  const landing = lower(s.landing_page ?? s.page_path);
+  let score = 0;
+  if (bool(s.has_product_view, s.product_view)) score += 15;
+  if (bool(s.has_add_to_cart, s.add_to_cart)) score += 25;
+  if (bool(s.has_view_cart, s.view_cart)) score += 20;
+  if (bool(s.has_checkout, s.checkout)) score += 25;
+  if (bool(s.has_purchase, s.purchase)) score += 40;
+  if (duration !== null && duration >= 20) score += 10;
+  if (pv >= 3) score += 10;
+  const isPinterest = sourceClass === "PINTEREST_PAID" || sourceClass === "PINTEREST_ORGANIC";
+  if (isPinterest && /\/product|\/products\//.test(landing)) score += 10;
+  if (
+    (sourceClass === "GOOGLE_ORGANIC" || sourceClass === "OTHER_SEARCH") &&
+    landing && landing !== "/"
+  ) score += 5;
+
+  score = Math.min(100, score);
+  const tier: IntentTier =
+    score >= 60 ? "HIGH" : score >= 30 ? "MEDIUM" : score >= 1 ? "LOW" : "NONE";
+  return { score, tier };
+}
+
+// ---------------------------------------------------------------------------
+// Human / bot classification
+// ---------------------------------------------------------------------------
+
+export function classifySession(s: ClassifierSession): ClassifiedSession {
+  const reasons: string[] = [];
+  const { source_class, reasons: srcReasons } = classifySource(s);
+  reasons.push(...srcReasons.map((r) => `source:${r}`));
+
+  const duration = toSeconds(s);
+  const pv = Number(s.page_views ?? s.pages_viewed ?? 0) || 0;
+  const distinctPaths = Math.max(
+    0,
+    Number(s.distinct_paths ?? 0) || 0,
+  ) || (pv > 0 ? 1 : 0);
+  const interactions = Math.max(0, Number(s.interaction_count ?? 0) || 0);
+  const device = lower(s.device ?? s.device_type) || "unknown";
+  const ua = s.user_agent ?? "";
+  const landing = (s.landing_page ?? s.page_path ?? "") as string;
+  const productView = bool(s.has_product_view, s.product_view);
+  const atc = bool(s.has_add_to_cart, s.add_to_cart);
+  const viewCart = bool(s.has_view_cart, s.view_cart);
+  const checkout = bool(s.has_checkout, s.checkout);
+  const purchase = bool(s.has_purchase, s.purchase);
+  const revenue = Number(s.order_value ?? s.revenue ?? 0) || 0;
+  const commerceEvent = atc || viewCart || checkout || purchase;
+
+  const hasReferrer = !!lower(s.referrer);
+  const hasUtm = !!(lower(s.utm_source) || lower(s.utm_medium) || lower(s.utm_campaign));
+  const hasUaEvidence = !!(ua || lower(s.browser));
+  // Section 4 — automation SUSPICION only, never a standalone bot verdict.
+  const missingMetadata = !hasUaEvidence && !hasReferrer && !hasUtm;
+
+  const pvPerSecond = pv > 0 && duration !== null ? pv / Math.max(duration, 1) : 0;
+  const plausibleTiming = pvPerSecond <= 0.6;
+  const pdpLanding = /\/product/.test(lower(landing));
+  const externalCoherentSource =
+    source_class !== "DIRECT" && source_class !== "UNKNOWN" && (hasReferrer || hasUtm);
+
+  // Section 5 — product-interest confirmation. Raw product_view is NEVER enough.
+  const product_interest_confirmed =
+    productView &&
+    (commerceEvent ||
+      (duration !== null && duration >= 10 && plausibleTiming) ||
+      (interactions >= 1 && (duration === null || duration >= 3)) ||
+      (distinctPaths >= 2 && duration !== null && duration >= 5 && plausibleTiming));
+  const product_interest_weak =
+    productView &&
+    !product_interest_confirmed &&
+    ((duration !== null && duration >= 3) ||
+      distinctPaths >= 2 ||
+      interactions >= 1 ||
+      externalCoherentSource);
+
+  const { score, tier } = commercialIntentScore(s, source_class);
+
+  const facts = {
+    duration_seconds: duration,
+    page_views: pv,
+    distinct_paths: distinctPaths,
+    device,
+    city: s.city ?? "",
+    country: s.country ?? "",
+    landing_page: landing,
+    product_view: productView,
+    add_to_cart: atc,
+    view_cart: viewCart,
+    checkout,
+    purchase,
+    revenue,
+    missing_metadata: missingMetadata,
+  };
+
+  const sid = s.session_id ?? "";
+  const finish = (
+    cls: TrafficQualityClass,
+    confidence: number,
+  ): ClassifiedSession => ({
+    session_id: sid,
+    traffic_quality_class: cls,
+    traffic_quality_confidence: Math.round(Math.min(1, Math.max(0, confidence)) * 100) / 100,
+    source_class,
+    commercial_intent_score: score,
+    commercial_intent_tier: tier,
+    classification_reasons: reasons,
+    product_interest_confirmed,
+    product_interest_weak,
+    facts,
+  });
+
+
+  // 1. Internal / test — explicit markers only. Always wins.
+  const landingLower = lower(landing);
+  const refLower = lower(s.referrer);
+  const internalHaystack = `${lower(sid)} ${lower(s.utm_source)} ${lower(s.utm_medium)} ${lower(s.utm_campaign)} ${landingLower}`;
+  if (s.is_internal === true) {
+    reasons.push("explicit_internal_flag");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (landingLower.includes("__lovable_sha") || landingLower.includes("__lovable_load_id")) {
+    reasons.push("internal:lovable_preview_param");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (/(^|\/\/|\.)lovable\.dev/.test(refLower) || refLower.includes("lovable.app")) {
+    reasons.push("internal:lovable_referrer");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (/^\/(admin|dashboard)(\/|$|\?)/.test(landingLower) || landingLower.includes("/admin/")) {
+    reasons.push("internal:admin_or_dashboard_route");
+    return finish("INTERNAL_OR_TEST", 1);
+  }
+  if (INTERNAL_TOKENS.some((t) => internalHaystack.includes(`${t}_`) || internalHaystack.includes(`${t}=`) || internalHaystack.includes(`${t}-`))) {
+    reasons.push("internal_marker_token");
+    return finish("INTERNAL_OR_TEST", 0.95);
+  }
+
+  // 2. Declared automation.
+  if (s.is_bot === true || (ua && BOT_UA_RE.test(ua))) {
+    reasons.push(s.is_bot === true ? "declared_bot_flag" : "bot_user_agent");
+    return finish("PROBABLE_BOT_OR_AUTOMATION", 0.97);
+  }
+
+  // 3. Authenticated commerce — the only signal that overrides burst guards.
+  const hardCommerce = atc || checkout || purchase;
+  const directOrUnknown = source_class === "DIRECT" || source_class === "UNKNOWN";
+
+  // 4. Burst / automation guard (strict v3): pv/sec > 0.6 or 3 pageviews in <=4s.
+  if (!hardCommerce) {
+    if (pv >= 2 && duration !== null && pvPerSecond > 0.6) {
+      reasons.push("bot:pageviews_per_second>0.6", `bot:pv=${pv}`, `bot:duration=${duration}s`);
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.82);
+    }
+    if (pv >= 3 && duration !== null && duration <= 4) {
+      reasons.push("bot:3_pageviews_within_4s");
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.85);
+    }
+    if (
+      duration !== null && duration <= 2 &&
+      device === "desktop" &&
+      directOrUnknown &&
+      pv >= 2 && !commerceEvent
+    ) {
+      reasons.push("bot:direct_desktop_burst_no_commerce");
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.8);
+    }
+  }
+
+  // 5. Strong human signals — a conversion is NEVER required, but no single
+  //    weak metric (raw pageviews or raw duration) qualifies on its own.
+  const coherentSearchOrReferral =
+    (source_class === "GOOGLE_ORGANIC" ||
+      source_class === "OTHER_SEARCH" ||
+      source_class === "REFERRAL" ||
+      source_class === "PINTEREST_ORGANIC" ||
+      source_class === "PINTEREST_PAID") &&
+    !!landing && landing !== "" &&
+    (device === "mobile" || device === "tablet" || device === "desktop");
+
+  const strong: string[] = [];
+  if (atc) strong.push("add_to_cart");
+  if (viewCart) strong.push("view_cart");
+  if (checkout) strong.push("checkout");
+  if (purchase) strong.push("purchase");
+
+  // Navigation signal: needs volume AND plausible timing.
+  if (pv >= 3 && duration !== null && duration >= 5 && plausibleTiming) {
+    strong.push("pageviews>=3_with_duration>=5s");
+  }
+  // Dwell signal: 20s+ is only human with a second positive signal.
+  if (duration !== null && duration >= 20) {
+    const second =
+      pv >= 2 ? "pageviews>=2" :
+      coherentSearchOrReferral ? "coherent_source" :
+      product_interest_confirmed ? "confirmed_product_interest" : null;
+    if (second) strong.push(`duration>=20s_plus_${second}`);
+  }
+  if (coherentSearchOrReferral && pv >= 2 && (duration === null || duration >= 3)) {
+    strong.push("coherent_source_with_navigation");
+  }
+  if (product_interest_confirmed && pv >= 2 && duration !== null && duration >= 5 && plausibleTiming) {
+    strong.push("confirmed_product_interest_with_navigation");
+  }
+
+  if (strong.length > 0) {
+    reasons.push(...strong.map((r) => `human:${r}`));
+    const confidence =
+      strong.length === 1 ? 0.55 :
+      strong.length === 2 ? 0.7 :
+      Math.min(0.95, 0.8 + 0.05 * (strong.length - 3));
+    return finish("PROBABLE_HUMAN", confidence);
+  }
+
+  // 6. Possible human — plausible but insufficient evidence.
+  //    For DIRECT / UNKNOWN traffic a single-page landing (product or not) with
+  //    <5s, no referrer, no UTM and no commerce NEVER qualifies. Raw
+  //    product_view is not evidence of humanity.
+  const possible: string[] = [];
+  if (directOrUnknown && !commerceEvent) {
+    // Distinct-navigation requirement for weak direct traffic.
+    if (duration !== null && duration >= 5 && distinctPaths >= 2) {
+      possible.push("duration>=5s_with_distinct_navigation");
+    }
+    if (duration !== null && duration >= 20 && plausibleTiming) {
+      possible.push("sustained_single_page_dwell>=20s");
+    }
+    if (interactions >= 1 && (duration === null || duration >= 3)) {
+      possible.push("meaningful_interaction_event");
+    }
+    if (
+      (device === "mobile" || device === "tablet") &&
+      duration !== null && duration >= 3 && plausibleTiming
+    ) {
+      possible.push("mobile_plausible_engagement");
+    }
+  } else {
+    if (coherentSearchOrReferral) possible.push("external_source_landing");
+    if (commerceEvent) possible.push("commerce_event");
+    if (duration !== null && duration >= 3 && duration <= 19) possible.push("duration_3_19s");
+    if (duration !== null && duration >= 20 && pv <= 1) possible.push("single_page_dwell");
+    if (pv === 2 && (duration === null || duration >= 2)) possible.push("two_pageviews_plausible_timing");
+  }
+  if (possible.length > 0) {
+    reasons.push(...possible.map((r) => `possible:${r}`));
+    const confidence = possible.length === 1 ? 0.55 : Math.min(0.75, 0.6 + 0.05 * (possible.length - 2));
+    return finish("POSSIBLE_HUMAN", confidence);
+  }
+
+  // 7. Probable bot / automation — requires MULTIPLE weak synthetic signals.
+  //    Missing metadata (no UA, no referrer, no UTM) is a suspicion signal only.
+  const weak: string[] = [];
+  if (duration !== null && duration < 5) weak.push("duration<5s");
+  if (device === "desktop") weak.push("desktop");
+  if (directOrUnknown) weak.push("direct_or_unknown_source");
+  if (pv >= 1 && pv <= 2) weak.push("1_2_pageviews");
+  if (distinctPaths <= 1) weak.push("single_distinct_path");
+  if (missingMetadata) weak.push("missing_ua_referrer_utm");
+  if (!commerceEvent) weak.push("no_commerce_events");
+  const automationEvidence =
+    device === "desktop" || missingMetadata || (pv >= 2 && duration !== null && duration <= 2);
+  if (
+    weak.length >= 4 &&
+    automationEvidence &&
+    weak.includes("duration<5s") &&
+    weak.includes("no_commerce_events")
+  ) {
+    reasons.push(...weak.map((r) => `bot:${r}`));
+    if (productView) reasons.push("bot:ultra_short_pdp_sweep");
+    return finish("PROBABLE_BOT_OR_AUTOMATION", Math.min(0.85, 0.4 + 0.07 * weak.length));
+  }
+
+  reasons.push("insufficient_evidence");
+  return finish("UNKNOWN", 0.3);
+}
+
+
+
+export function classifySessions(rows: ClassifierSession[]): ClassifiedSession[] {
+  return applyClusterBoost(rows.map(classifySession), rows);
+}
+
+// ---------------------------------------------------------------------------
+// Cluster analysis — raises bot confidence, never demotes a human.
+// Behavioural fingerprint only: normalized landing page + device + duration
+// bucket + pageview count + source class. City is NEVER a key (geo enrichment
+// is frequently empty) and is reported additively when present.
+// ---------------------------------------------------------------------------
+
+export interface BotCluster {
+  key: string;
+  city: string;
+  device: string;
+  duration_bucket: string;
+  landing_page: string;
+  page_views: number;
+  source_class: string;
+  sessions: number;
+  share_of_raw: number;
+}
+
+function normalizeLanding(p: string): string {
+  const path = (p || "/").split("?")[0].split("#")[0];
+  return path.replace(/\/+$/, "") || "/";
+}
+
+function clusterKey(c: ClassifiedSession): string {
+  const d = c.facts.duration_seconds;
+  const bucket = d === null ? "na" : d <= 2 ? "0-2s" : d <= 5 ? "3-5s" : d <= 19 ? "6-19s" : "20s+";
+  return `${normalizeLanding(c.facts.landing_page)}|${c.facts.device}|${bucket}|${c.facts.page_views}|${c.source_class}`;
+}
+
+export function detectBotClusters(
+  classified: ClassifiedSession[],
+  minSize = 5,
+): BotCluster[] {
+  const total = classified.length || 1;
+  const groups = new Map<string, ClassifiedSession[]>();
+  for (const c of classified) {
+    if (c.traffic_quality_class === "INTERNAL_OR_TEST") continue;
+    const k = clusterKey(c);
+    const arr = groups.get(k) ?? [];
+    arr.push(c);
+    groups.set(k, arr);
+  }
+  const out: BotCluster[] = [];
+  for (const [key, rows] of groups) {
+    if (rows.length < minSize) continue;
+    const humanish = rows.filter((r) => r.traffic_quality_class === "PROBABLE_HUMAN").length;
+    if (humanish / rows.length > 0.3) continue; // real audience cluster
+    const [landing_page, device, duration_bucket, pvStr, source_class] = key.split("|");
+    out.push({
+      key,
+      city: rows.find((r) => r.facts.city)?.facts.city ?? "",
+      device,
+      duration_bucket,
+      landing_page,
+      page_views: Number(pvStr) || 0,
+      source_class,
+      sessions: rows.length,
+      share_of_raw: Math.round((rows.length / total) * 1000) / 10,
+    });
+  }
+  return out.sort((a, b) => b.sessions - a.sessions);
+}
+
+
+/** Bumps confidence (and UNKNOWN → bot) for members of synthetic clusters. */
+export function applyClusterBoost(
+  classified: ClassifiedSession[],
+  _raw?: ClassifierSession[],
+): ClassifiedSession[] {
+  const clusters = new Set(detectBotClusters(classified).map((c) => c.key));
+  if (clusters.size === 0) return classified;
+  return classified.map((c) => {
+    if (!clusters.has(clusterKey(c))) return c;
+    if (c.traffic_quality_class === "PROBABLE_HUMAN" || c.traffic_quality_class === "INTERNAL_OR_TEST") return c;
+    if (c.traffic_quality_class === "PROBABLE_BOT_OR_AUTOMATION") {
+      return {
+        ...c,
+        traffic_quality_confidence: Math.max(0.8, Math.min(0.95, c.traffic_quality_confidence + 0.1)),
+        classification_reasons: [...c.classification_reasons, "cluster:repeated_pattern"],
+      };
+    }
+
+    if (c.traffic_quality_class === "UNKNOWN" && (c.facts.duration_seconds ?? 99) <= 2) {
+      return {
+        ...c,
+        traffic_quality_class: "PROBABLE_BOT_OR_AUTOMATION",
+        traffic_quality_confidence: 0.6,
+        classification_reasons: [...c.classification_reasons, "cluster:repeated_pattern_zero_duration"],
+      };
+    }
+    return c;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Summary
+// ---------------------------------------------------------------------------
+
+export interface TrafficQualitySummary {
+  total_sessions: number;
+  quality: Record<TrafficQualityClass, number>;
+  quality_pct: Record<TrafficQualityClass, number>;
+  conservative_humans: number;
+  expanded_humans: number;
+  sources_raw: Record<SourceClass, number>;
+  sources_human: Record<SourceClass, number>;
+  commerce_human: {
+    product_views: number;
+    add_to_cart: number;
+    view_cart: number;
+    checkout: number;
+    purchases: number;
+    revenue: number;
+  };
+  /** Probable + possible human (expanded view). Never includes internal/bot. */
+  commerce_expanded: {
+    product_views: number;
+    add_to_cart: number;
+    view_cart: number;
+    checkout: number;
+    purchases: number;
+    revenue: number;
+  };
+  /** Three-level product-interest reporting (never mutates raw events). */
+  product_interest: ProductInterestSummary;
+  top_human_sessions: ClassifiedSession[];
+  bot_clusters: BotCluster[];
+  /** Source × quality reporting matrix (additive, never mutates classification). */
+  source_matrix: SourceQualityRow[];
+}
+
+export interface ProductInterestSummary {
+  /** Raw product_view sessions in the window — never filtered. */
+  raw_product_view_sessions: number;
+  /** Confirmed product interest from PROBABLE_HUMAN only. */
+  strict: number;
+  /** Confirmed product interest from PROBABLE_HUMAN + POSSIBLE_HUMAN. */
+  conservative: number;
+  /** UPPER BOUND: every product_view session classified probable or possible. */
+  broad_upper_bound: number;
+  /** product_view with some engagement, below the confirmed bar. */
+  weak: number;
+}
+
+
+
+export interface SourceCommerce {
+  product_views: number;
+  add_to_cart: number;
+  checkout: number;
+  purchases: number;
+  revenue: number;
+}
+
+export interface SourceQualityRow {
+  source_class: SourceClass;
+  raw_sessions: number;
+  probable_human: number;
+  possible_human: number;
+  bot: number;
+  internal: number;
+  unknown: number;
+  /** PROBABLE_HUMAN / raw. 0 when raw = 0. */
+  conservative_human_rate: number;
+  /** (PROBABLE + POSSIBLE) / raw. 0 when raw = 0. */
+  expanded_human_rate: number;
+  /** 0-100 weighted quality score (100 probable, 50 possible). */
+  quality_score: number;
+  /** Commerce for PROBABLE_HUMAN only. */
+  commerce_probable: SourceCommerce;
+  /** Commerce for PROBABLE + POSSIBLE human. */
+  commerce_expanded: SourceCommerce;
+}
+
+const QUALITY_KEYS: TrafficQualityClass[] = [
+  "PROBABLE_HUMAN", "POSSIBLE_HUMAN", "PROBABLE_BOT_OR_AUTOMATION", "INTERNAL_OR_TEST", "UNKNOWN",
+];
+export const SOURCE_KEYS: SourceClass[] = [
+  "PINTEREST_PAID", "PINTEREST_ORGANIC", "GOOGLE_ORGANIC", "OTHER_SEARCH", "DIRECT",
+  "REFERRAL", "TIKTOK", "META", "OTHER_PAID", "UNKNOWN",
+];
+
+function emptyCommerce(): SourceCommerce {
+  return { product_views: 0, add_to_cart: 0, checkout: 0, purchases: 0, revenue: 0 };
+}
+
+function addCommerce(bucket: SourceCommerce, c: ClassifiedSession) {
+  if (c.facts.product_view) bucket.product_views += 1;
+  if (c.facts.add_to_cart) bucket.add_to_cart += 1;
+  if (c.facts.checkout) bucket.checkout += 1;
+  if (c.facts.purchase) bucket.purchases += 1;
+  bucket.revenue += c.facts.revenue;
+}
+
+/**
+ * Source × quality matrix. Pure reporting: every classified session lands in
+ * exactly one source row, so row totals always reconcile with the classifier.
+ */
+export function buildSourceQualityMatrix(classified: ClassifiedSession[]): SourceQualityRow[] {
+  const rows = new Map<SourceClass, SourceQualityRow>();
+  for (const k of SOURCE_KEYS) {
+    rows.set(k, {
+      source_class: k,
+      raw_sessions: 0,
+      probable_human: 0,
+      possible_human: 0,
+      bot: 0,
+      internal: 0,
+      unknown: 0,
+      conservative_human_rate: 0,
+      expanded_human_rate: 0,
+      quality_score: 0,
+      commerce_probable: emptyCommerce(),
+      commerce_expanded: emptyCommerce(),
+    });
+  }
+
+  for (const c of classified) {
+    const row = rows.get(c.source_class)!;
+    row.raw_sessions += 1;
+    switch (c.traffic_quality_class) {
+      case "PROBABLE_HUMAN": row.probable_human += 1; break;
+      case "POSSIBLE_HUMAN": row.possible_human += 1; break;
+      case "PROBABLE_BOT_OR_AUTOMATION": row.bot += 1; break;
+      case "INTERNAL_OR_TEST": row.internal += 1; break;
+      default: row.unknown += 1; break;
+    }
+    // Internal and bot traffic NEVER contributes to human commerce.
+    if (c.traffic_quality_class === "PROBABLE_HUMAN") {
+      addCommerce(row.commerce_probable, c);
+      addCommerce(row.commerce_expanded, c);
+    } else if (c.traffic_quality_class === "POSSIBLE_HUMAN") {
+      addCommerce(row.commerce_expanded, c);
+    }
+  }
+
+  const out = [...rows.values()];
+  for (const r of out) {
+    if (r.raw_sessions > 0) {
+      r.conservative_human_rate = Math.round((r.probable_human / r.raw_sessions) * 1000) / 10;
+      r.expanded_human_rate =
+        Math.round(((r.probable_human + r.possible_human) / r.raw_sessions) * 1000) / 10;
+      r.quality_score = Math.max(
+        0,
+        Math.min(100, Math.round((r.probable_human * 100 + r.possible_human * 50) / r.raw_sessions)),
+      );
+    }
+  }
+
+  return out.sort(
+    (a, b) =>
+      b.probable_human - a.probable_human ||
+      b.possible_human - a.possible_human ||
+      b.raw_sessions - a.raw_sessions,
+  );
+}
+
+
+export function summarizeTrafficQuality(rows: ClassifierSession[]): TrafficQualitySummary {
+  const classified = classifySessions(rows);
+  const total = classified.length;
+  const quality = Object.fromEntries(QUALITY_KEYS.map((k) => [k, 0])) as Record<TrafficQualityClass, number>;
+  const sources_raw = Object.fromEntries(SOURCE_KEYS.map((k) => [k, 0])) as Record<SourceClass, number>;
+  const sources_human = Object.fromEntries(SOURCE_KEYS.map((k) => [k, 0])) as Record<SourceClass, number>;
+  const commerce_human = {
+    product_views: 0, add_to_cart: 0, view_cart: 0, checkout: 0, purchases: 0, revenue: 0,
+  };
+  const commerce_expanded = {
+    product_views: 0, add_to_cart: 0, view_cart: 0, checkout: 0, purchases: 0, revenue: 0,
+  };
+
+  const product_interest: ProductInterestSummary = {
+    raw_product_view_sessions: 0,
+    strict: 0,
+    conservative: 0,
+    broad_upper_bound: 0,
+    weak: 0,
+  };
+
+  for (const c of classified) {
+    quality[c.traffic_quality_class] += 1;
+    sources_raw[c.source_class] += 1;
+    const isHuman = c.traffic_quality_class === "PROBABLE_HUMAN";
+    const isExpanded = isHuman || c.traffic_quality_class === "POSSIBLE_HUMAN";
+    if (c.facts.product_view) product_interest.raw_product_view_sessions += 1;
+    if (isExpanded && c.facts.product_view) product_interest.broad_upper_bound += 1;
+    if (c.product_interest_confirmed) {
+      if (isHuman) product_interest.strict += 1;
+      if (isExpanded) product_interest.conservative += 1;
+    }
+    if (isExpanded && c.product_interest_weak) product_interest.weak += 1;
+    for (const [bucket, active] of [[commerce_human, isHuman], [commerce_expanded, isExpanded]] as const) {
+      if (!active) continue;
+      if (c.facts.product_view) bucket.product_views += 1;
+      if (c.facts.add_to_cart) bucket.add_to_cart += 1;
+      if (c.facts.view_cart) bucket.view_cart += 1;
+      if (c.facts.checkout) bucket.checkout += 1;
+      if (c.facts.purchase) bucket.purchases += 1;
+      bucket.revenue += c.facts.revenue;
+    }
+    if (isHuman) sources_human[c.source_class] += 1;
+  }
+
+
+
+  const quality_pct = Object.fromEntries(
+    QUALITY_KEYS.map((k) => [k, total ? Math.round((quality[k] / total) * 1000) / 10 : 0]),
+  ) as Record<TrafficQualityClass, number>;
+
+  // Top human sessions: probable + possible, internal/bot always excluded.
+  const rank = (c: ClassifiedSession) =>
+    (c.facts.purchase ? 8 : 0) + (c.facts.checkout ? 4 : 0) + (c.facts.add_to_cart ? 2 : 0) +
+    (c.traffic_quality_class === "PROBABLE_HUMAN" ? 1 : 0);
+  const top_human_sessions = classified
+    .filter(
+      (c) =>
+        c.traffic_quality_class === "PROBABLE_HUMAN" ||
+        c.traffic_quality_class === "POSSIBLE_HUMAN",
+    )
+    .sort(
+      (a, b) =>
+        rank(b) - rank(a) ||
+        b.traffic_quality_confidence - a.traffic_quality_confidence ||
+        (b.facts.duration_seconds ?? 0) - (a.facts.duration_seconds ?? 0) ||
+        b.commercial_intent_score - a.commercial_intent_score,
+    )
+    .slice(0, 10);
+
+  return {
+    total_sessions: total,
+    quality,
+    quality_pct,
+    conservative_humans: quality.PROBABLE_HUMAN,
+    expanded_humans: quality.PROBABLE_HUMAN + quality.POSSIBLE_HUMAN,
+    sources_raw,
+    sources_human,
+    commerce_human,
+    commerce_expanded,
+    top_human_sessions,
+    bot_clusters: detectBotClusters(classified),
+    source_matrix: buildSourceQualityMatrix(classified),
+    product_interest,
+
+
+
+  };
+}
+
+/** CSV columns appended by the classifier — raw fields are never overwritten. */
+export const TRAFFIC_QUALITY_CSV_HEADERS = [
+  "traffic_quality_class",
+  "traffic_quality_confidence",
+  "source_class",
+  "commercial_intent_score",
+  "commercial_intent_tier",
+  "classification_reasons",
+  "product_interest_confirmed",
+  "product_interest_weak",
+] as const;
+
+export function trafficQualityCsvValues(c: ClassifiedSession): (string | number)[] {
+  return [
+    c.traffic_quality_class,
+    c.traffic_quality_confidence,
+    c.source_class,
+    c.commercial_intent_score,
+    c.commercial_intent_tier,
+    c.classification_reasons.join("|"),
+    c.product_interest_confirmed ? "true" : "false",
+    c.product_interest_weak ? "true" : "false",
+  ];
+}
