@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
     // We now enumerate the LIVE owned-pin universe from the Pinterest API with
     // full bookmark pagination and union it with the queue-derived set.
     const universe = new Set<string>();
+    const liveIds = new Set<string>();
     let enumerated = 0;
     let pagesFetched = 0;
     let enumError: string | null = null;
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
         if (!r.ok) { enumError = `pins_list_${r.status}`; break; }
         const j = await r.json() as { items?: Array<{ id?: string }>; bookmark?: string | null };
         for (const it of j.items ?? []) {
-          if (it?.id) { enumerated++; universe.add(String(it.id)); }
+          if (it?.id) { enumerated++; universe.add(String(it.id)); liveIds.add(String(it.id)); }
         }
         pagesFetched++;
         bookmark = j.bookmark ?? null;
@@ -202,7 +203,8 @@ Deno.serve(async (req) => {
       ok: true, traceId, synced, errors, budget_stopped: budgetStopped,
       pins_scanned: pins.length,
       live_enumerated: enumerated,
-      live_unique: enumerated - (enumerated - new Set([...universe]).size),
+      live_unique: liveIds.size,
+      live_duplicates: enumerated - liveIds.size,
       universe_size: universe.size,
       pages_fetched: pagesFetched,
       enum_error: enumError,
