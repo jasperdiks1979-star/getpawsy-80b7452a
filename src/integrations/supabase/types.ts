@@ -40626,6 +40626,51 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_cohort_registry: {
+        Row: {
+          campaign: string
+          cohort_key: string
+          created_at: string
+          destination_url: string | null
+          id: string
+          notes: string | null
+          pin_id: string
+          platform: string
+          product_id: string | null
+          product_slug: string | null
+          published_at: string | null
+          utm_content: string
+        }
+        Insert: {
+          campaign: string
+          cohort_key: string
+          created_at?: string
+          destination_url?: string | null
+          id?: string
+          notes?: string | null
+          pin_id: string
+          platform?: string
+          product_id?: string | null
+          product_slug?: string | null
+          published_at?: string | null
+          utm_content: string
+        }
+        Update: {
+          campaign?: string
+          cohort_key?: string
+          created_at?: string
+          destination_url?: string | null
+          id?: string
+          notes?: string | null
+          pin_id?: string
+          platform?: string
+          product_id?: string | null
+          product_slug?: string | null
+          published_at?: string | null
+          utm_content?: string
+        }
+        Relationships: []
+      }
       marketing_events: {
         Row: {
           context: Json | null
