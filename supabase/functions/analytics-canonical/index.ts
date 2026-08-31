@@ -704,7 +704,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       if (r.commercial_eligible_v3_expanded) expandedCount++;
     }
     const eligibility_gate = {
-      gate: "commercial_eligible_v3_strict",
+      gate: V3_GATE_ACTIVE ? "commercial_eligible_v3_strict" : "legacy_stored_exclude_from_commercial",
       legacy_gate_sessions: legacyEligibleCount,
       strict_v3_sessions: cleanSessionsArr.length,
       expanded_v3_sessions: expandedCount,
