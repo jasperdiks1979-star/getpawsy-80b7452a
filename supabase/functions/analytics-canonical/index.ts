@@ -42,6 +42,10 @@ import {
   totalsFromAggregate,
   type ClassifiableRow,
 } from "../_shared/canonicalV2Buckets.ts";
+// PRODUCTION GATE (v3): business KPI eligibility is decided at read time by the
+// validated strict-v3 shadow layer, NOT by stored `exclude_from_commercial`.
+import { buildShadowEligibility } from "../_shared/commercial-eligibility-v3.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
