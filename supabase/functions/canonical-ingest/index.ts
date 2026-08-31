@@ -51,6 +51,25 @@ function dedup(parts: Array<string | null | undefined>): string {
 }
 
 /**
+ * Exact UTM extraction from a stored URL / path+query.
+ * Used ONLY as a fallback when the event payload did not carry the value in
+ * `meta` — never fuzzy, never inferred: the value must be literally present
+ * in the stored query string.
+ */
+function utmFromUrl(url: string | null | undefined, key: string): string | null {
+  if (!url || typeof url !== "string") return null;
+  const q = url.indexOf("?");
+  if (q < 0) return null;
+  try {
+    const v = new URLSearchParams(url.slice(q + 1)).get(key);
+    return v && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+
+/**
  * Semantic dedup key — collapses repeated clicks / redirects / page-reloads
  * inside a short window into a single canonical event.
  *
