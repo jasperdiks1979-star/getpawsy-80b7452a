@@ -670,12 +670,15 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         });
       }
     }
-    // SAFETY HOLD: the strict-v3 gate diverged from the validated shadow
-    // result (ATC 22 vs 30, checkout 18 vs 23) on the post-switch 30d
-    // validation run, so the production KPI gate stays on the legacy
-    // predicate until that divergence is explained. The strict-v3 verdict is
-    // still computed and exposed per session for inspection.
-    const V3_GATE_ACTIVE = false;
+    // CANARY (2026-08-31): the earlier divergence (ATC 22 vs 30) was traced to
+    // the `visitor_activity.is_internal` NL-geo heuristic contaminating the
+    // classifier input contract. With that field demoted to the diagnostic
+    // `va_is_internal`, the corrected edge path reproduces the validated
+    // shadow result exactly (sessions 376, product views 56, ATC 30, cart 29,
+    // checkout 23) on the 30d window. The legacy predicate is retained below
+    // as the rollback path — do not delete it.
+    const V3_GATE_ACTIVE = true;
+
     function isCommercial(s: SessionAgg): boolean {
       return V3_GATE_ACTIVE
         ? eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true
@@ -715,6 +718,48 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       class_counts: v3_class_counts,
       legacy_fields_are_diagnostic_only: true,
     };
+
+    // ── GATE-INDEPENDENT KPI PROJECTIONS (read-only diagnostics) ──────
+    // Both predicates are always projected over the SAME population and the
+    // SAME window, so a pre/post gate-switch comparison is exact and never
+    // has to compare two differently-ended rolling windows. Never used to
+    // decide eligibility; purely observational.
+    function projectTotals(rows: SessionAgg[]) {
+      const vis = new Set<string>();
+      let pv = 0, a = 0, vc = 0, ck = 0;
+      for (const s of rows) {
+        vis.add(s.visitor_id || s.session_id);
+        pv += s.page_views;
+        if (s.has_add_to_cart) a++;
+        if (s.has_view_cart) vc++;
+        if (s.has_checkout) ck++;
+      }
+      return {
+        visitors: vis.size,
+        sessions: rows.length,
+        page_views: pv,
+        product_views: rows.filter((s) => s.has_product_view).length,
+        add_to_cart: a,
+        view_cart: vc,
+        checkout_started: ck,
+        // Orders are the source of truth for purchases/revenue and are
+        // independent of the session eligibility gate.
+        purchases: purchases_count,
+        revenue: Number(revenue.toFixed(2)),
+      };
+    }
+    const kpi_projection = {
+      window: { hours, since, until },
+      legacy: projectTotals(sessionsArr.filter(isCommercialLegacy)),
+      strict_v3: projectTotals(
+        sessionsArr.filter((s) => eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_strict === true),
+      ),
+      expanded_v3: projectTotals(
+        sessionsArr.filter((s) => eligibilityBySid.get(s.session_id)?.commercial_eligible_v3_expanded === true),
+      ),
+      active_gate: V3_GATE_ACTIVE ? "strict_v3" : "legacy",
+    };
+
     const traffic_quality_breakdown = {
       raw_sessions: allSessionsArr.length,
       commercial_sessions: cleanSessionsArr.length,
@@ -858,6 +903,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         };
       }),
       eligibility_gate,
+      kpi_projection,
+
 
 
       sample_event: sample,
