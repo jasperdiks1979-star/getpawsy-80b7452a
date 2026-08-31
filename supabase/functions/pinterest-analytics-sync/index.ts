@@ -150,9 +150,15 @@ Deno.serve(async (req) => {
     for (const r of (dimPins as { pin_id: string }[] | null) ?? []) universe.add(String(r.pin_id));
     const pins = [...universe].slice(0, pinLimit).map((pin_id) => ({ pin_id }));
 
+    // Optional explicit historical window (existing analytics-sync semantics:
+    // day-level, upsert on (pin_id, day) — never invents rows for days the API
+    // does not return).
+    const bodyStart = typeof bodyOpts.start_date === "string" ? bodyOpts.start_date : null;
+    const bodyEnd = typeof bodyOpts.end_date === "string" ? bodyOpts.end_date : null;
     const start = new Date(Date.now() - 7 * 86400000);
-    const startDay = isoDay(start);
-    const endDay = isoDay(new Date());
+    const startDay = bodyStart ?? isoDay(start);
+    const endDay = bodyEnd ?? isoDay(new Date());
+
     let synced = 0;
     let errors = 0;
     let budgetStopped = false;
