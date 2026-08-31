@@ -139,7 +139,7 @@ function priceCompetitiveness(price: number | null): number {
 }
 
 function demandScore(tier: Record<string, unknown> | undefined): number {
-  const clicks = Number(tier?.clicks_30d ?? 0);
+  const clicks = Number(tier?.outbound_clicks_30d ?? 0);
   return clamp(Math.log10(1 + clicks) / 3);
 }
 
@@ -198,7 +198,7 @@ async function scoreAll(dry: boolean, limit?: number) {
     const demand = demandScore(tier);
     const trend_momentum = trendBase;
     const saturation_inverse = saturationInverse(tier);
-    const current_traffic = clamp(Math.log10(1 + Number(tier?.clicks_30d ?? 0)) / 3);
+    const current_traffic = clamp(Math.log10(1 + Number(tier?.outbound_clicks_30d ?? 0)) / 3);
     const inventory = inventoryScore(Number(p.stock ?? 0));
     const cvr = pdpS && pdpS.views > 0 ? pdpS.pu / pdpS.views : 0.025;
     const conversion_rate = clamp(cvr * 20);
@@ -243,7 +243,7 @@ async function scoreAll(dry: boolean, limit?: number) {
     });
 
     // forecasts
-    const dailyClicks = Math.max(1, Number(tier?.clicks_30d ?? 0) / 30);
+    const dailyClicks = Math.max(1, Number(tier?.outbound_clicks_30d ?? 0) / 30);
     const trendBoost = score >= 700 ? 1.35 : score >= 500 ? 1.1 : 0.85;
     const atcRate = pdpS && pdpS.views > 0 ? pdpS.atc / pdpS.views : 0.06;
     const coRate = pdpS && pdpS.views > 0 ? pdpS.co / pdpS.views : 0.035;
@@ -255,7 +255,7 @@ async function scoreAll(dry: boolean, limit?: number) {
       const checkouts = Math.round(sessions * coRate);
       const purchases = Math.round(sessions * cvrRate);
       const revenue_cents = Math.round(purchases * aov * 100);
-      const confidence = clamp(Math.log10(1 + Number(tier?.clicks_30d ?? 0)) / 3);
+      const confidence = clamp(Math.log10(1 + Number(tier?.outbound_clicks_30d ?? 0)) / 3);
       forecastRows.push({ product_id: pid, horizon, sessions, atc, checkouts, purchases, revenue_cents, confidence, computed_at: now });
     }
   }
