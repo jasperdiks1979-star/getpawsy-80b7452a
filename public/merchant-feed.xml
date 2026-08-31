@@ -4,7 +4,7 @@
     <title>GetPawsy Product Feed</title>
     <link>https://getpawsy.pet</link>
     <description>Google Merchant product feed</description>
-    <lastBuildDate>2026-08-27T05:44:01.177Z</lastBuildDate>
+    <lastBuildDate>2026-08-31T18:29:47.917Z</lastBuildDate>
     <item>
       <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>
       <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>
@@ -191,6 +191,33 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJTC2680206</g:mpn>
       <g:product_type>Pet Supplies &gt; Cats &gt; Furniture</g:product_type>
+      <g:custom_label_0>Low-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>07ad844f-3a96-4fef-b8cd-8a6309d3bee4</g:id>
+      <g:title><![CDATA[Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats]]></g:title>
+      <g:description><![CDATA[Tired of stagnant water for your beloved feline? Introduce your cat to the future of hydration with our Automatic Circulating Filter Cat Water Fountain! This innovative fountain doesn't just hold water – it constantly circulates and filters it, providing a fresh, enticing stream that encourages even the pickiest drinkers. Designed with your cat's health in mind, our cat water fountain features a multi-layer filtration system. It effectively removes hair, debris, and unpleasant odors, ensuring every sip is pure and clean. Worried about noise? Our ultra-quiet pump technology means barely a whisper, so your home remains a peaceful sanctuary. This automatic pet water dispenser helps prevent dehydration and promotes urinary tract health, a common concern for cat owners. The flowing water naturally attracts cats, often leading to increased water intake compared to a traditional bowl. Plus, its sleek, modern design seamlessly blends into any home décor. Give your furry friend the gift of fresh, continuous hydration. They'll thank you with purrs and playful moments!]]></g:description>
+      <g:link>https://getpawsy.pet/products/automatic-circulating-filter-cat-water-fountain</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/07ad844f-3a96-4fef-b8cd-8a6309d3bee4/3d230f6505d47cd3.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>26.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>0.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>5.99 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJYD2724344</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
       <g:custom_label_0>Low-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -521,6 +548,34 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
+      <g:id>10ba8425-750b-44b7-90e3-167c6736bdac</g:id>
+      <g:title><![CDATA[Cat Bed – Enclosed Pet Bed – Warm Sleeping Bag for Cats & Small Dogs]]></g:title>
+      <g:description><![CDATA[Product information: Color: S, M Specifications: Pet Closed-Style Sleeping Bag – Orange, Pet Closed-Style Sleeping Bag – Gray Suitable Gift-Giving Occasions: Wedding Celebrations, Parties, Other Function: Keeps Warm Material: PP Cotton Applicable Animals: Cats Category: Pet Beds & Cages Packing list: Pet Bed x1pc Product Image:]]></g:description>
+      <g:link>https://getpawsy.pet/products/enclosed-sleeping-bag-pet-bed-for-winter-warmth</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/10ba8425-750b-44b7-90e3-167c6736bdac/6d261552e1da03da.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>9.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Beds</g:google_product_category>
+      <g:shipping_weight>0.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>5.99 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:mpn>10ba8425-750b-44b7-90e3-167c6736bdac</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
       <g:id>110ebd50-5525-447b-b108-e4934a5ed11a</g:id>
       <g:title><![CDATA[Without Cat Nip Version - Electric Jumping Fish Simulation Electric Fish Toy]]></g:title>
       <g:description><![CDATA[Overview: 1. With high quality material, this ornament is durable and not easy to damage. 2. This toy does not contain toxic and harmful things and materials, and it is healthy and safe for pets. 3. The shape of the fish comes from the nature of cats, which can attract the attention of cats to allow them to spend a lot of time on it. 4. It can accompany cats to pass the annoying time when the owners are not at home. 5. Toys can let cats exercise, which is good for their health, and it can relieve the unhappy mood and release the pressure. Notes: Please note this SKU is without cat nip, if you need cat nip, please check another product: CJMR1599229 1. Please allow 1-3cm difference due to manual measurement and 3-5g for difference between different colors. 2. Due to the screen difference, the color may be a little different from what you expect, please allow it. Specifications: Item Type: Electronic Pet Cat Toy Material: PP Color: Multicolor Target audience: Cats Size: 30cm Package Content: 1 x electronic toy，1 x USB cable （ USB charging models ）]]></g:description>
@@ -732,33 +787,6 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJPB2680020</g:mpn>
       <g:product_type>Pet Supplies &gt; Dogs &gt; Beds</g:product_type>
-      <g:custom_label_0>Low-Margin</g:custom_label_0>
-      <g:custom_label_1>Standard</g:custom_label_1>
-      <g:custom_label_2>Summer</g:custom_label_2>
-    </item>
-    <item>
-      <g:id>18028997-901a-40b8-8790-9e7b3ec558bf</g:id>
-      <g:title><![CDATA[GetPawsy Portable Dog Stroller – Foldable Travel Carrier for Dogs]]></g:title>
-      <g:description><![CDATA[Help senior, recovering, or small dogs enjoy the outdoors with this portable pet stroller. The foldable aluminum frame is lightweight for transport and storage. Mesh windows provide ventilation and visibility while keeping your pet secure. All-terrain wheels handle pavement, grass, and gravel paths.]]></g:description>
-      <g:link>https://getpawsy.pet/products/foldable-dog-stroller-pet-travel-cart</g:link>
-      <g:image_link>https://getpawsy.pet/images/products/18028997-901a-40b8-8790-9e7b3ec558bf.jpg</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>396.99 USD</g:price>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Pet Strollers</g:google_product_category>
-      <g:shipping_weight>5 kg</g:shipping_weight>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0.00 USD</g:price>
-      </g:shipping>
-      <g:min_handling_time>1</g:min_handling_time>
-      <g:max_handling_time>2</g:max_handling_time>
-      <g:min_transit_time>5</g:min_transit_time>
-      <g:max_transit_time>10</g:max_transit_time>
-      <g:mpn>CJPC2737342</g:mpn>
-      <g:product_type>Pet Supplies &gt; Dogs &gt; Travel</g:product_type>
       <g:custom_label_0>Low-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -1251,6 +1279,33 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
+      <g:id>29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1</g:id>
+      <g:title><![CDATA[GetPawsy 3-in-1 Slow Feeder Bowl - Anti-Choking Puzzle Feeder for Cats and Small Dogs]]></g:title>
+      <g:description><![CDATA[Pet slow food bowl anti choking cat bowl,3-in-1 Interactive Dog Feeder Puzzle, Lick Mat & Slow Feeder Bowl – Mental Stimulation Toy for Medium & Large Dogs 1.Engaging Rotating Tiers: Three large spinning layers with textured surfaces make dogs work for their food by licking, sniffing, and pawing—extending treat time while providing a rewarding mental challenge 2.Holds Up to 2 Cups of Food: Ideal for dry kibble, wet food, raw meals, or peanut butter; ideal for fast eaters who need a slower-paced feeding routine to prevent bloating, choking, or indigestion 3.Calms and Occupies Dogs Daily: Encourages natural foraging instincts and keeps dogs focused during solo time, crate rest, grooming prep, or stressful events like fireworks or separation periods 4.Durable and Dishwasher Friendly: Built for daily use with BPA-, PVC-, and phthalate-free materials; top-rack dishwasher safe for quick cleanup and long-term use as a feeder or boredom buster.]]></g:description>
+      <g:link>https://getpawsy.pet/products/pet-slow-food-bowl-anti-choking-cat-bowl-3in1-interactive-dog-feeder-puzzle-29d9</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1/1fdf7216e0dcbbea.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>56.49 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>0.8 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJFT2715367</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
       <g:id>2b545173-fad4-435b-a61a-b3fcb7f0beed</g:id>
       <g:title><![CDATA[Dog Bed – 48" x 36" Elevated Portable Dog Cot Cooling Pet Bed with UV Protection Canopy Shade, Red]]></g:title>
       <g:description><![CDATA[Give your furry friend the ultimate outdoor retreat with our 48" x 36" Elevated Portable Dog Cot! This isn't just a dog bed; it's a personal oasis designed for comfort and protection under the American sun. Imagine your pup lounging happily on this durable elevated dog bed, staying cool even on the warmest days thanks to improved airflow. The strong, breathable fabric keeps your dog off hot surfaces, providing much-needed relief. Setting up is a breeze, making it perfect for your backyard, park trips, or camping adventures. But wait, there's more! This innovative pet cot comes with a built-in UV protection canopy shade, ensuring your beloved pet is shielded from harmful rays. No more worrying about sunburns or overheating during playtime outside. The vibrant red color adds a touch of style to any outdoor space, and its portable design means comfort can go wherever you and your dog do. Invest in your dog's comfort and health today!]]></g:description>
@@ -1489,6 +1544,33 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJPB2680000</g:mpn>
       <g:product_type>Pet Supplies &gt; Dogs &gt; Toys</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>324cba5b-6826-4b64-a44a-d9ac542e3d1a</g:id>
+      <g:title><![CDATA[Elevated Cat Bed with Rotatable Egg Chair Pod, Cat Basket Bed with Thick Cushion, Natural Mat Grass Woven Kitty House, Coffee]]></g:title>
+      <g:description><![CDATA[Tired of your feline friend hogging the sofa? Give your cat the ultimate upgrade with our Elevated Cat Bed in Coffee! This isn't just any cat bed – it's a luxurious, rotatable egg chair pod designed for ultimate comfort and style. Crafted with a chic natural mat grass woven basket, this kitty house offers an inviting, breathable space your cat will adore. The elevated design provides a sense of security, perfect for a cozy cat nap or a watchful perch. Inside, a thick cushion cradles your pet, ensuring a snug and dreamy sleep every time. We've designed this cat basket bed with both your cat and your home in mind. The smooth rotation allows your kitty to spin and explore their surroundings, making it a unique feature that stands out from standard cat beds. Perfect for small cats or even a very pampered kitten, this egg chair cat bed adds a touch of modern elegance to any room. Provide your beloved pet with the comfort they deserve!]]></g:description>
+      <g:link>https://getpawsy.pet/products/elevated-cat-bed-with-rotatable-egg-chair-pod-cat-basket-bed-with-thick-cushion-natural-mat-grass-wo-1</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/324cba5b-6826-4b64-a44a-d9ac542e3d1a/10370d9b8de319b9.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>141.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Beds</g:google_product_category>
+      <g:shipping_weight>4.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJPB2680168</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
       <g:custom_label_0>Mid-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -2498,6 +2580,33 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
+      <g:id>4ad8def7-0010-41c3-8efe-252c1d15ee75</g:id>
+      <g:title><![CDATA[Elevated Cat Bed with Rotatable Egg Chair Pod, Cat Basket Bed with Thick Cushion, Natural Mat Grass Woven Kitty House, Brown]]></g:title>
+      <g:description><![CDATA[Give your feline friend the royal treatment they deserve with our Elevated Cat Bed with Rotatable Egg Chair Pod! This isn't just a bed; it's a stylish, cozy haven designed for ultimate cat comfort and modern home aesthetics. Crafted from natural mat grass, this woven kitty house offers a breathable and durable hideaway for your beloved pet. The unique egg chair pod isn't just cute – it boasts a 360-degree rotatable design, letting your cat choose their perfect sunbathing (or napping) angle. Inside, a plush, thick cushion cradles them in luxurious softness, ensuring sound slumber and sweet dreams. The elevated design means your cat gets a prime perch to observe their surroundings, satisfying their natural curiosity. Its elegant brown hue and natural materials seamlessly blend with any discerning home decor. Perfect for small to medium-sized cats, this cat basket bed provides a secure, comfortable space they'll adore. Spoil your furry family member. Add this elegant and comfy elevated cat bed to your cart today!]]></g:description>
+      <g:link>https://getpawsy.pet/products/elevated-cat-bed-with-rotatable-egg-chair-pod-cat-basket-bed-with-thick-cushion-natural-mat-grass-wo</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/4ad8def7-0010-41c3-8efe-252c1d15ee75/693e158322bb6915.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>138.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Beds</g:google_product_category>
+      <g:shipping_weight>4.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJPB2680169</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
+      <g:custom_label_0>Low-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
       <g:id>4cee1de1-bad2-449c-afad-94a482394545</g:id>
       <g:title><![CDATA[Dog Bed – Durable Dog Ramp – Wooden Non-Slip with Removable Guardrails for Dogs]]></g:title>
       <g:description><![CDATA[Tired of your furry friend struggling to reach their favorite spots? The PawHut Wooden Dog Ramp is here to save the day! This expertly crafted ramp provides a safe, easy solution for pets of all sizes, from tiny terriers to larger labs, to access elevated surfaces like sofas, beds, or vehicles. Experience ultimate peace of mind with its removable guardrails, offering extra security and peace of mind, especially for younger or more timid pups. The non-slip surface ensures secure footing, preventing slips and falls during ascent or descent – a must-have for senior dogs with arthritis or joint issues. Constructed from durable, high-quality wood, this dog assistive ramp is built to last. Its neutral design seamlessly blends with any home decor, making it a stylish addition to your pet's furniture collection. Easy to assemble and even easier to use, this pet ramp for dogs is a game-changer for pet owners. Give your beloved companion the freedom and comfort they deserve. Add the PawHut Wooden Dog Ramp to your cart today and elevate their world!]]></g:description>
@@ -2877,6 +2986,33 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
+      <g:id>58da603c-7168-44da-b187-54deca1ba5cf</g:id>
+      <g:title><![CDATA[1Pc Glass Hummingbird Feeder 33OZ Hand Blown Hummingbird Feeder With 5 Flower Feeding Port Perch Ant Moat Hanging Hook S Hook Hemp Rope Cleaning]]></g:title>
+      <g:description><![CDATA[Give your garden wings with our stunning 33oz Hand Blown Glass Hummingbird Feeder! This exquisite feeder isn't just a birdbath; it's a vibrant spectacle crafted to enchant these tiny, jewel-toned visitors right to your backyard. Expertly designed, this glass hummingbird feeder features five flower feeding ports, providing ample space for multiple hummers to dine comfortably. The integrated perch offers a cozy spot for them to rest, while the built-in ant moat keeps pesky insects away from the sweet nectar. This outdoor hummingbird feeder is a true all-in-one solution. Crafted from durable, hand-blown glass, it adds a touch of artistic elegance to any outdoor space. You'll love the included hanging hook, S-hook, and natural hemp rope, ensuring effortless installation. Plus, we've even included a cleaning brush for easy maintenance, keeping your hummingbird feeder clean and inviting. Elevate your garden decor and enjoy the magic!]]></g:description>
+      <g:link>https://getpawsy.pet/products/1pc-glass-hummingbird-feeder-33oz-hand-blown-hummingbird-feeder-with-5-flower-feeding-port-perch-ant</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/58da603c-7168-44da-b187-54deca1ba5cf/e034eb51711a4407.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>60.49 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Bird Supplies</g:google_product_category>
+      <g:shipping_weight>0.8 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJBF2477708</g:mpn>
+      <g:product_type>Pet Supplies &gt; Birds &gt; Bowls &amp; Feeders</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
       <g:id>593ab862-e0c2-4d8f-ab8d-889492d1b84e</g:id>
       <g:title><![CDATA[Dog Bed – Wooden Dog Agile Seesaw For Training And Exercise, Platform Equipment Running Game Toys]]></g:title>
       <g:description><![CDATA[specification Product Information Product Code: W2225P166278 Product Type: General items Product Name: PawHut Wooden Dog Agility Seesaw for Training & Exercise, Platform Equipment Running Play Toy, Weathering Pet Supplies, 71" L x 12" W x 12" H, Gray Main Color: grey Main materials: wood Product dimensions Assembly Length (in.): 70.75 Assembly Width (inches): 11.75 Assembly Height (in.): 11.75 Weight (lbs): 13.20 Package size Length (in.): 32.00 Width (inches): 13.75 Height (in.): 6.00 Weight (lbs): 15.40 Features: Sturdy Construction: Give your furry friend a dog-agile seesaw for everyday use. Our seesaws are made of fir wood, the structure is suitable for the outdoors and easy to maintain. Safety & Supportive: Make your dog safer while enjoying the Agility Suit. It includes high traction and non-slip surfaces, so they are less likely to slip off. Suitable for dogs of all sizes: Your small, medium or large dog can use our agility equipment. Our seesaw is designed for dogs weighing up to 110 pounds, making it suitable for most dog breeds. Strengthen your bond: Use pet agility equipment to provide your dog with an outlet for training and exercise. Our kits can help your pet build confidence, help with training and further obedience. Pet Agility Set Information: Overall Dimensions: 70.75" L x 11.75" W x 11.75" H. Weight Capacity: 110 lbs.]]></g:description>
@@ -2899,6 +3035,33 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJFT2190553</g:mpn>
       <g:product_type>Pet Supplies &gt; Dogs &gt; Beds</g:product_type>
+      <g:custom_label_0>Low-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>5ae85f7b-2c81-430a-9b8c-1b14ae0f72fc</g:id>
+      <g:title><![CDATA[Cat Harness Vest – Adjustable Wing Decoration Strap Set for Kittens]]></g:title>
+      <g:description><![CDATA[Transform your furball into an adorable angel with our Kitten Harness Vest with Wing Decoration! Perfect for stylish strolls, this charming pet harness is designed for ultimate comfort and safety, whether you have a playful kitty or a tiny canine companion. Crafted from soft, breathable mesh fabric, this adjustable cat harness ensures a snug yet gentle fit. The secure buckle and D-ring provide peace of mind, making it an ideal cat leash set for daily walks or vet visits. Plus, those delightful wings will make your pet the talk of the neighborhood! It's not just cute; it's practical pet walking accessories for the modern American pet parent. Searching for small dog harnesses or kitten accessories that combine fun with function? Look no further. This pet vest harness is easy to put on and take off, making outings stress-free. Get ready for compliments and confident adventures with your beloved pet!]]></g:description>
+      <g:link>https://getpawsy.pet/products/kitten-harness-vest-with-wing-decoration-strap-set-for-cats-and-small-dogs-5ae8</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/5ae85f7b-2c81-430a-9b8c-1b14ae0f72fc/82fc64204c6ef9f3.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>35.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies</g:google_product_category>
+      <g:shipping_weight>0.2 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJPL2662514</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Collars &amp; Leashes</g:product_type>
       <g:custom_label_0>Low-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -3283,6 +3446,61 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
+      <g:id>67f40a1b-595e-4fcf-a4b5-ab141b224ed7</g:id>
+      <g:title><![CDATA[Cat Steam Grooming Brush – 3-in-1 Spray Hair Removal Comb for Cats]]></g:title>
+      <g:description><![CDATA[Tired of endless pet hair and tangled fur? Discover the ultimate grooming secret with our 3-in-1 Cat Steam Brush! This innovative pet steam brush is designed to transform your furry friend's coat, making grooming a breeze for both you and them. Our unique water mist spray brush gently loosens and removes stubborn pet hair, perfect for cat and dog shedding. The fine mist helps to capture loose fur effectively, reducing mess while promoting a healthier, shinier coat. With a convenient release button, cleaning the brush is quick and hygienic – no more struggling with trapped fur! Ideal for long-haired and short-haired pets, this versatile pet spray hair removal comb tackles tangles and matting with ease. It's an essential tool for small animal grooming, offering a soothing experience that your beloved companion will actually enjoy. Say goodbye to flyaways and hello to a beautifully conditioned pet. Invest in happier pets and a cleaner home. Get your pet steam brush today and experience the difference!]]></g:description>
+      <g:link>https://getpawsy.pet/products/3-in-1-cat-steam-brush-pet-steam-brush-for-cat-dog-long-short-haired-pet-spray-67f4</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/67f40a1b-595e-4fcf-a4b5-ab141b224ed7/84c94229ebfaa9b3.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>41.95 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies</g:google_product_category>
+      <g:shipping_weight>0.3 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJHR2664853</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Grooming</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>685f7faf-7809-4962-b408-c2ced99dd178</g:id>
+      <g:title><![CDATA[Automatic Pet Water Fountain – Cordless Smart Dispenser for Cats & Dogs]]></g:title>
+      <g:description><![CDATA[Upgrade your pet's hydration with our innovative Cordless Smart Pet Water Fountain! Designed for both cats and dogs, this automatic dispenser eliminates messy wires and provides fresh, filtered water on demand. Its ultra-quiet operation and battery-operated design make it perfect for any room in your home. Help your pet drink more water and stay healthy with this sleek, easy-to-clean essential. Click to shop now and give your fur baby the best in pet tech!]]></g:description>
+      <g:link>https://getpawsy.pet/products/smart-pet-water-fountain-automatic-cat-water-dispenser-4-5l-cordless-685f</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/685f7faf-7809-4962-b408-c2ced99dd178/301a88ce91dd3e34.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>115.98 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>0.8 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:mpn>685f7faf-7809-4962-b408-c2ced99dd178</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
       <g:id>6a6fe5b6-fdd7-4ddf-a754-240ffd594f4b</g:id>
       <g:title><![CDATA[Pet Supplement For Dogs]]></g:title>
       <g:description><![CDATA[Product information: Ingredients: organic Coriolus versicolor powder, β-glucan, Bacillus subtilis, tea polyphenols, curcumin, vitamin C and vitamin E. Packing list: Immune supplement for dogs *1]]></g:description>
@@ -3360,6 +3578,33 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJFT2680267</g:mpn>
       <g:product_type>Pet Supplies &gt; Cats &gt; Furniture</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Summer</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>6ba6b3c8-d055-46df-8e6a-e6ee9ff98272</g:id>
+      <g:title><![CDATA[Elevated Cat Bowl – Double Dish with Cervical Vertebra Protection for Cats]]></g:title>
+      <g:description><![CDATA[Tired of your feline friend struggling at mealtime? Introduce your beloved cat to the future of comfortable dining with our Cat Double Bowl Protects Cervical Vertebra! This elevated cat food bowl isn't just stylish; it's designed to promote better posture and digestion for your furry companion. Crafted with your cat's health in mind, this raised pet bowl features an optimal height that reduces neck strain, making mealtime a joy. The double bowl design is perfect for serving both food and water or for multi-cat households. Made from durable, pet-safe materials, it’s easy to clean – a must-have for any cat owner. Say goodbye to messy eating and hello to healthy habits! Our elevated cat feeder minimizes regurgitation and bloating, especially crucial for older cats or those with sensitive stomachs. The sleek, modern design complements any home decor. Give your cherished furball the ergonomic dining experience they deserve. Upgrade your cat feeding station today and watch them thrive!]]></g:description>
+      <g:link>https://getpawsy.pet/products/cat-double-bowl-cat-food-bowl-protects-cervical-vertebra</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/6ba6b3c8-d055-46df-8e6a-e6ee9ff98272/56cac8d08d639533.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>16.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>25 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>5.99 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJJJCWGY00683</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
       <g:custom_label_0>Mid-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -5580,33 +5825,6 @@
       <g:custom_label_2>Summer</g:custom_label_2>
     </item>
     <item>
-      <g:id>c08503a3-773a-4807-b59a-2b8c4f7cf7a1</g:id>
-      <g:title><![CDATA[Ceramic Cat Water Fountain 2.1L/71oz Cupcake Pet Fountain For Cats & Dogs]]></g:title>
-      <g:description><![CDATA[Tired of stale water and plastic aesthetics? Elevate your pet's hydration with our adorable Cupcake Ceramic Cat Water Fountain! This charming 2.1L (71oz) fountain isn't just a pretty face; it’s designed to entice both cats and small dogs to drink more, promoting better health and fewer urinary issues. Crafted from premium, food-grade ceramic, our fountain is non-toxic, durable, and much more hygienic than plastic alternatives. The sleek design integrates seamlessly into any home decor, making it a stylish addition to your pet supplies. The continuously flowing water is naturally aerated, appealing to your furry friend's primal instincts and providing a fresh, filtered sip every time. Forget constant refills! The generous 71oz capacity means less frequent top-ups, perfect for busy pet parents. It’s ultra-quiet, ensuring your home remains a peaceful sanctuary. Plus, cleaning is a breeze – its smooth ceramic surface resists grime buildup and is dishwasher-safe. Give your beloved pet the gift of fresh, circulating water and a touch of whimsical elegance with our Cupcake Pet Fountain. Your cat or dog will thank you!]]></g:description>
-      <g:link>https://getpawsy.pet/products/ceramic-cat-water-fountain-2-1l-71oz-cupcake-pet-fountain-for-cats-dogs</g:link>
-      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/c08503a3-773a-4807-b59a-2b8c4f7cf7a1/fef567d024b47b1b.jpg</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>91.99 USD</g:price>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>
-      <g:shipping_weight>3 kg</g:shipping_weight>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0.00 USD</g:price>
-      </g:shipping>
-      <g:min_handling_time>1</g:min_handling_time>
-      <g:max_handling_time>2</g:max_handling_time>
-      <g:min_transit_time>5</g:min_transit_time>
-      <g:max_transit_time>10</g:max_transit_time>
-      <g:mpn>CJDT2617024</g:mpn>
-      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
-      <g:custom_label_0>Mid-Margin</g:custom_label_0>
-      <g:custom_label_1>Standard</g:custom_label_1>
-      <g:custom_label_2>Summer</g:custom_label_2>
-    </item>
-    <item>
       <g:id>c0a3674d-5b98-4060-8db0-4110d8fd70ea</g:id>
       <g:title><![CDATA[Dog Training Collar – Remote Control Dog Trainer]]></g:title>
       <g:description><![CDATA[Tired of stubborn behavior? Our Remote Dog Training Collar helps you master obedience with ease. Perfect for off-leash training, barking control, and safe correction. Designed for all dog sizes with a long-range remote for park or backyard use. ✨ Shop now for a better-behaved pup! #DogTraining #PuppyTips #PetGadgets]]></g:description>
@@ -6253,33 +6471,6 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJTC2680223</g:mpn>
       <g:product_type>Pet Supplies &gt; Cats &gt; Furniture</g:product_type>
-      <g:custom_label_0>Mid-Margin</g:custom_label_0>
-      <g:custom_label_1>Standard</g:custom_label_1>
-      <g:custom_label_2>Summer</g:custom_label_2>
-    </item>
-    <item>
-      <g:id>d3898f50-8438-4531-bcb2-130bddbcd3be</g:id>
-      <g:title><![CDATA[Cat Bed – Fluffy Plush Round Faux Fur Anti-Slip Bed for Cats]]></g:title>
-      <g:description><![CDATA[Is your feline friend dreaming of ultimate comfort? Introduce them to the 24-inch Anti-Slip Round Fluffy Plush Faux Fur Cat Bed, the purr-fect retreat for any pampered pet! Crafted with premium faux fur, this luxurious pet bed offers unparalleled softness and warmth, mimicking a mother's embrace. The generously sized 24-inch diameter provides ample space for cats and small dogs up to 25 pounds to curl up, stretch out, or knead to their heart's content. Say goodbye to sliding beds – our smart anti-slip bottom keeps this cozy haven securely in place on hardwood floors or tile. More than just a pretty spot, this plush cat bed is designed to alleviate anxiety and provide a sense of security. Its beautiful round shape blends seamlessly with any home décor, making it a stylish addition to your living space. Easy to clean and maintain, it's a dream come true for both you and your furry companion. Give your beloved pet the gift of deep, restorative sleep.]]></g:description>
-      <g:link>https://getpawsy.pet/products/24-inch-anti-slip-round-fluffy-plush-faux-fur-cat-bed-fits-up-to-25-lbs-pets</g:link>
-      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/d3898f50-8438-4531-bcb2-130bddbcd3be/15f4e6b400d506b1.jpg</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>51.49 USD</g:price>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Beds</g:google_product_category>
-      <g:shipping_weight>1 kg</g:shipping_weight>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0.00 USD</g:price>
-      </g:shipping>
-      <g:min_handling_time>1</g:min_handling_time>
-      <g:max_handling_time>2</g:max_handling_time>
-      <g:min_transit_time>5</g:min_transit_time>
-      <g:max_transit_time>10</g:max_transit_time>
-      <g:mpn>CJPM2296425</g:mpn>
-      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
       <g:custom_label_0>Mid-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
@@ -7554,33 +7745,6 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJFT2921907</g:mpn>
       <g:product_type>Pet Supplies &gt; Cats &gt; Scratchers</g:product_type>
-      <g:custom_label_0>Low-Margin</g:custom_label_0>
-      <g:custom_label_1>Standard</g:custom_label_1>
-      <g:custom_label_2>Summer</g:custom_label_2>
-    </item>
-    <item>
-      <g:id>fa19a5fd-2e8f-4070-9db8-48b669803834</g:id>
-      <g:title><![CDATA[20.5" Weaved Cat Bed, Elevated Hand-woven Braided Banana Leaf Kitten House Condo with Cushion, Natural]]></g:title>
-      <g:description><![CDATA[Give your feline friend the purr-fect retreat with our 20.5" Weaved Cat Bed! This isn't just any cat bed; it's a stylish, elevated sanctuary designed for ultimate comfort and natural charm. Crafted from hand-woven braided banana leaf, this unique cat house condo offers a durable and breathable space your kitty will adore. The elevated design keeps your pet off cold floors, providing a cozy, secure spot for napping, observing, or simply relaxing. It's the ideal kitten house or small cat bed. Inside, a soft, comfortable cushion awaits, inviting blissful snoozes. This natural fiber cat bed blends seamlessly with any home decor, adding a touch of organic elegance while serving its practical purpose. It's more than just a pet product; it's a piece of furniture made with your cat's well-being in mind. Treat your beloved cat to the luxury they deserve with this beautifully designed, eco-friendly cat bed. Add it to your cart and watch them fall in love!]]></g:description>
-      <g:link>https://getpawsy.pet/products/20-5-weaved-cat-bed-elevated-hand-woven-braided-banana-leaf-kitten-house-condo-with-cushion-natural</g:link>
-      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/fa19a5fd-2e8f-4070-9db8-48b669803834/06176efd422974d7.jpg</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>165.99 USD</g:price>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Beds</g:google_product_category>
-      <g:shipping_weight>5.8 kg</g:shipping_weight>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0.00 USD</g:price>
-      </g:shipping>
-      <g:min_handling_time>1</g:min_handling_time>
-      <g:max_handling_time>2</g:max_handling_time>
-      <g:min_transit_time>5</g:min_transit_time>
-      <g:max_transit_time>10</g:max_transit_time>
-      <g:mpn>CJPB2680184</g:mpn>
-      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
       <g:custom_label_0>Low-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Summer</g:custom_label_2>
