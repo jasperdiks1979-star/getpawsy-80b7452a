@@ -62,7 +62,11 @@ async function loadEngagementIndex() {
 }
 
 async function loadTierIndex() {
-  const { data } = await supa.from("pinterest_product_tiers").select("product_id, revenue_bucket, hidden_opportunity, score, clicks_30d, impressions_30d, revenue_cents_30d, purchases_30d").limit(5000);
+  // Column names must match the live schema: the tiers table exposes
+  // `outbound_clicks_30d` (there is no `clicks_30d`). Errors are surfaced
+  // instead of silently yielding an empty index.
+  const { data, error } = await supa.from("pinterest_product_tiers").select("product_id, revenue_bucket, hidden_opportunity, score, outbound_clicks_30d, impressions_30d, revenue_cents_30d, purchases_30d").limit(5000);
+  if (error) console.error("[revenue-brain] loadTierIndex failed:", error.message);
   const map = new Map<string, Record<string, unknown>>();
   for (const r of data ?? []) map.set(r.product_id as string, r as Record<string, unknown>);
   return map;
@@ -101,13 +105,15 @@ async function computeTrendIntel() {
   // Internal proxy: keyword bank deltas (last 14d vs prior 14d clicks/impressions).
   const now = Date.now();
   const since30 = new Date(now - 30 * 86400_000).toISOString();
-  const { data: kw } = await supa.from("pinterest_keyword_bank").select("keyword, impressions_30d, clicks_30d, updated_at").gte("updated_at", since30).limit(2000);
+  // `pinterest_keyword_bank` has no impression/click columns; the observed CTR
+  // and score it does store are the available velocity proxy.
+  const { data: kw, error: kwErr } = await supa.from("pinterest_keyword_bank").select("keyword, ctr_observed, score, updated_at").gte("updated_at", since30).limit(2000);
+  if (kwErr) console.error("[revenue-brain] keyword bank read failed:", kwErr.message);
   const rows: { keyword: string; source: string; velocity: number; direction: string; seasonality_score: number; growth_rate: number; computed_at: string }[] = [];
   for (const k of kw ?? []) {
-    const imp = Number((k as Record<string, unknown>).impressions_30d ?? 0);
-    const clk = Number((k as Record<string, unknown>).clicks_30d ?? 0);
-    const ctr = imp > 0 ? clk / imp : 0;
-    const velocity = clamp(ctr * 10, -1, 1);
+    const ctr = Number((k as Record<string, unknown>).ctr_observed ?? 0);
+    const score = Number((k as Record<string, unknown>).score ?? 0);
+    const velocity = clamp(ctr * 10 + clamp(score / 100, 0, 1) * 0.2, -1, 1);
     const direction = velocity > 0.15 ? "rising" : velocity < -0.05 ? "declining" : "stable";
     rows.push({
       keyword: String((k as Record<string, unknown>).keyword ?? "").toLowerCase().slice(0, 120),
