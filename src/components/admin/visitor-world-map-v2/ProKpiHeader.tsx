@@ -98,14 +98,18 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
         { label: "Intern / test", value: fmtInt(v3.quality.INTERNAL_OR_TEST), testid: "kpi-v3-internal" },
         { label: "Onzeker", value: fmtInt(v3.quality.UNKNOWN), testid: "kpi-v3-unknown" },
         { label: "Ruw totaal", value: fmtInt(v3.total_sessions), testid: "kpi-v3-raw" },
-        { label: "Sessions", value: fmtInt(derived.sessions), testid: "kpi-sessions" },
-        { label: "Pageviews", value: fmtInt(derived.page_views), testid: "kpi-pageviews" },
-        { label: "Add to cart", value: fmtInt(derived.add_to_cart), testid: "kpi-atc" },
-        { label: "View cart", value: fmtInt(derived.view_cart), testid: "kpi-view-cart" },
-        { label: "Checkout", value: fmtInt(derived.checkout_started), testid: "kpi-checkout" },
+        // BUSINESS KPIs — strict-v3 eligible population only (PROBABLE_HUMAN).
+        // Bots, internal/test and unknown sessions never contribute a business
+        // number here; the raw counts stay visible in the quality cards above.
+        { label: "Sessions (strict v3)", value: fmtInt(v3.quality.PROBABLE_HUMAN), testid: "kpi-sessions" },
+        { label: "Pageviews (ruw)", value: fmtInt(derived.page_views), testid: "kpi-pageviews" },
+        { label: "Product views", value: fmtInt(v3.commerce_human.product_views), testid: "kpi-product-views" },
+        { label: "Add to cart", value: fmtInt(v3.commerce_human.add_to_cart), testid: "kpi-atc" },
+        { label: "View cart", value: fmtInt(v3.commerce_human.view_cart), testid: "kpi-view-cart" },
+        { label: "Checkout", value: fmtInt(v3.commerce_human.checkout), testid: "kpi-checkout" },
 
-        { label: "Purchases", value: fmtInt(derived.purchases), testid: "kpi-purchases" },
-        { label: "Revenue", value: fmtMoney(derived.revenue, currency), testid: "kpi-revenue" },
+        { label: "Purchases", value: fmtInt(v3.commerce_human.purchases), testid: "kpi-purchases" },
+        { label: "Revenue", value: fmtMoney(v3.commerce_human.revenue, currency), testid: "kpi-revenue" },
       ]
     : [];
 

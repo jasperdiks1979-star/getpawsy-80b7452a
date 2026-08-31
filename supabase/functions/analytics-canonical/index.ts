@@ -1219,13 +1219,39 @@ Deno.serve(async (req) => {
     // Warmer / explicit rebuild path.
     if (forceRefresh) {
       const got = await acquireLock(key);
+      if (!got) {
+        // Single-flight is now ENFORCED here too. Requested windows above the
+        // supported ceiling clamp down onto an existing key (e.g. the 90d
+        // warmer tier lands on the 720h key), so two tiers used to rebuild the
+        // identical window concurrently — doubling DB load until the inline
+        // rebuild hit the 150s idle timeout (504). A locked key means another
+        // worker is already producing exactly this payload: serve the last
+        // known-good instead of racing it.
+        const locked = await readCacheRow(key);
+        if (locked?.payload) {
+          const ageSeconds = Math.round(
+            (Date.now() - new Date(locked.generated_at as string).getTime()) / 1000,
+          );
+          return json(withCacheMeta(locked.payload as Record<string, unknown>, {
+            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours,
+          }));
+        }
+        return json({
+          ok: true,
+          skipped: "rebuild_in_progress",
+          cache_status: "warming",
+          hours,
+          geo,
+          retry_after_seconds: 30,
+        }, 202);
+      }
       try {
         const payload = await refreshKey(opts);
         return json(withCacheMeta(payload, {
           cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours,
         }));
       } catch (e) {
-        if (got) await releaseLock(key, (e as Error).message);
+        await releaseLock(key, (e as Error).message);
         throw e;
       }
     }
