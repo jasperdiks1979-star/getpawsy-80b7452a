@@ -935,3 +935,23 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
     transform: translateY(2px);
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * P0 LAYOUT GUARD — cyclic intrinsic sizing blow-up (incident 2026-09-01)
+ *
+ * Grid and flex items default to `min-width: auto`, so their min-content
+ * contribution can size the track. Combined with aspect-ratio boxes whose
+ * children use percentage width/height (product galleries), the browser
+ * enters a width -> height -> width feedback loop and inflates the track to
+ * the engine maximum (33,554,432px). Result on iOS Safari / Pinterest
+ * in-app WebView: header renders, real content is pushed millions of pixels
+ * away, only skeletons stay on screen and the page flickers — a dead
+ * landing page for paid + organic traffic.
+ *
+ * Flooring grid/flex children at min-width:0 removes the feedback loop
+ * sitewide without changing any intended layout (all these containers are
+ * already `w-full`/`flex-1`).
+ * ────────────────────────────────────────────────────────────────────────── */
+.grid > * {
+  min-width: 0;
+}

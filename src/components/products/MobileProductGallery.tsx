@@ -132,9 +132,13 @@ export function MobileProductGallery({
   };
 
   return (
-    <div className={cn("w-full space-y-3", className)}>
-      {/* Main Carousel Container */}
-      <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted shadow-soft">
+    <div className={cn("w-full min-w-0 space-y-3", className)}>
+      {/* Main Carousel Container.
+          `min-w-0` + the absolutely-positioned Embla viewport below are load-bearing:
+          without them the aspect-ratio box and its percentage-sized children form a
+          cyclic intrinsic-size loop that inflates the PDP grid track to the engine
+          max (33,554,432px) on iOS Safari / Pinterest in-app WebView. */}
+      <div className="relative w-full min-w-0 max-w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-muted/50 to-muted shadow-soft">
         {/* Badge - top left */}
         {badge && (
           <div className="absolute top-3 left-3 z-20 pointer-events-none">
@@ -167,7 +171,7 @@ export function MobileProductGallery({
         {/* Embla Carousel - Main swipe area */}
         <div 
           ref={emblaRef} 
-          className="h-full w-full overflow-hidden"
+          className="absolute inset-0 h-full w-full overflow-hidden"
           style={{ 
             touchAction: "pan-y",
             userSelect: "none",

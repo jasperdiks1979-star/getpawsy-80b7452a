@@ -8,7 +8,7 @@ export const ProductDetailSkeleton = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 3xl:gap-24 ultrawide:gap-32 w-full">
         {/* Image Gallery Skeleton */}
-        <div className="space-y-4 w-full max-w-full">
+        <div className="space-y-4 w-full max-w-full min-w-0">
           {/* Main Image */}
           <Skeleton className="w-full aspect-square rounded-2xl md:rounded-3xl" />
           

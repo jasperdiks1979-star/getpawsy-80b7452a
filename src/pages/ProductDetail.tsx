@@ -1260,7 +1260,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-4 w-full max-w-full"
+            className="space-y-4 w-full max-w-full min-w-0"
           >
             {/* Mobile Gallery - uses Embla Carousel for reliable swipe */}
             {isMobile ? (
@@ -1329,7 +1329,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-6 w-full max-w-full overflow-hidden"
+            className="space-y-6 w-full max-w-full min-w-0 overflow-hidden"
           >
             {/* Category & Title */}
             <div>
