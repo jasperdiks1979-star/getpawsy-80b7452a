@@ -111,22 +111,132 @@ interface PinterestEventData {
   [key: string]: unknown;
 }
 
+// ── Readiness-aware event buffer ────────────────────────────────────────────
+// Pinterest bootstraps asynchronously (idle callback + consent gate), while the
+// commerce events themselves fire the moment the product resolves or the user
+// clicks Add to Cart. On iOS/WebKit the tag was frequently not present yet, so
+// `viewcontent` / `addtocart` were dropped on the floor. Application events are
+// now recorded immediately and flushed once the tag is ready.
+//
+// Rules: bounded (MAX_QUEUE), time-boxed (MAX_AGE_MS — a stale event is
+// semantically wrong, so it is discarded, never sent late), dispatched exactly
+// once per event_id, and never able to break the storefront.
+const MAX_QUEUE = 25;
+const MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+const FLUSH_INTERVAL_MS = 300;
+const MAX_FLUSH_ATTEMPTS = 60; // ~18s, then the queue is abandoned (no infinite loop)
+
+interface QueuedEvent {
+  event: PinterestEventType;
+  data: PinterestEventData & { event_id: string };
+  ts: number;
+}
+
+const pendingEvents: QueuedEvent[] = [];
+const dispatchedEventIds = new Set<string>();
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+let flushAttempts = 0;
+
+const tagReady = (): boolean =>
+  typeof window !== 'undefined' && typeof window.pintrk === 'function';
+
+/** Dispatch to pintrk exactly once per event_id. Never throws. */
+const dispatch = (item: QueuedEvent): void => {
+  if (dispatchedEventIds.has(item.data.event_id)) return;
+  dispatchedEventIds.add(item.data.event_id);
+  // Bound the dedupe ledger — a long session must not grow it without limit.
+  if (dispatchedEventIds.size > 200) {
+    const oldest = dispatchedEventIds.values().next().value as string | undefined;
+    if (oldest) dispatchedEventIds.delete(oldest);
+  }
+  try {
+    window.pintrk('track', item.event, item.data);
+    lastEventName = item.event;
+    lastEventAt = new Date().toISOString();
+    dlog('Event tracked:', item.event, item.data);
+  } catch (e) {
+    dlog('dispatch failed (non-fatal)', e);
+  }
+};
+
+const stopFlushLoop = () => {
+  if (flushTimer !== null) {
+    clearInterval(flushTimer);
+    flushTimer = null;
+  }
+};
+
+/** Flush queued events when the tag is ready and consent still allows it. */
+const flushQueue = (): void => {
+  if (pendingEvents.length === 0) {
+    stopFlushLoop();
+    return;
+  }
+  // Drop events that have aged out — sending them now would misrepresent
+  // when the user actually performed the action.
+  const now = Date.now();
+  for (let i = pendingEvents.length - 1; i >= 0; i--) {
+    if (now - pendingEvents[i].ts > MAX_AGE_MS) pendingEvents.splice(i, 1);
+  }
+  // Consent must hold at dispatch time, not only at record time.
+  if (!isMarketingAllowed(getConsent())) return;
+  if (!tagReady()) return;
+  while (pendingEvents.length > 0) {
+    dispatch(pendingEvents.shift()!);
+  }
+  stopFlushLoop();
+};
+
+const startFlushLoop = (): void => {
+  if (flushTimer !== null || typeof window === 'undefined') return;
+  flushAttempts = 0;
+  flushTimer = setInterval(() => {
+    flushAttempts++;
+    if (flushAttempts > MAX_FLUSH_ATTEMPTS) {
+      // Give up quietly — analytics fails open, the storefront is unaffected.
+      pendingEvents.length = 0;
+      stopFlushLoop();
+      return;
+    }
+    // Consent may have been granted after the action (geo auto-grant on iOS
+    // arrives a few hundred ms after boot) — retry initialization each tick.
+    try { initPinterestTag(); } catch { /* ignore */ }
+    flushQueue();
+  }, FLUSH_INTERVAL_MS);
+};
+
 // Track Pinterest event
 const trackPinterestEvent = (event: PinterestEventType, data?: PinterestEventData) => {
-  if (!isProductionDomain() || !isMarketingAllowed(getConsent())) return;
-  if (typeof window === 'undefined' || !window.pintrk) return;
+  if (typeof window === 'undefined' || !isProductionDomain()) return;
 
-  // Generate unique event ID for deduplication
+  // Generate unique event ID for deduplication — created once, at record time,
+  // and preserved across queueing/flushing so a replay can never duplicate.
   const eventData = {
     ...data,
     event_id: data?.event_id || `${event}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
   };
 
-  window.pintrk('track', event, eventData);
-  lastEventName = event;
-  lastEventAt = new Date().toISOString();
-  dlog('Event tracked:', event, eventData);
+  if (dispatchedEventIds.has(eventData.event_id)) return;
+  if (pendingEvents.some((p) => p.data.event_id === eventData.event_id)) return;
+
+  // Consent is still fully honored: nothing leaves the browser until consent
+  // allows marketing. Without consent we buffer locally only (same posture the
+  // TikTok pixel already uses via grantTikTokConsentWhenReady).
+  const consentOk = isMarketingAllowed(getConsent());
+  if (consentOk && !tagReady()) {
+    try { initPinterestTag(); } catch { /* ignore */ }
+  }
+
+  if (consentOk && tagReady()) {
+    dispatch({ event, data: eventData, ts: Date.now() });
+    return;
+  }
+
+  pendingEvents.push({ event, data: eventData, ts: Date.now() });
+  if (pendingEvents.length > MAX_QUEUE) pendingEvents.shift();
+  startFlushLoop();
 };
+
 
 // Health snapshot used by the public Pinterest tag status page.
 export interface PinterestTagHealth {
