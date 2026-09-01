@@ -132,7 +132,24 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
     .map((e: any) => {
       const canonical = CCI_MAP[e.event_name];
       if (!canonical) return null;
+      const rawMeta = (e.meta && typeof e.meta === "object") ? (e.meta as Record<string, unknown>) : {};
+      // Pinterest click identifier: `epik` is the only click id Pinterest sets
+      // on outbound ad clicks in this project. Exact value, no truncation,
+      // no synthetic fallback. Persisted into meta so the canonical
+      // attribution pass can lift it into first_pinterest_click_id.
+      const epik =
+        (typeof rawMeta.epik === "string" && rawMeta.epik.trim() ? rawMeta.epik.trim() : null) ??
+        utmFromUrl(e.landing_page, "epik") ??
+        utmFromUrl(e.page_path, "epik");
+      const existingClickId =
+        typeof rawMeta.pinterest_click_id === "string" && rawMeta.pinterest_click_id.trim()
+          ? rawMeta.pinterest_click_id.trim()
+          : null;
+      const meta: Record<string, unknown> = { ...rawMeta };
+      const clickId = existingClickId ?? epik;
+      if (clickId) meta.pinterest_click_id = clickId;
       return {
+
         occurred_at: e.created_at,
         canonical_name: canonical,
         source_system: "cci",
@@ -150,17 +167,18 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         // landing/page URL query string. Same semantics as source/medium/
         // campaign — no inference, no fuzzy matching.
         utm_content:
-          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ??
+          (typeof rawMeta.utm_content === "string" && rawMeta.utm_content.trim() ? rawMeta.utm_content.trim() : null) ??
           utmFromUrl(e.landing_page, "utm_content") ??
           utmFromUrl(e.page_path, "utm_content") ??
           null,
         utm_term:
-          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_term : null) ??
+          (typeof rawMeta.utm_term === "string" && rawMeta.utm_term.trim() ? rawMeta.utm_term.trim() : null) ??
           utmFromUrl(e.landing_page, "utm_term") ??
           null,
         country: e.country,
         device: e.device,
-        meta: e.meta ?? {},
+        meta,
+
         dedup_key: semanticDedupKey({
           source: "cci",
           canonical,

@@ -86,6 +86,14 @@ export function installSessionQuality(): void {
     window.addEventListener("touchstart", onTouch, { passive: true });
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", flush);
+    // WebKit / in-app browsers (Pinterest, TikTok) frequently tear the page
+    // down without ever firing `pagehide`, and short paid-click sessions ended
+    // before the first 15s tick — which is why no rows persisted for them.
+    // An early first flush guarantees a row exists; later flushes upsert on
+    // session_id, so this cannot duplicate. Fail-open, never blocking.
+    window.addEventListener("freeze", flush);
+    window.addEventListener("blur", flush);
+    setTimeout(flush, 4000);
     setInterval(flush, 15000);
   } catch { /* never throw */ }
 }

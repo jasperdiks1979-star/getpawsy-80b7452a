@@ -9762,6 +9762,9 @@ export type Database = {
           classifier_version: string | null
           country: string | null
           device: string | null
+          duration_evidence_source: string | null
+          effective_duration_seconds: number | null
+          effective_last_seen_at: string | null
           engagement_ms: number
           exclude_from_commercial: boolean
           first_affiliate_id: string | null
@@ -9794,6 +9797,7 @@ export type Database = {
           redirect_chain: Json | null
           referrer: string | null
           region: string | null
+          reported_duration_seconds: number | null
           screen_wxh: string | null
           session_id: string
           stripe_session_id: string | null
@@ -9822,6 +9826,9 @@ export type Database = {
           classifier_version?: string | null
           country?: string | null
           device?: string | null
+          duration_evidence_source?: string | null
+          effective_duration_seconds?: number | null
+          effective_last_seen_at?: string | null
           engagement_ms?: number
           exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
@@ -9856,6 +9863,7 @@ export type Database = {
           redirect_chain?: Json | null
           referrer?: string | null
           region?: string | null
+          reported_duration_seconds?: number | null
           screen_wxh?: string | null
           session_id: string
           stripe_session_id?: string | null
@@ -9884,6 +9892,9 @@ export type Database = {
           classifier_version?: string | null
           country?: string | null
           device?: string | null
+          duration_evidence_source?: string | null
+          effective_duration_seconds?: number | null
+          effective_last_seen_at?: string | null
           engagement_ms?: number
           exclude_from_commercial?: boolean
           first_affiliate_id?: string | null
@@ -9918,6 +9929,7 @@ export type Database = {
           redirect_chain?: Json | null
           referrer?: string | null
           region?: string | null
+          reported_duration_seconds?: number | null
           screen_wxh?: string | null
           session_id?: string
           stripe_session_id?: string | null
@@ -78214,6 +78226,10 @@ export type Database = {
         Returns: Json
       }
       canonical_refresh_all: { Args: never; Returns: undefined }
+      canonical_session_apply_activity: {
+        Args: { since: string }
+        Returns: number
+      }
       canonical_session_apply_attribution: {
         Args: { since: string }
         Returns: number
