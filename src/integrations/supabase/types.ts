@@ -53244,6 +53244,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_budget_restore_jobs: {
+        Row: {
+          ad_account_id: string
+          campaign_id: string
+          created_at: string
+          executed_at: string | null
+          id: string
+          note: string | null
+          restore_at: string
+          restore_budget_micro: number
+          status: string
+          temp_budget_micro: number
+        }
+        Insert: {
+          ad_account_id: string
+          campaign_id: string
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          note?: string | null
+          restore_at: string
+          restore_budget_micro: number
+          status?: string
+          temp_budget_micro: number
+        }
+        Update: {
+          ad_account_id?: string
+          campaign_id?: string
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          note?: string | null
+          restore_at?: string
+          restore_budget_micro?: number
+          status?: string
+          temp_budget_micro?: number
+        }
+        Relationships: []
+      }
       pinterest_campaign_recommendations: {
         Row: {
           created_at: string

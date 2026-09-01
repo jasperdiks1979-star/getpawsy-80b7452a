@@ -560,3 +560,6 @@ verify_jwt = false
 
 [functions.pinterest-account-full-repair]
 verify_jwt = false
+
+[functions.pinterest-budget-restore]
+verify_jwt = false
