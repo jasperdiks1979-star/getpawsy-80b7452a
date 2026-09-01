@@ -167,17 +167,18 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         // landing/page URL query string. Same semantics as source/medium/
         // campaign — no inference, no fuzzy matching.
         utm_content:
-          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_content : null) ??
+          (typeof rawMeta.utm_content === "string" && rawMeta.utm_content.trim() ? rawMeta.utm_content.trim() : null) ??
           utmFromUrl(e.landing_page, "utm_content") ??
           utmFromUrl(e.page_path, "utm_content") ??
           null,
         utm_term:
-          (e.meta && typeof e.meta === "object" ? (e.meta as any).utm_term : null) ??
+          (typeof rawMeta.utm_term === "string" && rawMeta.utm_term.trim() ? rawMeta.utm_term.trim() : null) ??
           utmFromUrl(e.landing_page, "utm_term") ??
           null,
         country: e.country,
         device: e.device,
-        meta: e.meta ?? {},
+        meta,
+
         dedup_key: semanticDedupKey({
           source: "cci",
           canonical,
