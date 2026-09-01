@@ -38,6 +38,7 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
         const target = (data as any)?.target as string | null;
         const search = typeof window !== "undefined" ? window.location.search : "";
         const hash = typeof window !== "undefined" ? window.location.hash : "";
+        const currentPath = typeof window !== "undefined" ? window.location.pathname : `/products/${slug}`;
         if (!error && step && step !== "not_found") {
           // Prefer routing to a sibling PDP when we have one.
           if (targetSlug && targetSlug !== slug) {
@@ -51,9 +52,16 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
             try {
               const t = new URL(target, window.location.origin);
               const path = `${t.pathname}${t.search || search}${t.hash || hash}`;
-              setPhase("redirecting");
-              navigate(path, { replace: true });
-              return;
+              // GUARD: the resolver can echo back the exact URL we are already
+              // on (product row exists but is not exposed through the public
+              // view). Navigating there re-renders this same fallback and the
+              // visitor is stuck on an endless skeleton — a dead landing page.
+              // Only follow the target when it actually moves us somewhere else.
+              if (t.pathname !== currentPath) {
+                setPhase("redirecting");
+                navigate(path, { replace: true });
+                return;
+              }
             } catch {
               // ignore — fall through
             }
@@ -63,6 +71,7 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
           navigate(`/collections/all${search}${hash}`, { replace: true });
           return;
         }
+
         // Resolver explicitly returned not_found (or errored) → soft-recover
         // to /collections/all instead of rendering the 404 template.
         setPhase("redirecting");
