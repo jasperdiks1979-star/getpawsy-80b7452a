@@ -541,6 +541,10 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       exclude_from_commercial: boolean;
       traffic_class: string | null;
       traffic_quality: string | null;
+      /** Repaired measurement inputs (heartbeat/interaction aware). */
+      effective_duration_seconds: number | null;
+      duration_evidence_source: string | null;
+      interaction_count: number | null;
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
@@ -562,7 +566,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           offsets.map((off) =>
             supabase
               .from("canonical_sessions")
-              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
+              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count")
               .gte("last_seen_at", since)
               .order("last_seen_at", { ascending: false })
               .range(off, off + CS_PAGE - 1)
@@ -580,6 +584,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
               exclude_from_commercial: r.exclude_from_commercial === true,
               traffic_class: (r.traffic_class as string | null) ?? null,
               traffic_quality: (r.traffic_quality as string | null) ?? null,
+              effective_duration_seconds: (r.effective_duration_seconds as number | null) ?? null,
+              duration_evidence_source: (r.duration_evidence_source as string | null) ?? null,
+              interaction_count: (r.interaction_count as number | null) ?? null,
             });
           }
           if (data.length < CS_PAGE) csDone = true;
@@ -594,7 +601,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
-        .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality")
+        .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count")
         .in("session_id", batch)
     );
     for (const { data: csRows, error: csErr } of flagRows) {
@@ -607,6 +614,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           exclude_from_commercial: r.exclude_from_commercial === true,
           traffic_class: (r.traffic_class as string | null) ?? null,
           traffic_quality: (r.traffic_quality as string | null) ?? null,
+          effective_duration_seconds: (r.effective_duration_seconds as number | null) ?? null,
+          duration_evidence_source: (r.duration_evidence_source as string | null) ?? null,
+          interaction_count: (r.interaction_count as number | null) ?? null,
         });
       }
     }
@@ -656,6 +666,14 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
               stored_is_bot: f?.is_bot ?? null,
               stored_is_internal: f?.is_internal ?? null,
               stored_technical_path: f?.technical_path ?? null,
+              // Repaired measurement inputs — duration proven by first-party
+              // activity (canonical events + visibility-aware heartbeat) and
+              // deliberate interaction count. Never fabricated.
+              session_duration_seconds: typeof f?.effective_duration_seconds === "number"
+                ? f.effective_duration_seconds
+                : null,
+              duration_evidence_source: f?.duration_evidence_source ?? null,
+              interaction_count: typeof f?.interaction_count === "number" ? f.interaction_count : null,
             } as any;
           }),
         );
