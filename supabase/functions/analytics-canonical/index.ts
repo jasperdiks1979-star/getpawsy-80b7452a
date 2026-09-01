@@ -914,7 +914,19 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           stored_is_bot: f?.is_bot ?? null,
           stored_is_internal: f?.is_internal ?? null,
           stored_technical_path: f?.technical_path ?? null,
+          // Repaired measurement fields (raw first/last_seen_at above untouched).
+          reported_duration_seconds: Math.max(
+            0,
+            Math.round((new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000),
+          ),
+          effective_duration_seconds: f?.effective_duration_seconds ?? null,
+          duration_evidence_source: f?.duration_evidence_source ?? null,
+          session_duration_seconds: typeof f?.effective_duration_seconds === "number"
+            ? f.effective_duration_seconds
+            : null,
+          interaction_count: f?.interaction_count ?? null,
           country_iso2: toIso2(s.country),
+
           traffic_quality_class_v3: e?.traffic_quality_class_v3 ?? null,
           commercial_eligible_v3_strict: e?.commercial_eligible_v3_strict ?? false,
           commercial_eligible_v3_expanded: e?.commercial_eligible_v3_expanded ?? false,
