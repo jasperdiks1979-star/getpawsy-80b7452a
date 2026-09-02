@@ -40,6 +40,16 @@ export interface TruthSession {
   has_purchase: boolean;
   order_value: number;
   is_internal: boolean;
+  /** Repaired measurement evidence — read-only passthrough from the envelope. */
+  reported_duration_seconds?: number | null;
+  effective_duration_seconds?: number | null;
+  duration_evidence_source?: string | null;
+  interaction_count?: number | null;
+  engagement_ms?: number | null;
+  classification_reason?: string | null;
+  traffic_quality_class_v3?: string | null;
+  commercial_eligible_v3_strict?: boolean;
+  commercial_eligible_v3_expanded?: boolean;
 }
 
 export interface TruthTotals {
