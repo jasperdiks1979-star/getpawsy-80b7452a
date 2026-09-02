@@ -545,6 +545,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       effective_duration_seconds: number | null;
       duration_evidence_source: string | null;
       interaction_count: number | null;
+      engagement_ms: number | null;
+      classification_reason: string | null;
     };
     const flagsMap = new Map<string, CommercialFlags>();
     const sidsForFlags = Array.from(new Set(sessionsArr.map((s) => s.session_id)));
@@ -566,7 +568,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           offsets.map((off) =>
             supabase
               .from("canonical_sessions")
-              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count")
+              .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count,engagement_ms,classification_reason")
               .gte("last_seen_at", since)
               .order("last_seen_at", { ascending: false })
               .range(off, off + CS_PAGE - 1)
@@ -587,6 +589,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
               effective_duration_seconds: (r.effective_duration_seconds as number | null) ?? null,
               duration_evidence_source: (r.duration_evidence_source as string | null) ?? null,
               interaction_count: (r.interaction_count as number | null) ?? null,
+              engagement_ms: (r.engagement_ms as number | null) ?? null,
+              classification_reason: (r.classification_reason as string | null) ?? null,
             });
           }
           if (data.length < CS_PAGE) csDone = true;
@@ -601,7 +605,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
-        .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count")
+        .select("session_id,is_internal,is_bot,technical_path,exclude_from_commercial,traffic_class,traffic_quality,effective_duration_seconds,duration_evidence_source,interaction_count,engagement_ms,classification_reason")
         .in("session_id", batch)
     );
     for (const { data: csRows, error: csErr } of flagRows) {
@@ -617,6 +621,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           effective_duration_seconds: (r.effective_duration_seconds as number | null) ?? null,
           duration_evidence_source: (r.duration_evidence_source as string | null) ?? null,
           interaction_count: (r.interaction_count as number | null) ?? null,
+          engagement_ms: (r.engagement_ms as number | null) ?? null,
+          classification_reason: (r.classification_reason as string | null) ?? null,
         });
       }
     }
@@ -925,6 +931,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
             ? f.effective_duration_seconds
             : null,
           interaction_count: f?.interaction_count ?? null,
+          engagement_ms: f?.engagement_ms ?? null,
+          classification_reason: f?.classification_reason ?? null,
           country_iso2: toIso2(s.country),
 
           traffic_quality_class_v3: e?.traffic_quality_class_v3 ?? null,

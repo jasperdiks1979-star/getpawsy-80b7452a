@@ -17,6 +17,7 @@ import { LiveVisitorDrawer } from "@/components/admin/visitor-world-map-v2/LiveV
 import { LiveDiagnosticsPanel } from "@/components/admin/visitor-world-map-v2/LiveDiagnosticsPanel";
 import { TrafficClassSplitPanel } from "@/components/admin/TrafficClassSplitPanel";
 import { TrafficQualityBlock } from "@/components/admin/TrafficQualityBlock";
+import { SessionEvidencePanel } from "@/components/admin/SessionEvidencePanel";
 import { useLivePresence } from "@/hooks/useLivePresence";
 import { useAnalyticsTruth } from "@/hooks/useAnalyticsTruth";
 import { computeLiveCanonicalOverlap } from "@/lib/liveMapLayer";
@@ -218,6 +219,10 @@ export default function VisitorWorldMapProPage() {
                 geo={state.usOnly ? "US" : "all"}
               />
               <TrafficClassSplitPanel />
+              <SessionEvidencePanel
+                hours={(proHoursForRange(state.timeRange) >= 24 ? 24 : 10) as 10 | 24}
+                geo={state.usOnly ? "US" : "all"}
+              />
             </div>
           )}
 

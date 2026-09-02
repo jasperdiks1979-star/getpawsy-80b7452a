@@ -2100,6 +2100,10 @@ export const VisitorWorldMap = ({
         "referrer", "page_path", "landing_page",
         "has_product_view", "has_add_to_cart", "has_view_cart",
         "has_checkout", "has_purchase", "order_value", "is_internal",
+        // Repaired measurement evidence — authoritative values from the
+        // analytics truth envelope. No UI-side recomputation.
+        "reported_duration_seconds", "effective_duration_seconds",
+        "duration_evidence_source", "interaction_count", "engagement_ms",
         ...TRAFFIC_QUALITY_CSV_HEADERS,
       ];
       const escape = (v: unknown): string => {
@@ -2122,6 +2126,11 @@ export const VisitorWorldMap = ({
           s.referrer ?? "", s.page_path ?? "", s.landing_page ?? "",
           s.has_product_view, s.has_add_to_cart, s.has_view_cart,
           s.has_checkout, s.has_purchase, s.order_value, s.is_internal,
+          s.reported_duration_seconds ?? "",
+          s.effective_duration_seconds ?? "",
+          s.duration_evidence_source ?? "",
+          s.interaction_count ?? "",
+          s.engagement_ms ?? "",
           ...trafficQualityCsvValues(classified[i]),
         ].map(escape).join(";");
       });
