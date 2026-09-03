@@ -92,7 +92,7 @@ export const ConversionBlock = memo(function ConversionBlock({ productName, cate
       {!trustCompact && <div className="flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-sm text-muted-foreground">
-          30-day risk-free returns
+          30-day return window
         </p>
       </div>}
     </div>

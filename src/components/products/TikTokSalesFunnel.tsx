@@ -197,10 +197,10 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
           <ShieldCheck className="w-6 h-6 text-primary" aria-hidden="true" />
         </div>
         <h2 className="text-lg md:text-xl font-display font-bold text-foreground">
-          30-Day Money-Back Guarantee
+          30-Day Return Window
         </h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-          Try it risk-free. Not satisfied? Return it within 30 days for a full refund.
+          Eligible items can be returned within 30 days under our return policy.
         </p>
       </div>
 

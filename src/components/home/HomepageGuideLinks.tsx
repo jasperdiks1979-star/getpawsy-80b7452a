@@ -16,7 +16,7 @@ const HOMEPAGE_GUIDES = [
 
 export function HomepageGuideLinks() {
   return (
-    <section className="py-10 md:py-14" aria-label="Expert Pet Guides">
+    <section className="py-10 md:py-14" aria-label="Pet Care Guides">
       <div className="container px-4 md:px-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -24,7 +24,7 @@ export function HomepageGuideLinks() {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-              Expert Pet Guides
+              Pet Care Guides
             </h2>
             <p className="text-sm text-muted-foreground">Buying guides updated for 2026</p>
           </div>

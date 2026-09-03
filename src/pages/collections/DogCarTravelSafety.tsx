@@ -268,7 +268,7 @@ export default function DogCarTravelSafety() {
             <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Orthopedic Dog Beds →</Link>
             <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Cat Trees for Large Cats →</Link>
             <Link to="/collections/all" className="text-sm text-primary hover:underline font-medium">Dog Car Seats →</Link>
-            <Link to="/blog" className="text-sm text-primary hover:underline font-medium">Expert Pet Guides →</Link>
+            <Link to="/blog" className="text-sm text-primary hover:underline font-medium">Pet Care Guides →</Link>
           </div>
         </section>
 

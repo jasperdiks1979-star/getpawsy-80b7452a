@@ -24,7 +24,7 @@ export function CheckoutTrustBlock() {
         </li>
         <li className="col-span-2 flex items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2">
           <RotateCcw className="w-4 h-4 text-primary flex-shrink-0" aria-hidden />
-          <span className="text-[12px] font-medium leading-tight">30-day money-back guarantee</span>
+          <span className="text-[12px] font-medium leading-tight">30-day returns</span>
         </li>
       </ul>
     </div>

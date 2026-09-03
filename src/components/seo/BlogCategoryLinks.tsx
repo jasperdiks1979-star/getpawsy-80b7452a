@@ -27,7 +27,7 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
     { href: '/collections/dogs', label: 'GetPawsy Dog Collection', type: 'collection' },
     { href: '/collections/cats', label: 'GetPawsy Cat Collection', type: 'collection' },
     { href: '/bestsellers', label: 'See Our 2026 Bestsellers', type: 'collection' },
-    { href: '/guides', label: 'Expert Pet Guides', type: 'guide' },
+    { href: '/guides', label: 'Pet Care Guides', type: 'guide' },
   ],
   Guides: [
     { href: '/collections/dog-beds', label: 'Recommended Orthopedic Dog Beds', type: 'collection' },

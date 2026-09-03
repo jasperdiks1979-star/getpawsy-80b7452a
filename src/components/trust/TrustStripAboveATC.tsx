@@ -7,7 +7,7 @@
  *   🇺🇸 Ships from USA
  *   🚚 Delivery 3–5 business days
  *   🔒 Secure Stripe checkout
- *   ↩ 30-day money-back guarantee
+ *   ↩ 30-day returns
  *   ⭐ Thousands of happy pet owners
  *
  * Responsive: strip stays on ONE line on desktop/tablet; on mobile it wraps
@@ -30,7 +30,7 @@ interface TrustStripAboveATCProps {
 
 const SIGNALS: Array<{ icon: string; label: string; ariaLabel: string }> = [
   { icon: '🔒', label: 'Secure Stripe checkout', ariaLabel: 'Secure checkout powered by Stripe' },
-  { icon: '↩', label: '30-day money-back guarantee', ariaLabel: '30-day money back guarantee' },
+  { icon: '↩', label: '30-day returns', ariaLabel: '30-day returns' },
   { icon: '🚚', label: 'Shipping options shown at checkout', ariaLabel: 'Shipping options and estimated delivery shown at checkout' },
 ];
 

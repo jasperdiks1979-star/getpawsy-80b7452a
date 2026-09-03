@@ -918,7 +918,7 @@ export default function LinkInBio() {
                 : 'text-foreground/75'
             }`}
           >
-            🛡️ 30-day risk-free guarantee
+            🛡️ 30-day return window
           </p>
         </div>
 

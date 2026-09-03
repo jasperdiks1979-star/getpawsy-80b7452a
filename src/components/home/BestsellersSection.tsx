@@ -172,7 +172,7 @@ export const BestsellersSection = () => {
                           </span>
                         </p>
                       ) : (
-                        <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>
+                        {getTrustLabel(product.id, idx) && <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(product.id, idx)}</p>}
                       )}
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
