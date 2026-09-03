@@ -28,7 +28,7 @@ export function ProductGuaranteeBadge({ className = '' }: Props) {
       />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-foreground leading-tight">
-          {RETURN_WINDOW_DAYS}-day return window
+          {RETURN_WINDOW_DAYS}-day return policy
         </p>
         <p className="text-xs text-muted-foreground leading-snug mt-0.5">
           Eligible items can be returned within {RETURN_WINDOW_DAYS} days. See our return policy for details.
