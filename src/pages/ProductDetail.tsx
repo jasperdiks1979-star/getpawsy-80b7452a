@@ -1,4 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
+import { buildCartIdentity } from "@/v2/commerce/cartIdentity";
 import { Helmet } from "react-helmet-async";
 import { useKlarnaEligibility } from "@/hooks/useKlarnaEligibility";
 import { displayName as productDisplayName } from "@/lib/displayName";
@@ -35,7 +37,7 @@ import { ProductVideoSection } from "@/components/products/ProductVideoSection";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Layout } from "@/components/layout/Layout";
+import { V2PageShell as Layout } from "@/components/v2/storefront/V2PageShell";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1093,6 +1095,20 @@ const ProductDetail = () => {
     const variantLabel = /^(option|default|standard|-|n\/a)$/i.test(rawVariantLabel) ? "" : rawVariantLabel;
 
     for (let i = 0; i < quantity; i++) {
+      // V2 (flag OFF by default): attach exact supplier identity so the cart
+      // line can survive checkout without heuristic re-resolution. Never a
+      // positional guess — buildCartIdentity returns null unless every exact
+      // identifier is present, and then the item stays purely legacy.
+      const v2Identity = commerceV2UiEnabled()
+        ? buildCartIdentity({
+            productId: product.id,
+            variantId: selectedVariant?.vid ? `cjv_${selectedVariant.vid}` : undefined,
+            cjProductId: selectedVariant?.pid || product.cj_product_id,
+            cjVariantId: selectedVariant?.vid,
+            sku: selectedVariant?.variantSku || product.sku,
+          })
+        : null;
+
       addItem({
         id: product.id + (selectedVariant ? `-${selectedVariant.vid}` : ""),
         slug: product.slug ?? undefined,
@@ -1100,6 +1116,7 @@ const ProductDetail = () => {
         price: Math.round(cartPrice * 100) / 100,
         image: selectedVariant?.variantImage || product.image_url || "/placeholder.svg",
         variant: variantLabel || undefined,
+        ...(v2Identity ? { v2: v2Identity } : {}),
       });
     }
 

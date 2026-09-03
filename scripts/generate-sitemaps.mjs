@@ -12,6 +12,13 @@ import {
   joinRoot,
 } from "./sitemap-utils.mjs";
 import { filterValidCollectionCandidates } from "./sitemap-collection-validator.mjs";
+import {
+  isSandboxFixture,
+  assertNoSandboxFixtures,
+  assertNoDuplicateLocs,
+  dedupeEntriesByLoc,
+  STALE_ARTIFACT_FILES,
+} from "./merchant-integrity.mjs";
 
 const BASE = "https://getpawsy.pet";
 const OUT_DIR = joinRoot("public");
@@ -132,6 +139,17 @@ function resolveLastmod(urlPath, currentUpdatedAt, history, today) {
 
 async function main() {
   ensureDir(OUT_DIR);
+
+  // PHASE 10B: remove every generated artifact BEFORE anything else, so a file
+  // left by an earlier run can never survive — or be mistaken for the output of
+  // — this run, even when generation aborts on an empty catalog.
+  for (const name of STALE_ARTIFACT_FILES) {
+    const fp = path.join(OUT_DIR, name);
+    if (fs.existsSync(fp)) {
+      fs.unlinkSync(fp);
+      console.log(`[sitemaps] ✗ Removed stale artifact ${name}`);
+    }
+  }
   const today = nowIsoDate();
   const history = loadHistory();
   const newHistory = {};
@@ -161,6 +179,8 @@ async function main() {
       .filter((p) => {
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
+        // PHASE 10B: SANDBOX fixtures may never reach public/ or dist/.
+        if (isSandboxFixture({ slug: p.slug, name: p.name })) return false;
         if (seen.has(p.slug)) return false;
         seen.add(p.slug);
         return true;
@@ -169,7 +189,7 @@ async function main() {
     console.log(`[sitemaps] Products: ${products.length}`);
   } else {
     products = (safeRead(joinRoot("data", "products.json"), [])
-      .filter(e => e && e.path && !e.noindex));
+      .filter(e => e && e.path && !e.noindex && !isSandboxFixture({ path: e.path })));
     console.log(`[sitemaps] Products from JSON fallback: ${products.length}`);
   }
 
@@ -340,10 +360,20 @@ async function main() {
   const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
 
-  const clean = (entries) => entries.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
+  // PHASE 10B: strip fixtures + duplicate canonical URLs from every urlset.
+  const clean = (entries) => {
+    const noFixtures = entries.filter((e) => !isSandboxFixture({ loc: e.loc, path: e._path }));
+    const { unique, duplicates } = dedupeEntriesByLoc(noFixtures);
+    if (duplicates.length > 0) {
+      console.log(`[sitemaps] ✗ Dropped ${duplicates.length} duplicate canonical URL(s)`);
+    }
+    return unique.map(({ loc, lastmod, changefreq, priority }) => ({ loc, lastmod, changefreq, priority }));
+  };
 
   const writeChecked = (filename, xml, mustContain) => {
     validateXmlBasics(xml, mustContain);
+    assertNoSandboxFixtures(xml, `public/${filename}`);
+    assertNoDuplicateLocs(xml, `public/${filename}`);
     writeFile(path.join(OUT_DIR, filename), xml);
     console.log(`[sitemaps] ✓ ${filename} (${xml.length} bytes)`);
   };
@@ -351,6 +381,9 @@ async function main() {
   // ══════════════════════════════════════════════════════════════════════
   // WRITE SITEMAPS
   // ══════════════════════════════════════════════════════════════════════
+  // (stale artifacts were already removed at the start of this run)
+
+
   const sitemapIndexItems = [];
 
   // 1. Pages (static)
@@ -401,6 +434,8 @@ async function main() {
   // ── Write sitemap index ──
   const indexXml = renderSitemapIndex(sitemapIndexItems);
   validateXmlBasics(indexXml, ["<sitemapindex", "</sitemapindex>"]);
+  assertNoSandboxFixtures(indexXml, "public/sitemap.xml");
+  assertNoDuplicateLocs(indexXml, "public/sitemap.xml");
   writeFile(path.join(OUT_DIR, "sitemap.xml"), indexXml);
   console.log(`[sitemaps] ✓ sitemap.xml (index, ${sitemapIndexItems.length} entries)`);
 

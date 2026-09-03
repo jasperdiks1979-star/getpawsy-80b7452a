@@ -14,6 +14,7 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
+import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
 // ⚡ CRITICAL FIX: sonner, marketingClient, and useVisitorTracking were sync-imported,
 // pulling ~160KB (sonner + supabase SDK via trackVisitorEvent) into the main bundle.
 // Now all three are lazily imported — only loaded when actually called.
@@ -40,6 +41,12 @@ export interface CartItem {
   quantity: number;
   variant?: string;
   category?: string;
+  /**
+   * V2 commerce exact identity. Only attached when VITE_COMMERCE_V2 is on
+   * (src/v2/commerce/featureFlags.ts). Absent in legacy mode, which keeps the
+   * legacy behaviour byte-identical.
+   */
+  v2?: V2CartIdentity;
 }
 
 interface CartContextType {
@@ -80,14 +87,30 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         : Array.isArray((parsed as { items?: unknown })?.items)
           ? (parsed as { items: CartItem[] }).items
           : [];
-      return arr.filter(
-        (it): it is CartItem =>
-          !!it && typeof it === 'object' &&
-          typeof (it as CartItem).id === 'string' &&
-          typeof (it as CartItem).quantity === 'number' &&
-          typeof (it as CartItem).price === 'number',
-      );
+      return arr
+        .filter(
+          (it): it is CartItem =>
+            !!it && typeof it === 'object' &&
+            typeof (it as CartItem).id === 'string' &&
+            typeof (it as CartItem).quantity === 'number' &&
+            typeof (it as CartItem).price === 'number',
+        )
+        // Keep exact V2 identity across reloads; drop it if malformed so a V2
+        // line can never exist without an exact cjVariantId.
+        .map((it) => {
+          const identity = sanitizeCartIdentity((it as CartItem).v2);
+          if (identity) return { ...it, v2: identity };
+          const { v2: _dropped, ...rest } = it as CartItem;
+          return rest as CartItem;
+        });
     } catch {
+      // Conclusively unparseable payload. Never destroy it outright — keep a
+      // forensic backup so a hydration bug can never silently vaporise a real
+      // cart, then start from an empty (not corrupted) array.
+      try {
+        const raw = localStorage.getItem('pawsy-cart');
+        if (raw) localStorage.setItem('pawsy-cart-corrupt-backup', raw);
+      } catch { /* storage full / disabled — ignore */ }
       localStorage.removeItem('pawsy-cart');
       return [];
     }

@@ -10,11 +10,22 @@ import type { Plugin } from 'vite';
 import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
-import { products as staticProducts } from './src/data/products';
+import {
+  isSandboxFixture,
+  assertNoSandboxFixtures,
+  assertNoDuplicateLocs,
+  partitionFeedItems,
+  rejectStaleArtifact,
+  assertReleasableCatalog,
+} from './src/lib/merchant/releaseIntegrity';
 
 const BASE_URL = 'https://getpawsy.pet';
-const SUPABASE_URL = 'https://nojvgfbcjgipjxpfatmm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
+// Feed generation must target the SAME backend as the app being built. Prefer
+// the build environment's project; the production project is only the fallback
+// when no env is present (e.g. a bare production CI checkout). This prevents a
+// Safe Copy build from silently emitting the production catalog.
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
 const FREE_SHIPPING_THRESHOLD = 35; // Aligned with site policy ($35+)
 const FLAT_SHIPPING_RATE = 5.99; // Aligned with published Shipping Policy
 
@@ -839,6 +850,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     no_description: 0,
     not_purchasable: 0,
     off_niche: 0,
+    sandbox_fixture: 0,
   };
   const eligibleProducts = rawProducts.filter(p => {
     let ok = true;
@@ -853,6 +865,11 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     // advertising those same URLs would submit landing pages the site itself
     // does not treat as indexable catalog. Same rule set, same outcome.
     if (isOffNicheProduct(p.slug, p.name)) { exclusionStats.off_niche++; ok = false; }
+    // PHASE 10B: sandbox fixtures / placeholders are never merchant inventory.
+    if (isSandboxFixture({ id: p.id, sku: p.sku, slug: p.slug, name: p.name })) {
+      exclusionStats.sandbox_fixture++;
+      ok = false;
+    }
     return ok;
   });
 
@@ -886,8 +903,31 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     );
   }
 
+  // PHASE 10B: a malformed entry must never be emitted. Validate the exact
+  // values that will be rendered, then emit only the items that pass.
+  const candidates = products.map(p => ({
+    product: p,
+    id: p.id,
+    title: buildOptimizedTitle(p),
+    description: truncate(cleanDescription(p.description) || cleanProductName(p.name), 5000),
+    link: `${BASE_URL}/products/${p.slug || p.id}`,
+    image_link: sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null),
+    price: `${p.price.toFixed(2)} USD`,
+    availability: getAvailability(p.stock, p.is_active),
+    brand: (p.brand && p.brand.trim()) || 'GetPawsy',
+    condition: 'new',
+  }));
+  const { valid, rejected } = partitionFeedItems(candidates);
+  if (rejected.length > 0) {
+    console.warn(
+      `[xml-plugin][feed] ⚠ ${rejected.length} malformed item(s) excluded: ` +
+        rejected.slice(0, 5).map(r => `${r.item.id}:${r.issues.join('|')}`).join(', ')
+    );
+  }
+  assertReleasableCatalog(valid.length, 'merchant google feed');
+
   const now = new Date().toISOString();
-  const items = products.map(p => productItemXml(p, bestsellersSet));
+  const items = valid.map(c => productItemXml(c.product, bestsellersSet));
   return renderGoogleFeedXml(items, now);
 }
 
@@ -999,77 +1039,10 @@ function assertSitemapFileValid(filePath: string, requiredToken: string, label: 
 
 // ── Vite Plugin ───────────────────────────────────────────────────────
 
-function buildStaticCatalogFallbackFeed(): string {
-  const fallbackProducts: MerchantProduct[] = staticProducts
-    .filter(p => p.inStock && p.price > 0 && p.image && p.slug && p.description)
-    .slice(0, 12)
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      compare_at_price: p.comparePrice ?? null,
-      image_url: p.image,
-      images: p.images,
-      stock: p.inStock ? 25 : 0,
-      category: p.category,
-      sku: p.id,
-      slug: p.slug,
-      weight: null,
-      is_active: p.inStock,
-    }));
-
-  console.warn(
-    `[xml-plugin][feed] ⚠ Using static catalog emergency feed: ${fallbackProducts.length} real products from src/data/products.ts`
-  );
-  return renderGoogleFeedXml(
-    fallbackProducts.map(p => productItemXml(p, new Set<string>())),
-    new Date().toISOString()
-  );
-}
-
-function renderSitemapUrlset(paths: string[], lastmod: string): string {
-  const urls = paths.map(path => `  <url>
-    <loc>${esc(`${BASE_URL}${path}`)}</loc>
-    <lastmod>${lastmod}</lastmod>
-  </url>`).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
-</urlset>
-`;
-}
-
-function renderSitemapIndex(files: string[], lastmod: string): string {
-  const entries = files.map(file => `  <sitemap>
-    <loc>${esc(`${BASE_URL}/${file}`)}</loc>
-    <lastmod>${lastmod}</lastmod>
-  </sitemap>`).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries}
-</sitemapindex>
-`;
-}
-
-function writeStaticCatalogFallbackSitemaps(baseDir: string): void {
-  mkdirSync(baseDir, { recursive: true });
-  const today = new Date().toISOString().slice(0, 10);
-  const productPaths = staticProducts
-    .filter(p => p.inStock && p.slug)
-    .map(p => `/products/${p.slug}`);
-  const pagePaths = ['/', '/products', '/bestsellers', '/guides', '/about', '/contact', '/shipping', '/returns', '/faq'];
-  const collectionPaths = ['/collections/cat-trees-and-condos', '/collections/cat-litter-boxes', '/collections/dog-beds'];
-  const files = ['sitemap-pages.xml', 'sitemap-products-1.xml', 'sitemap-collections.xml'];
-
-  overwriteFile(join(baseDir, 'sitemap-pages.xml'), renderSitemapUrlset(pagePaths, today));
-  overwriteFile(join(baseDir, 'sitemap-products-1.xml'), renderSitemapUrlset(productPaths, today));
-  overwriteFile(join(baseDir, 'sitemap-collections.xml'), renderSitemapUrlset(collectionPaths, today));
-  overwriteFile(join(baseDir, 'sitemap.xml'), renderSitemapIndex(files, today));
-  console.warn(
-    `[sitemaps] ⚠ Static catalog fallback sitemaps written to ${baseDir} (${productPaths.length} product URLs).`
-  );
-}
+// PHASE 10B: buildStaticCatalogFallbackFeed() and
+// writeStaticCatalogFallbackSitemaps() were removed. A fallback feed/sitemap
+// built from a static array (or from a previous build artifact) could turn a
+// genuinely empty catalog into a passing release. Generation now fails closed.
 
 export default function merchantFeedPlugin(): Plugin {
   let resolvedOutDir = 'dist';
@@ -1091,95 +1064,67 @@ export default function merchantFeedPlugin(): Plugin {
       console.log('[sitemaps] Phase 1: Generating sitemaps into /public');
       console.log('[sitemaps] ═══════════════════════════════════════════');
 
-      try {
-        execSync('node scripts/generate-sitemaps.mjs', {
+      // PHASE 10B: no static catalog fallback. Sitemap generation either
+      // succeeds against the current catalog or the build fails.
+      execSync('node scripts/generate-sitemaps.mjs', {
+        cwd: process.cwd(),
+        stdio: 'inherit',
+        timeout: 300_000,
+      });
+      console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
+
+      const validatorPath = join(process.cwd(), 'scripts/validate-sitemaps.mjs');
+      if (existsSync(validatorPath)) {
+        execSync('node scripts/validate-sitemaps.mjs', {
           cwd: process.cwd(),
           stdio: 'inherit',
-          timeout: 300_000,
+          timeout: 60_000,
         });
-        console.log('[sitemaps] ✓ generate-sitemaps.mjs completed');
-
-        const validatorPath = join(process.cwd(), 'scripts/validate-sitemaps.mjs');
-        if (existsSync(validatorPath)) {
-          execSync('node scripts/validate-sitemaps.mjs', {
-            cwd: process.cwd(),
-            stdio: 'inherit',
-            timeout: 60_000,
-          });
-          console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
-        }
-      } catch (err) {
-        console.warn('[sitemaps] ⚠ DB-backed sitemap generation failed — using static catalog fallback:', (err as Error)?.message ?? err);
-        writeStaticCatalogFallbackSitemaps(publicDir);
+        console.log('[sitemaps] ✓ validate-sitemaps.mjs passed');
       }
 
       const sitemapXml = join(publicDir, 'sitemap.xml');
       const productsXml = join(publicDir, 'sitemap-products-1.xml');
 
-      try {
-        assertSitemapFileValid(sitemapXml, '<sitemapindex', 'public/sitemap.xml');
-        assertSitemapFileValid(productsXml, '<urlset', 'public/sitemap-products-1.xml');
-        const productsContent = readFileSync(productsXml, 'utf8');
-        if (!productsContent.includes('<url>')) {
-          throw new Error('[sitemaps] FATAL: sitemap-products-1.xml has 0 <url> entries');
-        }
-
-        const indexContent = readFileSync(sitemapXml, 'utf8');
-        const sitemapCount = (indexContent.match(/<sitemap>/g) || []).length;
-        if (sitemapCount < 3) {
-          throw new Error(`[sitemaps] FATAL: sitemap.xml has only ${sitemapCount} <sitemap> entries (need ≥3)`);
-        }
-
-        const allRefs = indexContent.match(/sitemap-[a-z]+-?\d*\.xml/g) || [];
-        for (const ref of allRefs) {
-          if (!existsSync(join(publicDir, ref))) {
-            throw new Error(`[sitemaps] FATAL: sitemap.xml references ${ref} but file is missing in /public`);
-          }
-        }
-        console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
-      } catch (err) {
-        console.warn('[sitemaps] ⚠ Generated sitemap files invalid/missing — rewriting static catalog fallback:', (err as Error)?.message ?? err);
-        writeStaticCatalogFallbackSitemaps(publicDir);
-        assertSitemapFileValid(sitemapXml, '<sitemapindex', 'public/sitemap.xml');
-        assertSitemapFileValid(productsXml, '<urlset', 'public/sitemap-products-1.xml');
+      assertSitemapFileValid(sitemapXml, '<sitemapindex', 'public/sitemap.xml');
+      assertSitemapFileValid(productsXml, '<urlset', 'public/sitemap-products-1.xml');
+      const productsContent = readFileSync(productsXml, 'utf8');
+      if (!productsContent.includes('<url>')) {
+        throw new Error('[sitemaps] FATAL: sitemap-products-1.xml has 0 <url> entries');
       }
+      assertNoSandboxFixtures(productsContent, 'public/sitemap-products-1.xml');
+      assertNoDuplicateLocs(productsContent, 'public/sitemap-products-1.xml');
+
+      const indexContent = readFileSync(sitemapXml, 'utf8');
+      const sitemapCount = (indexContent.match(/<sitemap>/g) || []).length;
+      if (sitemapCount < 3) {
+        throw new Error(`[sitemaps] FATAL: sitemap.xml has only ${sitemapCount} <sitemap> entries (need ≥3)`);
+      }
+
+      const allRefs = indexContent.match(/sitemap-[a-z]+-?\d*\.xml/g) || [];
+      for (const ref of allRefs) {
+        const refPath = join(publicDir, ref);
+        if (!existsSync(refPath)) {
+          throw new Error(`[sitemaps] FATAL: sitemap.xml references ${ref} but file is missing in /public`);
+        }
+        const refContent = readFileSync(refPath, 'utf8');
+        assertNoSandboxFixtures(refContent, `public/${ref}`);
+        assertNoDuplicateLocs(refContent, `public/${ref}`);
+      }
+      console.log(`[sitemaps] ✅ All sitemaps validated (${sitemapCount} index entries, ${allRefs.length} child files verified)`);
 
       // ── Feed source of truth: generate static XML feeds in /public ──
-      let merchantFeed: string;
-      try {
-        const generated = await Promise.race([
-          buildMerchantFeed(),
-          new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
-          ),
-        ]);
-        assertGoogleFeedValid(generated, 'public/google-feed.xml (live DB)');
-        merchantFeed = generated;
-      } catch (err) {
-        console.warn(
-          '[xml-plugin] ⚠️ public feed live generation failed — falling back to previous artifact:',
-          (err as Error)?.message ?? err
-        );
-        // Preferred fallback: the last valid generated artifact from a previous
-        // build. The static catalog array is intentionally empty since P3, so it
-        // can no longer serve as an emergency feed — an empty feed used to throw
-        // here, aborting rollup before a single module was transformed.
-        const previousFeedPath = join(publicDir, 'google-feed.xml');
-        let recovered: string | null = null;
-        if (existsSync(previousFeedPath)) {
-          const previous = readFileSync(previousFeedPath, 'utf8');
-          try {
-            assertGoogleFeedValid(previous, 'public/google-feed.xml (previous artifact)');
-            recovered = previous;
-            console.warn('[xml-plugin] ✓ Reused previous public/google-feed.xml artifact.');
-          } catch { /* fall through */ }
-        }
-        if (!recovered) {
-          recovered = buildStaticCatalogFallbackFeed();
-          assertGoogleFeedValid(recovered, 'public/google-feed.xml (static catalog fallback)');
-        }
-        merchantFeed = recovered;
-      }
+      // PHASE 10B: fail closed. No previous artifact, no static catalog
+      // fallback — the released feed must come from the current eligible
+      // catalog or the build must stop.
+      const merchantFeed: string = await Promise.race([
+        buildMerchantFeed(),
+        new Promise<string>((_, reject) =>
+          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
+        ),
+      ]);
+      assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml (live DB)');
+      assertNoSandboxFixtures(merchantFeed, 'public/google-feed.xml');
       writeFeedArtifacts(publicDir, merchantFeed, 'dist/google-feed.xml');
       console.log(`[xml-plugin] ✓ /public/merchant-feed.xml (${merchantFeed.length} bytes)`);
       console.log(`[xml-plugin] ✓ /public/google-shopping-feed.xml (${merchantFeed.length} bytes)`);
@@ -1231,6 +1176,7 @@ export default function merchantFeedPlugin(): Plugin {
           console.log('[xml-plugin] ✓ Reused this build\'s public/google-feed.xml as dist feed source.');
         } catch { /* fall through to regen */ }
       }
+      let regenError: string | null = null;
       if (!merchantFeed) {
         try {
           const generated = await Promise.race([
@@ -1242,26 +1188,21 @@ export default function merchantFeedPlugin(): Plugin {
           assertGoogleFeedValid(generated, 'dist/google-feed.xml (regen)');
           merchantFeed = generated;
         } catch (err) {
-          console.warn(
-            '[xml-plugin] ⚠️ closeBundle feed regen failed:',
-            (err as Error)?.message ?? err
-          );
+          regenError = (err as Error)?.message ?? String(err);
+          console.warn('[xml-plugin] ⚠️ closeBundle feed regen failed:', regenError);
         }
       }
 
+      // PHASE 10B: no static catalog emergency feed, no stale artifact reuse.
+      // The only acceptable source is a feed generated during THIS build
+      // (PHASE 1 deletes every prior artifact before writing).
       if (!merchantFeed) {
-        if (!existsSync(publicFeedPath)) {
-          console.warn(
-            '[xml-plugin] ⚠️ dist feed regen failed AND public/google-feed.xml is missing — using static catalog emergency feed.'
+        try {
+          rejectStaleArtifact('dist/google-feed.xml');
+        } catch (err) {
+          throw new Error(
+            `${(err as Error).message} Underlying generation failure: ${regenError ?? 'unknown'}`
           );
-          merchantFeed = buildStaticCatalogFallbackFeed();
-          assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (static catalog fallback)');
-        } else {
-          merchantFeed = readFileSync(publicFeedPath, 'utf8');
-          // The public feed was already validated in PHASE 1, but re-check
-          // defensively so we never ship a broken feed to /dist.
-          assertGoogleFeedValid(merchantFeed, 'dist/google-feed.xml (fallback from public)');
-          console.log('[xml-plugin] ✓ Reused public/google-feed.xml as dist feed source.');
         }
       }
 
