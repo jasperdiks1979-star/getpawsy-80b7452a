@@ -135,8 +135,15 @@ const healCartData = (data: unknown): { healed: unknown; wasCorrupted: boolean }
         wasCorrupted = true;
       }
       
-      // Ensure image_url is string or null
-      if (cartItem.image_url !== null && typeof cartItem.image_url !== 'string') {
+      // Ensure image_url is string or null — but ONLY if the field is
+      // actually present. CartContext items use `image`, not `image_url`;
+      // injecting `image_url: null` flagged every healthy cart as corrupt
+      // and rewrote it on each heal pass (needless churn on a valid cart).
+      if (
+        'image_url' in cartItem &&
+        cartItem.image_url !== null &&
+        typeof cartItem.image_url !== 'string'
+      ) {
         cartItem.image_url = null;
         wasCorrupted = true;
       }
@@ -202,10 +209,17 @@ const healKey = (key: string): HealingResult => {
       // Non-JSON scalar for an owned key: reset only the known
       // structured keys to a safe empty container. Never blanket-remove.
       if (key === 'cart' || key === 'pawsy-cart') {
-        localStorage.setItem(key, JSON.stringify({ items: [] }));
+        // Keep a forensic copy of the unparseable payload, and reset to the
+        // ARRAY shape CartContext actually persists (`pawsy-cart` is a bare
+        // array). Writing `{items:[]}` here changed the on-disk shape behind
+        // the cart engine's back.
+        try {
+          localStorage.setItem(`${key}-corrupt-backup`, rawValue);
+        } catch { /* storage full — ignore */ }
+        localStorage.setItem(key, JSON.stringify([]));
         result.wasCorrupted = true;
         result.fixed = true;
-        result.details = 'Reset non-JSON cart to empty';
+        result.details = 'Reset non-JSON cart to empty array (backup kept)';
       } else if (ARRAY_KEYS.includes(key)) {
         localStorage.setItem(key, JSON.stringify([]));
         result.wasCorrupted = true;

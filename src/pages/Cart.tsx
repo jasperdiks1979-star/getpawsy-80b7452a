@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { PaymentBadges } from '@/components/shared/PaymentBadges';
 import { Helmet } from 'react-helmet-async';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Home, Truck, ShieldCheck, Gift, Star, Compass, Lock } from 'lucide-react';
-import { Layout } from '@/components/layout/Layout';
+import { V2PageShell as Layout } from '@/components/v2/storefront/V2PageShell';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
