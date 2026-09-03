@@ -76,7 +76,7 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                     <h3 className="font-semibold text-xs md:text-sm text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                       {p.name}
                     </h3>
-                    <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(p.id, idx)}</p>
+                    {getTrustLabel(p.id, idx) && <p className="text-[10px] text-primary/80 font-medium mt-1">{getTrustLabel(p.id, idx)}</p>}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-bold text-primary">
                         ${price.toFixed(2)}

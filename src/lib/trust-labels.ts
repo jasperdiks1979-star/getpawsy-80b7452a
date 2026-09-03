@@ -1,32 +1,14 @@
 /**
- * Deterministic trust label system — assigns a varied label per product
- * based on product ID hash to avoid uniform patterns in grids.
- * No ratings, no review counts — only factual/aspirational labels.
+ * Trust labels are disabled.
+ *
+ * The previous implementation assigned rotating social-proof labels
+ * ("Bestseller", "In high demand", "Pet owner favorite", ...) based on a hash
+ * of the product ID. Those claims are not backed by verifiable data and are
+ * not permitted under Google Merchant Center's misrepresentation policy.
+ *
+ * The function is kept so existing call sites keep compiling; it always
+ * returns an empty string and call sites render nothing.
  */
-
-const LABELS = [
-  '🔥 Bestseller',
-  '👍 Pet owner favorite',
-  '🟢 In high demand',
-  '🐾 Recommended by pet lovers',
-  '📦 Fast US shipping',
-] as const;
-
-/** Simple hash from string to number */
-function hash(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
-
-/**
- * Returns a trust label for a product. Uses the product ID + grid index
- * to ensure adjacent cards in the same grid get different labels.
- */
-export function getTrustLabel(productId: string, index: number): string {
-  const base = hash(productId);
-  const pick = (base + index * 3) % LABELS.length;
-  return LABELS[pick];
+export function getTrustLabel(_productId: string, _index: number): string {
+  return '';
 }

@@ -9,7 +9,6 @@ import { useProductPrefetch } from "@/hooks/useProductPrefetch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { getTrustLabel } from "@/lib/trust-labels";
 import { PawConfetti, usePawConfetti } from "@/components/products/PawConfetti";
 import { toast } from "sonner";
 import { trackSelectItem, trackAddToCart, trackAddToWishlist, trackRemoveFromWishlist } from "@/lib/analytics";
@@ -331,9 +330,6 @@ export const ProductCard = memo(
                 {safeString(displayName(product))}
               </h3>
 
-              <p className={premium ? "text-[10px] text-muted-foreground/90 font-medium" : "text-[10px] text-primary/80 font-medium mt-0.5"}>
-                {getTrustLabel(product.id, position ?? 0)}
-              </p>
 
               <div className={premium ? "flex items-baseline gap-2 pt-0.5" : "flex items-center gap-2"}>
                 <span className={premium ? "text-[17px] md:text-lg font-semibold text-foreground tracking-tight" : "text-lg font-bold text-primary"}>

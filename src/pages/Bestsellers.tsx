@@ -558,7 +558,7 @@ const Bestsellers = () => {
               { name: 'Dog Travel Guide', desc: 'Expert guide to carriers, car seats, and travel gear for dogs.', link: '/guides/dog-travel-essentials-guide' },
               { name: 'Shop Dogs', desc: 'Browse all dog products — beds, toys, training gear and more.', link: '/collections/dogs' },
               { name: 'Shop Cats', desc: 'Browse all cat products — trees, litter boxes, toys and more.', link: '/collections/cats' },
-              { name: 'Expert Pet Guides', desc: 'In-depth buying guides to help you choose the best products.', link: '/guides' },
+              { name: 'Pet Care Guides', desc: 'In-depth buying guides to help you choose the best products.', link: '/guides' },
               { name: 'All Pet Products', desc: 'Browse our full catalog of curated premium pet supplies.', link: '/products' },
             ].map((cat) => (
               <Link key={cat.name} to={cat.link} className="flex items-start gap-3 bg-card border rounded-xl p-4 hover:shadow-md transition-shadow group">

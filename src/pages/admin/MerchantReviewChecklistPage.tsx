@@ -31,15 +31,15 @@ const SECTIONS: ChecklistSection[] = [
     id: 'pages',
     title: '1. Verify policy & contact pages are live',
     description:
-      'Open each page in an incognito window. Confirm US identity (GetPawsy LLC, New York, NY) is visible and consistent.',
+      'Open each page in an incognito window. Confirm US identity (the Skidzo (GetPawsy) merchant identity) is visible and consistent.',
     items: [
       { id: 'page-contact', label: 'Contact page shows US identity + support email', href: '/contact' },
-      { id: 'page-about', label: 'About page references GetPawsy LLC, New York, NY', href: '/about' },
+      { id: 'page-about', label: 'About page references the Skidzo (GetPawsy) merchant identity', href: '/about' },
       { id: 'page-shipping', label: 'Shipping page lists US delivery times & free shipping threshold', href: '/shipping' },
       { id: 'page-returns', label: '30-day return policy is visible and accurate', href: '/returns' },
       { id: 'page-privacy', label: 'Privacy Policy mentions US jurisdiction', href: '/privacy' },
-      { id: 'page-terms', label: 'Terms of Service governed by State of New York', href: '/terms' },
-      { id: 'page-footer', label: 'Footer shows GetPawsy LLC + support email on every page' },
+      { id: 'page-terms', label: 'Terms of Service governed by Dutch law', href: '/terms' },
+      { id: 'page-footer', label: 'Footer shows the merchant identity + support email on every page' },
     ],
   },
   {
@@ -108,7 +108,7 @@ const SECTIONS: ChecklistSection[] = [
         id: 'review-submit',
         label: 'Click “Request review” and submit appeal',
         hint:
-          'Suggested note: “Business identity has been updated to GetPawsy LLC, New York, NY. All Dutch references have been removed. Contact, About, Shipping, Returns, Privacy and Terms pages now reflect a US-only operation. Feed has been re-fetched.”',
+          'Suggested note: “Business identity: GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship (KvK 78156955, VAT NL003295015B69), Apeldoorn, Netherlands, serving US customers. Contact, About, Shipping, Returns, Privacy and Terms pages now reflect this identity. Feed has been re-fetched.”',
       },
       {
         id: 'review-monitor',

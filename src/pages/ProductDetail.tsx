@@ -1816,13 +1816,6 @@ const ProductDetail = () => {
                   {productContentOverride?.verifiedShippingLine ?? "Orders processed within 1–2 business days"}
                 </p>
               )}
-              {/* Safe urgency signal */}
-              {inStock && !productContentOverride?.suppressUrgencyLine && (
-                <p className="text-xs font-medium text-primary pl-6 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  High demand item — frequently purchased
-                </p>
-              )}
             </div>
 
             {/* Low Stock Badge — real inventory driven */}

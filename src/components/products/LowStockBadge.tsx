@@ -1,31 +1,19 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
 
 interface LowStockBadgeProps {
   stock: number | null | undefined;
-  /** Threshold below which badge appears. Default: 10 */
+  /** Retained for API compatibility. */
   threshold?: number;
   className?: string;
 }
 
 /**
- * Safe low-stock indicator — no fake timers or urgency.
- * Only shows when real inventory is below threshold.
+ * Scarcity messaging is disabled.
+ *
+ * "Low stock — only a few left" is an urgency claim we cannot substantiate
+ * per-visitor, so this component renders nothing. It is kept so existing call
+ * sites keep compiling.
  */
-export const LowStockBadge: React.FC<LowStockBadgeProps> = ({
-  stock,
-  threshold = 10,
-  className = '',
-}) => {
-  // Don't show if stock is unknown or above threshold
-  if (stock == null || stock <= 0 || stock > threshold) return null;
+export const LowStockBadge: React.FC<LowStockBadgeProps> = () => null;
 
-  return (
-    <div className={`flex items-center gap-1.5 text-amber-600 dark:text-amber-400 ${className}`}>
-      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-      <span className="text-sm font-medium">
-        Low stock — only a few left
-      </span>
-    </div>
-  );
-};
+export default LowStockBadge;

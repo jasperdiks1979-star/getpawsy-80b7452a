@@ -9,7 +9,7 @@ export function WhyCustomersChoose() {
     { icon: Truck, title: 'US Shipping', desc: 'Orders ship within 1–2 business days. Free on orders $35+.' },
     { icon: Shield, title: 'Secure Checkout', desc: '256-bit SSL encryption protects every transaction.' },
     { icon: RotateCcw, title: '30-Day Returns', desc: 'Not satisfied? Return unused items within 30 days to arrange a return.' },
-    { icon: Award, title: 'Quality Tested', desc: 'Every product is selected for durability, safety, and pet comfort.' },
+    { icon: Award, title: 'Clear Product Details', desc: 'Materials and specifications are listed as provided by the manufacturer.' },
   ];
 
   return (
