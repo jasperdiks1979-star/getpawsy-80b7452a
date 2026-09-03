@@ -47,12 +47,8 @@ const BENEFITS = [
   'Automatic cleaning cycle after each use',
 ];
 
-const REVIEWS = [
-  { text: 'After a week of use, the odor in our home has noticeably improved. Setup was straightforward.', name: 'Amanda L.', location: 'Texas, USA', featured: true },
-  { text: 'Works well for our two cats. The app notifications are handy to track usage.', name: 'Sarah M.', location: 'California, USA' },
-  { text: 'Our home smells much fresher since we started using this.', name: 'David K.', location: 'Florida, USA' },
-  { text: 'Both our cats adapted within a few days. Runs quietly at night.', name: 'Jessica R.', location: 'New York, USA' },
-];
+// Customer testimonials removed: GetPawsy does not publish reviews it cannot verify.
+const REVIEWS: { text: string; name: string; location: string; featured?: boolean }[] = [];
 
 const FAQS = [
   { q: 'Does it help with odor?', a: 'The built-in deodorizer is designed to help neutralize odors after each automatic cleaning cycle. Results may vary depending on litter type and environment.' },
@@ -434,7 +430,7 @@ export default function SelfCleaningLitterBoxLanding() {
           <div className="max-w-xl mx-auto text-center">
             <h2 className="text-lg font-bold text-foreground mb-2">About GetPawsy</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              GetPawsy provides pet products designed to make daily life easier for pet owners. Operated by GetPawsy LLC, a US-based online retailer headquartered in New York, NY.
+              GetPawsy provides pet products designed to make daily life easier for pet owners. GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands, serving customers in the United States.
             </p>
           </div>
         </section>
@@ -452,7 +448,7 @@ export default function SelfCleaningLitterBoxLanding() {
             </div>
             <div className="text-xs text-background/40 space-y-1">
               <p>GetPawsy — Pet Supplies for US Pet Owners</p>
-              <p>GetPawsy LLC · New York, NY · United States</p>
+              <p>Skidzo, trading as GetPawsy · Apeldoorn, Netherlands · KvK 78156955 · VAT ID NL003295015B69</p>
               <p><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a></p>
             </div>
             <p className="text-[10px] text-background/30">

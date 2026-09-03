@@ -10,7 +10,7 @@ const HOMEPAGE_GUIDES = [
   { href: '/guides/best-cat-trees-small-apartments', label: 'Best Cat Trees for Large Cats', desc: 'Space-saving picks tested for stability' },
   { href: '/guides/best-dog-car-seats-safe-travel', label: 'Dog Car Seat Safety Guide', desc: 'Crash-tested picks for safe travel' },
   { href: '/guides/complete-dog-training-guide-2026', label: 'Dog Training Guide', desc: 'Stop pulling, barking & bad habits' },
-  { href: '/guides/best-interactive-cat-toys-that-work', label: 'Best Cat Toys for Indoor Cats', desc: 'Expert picks for solo play & stimulation' },
+  { href: '/guides/best-interactive-cat-toys-that-work', label: 'Best Cat Toys for Indoor Cats', desc: 'our picks for solo play & stimulation' },
   { href: '/guides/dog-grooming-essentials-guide', label: 'Dog Grooming at Home', desc: 'Brushes, nail trimmers & techniques' },
 ] as const;
 

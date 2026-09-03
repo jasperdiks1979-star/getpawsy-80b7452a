@@ -58,7 +58,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       answer: 'The best orthopedic dog bed uses high-density memory foam (1.8+ lb/ft³) with a waterproof liner and removable washable cover. For dogs over 50 lbs or with arthritis, choose 5–7 inches of foam thickness. Top-rated beds last 3–5 years and cost $60–$200 — saving money vs replacing cheap beds every 6 months.',
     },
     bulletUSPs: [
-      { icon: '✅', text: 'Vet-recommended memory foam for joint pain relief' },
+      { icon: '✅', text: 'Popular memory foam for joint pain relief' },
       { icon: '🇺🇸', text: 'Ships from US warehouses in 5–10 business days' },
       { icon: '🔄', text: '30-day return policy — full refund if your dog doesn\'t love it' },
     ],
@@ -86,7 +86,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       {
         question: 'Do vets recommend orthopedic dog beds?',
         answer: 'Yes — veterinary orthopedic specialists consistently recommend memory foam beds for dogs with arthritis, hip dysplasia, and post-surgical recovery. The American Kennel Club cites proper sleep surface support as a key factor in reducing joint inflammation.\n\nOrthopedic beds are especially important for large breeds (Labradors, German Shepherds, Golden Retrievers) that put 3x more pressure per square inch on joints than small breeds. Starting orthopedic support before age 5 can slow the progression of age-related joint disease.\n\nLook for beds with CertiPUR-US certified foam to ensure no harmful chemicals or off-gassing.',
-        internalLink: { href: '/guides/best-orthopedic-dog-bed', label: 'Vet-Recommended Bed Guide' },
+        internalLink: { href: '/guides/best-orthopedic-dog-bed', label: 'Popular Bed Guide' },
       },
       {
         question: 'Is memory foam or egg crate foam better for dogs?',
@@ -353,7 +353,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       answer: 'The best interactive dog toys combine mental stimulation with physical activity — puzzle feeders reduce boredom-related destruction by 60%, while treat-dispensing balls keep dogs engaged for 30+ minutes. Top picks are BPA-free, dishwasher-safe, and priced $10–$40. Best for high-energy breeds, puppies, and dogs home alone.',
     },
     bulletUSPs: [
-      { icon: '✅', text: 'Vet-recommended for mental stimulation & anxiety relief' },
+      { icon: '✅', text: 'Popular for mental stimulation & anxiety relief' },
       { icon: '🇺🇸', text: 'US warehouse shipping — 5–10 day delivery' },
       { icon: '🔄', text: '30-day return policy on all toys' },
     ],

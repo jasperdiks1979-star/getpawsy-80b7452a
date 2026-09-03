@@ -6,7 +6,7 @@ const MONEY_PAGES = [
   {
     path: '/best-cat-litter-box-2026',
     title: 'Best Cat Litter Box 2026 (What Actually Works)',
-    description: 'We tested 30+ litter boxes — these 5 control odor, tracking, and mess.',
+    description: 'we compared litter boxes — these 5 control odor, tracking, and mess.',
     emoji: '🐱',
   },
   {
@@ -18,7 +18,7 @@ const MONEY_PAGES = [
   {
     path: '/best-interactive-cat-toys',
     title: 'Best Interactive Cat Toys 2026 (Top Picks Tested)',
-    description: 'Toys that actually hold attention beyond 5 minutes. Expert-tested.',
+    description: 'Toys that actually hold attention beyond 5 minutes. carefully selected.',
     emoji: '🎯',
   },
   {
@@ -45,7 +45,7 @@ export function BestBuyingGuides2026() {
             🔥 Best Buying Guides 2026
           </h2>
           <p className="text-muted-foreground text-sm md:text-base max-w-xl mx-auto">
-            Expert-tested picks to help you choose the best products for your pet.
+            carefully selected picks to help you choose the best products for your pet.
           </p>
         </FadeInView>
 

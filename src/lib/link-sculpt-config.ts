@@ -79,7 +79,7 @@ export const PRIORITY_CORNERSTONES = [
     label: 'Best Cat Litter Boxes 2026',
     anchors: {
       exact: ['best cat litter boxes', 'best litter boxes 2026'],
-      partial: ['top-rated litter boxes', 'expert-tested litter boxes', 'litter box buying guide'],
+      partial: ['top-rated litter boxes', 'carefully selected litter boxes', 'litter box buying guide'],
       branded: ['GetPawsy litter box picks', 'our litter box collection'],
     },
     tier: 2 as const,

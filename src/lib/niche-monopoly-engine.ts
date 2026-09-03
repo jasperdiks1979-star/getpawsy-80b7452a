@@ -189,8 +189,8 @@ const catTrees: NicheProfile = {
   revenueScenarios: buildScenarios(9200, 12, 120),
   ctrOptimizations: [
     { page: '/collections/all', currentTitle: "Heavy Duty Cat Trees for Large Cats – Won't Tip (2026)", newTitle: "5 Best Cat Trees for Large Cats – Anti-Tip Tested (2026)", currentMeta: 'Tired of wobbly cat trees?...', newMeta: "Wobbly cat tree? Heavy-duty trees rated for 25+ lb cats. Reinforced bases, thick sisal, anti-tip tested. Free shipping on eligible orders over $35." },
-    { page: '/collections/all', currentTitle: 'Best Cat Tree for Maine Coon', newTitle: 'Best Cat Tree for Maine Coon – 25+ lb Rated (2026)', currentMeta: 'Find cat trees for Maine Coons...', newMeta: "Maine Coons need extra-wide platforms & 25+ lb capacity. Our expert-reviewed picks won't wobble. Free shipping." },
-    { page: '/collections/all', currentTitle: 'Heavy Duty Cat Trees', newTitle: 'Heavy Duty Cat Trees – 40+ lb Capacity Tested', currentMeta: 'Shop heavy duty cat trees...', newMeta: "Reinforced with solid wood frames and anti-tip hardware. Rated for 40+ lbs. Expert-reviewed, free US shipping." },
+    { page: '/collections/all', currentTitle: 'Best Cat Tree for Maine Coon', newTitle: 'Best Cat Tree for Maine Coon – 25+ lb Rated (2026)', currentMeta: 'Find cat trees for Maine Coons...', newMeta: "Maine Coons need extra-wide platforms & 25+ lb capacity. Our carefully selected picks won't wobble. Free shipping." },
+    { page: '/collections/all', currentTitle: 'Heavy Duty Cat Trees', newTitle: 'Heavy Duty Cat Trees – 40+ lb Capacity Tested', currentMeta: 'Shop heavy duty cat trees...', newMeta: "Reinforced with solid wood frames and anti-tip hardware. Rated for 40+ lbs. carefully selected, free US shipping." },
   ],
   executionChecklist: [
     { task: 'Pillar page at 2,000+ words with stability science', priority: 'critical', status: 'done', week: 1 },

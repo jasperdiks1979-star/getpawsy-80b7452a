@@ -42,7 +42,7 @@ export function QuickRecommendation({ data }: Props) {
           <h2 className="text-xl font-display font-bold text-foreground tracking-tight">
             Quick Recommendations
           </h2>
-          <p className="text-xs text-muted-foreground">Expert-tested & vetted picks</p>
+          <p className="text-xs text-muted-foreground">carefully selected & selected picks</p>
         </div>
       </div>
 

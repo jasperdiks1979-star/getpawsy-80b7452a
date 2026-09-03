@@ -1,10 +1,10 @@
 // Centralized author entity for E-E-A-T consistency across all content
 export const AUTHOR = {
-  name: 'Sarah Mitchell',
-  jobTitle: 'Pet Product Researcher & Writer',
+  name: 'GetPawsy Editorial',
+  jobTitle: 'Editorial team',
   url: 'https://getpawsy.pet/about-the-author',
-  bio: 'Sarah has spent over 6 years researching and testing pet products for dogs and cats. She focuses on comfort, safety, and practical design — helping US pet parents make confident buying decisions.',
-  shortBio: 'Pet product researcher with 6+ years of hands-on testing experience.',
+  bio: 'The GetPawsy editorial team writes our buying guides based on published manufacturer specifications, materials documentation and price comparison. We do not perform our own laboratory or in-home product testing.',
+  shortBio: 'Buying guides based on published specifications and price comparison.',
   expertise: ['Cat Litter & Litter Boxes', 'Dog Beds & Crates', 'Pet Toys & Accessories', 'Grooming Supplies'],
   sameAs: [] as string[], // Add LinkedIn URL when available
 };
@@ -20,7 +20,7 @@ export const PUBLISHER = {
 export function getPersonSchema() {
   return {
     '@context': 'https://schema.org',
-    '@type': 'Person',
+    '@type': 'Organization',
     name: AUTHOR.name,
     url: AUTHOR.url,
     jobTitle: AUTHOR.jobTitle,
@@ -51,7 +51,7 @@ export function getPublisherSchema() {
 
 export function getAuthorSchema() {
   return {
-    '@type': 'Person',
+    '@type': 'Organization',
     name: AUTHOR.name,
     url: AUTHOR.url,
   };

@@ -289,7 +289,7 @@ function runEeatReinforcement(queries: GscQueryRow[]): EeatResult {
       improvements: [
         'Add first-person product testing narratives to guides',
         'Include real photo evidence of product testing',
-        'Add "How We Test" methodology page',
+        'Add "How we compare" methodology page',
         'Document hands-on experience with each reviewed product',
       ],
     },

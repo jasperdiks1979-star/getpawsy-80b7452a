@@ -5,7 +5,7 @@ export default function MemoryFoamDogBeds() {
     <SubIntentPage
       canonical="https://getpawsy.pet/collections/all"
       title="Best Memory Foam Dog Beds (2026) – High-Density Comfort"
-      metaDesc="Shop high-density memory foam dog beds tested for joint support and durability. 3–7 inch options for all dog sizes. Expert-reviewed with foam density ratings."
+      metaDesc="Shop high-density memory foam dog beds tested for joint support and durability. 3–7 inch options for all dog sizes. carefully selected with foam density ratings."
       h1="Best Memory Foam Dog Beds — High-Density Joint Support (2026)"
       subtitle="Viscoelastic memory foam beds that contour to your dog's body, relieve pressure points, and maintain support for 3–5 years. Tested and density-rated."
       ctaText="Shop Memory Foam Beds"

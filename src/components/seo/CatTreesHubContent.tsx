@@ -23,7 +23,7 @@ export function CatTreesHubContent() {
       {/* Updated badge */}
       <div className="flex items-center gap-2">
         <Badge variant="secondary" className="text-xs">Updated February 2026</Badge>
-        <Badge variant="outline" className="text-xs">Expert Tested</Badge>
+        <Badge variant="outline" className="text-xs">carefully selected</Badge>
       </div>
 
       {/* Section 1: Why Cat Tree Choice Matters */}

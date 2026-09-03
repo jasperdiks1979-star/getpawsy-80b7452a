@@ -370,13 +370,13 @@ const TermsOfService = () => {
                 </h2>
                 <p className="text-muted-foreground mb-4">
                   These Terms of Service shall be governed by and construed in accordance with the laws of 
-                  the State of New York, United States, without regard to conflict of law principles.
+                  the Netherlands, without regard to conflict of law principles.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   <strong>Dispute Resolution:</strong> Any dispute, controversy, or claim arising out of 
                   or relating to these Terms of Service or any product purchased through our website shall 
                   first be attempted to be resolved through good faith negotiations. If negotiations fail, 
-                  disputes shall be submitted to the competent court in New York County, New York.
+                  disputes shall be submitted to the competent court in the Netherlands.
                 </p>
               </section>
 
@@ -420,8 +420,9 @@ const TermsOfService = () => {
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">
-                    <p className="m-0 font-semibold text-foreground">GetPawsy LLC</p>
-                    <p className="m-0">New York, NY · United States</p>
+                    <p className="m-0 font-semibold text-foreground">Skidzo, trading as GetPawsy</p>
+                    <p className="m-0">Apeldoorn, Netherlands</p>
+                    <p className="m-0">KvK 78156955 · VAT ID NL003295015B69</p>
                     <p className="m-0 mt-3 text-sm">Online-only pet supply retailer</p>
                   </div>
                 </div>

@@ -116,7 +116,7 @@ export default function SlowFeederDogBowls() {
   const jsonLd = useMemo(() => ({
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Best Slow Feeder Dog Bowls 2026 | Vet Recommended | GetPawsy',
+    name: 'Best Slow Feeder Dog Bowls 2026 | Popular | GetPawsy',
     description: 'Reduce bloating, vomiting & choking with premium slow feeder dog bowls. Dishwasher safe. Free shipping on eligible orders over $35.',
     url: PAGE_URL,
     publisher: {
@@ -130,7 +130,7 @@ export default function SlowFeederDogBowls() {
     <>
       <Helmet>
         <title>Best Slow Feeder Dog Bowls (2026) | GetPawsy</title>
-        <meta name="description" content="Reduce bloating and choking with premium slow feeder dog bowls. Vet-recommended, dishwasher safe. Shop trusted picks at GetPawsy." /><script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+        <meta name="description" content="Reduce bloating and choking with premium slow feeder dog bowls. Popular, dishwasher safe. Shop trusted picks at GetPawsy." /><script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
 
       <FAQSchema faqs={PAGE_FAQS} pageUrl={PAGE_URL} />
@@ -140,7 +140,7 @@ export default function SlowFeederDogBowls() {
         <section className="relative bg-gradient-to-b from-primary/5 via-background to-background py-16 md:py-24">
           <div className="container mx-auto px-4 max-w-4xl text-center">
             <Badge variant="secondary" className="mb-4 text-xs font-medium tracking-wider uppercase">
-              Vet-Recommended
+              Popular
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4">
               Stop Dangerous Fast Eating — Protect Your Dog Today
@@ -323,7 +323,7 @@ export default function SlowFeederDogBowls() {
                   <p className="text-xs text-primary/80 font-medium mb-4">🔥 Bestseller</p>
 
                   <ul className="space-y-2 mb-5 text-sm text-foreground">
-                    {['Vet recommended', 'Anti-slip base', 'Dishwasher safe', 'BPA free', 'Designed for US pet owners'].map((point) => (
+                    {['Popular', 'Anti-slip base', 'Dishwasher safe', 'BPA free', 'Designed for US pet owners'].map((point) => (
                       <li key={point} className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
                         {point}

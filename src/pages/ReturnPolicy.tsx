@@ -309,10 +309,10 @@ const ReturnPolicy = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy LLC</strong> is a US-based online pet supply retailer headquartered in New York, NY.
+                  <strong>GetPawsy</strong> is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States.
                 </p>
                 <p className="text-muted-foreground">
-                  GetPawsy LLC is responsible for processing all returns, issuing refunds, and handling customer service inquiries. When you contact us about a return, you are dealing directly with our team.
+                  Skidzo, trading as GetPawsy, is responsible for processing all returns, issuing refunds, and handling customer service inquiries. When you contact us about a return, you are dealing directly with our team.
                 </p>
               </div>
             </section>

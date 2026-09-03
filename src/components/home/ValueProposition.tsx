@@ -9,7 +9,7 @@ const VALUE_POINTS = [
   {
     icon: ShieldCheck,
     title: 'Quality You Can Trust',
-    desc: 'We test and vet each product before adding it to our store. No generic listings — only items we stand behind.',
+    desc: 'we compare and vet each product before adding it to our store. No generic listings — only items we stand behind.',
   },
   {
     icon: Truck,

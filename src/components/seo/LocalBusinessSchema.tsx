@@ -31,9 +31,8 @@ export function LocalBusinessSchema({
     email: SUPPORT_EMAIL,
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'New York',
-      addressRegion: 'NY',
-      addressCountry: 'US',
+      addressLocality: 'Apeldoorn',
+      addressCountry: 'NL',
     },
     contactPoint: {
       '@type': 'ContactPoint',

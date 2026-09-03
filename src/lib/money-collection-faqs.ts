@@ -69,7 +69,7 @@ export const MONEY_COLLECTION_FAQS: Record<string, MoneyFAQ[]> = {
   ],
   'dog-leash-control': [
     { question: 'How do I stop my dog from pulling on the leash?', answer: 'Use a front-clip no-pull harness and the stop-and-redirect method: when your dog pulls, stop completely. Wait until the leash is loose, then continue. Reward loose-leash walking with treats. Most dogs improve within 1–2 weeks.' },
-    { question: 'Are no-pull harnesses safe for dogs?', answer: 'Yes, properly fitted no-pull harnesses are safe and vet-recommended. Front-clip designs redirect force across the chest without neck pressure. Ensure the harness doesn\'t restrict shoulder movement.' },
+    { question: 'Are no-pull harnesses safe for dogs?', answer: 'Yes, properly fitted no-pull harnesses are safe and popular. Front-clip designs redirect force across the chest without neck pressure. Ensure the harness doesn\'t restrict shoulder movement.' },
     { question: 'What length leash is best for training?', answer: 'A 4–6 foot fixed-length leash is ideal. Shorter leashes restrict movement; longer ones give too much freedom. Avoid retractable leashes during training — they teach dogs that pulling extends range.' },
     { question: 'How long does leash training take?', answer: 'Most dogs show improvement within 2–3 weeks of daily practice with proper equipment. Full reliability typically takes 4–8 weeks depending on age, breed, and how ingrained the pulling habit is.' },
   ],

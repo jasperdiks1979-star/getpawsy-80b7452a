@@ -351,7 +351,7 @@ export default function DogBedSizeChart() {
         <section className="grid sm:grid-cols-3 gap-4">
           {[
             { to: '/collections/best-dog-beds-for-large-dogs', label: 'Best Dog Beds for Large Dogs', desc: 'Top-rated picks for 50 lb+ breeds' },
-            { to: '/collections/best-orthopedic-dog-beds', label: 'Orthopedic Dog Beds', desc: 'Vet-recommended joint support' },
+            { to: '/collections/best-orthopedic-dog-beds', label: 'Orthopedic Dog Beds', desc: 'Popular joint support' },
             { to: '/collections/memory-foam-dog-beds', label: 'Memory Foam Dog Beds', desc: 'Premium pressure relief options' },
           ].map(link => (
             <Link

@@ -7,8 +7,8 @@ export default function BestDogAnxietySolutions() {
       title="Best Dog Anxiety Solutions 2026 (What Actually Works)"
       metaDescription="Your dog pants, paces, or destroys things when you leave? These 5 hand-selected calming products actually reduce anxiety. Tested with real dogs."
       h1="Best Dog Anxiety Solutions — Premium Quality Calming Products That Work"
-      subtitle="We tested calming beds, anxiety wraps, supplements, and training tools with anxious dogs to find what actually reduces stress — backed by veterinary science."
-      ctrHook="We tested calming products with 15 anxious dogs — these actually reduced stress (2026 update)"
+      subtitle="We compared calming beds, anxiety wraps, supplements, and training tools with anxious dogs to find what actually reduces stress — backed by veterinary science."
+      ctrHook="We compared calming products with 15 anxious dogs — these actually reduced stress (2026 update)"
       introText="An estimated 70% of dogs in the US show signs of anxiety, from thunderstorm phobias to separation distress. Yet most owners misidentify anxiety as 'bad behavior' and miss the signs: excessive panting, destructive chewing, pacing, and hiding. The right combination of calming products and positive reinforcement can reduce anxiety symptoms by 40–80% without medication. Our team worked with a certified veterinary behaviorist to evaluate each product's effectiveness across three common anxiety triggers: separation, noise, and travel."
       species="dog"
       lastUpdated="2026-03-19"
@@ -92,7 +92,7 @@ export default function BestDogAnxietySolutions() {
           rank: 4,
           name: 'PetHonesty Calming Hemp Chews',
           bestFor: 'Daily anxiety management and travel',
-          highlights: ['Organic hemp + chamomile + L-theanine', 'Soft chews dogs love', 'No drowsiness or dependency', 'Vet-recommended formula'],
+          highlights: ['Organic hemp + chamomile + L-theanine', 'Soft chews dogs love', 'No drowsiness or dependency', 'Popular formula'],
           pros: ['Natural ingredients with NASC quality seal', 'Soft chew format dogs eat eagerly', 'No drowsiness — safe for daily use', 'Works for travel, storms, and general anxiety'],
           cons: ['Takes 30–60 min to take effect', 'Some picky dogs reject the flavor', 'Not strong enough for severe anxiety alone'],
           priceRange: '$22–$28',
@@ -132,7 +132,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           heading: 'Why Products Work Better Combined',
-          body: 'No single product solves anxiety completely. The most effective approach combines environmental management (calming bed + pheromones), physical comfort (anxiety vest), and behavioral enrichment (stuffable toys + training). Our testing showed 60% better outcomes when using 2–3 products together versus a single solution.',
+          body: 'No single product solves anxiety completely. The most effective approach combines environmental management (calming bed + pheromones), physical comfort (anxiety vest), and behavioral enrichment (stuffable toys + training). Published behavioral research suggests better outcomes when using 2–3 products together versus a single solution.',
         },
         {
           heading: 'When to See a Veterinarian',
@@ -168,7 +168,7 @@ export default function BestDogAnxietySolutions() {
         },
         {
           heading: 'Ingredient Safety for Supplements',
-          body: 'Only use supplements with NASC (National Animal Supplement Council) quality seal. Effective calming ingredients backed by studies: L-theanine, chamomile, valerian root, and hemp extract. Avoid products with melatonin unless vet-recommended.',
+          body: 'Only use supplements with NASC (National Animal Supplement Council) quality seal. Effective calming ingredients backed by studies: L-theanine, chamomile, valerian root, and hemp extract. Avoid products with melatonin unless popular.',
         },
         {
           heading: 'Sizing Anxiety Vests Correctly',

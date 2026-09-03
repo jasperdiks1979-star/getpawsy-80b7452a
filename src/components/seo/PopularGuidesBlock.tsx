@@ -11,7 +11,7 @@ const CORNERSTONE_GUIDES = [
   {
     slug: 'best-interactive-cat-toys-that-work',
     anchor: 'Best Cat Toys for Indoor Cats',
-    description: 'Tested & ranked interactive cat toys for indoor cats — expert picks for solo play and mental stimulation.',
+    description: 'Compared & Ranked interactive cat toys for indoor cats — our picks for solo play and mental stimulation.',
     category: 'Cat Toys',
     readTime: '12 min',
   },
@@ -32,7 +32,7 @@ const CORNERSTONE_GUIDES = [
   {
     slug: 'best-dog-car-seats-safe-travel',
     anchor: 'Best Dog Car Seats',
-    description: 'Safety-tested car seats & boosters to protect your dog on every journey.',
+    description: 'safety-focused car seats & boosters to protect your dog on every journey.',
     category: 'Dog Travel',
     readTime: '11 min',
   },
@@ -72,7 +72,7 @@ export function PopularGuidesBlock({
             {title}
           </h2>
           {!compact && (
-            <p className="text-sm text-muted-foreground">Expert-tested, updated for 2026</p>
+            <p className="text-sm text-muted-foreground">carefully selected, updated for 2026</p>
           )}
         </div>
       </div>

@@ -254,12 +254,12 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best self cleaning litter box': {
     before: 'Best Self Cleaning Litter Box | GetPawsy',
     after: 'Never Scoop Again – Best Self-Cleaning Litter Box (2026 Tested)',
-    meta: 'We tested 15+ self-cleaning litter boxes for odor, reliability, and noise. Honest rankings, no sponsorships. Free shipping available.',
+    meta: 'we compared self-cleaning litter boxes for odor, reliability, and noise. Honest rankings, no sponsorships. Free shipping available.',
   },
   'best dog car seat': {
     before: 'Best Dog Car Seat | GetPawsy',
     after: 'Keep Your Dog Safe – Best Crash-Tested Dog Car Seats (2026 Guide)',
-    meta: 'Crash-tested, vet-recommended car seats for all sizes. Booster, hammock, and carrier styles compared. Ships free across US.',
+    meta: 'Crash-tested, popular car seats for all sizes. Booster, hammock, and carrier styles compared. Ships free across US.',
   },
   'best slow feeder dog bowl': {
     before: 'Best Slow Feeder Dog Bowl | GetPawsy',
@@ -268,7 +268,7 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   },
   'best interactive dog toys': {
     before: 'Best Interactive Dog Toys | GetPawsy',
-    after: 'Keep Dogs Busy for Hours – Best Interactive Toys (Expert Tested 2026)',
+    after: 'Keep Dogs Busy for Hours – Best Interactive Toys (carefully selected 2026)',
     meta: 'Tested 30+ toys for engagement and durability. See which keep dogs mentally stimulated longest. Free shipping available on all orders.',
   },
   'how to stop dog pulling on leash': {
@@ -283,8 +283,8 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   },
   'best cat water fountain': {
     before: 'Best Cat Water Fountain | GetPawsy',
-    after: 'Protect Kidney Health – Best Cat Water Fountains (Vet Recommended 2026)',
-    meta: 'Increase cat hydration by 200%. Ultra-quiet motors, BPA-free, dishwasher safe. Vet-recommended picks. Free shipping available.',
+    after: 'Protect Kidney Health – Best Cat Water Fountains (Popular 2026)',
+    meta: 'Increase cat hydration by 200%. Ultra-quiet motors, BPA-free, dishwasher safe. Popular picks. Free shipping available.',
   },
 };
 

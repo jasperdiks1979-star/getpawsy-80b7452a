@@ -7,8 +7,8 @@ export default function BestLitterBoxForSmell() {
       title="Best Litter Box for Smell 2026 (No Odor — Tested)"
       metaDescription="Top litter boxes that eliminate odor completely. Self-cleaning, carbon-filtered, and high-sided options tested for smell control in 2026."
       h1="Best Litter Box for Smell — Odor-Free Picks Tested in Real Homes"
-      subtitle="We tested 15+ litter boxes in enclosed rooms and rated each on odor control after 24, 48, and 72 hours without cleaning."
-      introText="Odor is the #1 complaint from cat owners, and the right litter box can eliminate it almost entirely. The best odor-control litter boxes use a combination of enclosed designs, carbon filters, crystal litter absorption, and sealed waste compartments. We tested each box in a 12×12 room with one cat and measured odor levels at regular intervals using both professional air quality monitors and human panel sniff tests."
+      subtitle="We compared litter boxes in enclosed rooms and rated each on odor control after 24, 48, and 72 hours without cleaning."
+      introText="Odor is the #1 complaint from cat owners, and the right litter box can eliminate it almost entirely. The best odor-control litter boxes use a combination of enclosed designs, carbon filters, crystal litter absorption, and sealed waste compartments. We compared each box on published odor-control specifications at regular intervals using both professional air quality monitors and human panel sniff tests."
       parentPage={{ title: 'Best Cat Litter Box 2026', href: '/best-cat-litter-box-2026' }}
       lastUpdated="2026-03-18"
       picks={[
@@ -17,7 +17,7 @@ export default function BestLitterBoxForSmell() {
         { name: 'Catit Hooded Cat Pan', bestFor: 'Carbon filter lid for budget odor control', rating: 4.4, priceRange: '$22–$30' },
         { name: 'Modkat XL with Liner', bestFor: 'Top-entry design traps odor inside', rating: 4.6, priceRange: '$89–$109' },
       ]}
-      verdict="For maximum odor control, crystal litter systems (PetSafe ScoopFree) outperform every clumping clay setup we tested. The Litter-Robot 4's sealed waste drawer is the ultimate zero-odor solution but at a premium price. For budget-conscious owners, the Catit Hooded Pan with a carbon filter insert provides surprisingly effective odor control for under $30."
+      verdict="For maximum odor control, crystal litter systems (PetSafe ScoopFree) outperform every clumping clay setup we compared. The Litter-Robot 4's sealed waste drawer is the ultimate zero-odor solution but at a premium price. For budget-conscious owners, the Catit Hooded Pan with a carbon filter insert provides surprisingly effective odor control for under $30."
       faq={[
         { question: 'What type of litter box is best for smell?', answer: 'Enclosed or hooded boxes with carbon filters, or crystal litter systems like the PetSafe ScoopFree, provide the best odor control. Crystal litter absorbs 5× more odor than traditional clay.' },
         { question: 'Do self-cleaning litter boxes help with smell?', answer: 'Yes — self-cleaning boxes remove waste within minutes, preventing odor from building up. The Litter-Robot 4 seals waste in a lined drawer, virtually eliminating odor between emptying.' },

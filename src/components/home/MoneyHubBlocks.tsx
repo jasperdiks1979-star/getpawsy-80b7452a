@@ -24,7 +24,7 @@ const MONEY_HUBS: Array<{
     href: '/collections/cat-litter-boxes',
     anchor: 'best cat litter boxes',
     content:
-      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our expert-tested collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free shipping on eligible orders over $35 and a 30-day return policy.',
+      'Finding the right litter box means balancing odor control, ease of cleaning, and your cat\'s comfort. Our carefully selected collection features self-cleaning systems that reduce daily scooping by 90%, enclosed boxes that trap odors with activated carbon filters, and extra-large options designed for cats over 15 lbs. We also carry furniture-style enclosures that blend into your living room décor. Every litter box is tested for splash resistance, entry height accessibility, and long-term durability. Free shipping on eligible orders over $35 and a 30-day return policy.',
     badges: ['Odor Control', 'Self-Cleaning', 'Large Cat Friendly'],
     guideLink: '/guides/best-cat-litter-box-2026',
   },
@@ -45,7 +45,7 @@ export function MoneyHubBlocks() {
       <div className="container px-4 md:px-6">
         <FadeInView className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-3">
-            Indoor Cat Authority — Expert Tested for 2026
+            Indoor Cat Authority — carefully selected for 2026
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Our highest-rated indoor cat categories, backed by stability testing, real cat owner reviews, and expert curation.

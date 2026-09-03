@@ -81,7 +81,7 @@ const DATA: Record<ProductType, ComparisonData> = {
       { feature: 'Raised bolster edges', ours: true, generic: false },
       { feature: 'Non-slip base', ours: true, generic: false },
       { feature: 'Machine-washable cover', ours: true, generic: true },
-      { feature: 'Vet-recommended support', ours: true, generic: false },
+      { feature: 'Popular support', ours: true, generic: false },
     ],
   },
   toy: {
@@ -93,7 +93,7 @@ const DATA: Record<ProductType, ComparisonData> = {
       { feature: 'Mental stimulation design', ours: true, generic: false },
       { feature: 'Easy to clean', ours: true, generic: true },
       { feature: 'Multiple play modes', ours: true, generic: false },
-      { feature: 'Vet-recommended', ours: true, generic: false },
+      { feature: 'Popular', ours: true, generic: false },
     ],
   },
   carrier: {

@@ -138,7 +138,7 @@ const RELATED_CATEGORIES: Record<string, RelatedCategory[]> = {
   // ── Pet Stroller Cluster ──
   'best-pet-strollers': [
     { slug: 'dog-travel-accessories', label: 'Dog Travel Gear', description: 'Portable crates, water bottles & more' },
-    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'Safety-tested car seat options' },
+    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'safety-focused car seat options' },
     { slug: 'best-cat-carriers', label: 'Cat Carriers', description: 'Airline-approved cat travel carriers' },
   ],
 

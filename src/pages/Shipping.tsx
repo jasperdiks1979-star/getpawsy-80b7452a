@@ -141,7 +141,7 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  Orders are fulfilled through US-based fulfillment partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
+                  Orders are fulfilled through our fulfillment partners and shipped directly to customers across the United States. Every order includes tracking information so you can follow your package from dispatch to delivery.
                 </p>
                 <p className="text-muted-foreground mb-4">
                   GetPawsy coordinates all fulfillment logistics and is fully responsible for ensuring your order reaches you safely and on time.
@@ -282,10 +282,10 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-3">
-                  <strong>GetPawsy LLC</strong> is a US-based online pet supply retailer headquartered in New York, NY.
+                  <strong>GetPawsy</strong> is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  GetPawsy LLC is responsible for all shipping operations, fulfillment coordination, and customer service related to your order. If you have any questions or concerns about your shipment, our customer support team is here to help.
+                  Skidzo, trading as GetPawsy, is responsible for all shipping operations, fulfillment coordination, and customer service related to your order. If you have any questions or concerns about your shipment, our customer support team is here to help.
                 </p>
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
                   <Mail className="w-5 h-5 text-primary flex-shrink-0" />

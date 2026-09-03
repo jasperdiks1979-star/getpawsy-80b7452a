@@ -99,8 +99,8 @@ const Contact = () => {
     {
       icon: Building2,
       title: 'Location',
-      content: 'New York, NY · United States',
-      description: 'Online-only pet supply store serving customers across the US',
+      content: 'Apeldoorn, Netherlands',
+      description: 'Online-only pet supply store serving customers in the United States',
       href: null,
     },
     {
@@ -314,13 +314,22 @@ const Contact = () => {
                     <h3 className="font-semibold text-foreground mb-2">Business Information</h3>
                     <div className="space-y-1.5 text-sm">
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Legal name:</span> GetPawsy LLC
+                        <span className="text-foreground font-medium">Legal name:</span> Skidzo (Dutch sole proprietorship)
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Trading as:</span> GetPawsy
                       </p>
                       <p className="text-muted-foreground">
-                        <span className="text-foreground font-medium">Location:</span> New York, NY · United States
+                        <span className="text-foreground font-medium">Location:</span> Apeldoorn, Netherlands
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">KvK:</span> 78156955
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">VAT ID:</span> NL003295015B69
+                      </p>
+                      <p className="text-muted-foreground">
+                        <span className="text-foreground font-medium">Serves:</span> Customers in the United States
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Contact:</span>{' '}
@@ -328,13 +337,13 @@ const Contact = () => {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
-                      GetPawsy LLC is fully responsible for all orders, payments, shipping, and customer service.
+                      Skidzo, trading as GetPawsy, is fully responsible for all orders, payments, shipping, and customer service.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 italic">
                       GetPawsy is an independent online store focused on quality pet products for dogs and cats.
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      <span className="text-foreground font-medium">Fulfillment model:</span> Curated dropship — products are shipped to you directly by our vetted supplier and warehouse partners on behalf of GetPawsy LLC. All orders, payments, customer service, and returns are handled by GetPawsy.
+                      <span className="text-foreground font-medium">Fulfillment model:</span> Dropship — products are shipped to you directly by our supplier and warehouse partners on behalf of Skidzo. All orders, payments, customer service, and returns are handled by GetPawsy.
                     </p>
                   </div>
                 </div>

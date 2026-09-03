@@ -36,6 +36,6 @@ export const TRUST_LABELS: Record<TrustModule, string> = {
   free_shipping: 'Free shipping over $50',
   returns: '30-day returns',
   secure_checkout: 'Secure checkout',
-  us_support: 'US-based support',
+  us_support: 'Email support within 24 hours',
   small_business: 'Independent small business',
 };

@@ -183,7 +183,7 @@ export const COMPETITOR_DATA: Record<string, CompetitorAttackPlan> = {
       'orthopedic dog bed with bolsters',
       'dog bed for post surgery recovery',
       'thick memory foam dog bed large breed',
-      'vet recommended orthopedic dog bed',
+      'popular orthopedic dog bed',
     ],
     authorityGapKeywords: [
       'orthopedic vs memory foam dog bed',

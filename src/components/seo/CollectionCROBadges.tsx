@@ -18,7 +18,7 @@ const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award
   'best-cat-litter-boxes': {
     badges: [
       { icon: 'shield', label: 'Odor Control Tested' },
-      { icon: 'award', label: 'Vet Recommended' },
+      { icon: 'award', label: 'Popular' },
       { icon: 'truck', label: 'US Shipping' },
     ],
   },

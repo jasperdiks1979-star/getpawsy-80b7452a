@@ -100,7 +100,7 @@ export default function BestSelfCleaningLitterBox2026() {
             Best Self-Cleaning Litter Boxes for 2026 — Noise, Cost & Multi-Cat Comparison
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            We tested 14 self-cleaning litter boxes across noise level, odor control, waste capacity, and multi-cat durability.
+            we compared self-cleaning litter boxes across noise level, odor control, waste capacity, and multi-cat durability.
             This guide cuts through the marketing to show you exactly which type works for your home — and which ones to avoid.
           </p>
         </header>
@@ -172,7 +172,7 @@ export default function BestSelfCleaningLitterBox2026() {
         {/* CTA Block 1 */}
         <div className="rounded-xl bg-accent/50 border p-6 mb-12 text-center">
           <p className="font-semibold mb-2">Browse Our Curated Selection</p>
-          <p className="text-sm text-muted-foreground mb-4">Hand-picked self-cleaning litter boxes — every model tested for noise, safety, and multi-cat durability.</p>
+          <p className="text-sm text-muted-foreground mb-4">carefully selected self-cleaning litter boxes — every model compared for noise, safety, and multi-cat durability.</p>
           <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
             Shop Self-Cleaning Litter Boxes <ArrowRight className="h-4 w-4" />
           </Link>
@@ -492,7 +492,7 @@ export default function BestSelfCleaningLitterBox2026() {
         {/* CTA Block 3 */}
         <div className="rounded-xl bg-accent/50 border p-6 mb-12 text-center">
           <p className="font-semibold mb-2">Ready for Easier Cleanup?</p>
-          <p className="text-sm text-muted-foreground mb-4">Every self-cleaning litter box we sell is tested for noise, safety, and multi-cat durability.</p>
+          <p className="text-sm text-muted-foreground mb-4">Every self-cleaning litter box we sell is compared for noise, safety, and multi-cat durability.</p>
           <Link to="/collections/cat-litter-boxes" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
             Shop Self-Cleaning Litter Boxes <ArrowRight className="h-4 w-4" />
           </Link>

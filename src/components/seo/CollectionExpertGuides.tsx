@@ -57,7 +57,7 @@ const COLLECTION_GUIDE_MAP: Record<string, GuideLink[]> = {
   ],
   // ── Dog Toys ──
   'best-interactive-dog-toys': [
-    { slug: 'best-puzzle-toys-for-dogs-2026', title: 'Best Puzzle Toys for Dogs – 2026 Rankings', excerpt: 'Stimulate your dog\'s brain with vet-recommended enrichment toys.' },
+    { slug: 'best-puzzle-toys-for-dogs-2026', title: 'Best Puzzle Toys for Dogs – 2026 Rankings', excerpt: 'Stimulate your dog\'s brain with popular enrichment toys.' },
     { slug: 'mental-stimulation-games-for-dogs', title: '10 Mental Stimulation Games for Bored Dogs', excerpt: 'DIY and store-bought activities to tire out your pup without a walk.' },
   ],
   // ── Cat Toys ──
@@ -67,7 +67,7 @@ const COLLECTION_GUIDE_MAP: Record<string, GuideLink[]> = {
   ],
   // ── Dog Training ──
   'dog-training-tools': [
-    { slug: 'best-dog-training-tools', title: 'Best Dog Training Tools – Expert Picks 2026', excerpt: 'Clickers, treat pouches, and behavior correction aids ranked by trainers.' },
+    { slug: 'best-dog-training-tools', title: 'Best Dog Training Tools – our picks 2026', excerpt: 'Clickers, treat pouches, and behavior correction aids ranked by trainers.' },
     { slug: 'puppy-training-first-30-days', title: 'Puppy Training: Your First 30 Days Roadmap', excerpt: 'Week-by-week training schedule for new puppy owners.' },
     { slug: 'leash-training-dog-step-by-step', title: 'Leash Training Your Dog – Step by Step', excerpt: 'From first walk to loose-leash mastery in 4 weeks.' },
   ],

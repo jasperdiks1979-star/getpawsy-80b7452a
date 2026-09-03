@@ -288,7 +288,7 @@ const Bestsellers = () => {
     { question: 'Can I see real customer reviews?', answer: 'Absolutely. Every bestseller product page features verified customer reviews with photos. We never filter or remove honest feedback — positive or negative.' },
     { question: 'Do you ship internationally?', answer: 'Currently we ship to the United States only. We are working on expanding to Canada and the UK. Sign up for our newsletter to be notified when international shipping becomes available.' },
     { question: 'How often is the bestseller list updated?', answer: 'Our bestseller rankings are refreshed every 30 days based on the latest sales data, review scores, and return rates. Products must consistently perform well to maintain their position.' },
-    { question: 'What makes GetPawsy different from Amazon or Chewy?', answer: 'We curate a focused selection of premium pet products instead of millions of unvetted listings. Every item is evaluated for pet safety, durability, and real owner satisfaction before it reaches our store.' },
+    { question: 'What makes GetPawsy different from Amazon or Chewy?', answer: 'We curate a focused selection of premium pet products instead of millions of unfiltered listings. Every item is evaluated for pet safety, durability, and real owner satisfaction before it reaches our store.' },
     { question: 'Do bestseller products come with a warranty?', answer: 'Most bestseller products include a manufacturer warranty. Additionally, our 30-day return policy covers any defects or dissatisfaction. Check individual product pages for specific warranty details.' },
     { question: 'Can I get notified when a sold-out bestseller is restocked?', answer: 'Yes! Click the "Notify Me" button on any out-of-stock product page. You will receive an email as soon as the item is back in stock — no spam, just one notification.' },
   ];
@@ -513,7 +513,7 @@ const Bestsellers = () => {
             The best pet products to buy in 2026 are those that combine proven durability, pet safety certifications, and consistent owner satisfaction. Based on verified purchase data from thousands of US pet parents, the top categories include orthopedic memory foam dog beds, interactive puzzle feeders for canine enrichment, self-cleaning cat litter boxes that reduce maintenance by 80%, and stainless steel slow feeder bowls that prevent bloat and improve digestion.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Unlike generic marketplaces that list millions of unvetted products, our bestseller rankings are updated every 30 days using a transparent scoring model that weighs customer reviews (40%), repeat purchase rate (30%), return rate (20%), and product safety evaluations (10%). This data-driven approach ensures only genuinely loved products earn a spot on this page.
+            Unlike generic marketplaces that list millions of unfiltered products, our bestseller rankings are updated every 30 days using a transparent scoring model that weighs customer reviews (40%), repeat purchase rate (30%), return rate (20%), and product safety evaluations (10%). This data-driven approach ensures only genuinely loved products earn a spot on this page.
           </p>
         </div>
       </section>
@@ -664,7 +664,7 @@ const Bestsellers = () => {
                   ['Average Bestseller Rating', reviewStats.totalReviews > 0 ? `${reviewStats.averageRating.toFixed(1)} / 5.0` : 'Collecting reviews'],
                   ['Free Shipping Threshold', '$35+'],
                   ['Return Window', '30-day return policy'],
-                  ['Shipping', 'US shipping via US-based fulfillment partners'],
+                  ['Shipping', 'US shipping via our fulfillment partners'],
                   ['Standard Delivery', '5–10 business days'],
                   ['Payment Security', 'Stripe-powered checkout'],
                   ['Target Market', 'United States'],

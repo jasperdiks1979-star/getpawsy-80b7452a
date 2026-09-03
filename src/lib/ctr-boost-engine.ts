@@ -42,16 +42,16 @@ const MANUAL_CTR_OVERRIDES: Record<string, { title: string; meta: string }> = {
     meta: 'Improve hydration, reduce kidney risk, and see which fountains work best. Vet-reviewed recommendations inside.',
   },
   'best-interactive-dog-toys': {
-    title: 'Best Interactive Dog Toys (2026) – Tested & Ranked by Experts',
-    meta: 'We tested 25+ interactive dog toys. See which ones keep dogs engaged longest, prevent boredom, and are built to last.',
+    title: 'Best Interactive Dog Toys (2026) – Compared & Ranked by Experts',
+    meta: 'we compared interactive dog toys. See which ones keep dogs engaged longest, prevent boredom, and are built to last.',
   },
   'best-cat-litter-boxes': {
     title: 'Best Cat Litter Boxes (2026) – Self-Cleaning & Budget Picks',
-    meta: 'Compare top-rated litter boxes for odor control, easy cleaning, and multi-cat homes. Expert picks for every budget.',
+    meta: 'Compare top-rated litter boxes for odor control, easy cleaning, and multi-cat homes. our picks for every budget.',
   },
   'best-slow-feeder-dog-bowls': {
     title: 'Best Slow Feeder Dog Bowls (2026) – Stop Fast Eating Today',
-    meta: 'Prevent bloat and improve digestion with the right slow feeder. We tested and ranked the top options for all breeds.',
+    meta: 'Prevent bloat and improve digestion with the right slow feeder. We compared and ranked the top options for all breeds.',
   },
   'best-cat-toys-for-indoor-cats': {
     title: 'Best Cat Toys for Indoor Cats (2026) – Keep Them Active',
@@ -65,7 +65,7 @@ const MANUAL_CTR_OVERRIDES: Record<string, { title: string; meta: string }> = {
 
 // Power modifiers for title generation
 const POWER_MODIFIERS = [
-  'Complete Guide', 'Expert Picks', 'Tested & Ranked', 'Step-by-Step',
+  'Complete Guide', 'our picks', 'Compared & Ranked', 'Step-by-Step',
   'Avoid These Mistakes', 'What Actually Works', 'Premium Quality',
 ];
 
@@ -81,11 +81,11 @@ function humanizeSlug(slug: string): string {
 function generateTitle(slug: string, position: number): string {
   const keyword = humanizeSlug(slug);
   const needsYear = !slug.includes('2026');
-  const modifier = position <= 5 ? 'Expert Picks' : 'Complete Guide';
+  const modifier = position <= 5 ? 'our picks' : 'Complete Guide';
   
   let title = '';
   if (slug.startsWith('best-')) {
-    title = `${keyword}${needsYear ? ' (2026)' : ''} – Tested & Ranked`;
+    title = `${keyword}${needsYear ? ' (2026)' : ''} – Compared & Ranked`;
   } else if (slug.startsWith('how-to-')) {
     title = `${keyword}${needsYear ? ' (2026)' : ''} – ${modifier}`;
   } else {

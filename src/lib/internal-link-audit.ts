@@ -416,7 +416,7 @@ function buildLinkGraph(pages: CrawledPage[]): void {
     { target: '/faq', anchor: 'FAQ' },
     { target: '/about-the-author', anchor: 'About the Author' },
     { target: '/editorial-guidelines', anchor: 'Editorial Guidelines' },
-    { target: '/how-we-test-products', anchor: 'How We Test Products' },
+    { target: '/how-we-test-products', anchor: 'How We Select Products' },
     { target: '/affiliate-disclosure', anchor: 'Affiliate Disclosure' },
     { target: '/privacy', anchor: 'Privacy Policy' },
     { target: '/terms', anchor: 'Terms of Service' },
@@ -462,7 +462,7 @@ function buildLinkGraph(pages: CrawledPage[]): void {
       let anchorText = guide.title;
       if (cornerstoneSet.has(guide.slug)) {
         const variants = [
-          `${guide.title} — Expert Picks`,
+          `${guide.title} — our picks`,
           `See Our ${guide.primaryKW.split(' ').slice(1, 4).join(' ')} Guide`,
           `${guide.title} Comparison`,
         ];

@@ -124,7 +124,7 @@ const RULES: PatternRule[] = [
   {
     key: 'policy-content',
     severity: 'medium',
-    needles: ['banned term', 'banned_term', 'medical claim', 'guaranteed', 'vet approved'],
+    needles: ['banned term', 'banned_term', 'medical claim', 'guaranteed', 'comfort-focused'],
     title: 'Verwijder verboden termen uit copy',
     rationale:
       'Banned terms (medische claims, "guaranteed", etc.) triggeren content-policy reviews en blokkeren ads.',

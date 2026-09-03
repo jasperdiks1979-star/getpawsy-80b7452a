@@ -150,7 +150,7 @@ function generateAnchorSpectrum(primaryKW: string, slug: string): Array<{ text: 
     { text: partial2, type: 'partial' },
     { text: `GetPawsy's ${primaryKW} guide`, type: 'branded' },
     { text: 'GetPawsy recommends', type: 'branded' },
-    { text: 'see our expert picks', type: 'generic' },
+    { text: 'see our our picks', type: 'generic' },
     { text: 'read the full guide', type: 'generic' },
     { text: 'learn more here', type: 'generic' },
     { text: `getpawsy.pet/${slug}`, type: 'naked-url' },

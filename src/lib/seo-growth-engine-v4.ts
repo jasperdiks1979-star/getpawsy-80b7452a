@@ -182,7 +182,7 @@ export function correctGscData(
 const ZERO_CLICK_MODIFIERS = [
   '(2026 Guide)',
   '(Buyer Guide)',
-  '(Expert Picks)',
+  '(our picks)',
   '(Comparison)',
   '(Complete Buyer Guide)',
   '(Updated 2026)',

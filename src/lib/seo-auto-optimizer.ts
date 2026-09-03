@@ -54,14 +54,14 @@ function generateAlternativeTitles(slug: string, currentPosition: number): strin
   const keyword = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/2026/g, '').trim();
   return [
     `${keyword} (2026) – What Actually Works & Why`,
-    `${keyword} (2026) – Tested & Ranked by Experts`,
+    `${keyword} (2026) – Compared & Ranked by Experts`,
   ];
 }
 
 function generateAlternativeDescriptions(slug: string): string[] {
   const keyword = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/2026/g, '').trim();
   return [
-    `We tested the top ${keyword.toLowerCase()} of 2026. See which ones actually deliver results, who they're best for, and what to avoid. Free shipping available.`,
+    `we compared the top ${keyword.toLowerCase()} of 2026. See which ones actually deliver results, who they're best for, and what to avoid. Free shipping available.`,
     `Honest ${keyword.toLowerCase()} comparison for 2026. Real testing, no sponsored picks. Find the right match for your pet in under 3 minutes.`,
   ];
 }

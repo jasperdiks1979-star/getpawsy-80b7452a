@@ -294,7 +294,7 @@ export function generateMockRankPages(): RankAccelerationPage[] {
       { type: 'internal_link_boost', description: 'Already strong — maintain current link structure', impact: 'low' },
     ]},
     { url: '/guides/best-orthopedic-dog-bed', keyword: 'orthopedic dog bed', avgPosition: 28.4, impressions: 134, ctr: 0.7, clicks: 1, internalLinks: 5, isIndexed: true, pushPriority: 'medium', suggestions: [
-      { type: 'title_rewrite', description: 'Add "Vet-Recommended" to title for trust signal', impact: 'high' },
+      { type: 'title_rewrite', description: 'Add "Popular" to title for trust signal', impact: 'high' },
       { type: 'internal_link_boost', description: 'Add links from main dog bed cornerstone', impact: 'high' },
     ]},
     { url: '/guides/outdoor-dog-games-2026', keyword: 'outdoor dog games', avgPosition: 35.1, impressions: 89, ctr: 0.3, clicks: 0, internalLinks: 3, isIndexed: true, pushPriority: 'low', suggestions: [
