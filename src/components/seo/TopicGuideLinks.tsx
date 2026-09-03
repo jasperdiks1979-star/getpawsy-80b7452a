@@ -46,7 +46,7 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   ],
   'dog carriers': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Complete guide to safe dog travel' },
-    { slug: 'best-dog-carriers-for-travel', title: 'Best Dog Carriers for Travel', description: 'Airline-approved carriers tested & ranked' },
+    { slug: 'best-dog-carriers-for-travel', title: 'Best Dog Carriers for Travel', description: 'Airline-approved carriers Compared & Ranked' },
   ],
   'pet strollers': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Car seats, harnesses & travel tips for every trip' },
@@ -68,16 +68,16 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   ],
   // Dog Beds
   'dog beds': [
-    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Vet-recommended orthopedic picks tested & ranked' },
+    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Popular orthopedic picks Compared & Ranked' },
     { slug: 'best-orthopedic-dog-bed', title: 'Best Orthopedic Dog Beds', description: 'Joint support picks for senior & large dogs' },
     { slug: 'how-to-choose-the-right-dog-bed-size', title: 'Dog Bed Size Guide', description: 'Measure & choose the perfect bed size' },
   ],
   'pet beds': [
-    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Vet-recommended orthopedic picks tested & ranked' },
+    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Popular orthopedic picks Compared & Ranked' },
   ],
   'dog houses': [
     { slug: 'best-outdoor-dog-bed', title: 'Best Outdoor Dog Beds', description: 'Weather-resistant beds for outdoor use' },
-    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Vet-recommended picks tested & ranked' },
+    { slug: 'best-dog-bed-2026', title: 'Best Dog Beds 2026', description: 'Popular picks Compared & Ranked' },
   ],
   // Cat Litter
   'cat litter': [
@@ -114,13 +114,13 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   ],
   // Dog Toys
   'dog toys': [
-    { slug: 'best-interactive-dog-toys', title: 'Best Interactive Dog Toys', description: 'Puzzle & enrichment toys tested and ranked' },
+    { slug: 'best-interactive-dog-toys', title: 'Best Interactive Dog Toys', description: 'Puzzle & enrichment toys compared and ranked' },
     { slug: 'best-dog-puzzle-toys', title: 'Best Dog Puzzle Toys', description: 'Mental stimulation toys for smart dogs' },
     { slug: 'best-toys-for-aggressive-chewers', title: 'Best Toys for Power Chewers', description: 'Indestructible toys that actually last' },
   ],
   // Dog Harnesses
   'dog harnesses': [
-    { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Harness', description: 'Tested & ranked for pullers — front-clip picks' },
+    { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Harness', description: 'Compared & Ranked for pullers — front-clip picks' },
     { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Crash-tested harness picks for safe car travel' },
     { slug: 'front-clip-vs-back-clip-harness', title: 'Front-Clip vs Back-Clip', description: 'Which harness style works for your dog' },
   ],

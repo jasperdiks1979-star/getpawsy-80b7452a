@@ -38,7 +38,7 @@ A CPS-certified harness has been proven to:
 • Maintain structural integrity (no strap or buckle failure)
 • Allow the dog to be safely removed post-crash
 
-Products without CPS certification or equivalent testing may restrain during normal driving but haven't been proven to protect during actual collisions. Look for specific crash-test documentation, not vague "safety tested" claims.`,
+Products without CPS certification or equivalent testing may restrain during normal driving but haven't been proven to protect during actual collisions. Look for specific crash-test documentation, not vague "safety-focused" claims.`,
         },
         {
           heading: 'Sizing and Fit Guide',

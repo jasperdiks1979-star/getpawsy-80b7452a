@@ -23,7 +23,7 @@ export function UsOnlyTrustStrip() {
     { icon: Truck, text: 'Free US Shipping over $35' },
     { icon: RotateCcw, text: '30-Day Returns' },
     { icon: ShieldCheck, text: 'Secure Checkout' },
-    { icon: MapPin, text: 'Ships from New York, NY' },
+    { icon: MapPin, text: 'Ships to all 50 US states' },
   ];
 
   return (

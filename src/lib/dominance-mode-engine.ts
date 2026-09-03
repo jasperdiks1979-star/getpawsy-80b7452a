@@ -117,15 +117,15 @@ const AUTHORITY_MODIFIERS = [
   '(Buyer Guide)',
   '(Complete Buyer Guide)',
   '(Comparison)',
-  '(Expert Picks)',
+  '(our picks)',
   '(Updated 2026)',
 ] as const;
 
 const EMOTIONAL_META = [
   (kw: string) => `Choosing the right ${kw} matters. See our curated picks and what experienced pet owners recommend.`,
-  (kw: string) => `Your pet deserves the best ${kw}. Expert-tested picks that save you time, money, and heartbreak.`,
-  (kw: string) => `Stop scrolling — we tested every ${kw} so you don't have to. Real reviews, zero sponsored picks.`,
-  (kw: string) => `The only ${kw} guide you need in 2026. Expert-tested and trusted by thousands of pet owners.`,
+  (kw: string) => `Your pet deserves the best ${kw}. carefully selected picks that save you time, money, and heartbreak.`,
+  (kw: string) => `Stop scrolling — we compared every ${kw} so you don't have to. Real reviews, zero sponsored picks.`,
+  (kw: string) => `The only ${kw} guide you need in 2026. carefully selected and trusted by thousands of pet owners.`,
 ];
 
 const TRUST_SIGNALS: TrustSignal[] = [
@@ -194,7 +194,7 @@ function generateFaqSchema(slug: string, pageType: MoneyUrl['pageType']): FaqEnt
   } else if (pageType === 'collection' || pageType === 'guide') {
     faqs.push(
       { question: `How do I choose the right ${kw} for my pet?`, answer: `Consider your pet's size, breed, and activity level. Our guide covers the top-rated options for 2026 with expert recommendations to help you decide.` },
-      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our expert picks are based on durability, safety, and value for money.` },
+      { question: `What are the top-rated ${kw} in 2026?`, answer: `We've tested and reviewed the best ${kw} available. Our our picks are based on durability, safety, and value for money.` },
     );
   } else {
     faqs.push(

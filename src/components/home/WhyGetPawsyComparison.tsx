@@ -21,7 +21,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Quality-Checked Suppliers',
-    desc: 'We work with vetted suppliers and verify product standards so you can shop with confidence.',
+    desc: 'We work with selected suppliers and verify product standards so you can shop with confidence.',
   },
   {
     icon: (

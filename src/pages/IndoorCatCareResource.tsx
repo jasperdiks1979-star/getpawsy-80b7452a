@@ -35,7 +35,7 @@ const LITTER_BOX_GUIDES = [
 
 const KEY_COLLECTIONS = [
   { title: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos', desc: 'Premium cat trees rated for stability and large cats.' },
-  { title: 'Best Cat Litter Boxes', href: '/collections/cat-litter-boxes', desc: 'Expert-tested litter boxes for every cat and budget.' },
+  { title: 'Best Cat Litter Boxes', href: '/collections/cat-litter-boxes', desc: 'carefully selected litter boxes for every cat and budget.' },
   { title: 'Cat Furniture', href: '/collections/cat-condos', desc: 'Indoor enrichment furniture for happy, healthy cats.' },
 ];
 

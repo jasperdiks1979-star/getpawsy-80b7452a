@@ -141,7 +141,7 @@ function MidCTA({ slug, categories, species }: { slug: string; categories: strin
     <div className="mb-14 bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-8 text-center">
       <h3 className="text-lg md:text-xl font-semibold mb-2 text-foreground">Found Your Perfect Pick?</h3>
       <p className="text-muted-foreground text-sm mb-4 max-w-xl mx-auto">
-        Browse our expert-tested selection with free shipping on orders over $35 and a 30-day return policy.
+        Browse our carefully selected selection with free shipping on orders over $35 and a 30-day return policy.
       </p>
       <div className="flex flex-wrap gap-3 justify-center">
         <Link to={`/collections/${categories[0] || (species === 'cat' ? 'cat-supplies' : 'dog-supplies')}`}>
@@ -166,7 +166,7 @@ function TrustStrip() {
         <Shield className="w-4 h-4" /> 30-day return policy
       </span>
       <span className="flex items-center gap-1.5 text-primary">
-        <CheckCircle className="w-4 h-4" /> Expert-reviewed picks
+        <CheckCircle className="w-4 h-4" /> carefully selected picks
       </span>
       <span className="flex items-center gap-1.5 text-primary">
         <Heart className="w-4 h-4" /> Trusted by US pet owners
@@ -449,7 +449,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
               <CalendarCheck className="w-3.5 h-3.5" /> Updated {lastUpdated}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <Award className="w-3.5 h-3.5" /> Expert Picks
+              <Award className="w-3.5 h-3.5" /> our picks
             </span>
           </div>
 
@@ -889,7 +889,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             Ready to Shop?
           </h2>
           <p className="text-muted-foreground mb-3 max-w-xl mx-auto">
-            Browse our hand-picked selection with free shipping on orders over $35 and a 30-day return policy.
+            Browse our carefully selected selection with free shipping on orders over $35 and a 30-day return policy.
           </p>
           {/* Inline trust signals */}
           <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground mb-5">
@@ -1020,7 +1020,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
           </div>
           <div>
             <CheckCircle className="w-6 h-6 mx-auto mb-2 text-primary" />
-            <p className="font-semibold text-foreground">Expert Reviewed</p>
+            <p className="font-semibold text-foreground">carefully selected</p>
             <p className="text-muted-foreground text-xs">Trusted recommendations</p>
           </div>
           <div>

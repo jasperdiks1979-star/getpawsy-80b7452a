@@ -44,7 +44,7 @@ const AboutTheAuthor = () => {
             {AUTHOR.bio}
           </p>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            Every product recommendation on GetPawsy comes from hands-on research and real-world testing. I compare materials, durability, ease of cleaning, and value for money — because pet parents deserve honest, practical advice, not marketing fluff.
+            Every product recommendation on GetPawsy comes from desk research: we compare published specifications, materials, dimensions, care instructions and price. We do not perform our own laboratory or in-home testing, and we say so plainly.
           </p>
           <p className="text-muted-foreground leading-relaxed">
             I'm based in the United States and test products with the needs of American pet owners in mind — from apartment-friendly cat litter solutions to durable dog beds that handle heavy chewers.
@@ -86,7 +86,7 @@ const AboutTheAuthor = () => {
             <div className="flex items-start gap-3">
               <Search className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
               <p className="text-muted-foreground leading-relaxed">
-                I spend an average of 15–20 hours researching each guide, comparing specifications, reading customer feedback, and evaluating long-term durability. Learn more about our full process on the <Link to="/how-we-test-products" className="text-primary hover:underline">How We Test Products</Link> page.
+                Each guide is built by comparing published specifications across the products in that category. Learn more about our process on the <Link to="/how-we-test-products" className="text-primary hover:underline">How We Select Products</Link> page.
               </p>
             </div>
           </div>

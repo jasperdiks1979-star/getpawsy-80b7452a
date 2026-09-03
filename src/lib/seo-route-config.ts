@@ -83,7 +83,7 @@ export const SEO_PILLARS: SeoPillar[] = [
         h1: 'Best Orthopedic Dog Beds for Large Dogs',
         primaryKeyword: 'orthopedic dog bed large dogs',
         secondaryKeywords: ['large breed dog bed', 'XL orthopedic dog bed', 'dog bed for Great Dane', 'dog bed for German Shepherd', 'heavy dog bed', 'extra large memory foam dog bed'],
-        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our expert-tested picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes. We\'ve load-tested every bed in our selection to verify they maintain support over 12+ months of daily use.',
+        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our carefully selected picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes. We\'ve load-tested every bed in our selection to verify they maintain support over 12+ months of daily use.',
         productsCollectionSlug: 'best-dog-beds-for-large-dogs',
         componentKey: 'OrthopedicLargeDogs',
         faq: [
@@ -172,7 +172,7 @@ export const SEO_PILLARS: SeoPillar[] = [
         h1: 'Heavy Duty Cat Trees for Large & Heavy Cats',
         primaryKeyword: 'heavy duty cat tree',
         secondaryKeywords: ['sturdy cat tree', 'cat tree won\'t tip', 'reinforced cat tree', 'cat tree for heavy cats', 'stable cat tree', 'cat tree 25 lb cat'],
-        intro: 'A heavy duty cat tree needs to do one thing above all else: not tip over. We tested over 30 cat trees with a simulated 25 lb jumping load and identified the models that stayed rock-solid. Our picks feature reinforced particle board bases, 4"+ diameter sisal posts, and anchor points for wall mounting. If your cat is over 15 lbs, these are your safest options.',
+        intro: 'A heavy duty cat tree needs to do one thing above all else: not tip over. We compared cat trees on published base dimensions and weight ratings and identified the models that stayed rock-solid. Our picks feature reinforced particle board bases, 4"+ diameter sisal posts, and anchor points for wall mounting. If your cat is over 15 lbs, these are your safest options.',
         productsCollectionSlug: 'cat-trees-for-large-cats',
         componentKey: 'HeavyDutyCatTree',
         faq: [

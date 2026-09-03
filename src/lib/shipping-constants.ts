@@ -96,13 +96,30 @@ export const RESPONSE_TIME = 'We typically respond within 24 hours';
 export const BUSINESS_HOURS = 'Monday – Friday, 9:00 AM – 5:00 PM ET';
 
 /** Business location */
-export const BUSINESS_LOCATION = 'New York, NY · United States';
+export const BUSINESS_LOCATION = 'Apeldoorn, Netherlands';
 
 /** Business name */
 export const BUSINESS_NAME = 'GetPawsy';
 
 /** Legal operator name */
-export const BUSINESS_OPERATOR = 'GetPawsy LLC';
+export const BUSINESS_OPERATOR = 'Skidzo';
+
+/** Legal form of the merchant */
+export const BUSINESS_LEGAL_FORM = 'Dutch sole proprietorship';
+
+/** Dutch Chamber of Commerce number */
+export const BUSINESS_KVK = '78156955';
+
+/** Public VAT identification number */
+export const BUSINESS_VAT_ID = 'NL003295015B69';
+
+/** Canonical merchant identity statement (long form) */
+export const MERCHANT_IDENTITY_STATEMENT =
+  'GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States.';
+
+/** Canonical merchant identity statement (short form) */
+export const MERCHANT_IDENTITY_SHORT =
+  'GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship (KvK 78156955, VAT ID NL003295015B69) based in Apeldoorn, Netherlands, serving customers in the United States.';
 
 /** Service area */
 export const BUSINESS_SERVICE_AREA = 'Serving customers across the United States';

@@ -32,8 +32,8 @@ export function SocialProofSection() {
     },
     {
       icon: Mail,
-      title: 'Real Support',
-      detail: 'Email replies within 24 hours from a real person',
+      title: 'Email Support',
+      detail: 'Email replies within 24 hours',
     },
   ];
 
@@ -59,7 +59,7 @@ export function SocialProofSection() {
           <p className={premium
             ? 'text-[14px] text-muted-foreground/90 max-w-xl mx-auto leading-relaxed'
             : 'text-sm text-muted-foreground max-w-xl mx-auto'}>
-            Every order from GetPawsy LLC is backed by clear, written policies. No fine print, no surprises.
+            Every order from GetPawsy is backed by clear, written policies. No fine print, no surprises.
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

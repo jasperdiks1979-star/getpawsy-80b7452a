@@ -76,7 +76,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
           <p className="text-base md:text-lg text-muted-foreground max-w-3xl mb-4">{props.subtitle}</p>
           <div className="flex flex-wrap gap-2 mb-6">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <BadgeCheck className="w-3.5 h-3.5" /> Expert Reviewed
+              <BadgeCheck className="w-3.5 h-3.5" /> carefully selected
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <CalendarCheck className="w-3.5 h-3.5" /> Updated {lastUpdated}

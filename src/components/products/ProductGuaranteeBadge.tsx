@@ -4,7 +4,7 @@
  * Category-specific reassurance line shown under the global trust grid on
  * the PDP. Static, deterministic, derived from product category/name —
  * never invents claims, never makes medical/efficacy promises, and respects
- * the high-risk terminology policy (no "vet-approved", no "guaranteed cure").
+ * the high-risk terminology policy (no "comfort-focused", no "guaranteed cure").
  */
 import { ShieldCheck } from 'lucide-react';
 

@@ -100,15 +100,15 @@ const RAW_CANDIDATES: Array<{
 const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   'best no pull dog harness': {
     title: 'Stop Pulling Fast — Best No-Pull Dog Harness (Trainer Approved 2026)',
-    meta: 'End leash pulling on the first walk. Expert-tested no-pull harnesses ranked by real trainers. Metal hardware, padded comfort, free US shipping.',
+    meta: 'End leash pulling on the first walk. carefully selected no-pull harnesses ranked by real trainers. Metal hardware, padded comfort, free US shipping.',
   },
   'best orthopedic dog bed': {
     title: 'Best Orthopedic Dog Beds (2026) — Premium Quality for Joint Pain',
-    meta: 'Relieve arthritis and hip pain with vet-recommended orthopedic beds. Memory foam, waterproof covers, all sizes. Ships free to US.',
+    meta: 'Relieve arthritis and hip pain with popular orthopedic beds. Memory foam, waterproof covers, all sizes. Ships free to US.',
   },
   'cat tree for large cats': {
     title: 'Cat Trees for Large Cats (2026) — Heavy-Duty & Tested to 25 lbs',
-    meta: 'Stop flimsy cat trees from tipping. We tested 20+ models for cats over 15 lbs. Solid wood, carpet-free options, wide platforms. Free shipping available.',
+    meta: 'Stop flimsy cat trees from tipping. We compared models for cats over 15 lbs. Solid wood, carpet-free options, wide platforms. Free shipping available.',
   },
   'best harness for large dogs that pull': {
     title: 'Best Harness for Large Dogs That Pull — Heavy-Duty Picks (2026)',
@@ -124,7 +124,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'best interactive dog toys': {
     title: 'Best Interactive Dog Toys (2026) — Tested by Dogs, Ranked by Experts',
-    meta: 'We tested 25+ toys for engagement, durability, and mental stimulation. See which keep dogs busy longest. Free shipping available.',
+    meta: 'we compared toys for engagement, durability, and mental stimulation. See which keep dogs busy longest. Free shipping available.',
   },
   'how to stop dog pulling on leash': {
     title: 'How to Stop Dog Pulling on Leash — 7-Day Training Plan (2026)',
@@ -132,11 +132,11 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'best dog car seat cover': {
     title: 'Best Dog Car Seat Covers (2026) — Waterproof & Scratch-Proof',
-    meta: 'Protect your car seats from mud, hair, and scratches. Lab-tested waterproof covers with hammock mode. Free shipping available.',
+    meta: 'Protect your car seats from mud, hair, and scratches. manufacturer-rated waterproof covers with hammock mode. Free shipping available.',
   },
   'best cat litter box': {
     title: 'Best Cat Litter Boxes (2026) — Self-Cleaning & Budget Picks Ranked',
-    meta: 'Top-rated litter boxes for odor control, easy cleaning, and multi-cat homes. Expert picks for every budget. Free shipping available.',
+    meta: 'Top-rated litter boxes for odor control, easy cleaning, and multi-cat homes. our picks for every budget. Free shipping available.',
   },
   'long line leash for dog training': {
     title: '15ft vs 30ft Training Leash — Which Length for Recall Training?',
@@ -152,7 +152,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'best cat water fountain': {
     title: 'Best Cat Water Fountains (2026) — Improve Hydration, Protect Kidneys',
-    meta: 'Vet-recommended fountains that increase water intake by 200%. Quiet motors, dishwasher-safe, BPA-free. Free shipping available.',
+    meta: 'Popular fountains that increase water intake by 200%. Quiet motors, dishwasher-safe, BPA-free. Free shipping available.',
   },
   'dog harness sizing chart': {
     title: 'Dog Harness Sizing Chart — Measure Once, Fit Perfect (2026 Guide)',
@@ -295,8 +295,8 @@ export function runTop3BoostEngine(): BoostEngineResult {
         intent: c.intent,
         revenuePotential: c.revenuePotential,
         currentTitle: humanize(c.keyword),
-        boostedTitle: rewrite?.title || `${humanize(c.keyword)} — Expert Picks (2026)`,
-        boostedMeta: rewrite?.meta || `Discover the best ${c.keyword}. Expert-tested, honest reviews. Free shipping available on all orders.`,
+        boostedTitle: rewrite?.title || `${humanize(c.keyword)} — our picks (2026)`,
+        boostedMeta: rewrite?.meta || `Discover the best ${c.keyword}. carefully selected, honest reviews. Free shipping available on all orders.`,
         semanticGaps: getSemanticGaps(c.keyword),
         internalLinkPlan: buildInternalLinkPlan(c.url, c.keyword),
         behavioralBoosts: getBehavioralBoosts(c.intent, c.position),

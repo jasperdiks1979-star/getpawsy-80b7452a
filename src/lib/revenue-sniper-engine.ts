@@ -123,7 +123,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
         bullets: [
           'Memory foam distributes weight evenly — eliminates hip & elbow pressure',
           'Lasts 3–5 years vs 6–12 months for polyester fill',
-          'Vet-recommended for arthritis, hip dysplasia & post-surgery',
+          'Popular for arthritis, hip dysplasia & post-surgery',
           'Waterproof liners protect foam from accidents',
           'Cost-per-year is actually lower ($40/yr vs $60/yr)',
         ],
@@ -295,8 +295,8 @@ export const SNIPER_TARGETS: SniperTarget[] = [
     commercialIntentScore: 10,
     sniperScore: 70,
     optimization: {
-      newTitle: 'Best Dog Beds for Arthritis — Vet-Recommended (2026)',
-      newMetaDescription: 'Your arthritic dog deserves real relief. Memory foam beds reduce joint inflammation 40%. Vet-recommended, washable. Free shipping available + 30-day return policy.',
+      newTitle: 'Best Dog Beds for Arthritis — Popular (2026)',
+      newMetaDescription: 'Your arthritic dog deserves real relief. Memory foam beds reduce joint inflammation 40%. Popular, washable. Free shipping available + 30-day return policy.',
       faqSchema: [
         { question: 'Do orthopedic beds actually help dogs with arthritis?', answer: 'Yes. Memory foam distributes weight evenly, reducing pressure on inflamed joints by up to 40%. Vets recommend them as part of arthritis management alongside medication and supplements.' },
         { question: 'What type of bed is best for an arthritic dog?', answer: 'High-density memory foam (1.8+ lb/ft³) with low entry height (under 4 inches), bolster edges for head support, and a non-slip bottom. Heated options provide additional relief for severe arthritis.' },
@@ -317,7 +317,7 @@ export const SNIPER_TARGETS: SniperTarget[] = [
           'Low entry height for easy on/off access',
           'Memory foam conforms to body shape for pain relief',
           'Heated options soothe inflammation in cold weather',
-          'Vet-recommended as part of arthritis care plans',
+          'Popular as part of arthritis care plans',
         ],
       },
       authorityBlock: { shipping: 'Free shipping on eligible orders over $35', guarantee: '30-day return policy', returnPolicy: 'Easy returns' },

@@ -112,15 +112,15 @@ const CTR_MODIFIERS = [
 const TITLE_TEMPLATES: Record<string, (kw: string) => string> = {
   guide: (kw) => `${kw} – Complete Expert Guide (2026)`,
   'how-to': (kw) => `How to ${kw} (Step-by-Step 2026 Guide)`,
-  best: (kw) => `${kw} (2026) – Tested & Ranked by Experts`,
+  best: (kw) => `${kw} (2026) – Compared & Ranked by Experts`,
   review: (kw) => `${kw} Review – Honest Expert Analysis (2026)`,
   default: (kw) => `${kw} – What You Need to Know (2026)`,
 };
 
 const META_TEMPLATES = [
-  (kw: string) => `Discover the truth about ${kw}. Expert-reviewed advice, real comparisons, and actionable tips for pet owners in 2026.`,
+  (kw: string) => `Discover the truth about ${kw}. carefully selected advice, real comparisons, and actionable tips for pet owners in 2026.`,
   (kw: string) => `Everything you need to know about ${kw}. Premium quality recommendations and honest buying advice. Free shipping available.`,
-  (kw: string) => `Stop guessing about ${kw}. See real test results, expert picks, and avoid the mistakes most pet owners make.`,
+  (kw: string) => `Stop guessing about ${kw}. See real test results, our picks, and avoid the mistakes most pet owners make.`,
 ];
 
 // ============= HELPERS =============
@@ -310,7 +310,7 @@ export function generatePosition1130Strategy(
 function generateFaqSuggestions(slug: string, kw: string): Array<{ question: string; answer: string }> {
   const kwLower = kw.toLowerCase();
   const baseFaqs = [
-    { question: `What is the best ${kwLower} for 2026?`, answer: `The best ${kwLower} depends on your pet's size, breed, and specific needs. Our expert-reviewed guide compares the top options based on durability, safety, and value for money.` },
+    { question: `What is the best ${kwLower} for 2026?`, answer: `The best ${kwLower} depends on your pet's size, breed, and specific needs. Our carefully selected guide compares the top options based on durability, safety, and value for money.` },
     { question: `How do I choose the right ${kwLower}?`, answer: `Consider your pet's age, size, and activity level. Look for products with quality materials, positive reviews, and a good warranty. Our guide breaks down the key factors to consider.` },
     { question: `Is ${kwLower} worth the investment?`, answer: `Yes, investing in quality ${kwLower} can improve your pet's health, behavior, and overall wellbeing. Studies show that mental stimulation reduces destructive behavior by up to 60%.` },
   ];
@@ -350,7 +350,7 @@ export function buildAuthorityHubs(): InternalLinkGraphSummary {
       clusterPages: [...new Set(dogPages)],
       inboundLinks: dogPages.length * 2,
       outboundLinks: dogPages.length,
-      introText: 'Your complete resource for dog enrichment, mental stimulation, and behavioral health. Explore our expert-reviewed guides covering interactive toys, puzzle feeders, indoor games, and anxiety solutions — all designed to keep your dog happy, healthy, and engaged.',
+      introText: 'Your complete resource for dog enrichment, mental stimulation, and behavioral health. Explore our carefully selected guides covering interactive toys, puzzle feeders, indoor games, and anxiety solutions — all designed to keep your dog happy, healthy, and engaged.',
       maxCrawlDepth: 2,
     });
   }
@@ -395,7 +395,7 @@ export function buildAuthorityHubs(): InternalLinkGraphSummary {
       clusterPages: allHealthPages,
       inboundLinks: allHealthPages.length * 2,
       outboundLinks: allHealthPages.length,
-      introText: 'Your trusted resource for pet health, nutrition, and wellness. Expert-reviewed guides covering common health concerns, preventive care, grooming best practices, and safety tips for dogs and cats in 2026.',
+      introText: 'Your trusted resource for pet health, nutrition, and wellness. carefully selected guides covering common health concerns, preventive care, grooming best practices, and safety tips for dogs and cats in 2026.',
       maxCrawlDepth: 2,
     });
   }

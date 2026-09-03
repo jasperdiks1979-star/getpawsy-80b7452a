@@ -148,9 +148,14 @@ const Products = () => {
     queryFn: async () => {
       markProductsFetchInitiated();
       markProductsLoadStart();
+      // Explicit column list: `select('*')` pulled `images`, `variants` and
+      // other heavy JSONB columns (~1.9 MB) and regularly exceeded the
+      // statement timeout, leaving the grid stuck at "0 of 0".
       const { data, error } = await supabase
         .from('products_public')
-        .select('*')
+        .select(
+          'id, name, name_clean, slug, description, category, image_url, price, compare_at_price, sku, stock, is_active, shipping_time, supplier_name, created_at, updated_at, primary_species, is_duplicate, dedupe_key, canonical_product_id, cj_product_id, seo_tier',
+        )
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
@@ -161,6 +166,11 @@ const Products = () => {
       setCachedProducts(categoryParam, sortBy, deduped, deduped.length);
       return deduped;
     },
+    // The Data API intermittently returns 5xx under load; without retries a
+    // single transient failure leaves the grid stuck at "0 of 0".
+    retry: 4,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    staleTime: 5 * 60 * 1000,
     // Use cached data as placeholder while fetching fresh
     placeholderData: () => {
       const cached = getCachedProducts(categoryParam, sortBy);

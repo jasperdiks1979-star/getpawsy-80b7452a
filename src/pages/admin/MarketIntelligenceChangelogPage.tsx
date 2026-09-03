@@ -52,7 +52,7 @@ const PHASES: Phase[] = [
     what: 'mi-promote-recommendations bepaalt automatisch welke aanbevelingen klaar zijn voor Pinterest/TikTok queues.',
     why: 'Gat tussen "aanbevolen" en "gepubliceerd" overbruggen zonder handwerk.' },
   { n: 10, group: 'Opportunity & Auto-loop', title: 'Compliance & QA Gate',
-    what: 'Scant elke draft op verboden marketing-termen ("vet-approved", "miracle", etc.) voordat hij gepubliceerd kan worden.',
+    what: 'Scant elke draft op verboden marketing-termen ("comfort-focused", "miracle", etc.) voordat hij gepubliceerd kan worden.',
     why: 'Eén verboden term = Google Merchant Center ban. Vangnet is non-onderhandelbaar.' },
   { n: 11, group: 'Opportunity & Auto-loop', title: 'Auto-Tune Engine',
     what: 'mi-auto-tune past readiness-threshold, recipe-scores en hook-family multipliers automatisch aan op basis van prestaties.',

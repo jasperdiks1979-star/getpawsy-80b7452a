@@ -47,7 +47,7 @@ export default function TikTokPdpBelowFold({ product }: { product: Product }) {
         <details className="rounded-lg bg-muted/40 px-3 py-2">
           <summary className="cursor-pointer font-semibold">Is it safe for my pet?</summary>
           <p className="mt-2 text-foreground/80">
-            Yes — all GetPawsy products are vetted against US safety standards before listing.
+            Yes — all GetPawsy products are selected against US safety standards before listing.
           </p>
         </details>
         <details className="rounded-lg bg-muted/40 px-3 py-2 mt-2">

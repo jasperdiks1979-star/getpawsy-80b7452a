@@ -36,7 +36,7 @@ export const PAGE_CHANGELOGS: Record<PageChangelogKey, PageChangelogEntry[]> = {
       build: 'v2026.04.23 — US identity rollout',
       commit: 'bcf6c8d',
       changes: [
-        'Removed all EU/NL address lines; sole business address is now New York, NY · United States.',
+        'Merchant identity corrected: Skidzo, a Dutch sole proprietorship in Apeldoorn, Netherlands (KvK 78156955, VAT ID NL003295015B69), trading as GetPawsy.',
         'Updated support email to support@getpawsy.pet across all contact surfaces.',
         'Hardened Organization JSON-LD to a single US PostalAddress (addressCountry: US).',
       ],
@@ -48,7 +48,7 @@ export const PAGE_CHANGELOGS: Record<PageChangelogKey, PageChangelogEntry[]> = {
       build: 'v2026.04.23 — US identity rollout',
       commit: 'bcf6c8d',
       changes: [
-        'Rewrote brand identity copy as "GetPawsy LLC, a US-based pet supply company in New York, NY".',
+        'Rewrote brand identity copy as "GetPawsy, a trading name of Skidzo, a Dutch sole proprietorship in Apeldoorn, Netherlands, serving customers in the United States".',
         'Removed legacy Dutch entity references and EU shipping language.',
         'Aligned shipping/returns mentions with US policy (free shipping $35+, 30-day returns).',
       ],
@@ -83,7 +83,7 @@ export const PAGE_CHANGELOGS: Record<PageChangelogKey, PageChangelogEntry[]> = {
       build: 'v2026.04.23 — US identity rollout',
       commit: 'bcf6c8d',
       changes: [
-        'Removed EU/GDPR-specific data controller address; controller is now GetPawsy LLC, New York, NY.',
+        'Data controller is Skidzo (trading as GetPawsy), Apeldoorn, Netherlands.',
         'Updated all data subject contact references to support@getpawsy.pet.',
       ],
     },
@@ -94,7 +94,7 @@ export const PAGE_CHANGELOGS: Record<PageChangelogKey, PageChangelogEntry[]> = {
       build: 'v2026.04.23 — US identity rollout',
       commit: 'bcf6c8d',
       changes: [
-        'Governing entity updated to GetPawsy LLC (United States).',
+        'Governing entity updated to Skidzo (Netherlands), trading as GetPawsy.',
         'Shipping & returns clauses re-anchored to US policy (5–10 business days, 30-day returns, $35 free-shipping threshold).',
       ],
     },
@@ -105,7 +105,7 @@ export const PAGE_CHANGELOGS: Record<PageChangelogKey, PageChangelogEntry[]> = {
       build: 'v2026.04.23 — US identity rollout',
       commit: 'bcf6c8d',
       changes: [
-        'Cookie controller updated to GetPawsy LLC (US).',
+        'Cookie controller updated to Skidzo (Netherlands), trading as GetPawsy.',
         'Removed EU-cookie-banner language that referenced an NL legal entity.',
       ],
     },

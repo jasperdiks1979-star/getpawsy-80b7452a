@@ -17,14 +17,14 @@ interface GuideMapping {
 const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
   // ── Cat Litter cluster ──
   'cat-litter-boxes': {
-    anchor: 'Best Cat Litter Boxes 2026 – Expert Picks',
+    anchor: 'Best Cat Litter Boxes 2026 – our picks',
     slug: 'best-cat-litter-boxes',
-    description: 'Self-cleaning, enclosed & odor control litter boxes compared. Expert-reviewed.',
+    description: 'Self-cleaning, enclosed & odor control litter boxes compared. carefully selected.',
   },
   'cat litter': {
-    anchor: 'Best Cat Litter Boxes 2026 – Expert Picks',
+    anchor: 'Best Cat Litter Boxes 2026 – our picks',
     slug: 'best-cat-litter-boxes',
-    description: 'Self-cleaning, enclosed & odor control litter boxes compared. Expert-reviewed.',
+    description: 'Self-cleaning, enclosed & odor control litter boxes compared. carefully selected.',
   },
   'litter': {
     anchor: 'Best Cat Litter Box Furniture 2026',
@@ -40,12 +40,12 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
   'cat-furniture': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
-    description: '9 cat trees tested for stability, enrichment & value. Expert-reviewed picks.',
+    description: '9 cat trees tested for stability, enrichment & value. carefully selected picks.',
   },
   'cat furniture': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
-    description: '9 cat trees tested for stability, enrichment & value. Expert-reviewed picks.',
+    description: '9 cat trees tested for stability, enrichment & value. carefully selected picks.',
   },
   'cat-scratching-posts': {
     anchor: 'Best Cat Scratching Posts for Large Cats',

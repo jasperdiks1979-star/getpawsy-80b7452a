@@ -12,7 +12,10 @@ export function OrganizationSchema() {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: 'GetPawsy',
-    legalName: 'GetPawsy LLC',
+    legalName: 'Skidzo',
+    vatID: 'NL003295015B69',
+    taxID: 'NL003295015B69',
+    identifier: { '@type': 'PropertyValue', name: 'KvK', value: '78156955' },
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
@@ -21,7 +24,7 @@ export function OrganizationSchema() {
       name: 'GetPawsy',
     },
     description:
-      'GetPawsy is an online pet supply store offering high-quality products for dogs and cats. Free shipping on orders over $35 to the United States.',
+      'GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship based in Apeldoorn, Netherlands, offering pet products for dogs and cats to customers in the United States. Free shipping on orders over $35.',
     sameAs: [
       'https://www.pinterest.com/getpawsystore/',
       'https://instagram.com/getpawsy',
@@ -32,9 +35,8 @@ export function OrganizationSchema() {
     ],
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'New York',
-      addressRegion: 'NY',
-      addressCountry: 'US',
+      addressLocality: 'Apeldoorn',
+      addressCountry: 'NL',
     },
     contactPoint: {
       '@type': 'ContactPoint',
@@ -65,13 +67,12 @@ export function OrganizationSchema() {
     url: SITE_URL,
     logo: `${SITE_URL}/favicon.png`,
     email: SUPPORT_EMAIL,
-    description: 'Online pet supply store specializing in cat trees, cat condos, and premium pet products for US customers.',
+    description: 'Online pet supply store operated by Skidzo (Apeldoorn, Netherlands), specializing in cat trees, cat condos, and pet products for US customers.',
     priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'New York',
-      addressRegion: 'NY',
-      addressCountry: 'US',
+      addressLocality: 'Apeldoorn',
+      addressCountry: 'NL',
     },
     sameAs: [
       'https://www.pinterest.com/getpawsystore/',

@@ -81,7 +81,7 @@ const About = () => {
                   We focus on practical, well-reviewed pet products and ship them to US customers through trusted fulfillment partners.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  We test product quality, delivery reliability, and customer feedback before adding items to our store. Not everything makes the cut — and that's the point.
+                  we compare product quality, delivery reliability, and customer feedback before adding items to our store. Not everything makes the cut — and that's the point.
                 </p>
                 <p className="text-muted-foreground">
                   If something isn't right with your order, our support team responds within 24–48 hours. We handle returns, replacements, and questions directly.
@@ -110,10 +110,10 @@ const About = () => {
               
               <div className="bg-card rounded-2xl shadow-card p-6 md:p-8">
                 <p className="text-foreground text-lg mb-4">
-                  <strong>GetPawsy LLC</strong> is a US-based online pet supply company serving customers across the United States.
+                  <strong>GetPawsy</strong> is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States.
                 </p>
                 <p className="text-muted-foreground text-sm mb-4">
-                  We are a curation-first online retailer. Our team selects products from vetted manufacturers and warehouse partners, then handles all sales, payments, customer service, and returns directly under the GetPawsy brand. Orders are shipped to you by our fulfillment partners on behalf of GetPawsy LLC — you only ever transact with us.
+                  We are an online retailer. We select the products we list, and we handle all sales, payments, customer service, and returns directly under the GetPawsy brand. Orders are shipped to you by our fulfillment partners on behalf of Skidzo — you only ever transact with us.
                 </p>
                 
                 <div className="bg-muted/50 rounded-xl p-5 mb-6">
@@ -121,7 +121,7 @@ const About = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Legal entity:</span>
-                      <span className="text-foreground font-medium">GetPawsy LLC</span>
+                      <span className="text-foreground font-medium">Skidzo (Dutch sole proprietorship)</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Trading name:</span>
@@ -129,7 +129,19 @@ const About = () => {
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Location:</span>
-                      <span className="text-foreground font-medium">New York, NY · United States</span>
+                      <span className="text-foreground font-medium">Apeldoorn, Netherlands</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">KvK number:</span>
+                      <span className="text-foreground font-medium">78156955</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">VAT ID:</span>
+                      <span className="text-foreground font-medium">NL003295015B69</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground min-w-[140px]">Service area:</span>
+                      <span className="text-foreground font-medium">United States</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="text-muted-foreground min-w-[140px]">Business type:</span>
@@ -147,7 +159,7 @@ const About = () => {
                 </div>
 
                 <p className="text-muted-foreground mb-4">
-                  GetPawsy LLC is responsible for all operations of the webshop, including:
+                  Skidzo, trading as GetPawsy, is responsible for all operations of the webshop, including:
                 </p>
                 
                 <div className="space-y-3">
@@ -288,7 +300,7 @@ const About = () => {
                   We work with trusted logistics and carrier partners to ensure your orders are delivered reliably to the United States.
                 </p>
                 <p className="text-muted-foreground mb-4">
-                  GetPawsy operates a curated dropship-fulfillment model: products are stocked, packed, and shipped directly to you by our vetted supplier and warehouse partners on behalf of GetPawsy LLC. We handle product selection, customer service, payments, and returns end-to-end — you only ever transact with GetPawsy.
+                  GetPawsy operates a dropship-fulfillment model: products are stocked, packed, and shipped directly to you by our supplier and warehouse partners on behalf of Skidzo. We handle product selection, customer service, payments, and returns end-to-end — you only ever transact with GetPawsy.
                 </p>
                 
                 <div className="space-y-4 mb-6">

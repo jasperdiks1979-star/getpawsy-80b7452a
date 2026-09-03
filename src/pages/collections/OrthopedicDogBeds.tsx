@@ -147,7 +147,7 @@ export default function OrthopedicDogBeds() {
     '@context': 'https://schema.org', '@type': 'CollectionPage',
     '@id': `${CANONICAL}#collection`,
     name: 'Best Orthopedic Dog Beds for Joint Pain & Large Breeds',
-    description: 'Shop the best orthopedic dog beds for arthritis, joint pain & large breeds. Memory foam support, waterproof covers, vet-recommended.',
+    description: 'Shop the best orthopedic dog beds for arthritis, joint pain & large breeds. Memory foam support, waterproof covers, popular.',
     url: CANONICAL,
     mainEntity: {
       '@type': 'ItemList', numberOfItems: products.length,
@@ -211,7 +211,7 @@ export default function OrthopedicDogBeds() {
           </Breadcrumb>
 
           <div className="max-w-2xl">
-            <Badge className="mb-4 bg-primary text-primary-foreground">Vet Recommended · #1 Seller</Badge>
+            <Badge className="mb-4 bg-primary text-primary-foreground">Popular · #1 Seller</Badge>
             <div className="mb-3 inline-flex items-center gap-1.5 text-xs text-primary-foreground/60 bg-primary-foreground/10 rounded-full px-3 py-1">
               <span>📅</span> Last Updated: February 2026
             </div>
@@ -452,7 +452,7 @@ export default function OrthopedicDogBeds() {
                   { feature: 'Foam Density', ortho: '1.8+ lb/ft³ viscoelastic', standard: 'N/A — polyester fill' },
                   { feature: 'Recovery After Compression', ortho: 'Springs back fully', standard: 'Stays flat permanently' },
                   { feature: 'Best For', ortho: 'Senior dogs, large breeds, arthritis, recovery', standard: 'Puppies, small dogs, travel/backup beds' },
-                  { feature: 'Vet Recommended', ortho: '✅ Yes — for joint conditions', standard: '❌ Not for therapeutic use' },
+                  { feature: 'Popular', ortho: '✅ Yes — for joint conditions', standard: '❌ Not for therapeutic use' },
                 ].map((row, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/20'}>
                     <td className="p-3 font-medium">{row.feature}</td>

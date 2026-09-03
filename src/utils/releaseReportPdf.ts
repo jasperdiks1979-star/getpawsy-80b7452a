@@ -15,7 +15,7 @@ interface BuildOptions {
  */
 const EVIDENCE_MAP: Record<PageChangelogKey, { surface: string; feedField: string }> = {
   contact:  { surface: '/contact',         feedField: 'site_readiness.contact · OrganizationJSON-LD.address.addressCountry=US' },
-  about:    { surface: '/about',           feedField: 'site_readiness.about · OrganizationJSON-LD.address.addressLocality=New York' },
+  about:    { surface: '/about',           feedField: 'site_readiness.about · OrganizationJSON-LD.address.addressLocality=Apeldoorn' },
   shipping: { surface: '/shipping',        feedField: 'site_readiness.shipping · feed g:shipping country=US, service=Standard, $5.99 / free $35+' },
   returns:  { surface: '/return-policy',   feedField: 'site_readiness.returns · MerchantReturnPolicy.returnDays=30' },
   privacy:  { surface: '/privacy-policy',  feedField: 'site_readiness.privacy' },
@@ -111,9 +111,9 @@ export function downloadReleaseReportPdf({ title, notes, result }: BuildOptions)
 
   // ---- Header ----
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(37, 99, 235);
-  doc.text('GetPawsy LLC · Release Report', margin, 12);
+  doc.text('Skidzo (GetPawsy) · Release Report', margin, 12);
   doc.setTextColor(100, 116, 139); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-  doc.text('New York, NY · United States', pageWidth - margin, 12, { align: 'right' });
+  doc.text('Apeldoorn, Netherlands', pageWidth - margin, 12, { align: 'right' });
   doc.setTextColor(0, 0, 0);
 
   h1(title);
@@ -238,7 +238,7 @@ export function downloadReleaseReportPdf({ title, notes, result }: BuildOptions)
     doc.setPage(p);
     doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
     doc.text(
-      `Generated ${new Date().toUTCString()} · GetPawsy LLC · Page ${p} / ${totalPages}`,
+      `Generated ${new Date().toUTCString()} · Skidzo (GetPawsy) · Page ${p} / ${totalPages}`,
       pageWidth / 2, pageHeight - 8, { align: 'center' },
     );
   }

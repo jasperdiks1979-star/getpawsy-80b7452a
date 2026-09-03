@@ -213,7 +213,7 @@ export const campaignData: AdVariant[] = [
     ],
     descriptions: [
       "Slow down eating by 10x with maze design. Prevents bloating and improves digestion.",
-      "BPA-free, non-slip, and easy to clean. Vet-recommended for healthier mealtimes."
+      "BPA-free, non-slip, and easy to clean. Popular for healthier mealtimes."
     ],
     displayPaths: ["Health", "Slow-Feed"],
     keywords: [

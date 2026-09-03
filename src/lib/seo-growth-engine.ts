@@ -276,7 +276,7 @@ export function generateMockTop10Pages(): Top10AssaultPage[] {
       { type: 'homepage_rotation', description: 'Add to bestseller rotation', impact: 'medium' },
     ]},
     { url: '/guides/best-orthopedic-dog-bed', keyword: 'orthopedic dog bed', avgPosition: 16.4, impressions: 189, clicks: 5, ctr: 2.6, internalLinks: 5, wordCount: 2340, hasSchema: false, isIndexed: true, momentumScore: 58, isPriority: true, boostRecommendations: [
-      { type: 'title_optimization', description: 'Add "Vet-Recommended" trust signal to title', impact: 'high' },
+      { type: 'title_optimization', description: 'Add "Popular" trust signal to title', impact: 'high' },
       { type: 'faq_schema', description: 'Add FAQ about orthopedic benefits', impact: 'medium' },
       { type: 'internal_link_injection', description: 'Add links from main dog bed cornerstone', impact: 'high' },
     ]},

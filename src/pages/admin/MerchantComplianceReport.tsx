@@ -305,7 +305,7 @@ export default function MerchantComplianceReport() {
             <h2 className="font-semibold text-foreground">Storefront Compliance Fixes Applied</h2>
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" /> Removed "Expert Vetted", "4.8/5 Rating", and unverifiable social proof claims</li>
+            <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" /> Removed "Expert selected", "4.8/5 Rating", and unverifiable social proof claims</li>
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" /> Replaced "US Shipping" with factual "US Delivery 5–10 Business Days"</li>
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" /> Removed "Ships from US" and "Premium Quality" claims from spotlights</li>
             <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" /> Replaced "Happiness Guarantee" with "30-Day Return Policy"</li>

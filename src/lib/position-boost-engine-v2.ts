@@ -32,7 +32,7 @@ export interface PositionBoostResult {
 }
 
 const BENEFIT_MODIFIERS = [
-  'Expert-Tested',
+  'carefully selected',
   'Premium Quality',
   'Top-Rated',
   'Best Value',

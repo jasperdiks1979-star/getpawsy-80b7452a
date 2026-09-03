@@ -52,7 +52,7 @@ const FEATURED_GUIDES = [
   {
     slug: 'best-dog-car-seats-safe-travel',
     label: 'Best Dog Car Seats for Safe Travel',
-    description: 'Safety-tested car seats & boosters — ranked by crash protection and comfort.',
+    description: 'safety-focused car seats & boosters — ranked by crash protection and comfort.',
     readTime: '11 min',
   },
 ];

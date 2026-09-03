@@ -29,7 +29,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     id: 'dog-training',
     label: 'Dog Training',
     icon: '🐕',
-    description: 'Expert-reviewed tools and guides for dog training, behavior correction, leash training, and obedience.',
+    description: 'carefully selected tools and guides for dog training, behavior correction, leash training, and obedience.',
     seoIntro: 'Effective dog training starts with understanding your dog\'s natural behavior and using the right tools. Whether you\'re dealing with a puppy who hasn\'t learned basic commands or an adult dog with stubborn habits like excessive barking, pulling on the leash, or ignoring recall, our training guides provide step-by-step methods backed by professional trainers and veterinary behaviorists. We cover positive reinforcement techniques, the proper use of training collars and harnesses, and age-appropriate training schedules that set your dog up for lifelong success.',
     cornerstoneGuide: {
       slug: 'complete-dog-training-guide-2026',
@@ -54,7 +54,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     id: 'dog-travel',
     label: 'Dog Travel Safety',
     icon: '🚗',
-    description: 'Safety-tested car seats, carriers, and travel gear to protect your dog on every journey.',
+    description: 'safety-focused car seats, carriers, and travel gear to protect your dog on every journey.',
     seoIntro: 'Traveling with your dog — whether a short drive to the vet or a cross-country road trip — requires the right safety equipment. Unrestrained dogs are at serious risk during sudden stops, and many states now require pet restraint systems in vehicles. Our travel safety guides cover crash-tested car seats, safety-rated harnesses, airline-approved carriers, and practical tips for reducing travel anxiety. Every product recommendation is evaluated based on safety certifications, real crash test data, and veterinarian input.',
     cornerstoneGuide: {
       slug: 'dog-travel-safety-guide',
@@ -76,7 +76,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     label: 'Dog Grooming',
     icon: '✂️',
     description: 'Brushes, nail trimmers, shampoos & grooming techniques for a healthy, happy dog.',
-    seoIntro: 'Regular grooming is essential for your dog\'s health — it\'s not just about keeping their coat clean. Proper grooming prevents skin infections, reduces shedding by up to 80%, allows you to spot lumps or parasites early, and strengthens the bond between you and your pet. Our grooming guides cover everything from choosing the right brush for your dog\'s coat type (smooth, double, wire, or curly) to safe nail trimming techniques and selecting shampoos that won\'t irritate sensitive skin. We test products across multiple breeds and coat conditions to give you honest, practical recommendations.',
+    seoIntro: 'Regular grooming is essential for your dog\'s health — it\'s not just about keeping their coat clean. Proper grooming prevents skin infections, reduces shedding by up to 80%, allows you to spot lumps or parasites early, and strengthens the bond between you and your pet. Our grooming guides cover everything from choosing the right brush for your dog\'s coat type (smooth, double, wire, or curly) to safe nail trimming techniques and selecting shampoos that won\'t irritate sensitive skin. We compare products across multiple breeds and coat conditions to give you honest, practical recommendations.',
     cornerstoneGuide: {
       slug: 'dog-grooming-tools-guide',
       title: 'Dog Grooming Tools Guide (2026) – Brushes, Clippers & Kits',
@@ -97,7 +97,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     label: 'Cat Litter Solutions',
     icon: '🧹',
     description: 'Expert guides on choosing, maintaining, and optimizing cat litter boxes for odor control and multi-cat homes.',
-    seoIntro: 'The litter box is the single most important piece of equipment for indoor cat owners, yet it\'s the most common source of frustration. Odor problems, litter tracking, and cats refusing to use the box are issues that stem from choosing the wrong box, placing it incorrectly, or using the wrong type of litter. Our cat litter guides cover the science behind odor control, the N+1 rule for multi-cat homes, self-cleaning vs. traditional box trade-offs, and placement strategies that encourage consistent use. We test litter boxes in real homes with real cats to provide recommendations you can trust.',
+    seoIntro: 'The litter box is the single most important piece of equipment for indoor cat owners, yet it\'s the most common source of frustration. Odor problems, litter tracking, and cats refusing to use the box are issues that stem from choosing the wrong box, placing it incorrectly, or using the wrong type of litter. Our cat litter guides cover the science behind odor control, the N+1 rule for multi-cat homes, self-cleaning vs. traditional box trade-offs, and placement strategies that encourage consistent use. We compare litter boxes in real homes with real cats to provide recommendations you can trust.',
     cornerstoneGuide: {
       slug: 'cat-litter-solutions-guide',
       title: 'Cat Litter Solutions Guide (2026) – Best Boxes, Odor Control & Tips',
@@ -120,11 +120,11 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     label: 'Cat Toys & Enrichment',
     icon: '🐱',
     description: 'Interactive, puzzle, and enrichment toys to keep indoor cats stimulated, happy, and mentally sharp.',
-    seoIntro: 'Indoor cats need daily mental and physical stimulation to prevent boredom, obesity, and destructive behavior. The right toys can satisfy your cat\'s natural hunting instincts, encourage exercise, and reduce stress-related issues like over-grooming. Our guides cover everything from electronic motion toys that engage solo cats to puzzle feeders that slow down fast eaters and provide cognitive enrichment. We test toys with cats of different breeds, ages, and energy levels to find which ones actually hold attention beyond the first five minutes.',
+    seoIntro: 'Indoor cats need daily mental and physical stimulation to prevent boredom, obesity, and destructive behavior. The right toys can satisfy your cat\'s natural hunting instincts, encourage exercise, and reduce stress-related issues like over-grooming. Our guides cover everything from electronic motion toys that engage solo cats to puzzle feeders that slow down fast eaters and provide cognitive enrichment. We compare toys with cats of different breeds, ages, and energy levels to find which ones actually hold attention beyond the first five minutes.',
     cornerstoneGuide: {
       slug: 'best-interactive-cat-toys-that-work',
       title: 'Best Interactive Cat Toys That Actually Work (2026)',
-      excerpt: 'Tested & ranked interactive cat toys for indoor cats. Expert picks for solo play, mental stimulation, and hunting instincts.',
+      excerpt: 'Compared & Ranked interactive cat toys for indoor cats. our picks for solo play, mental stimulation, and hunting instincts.',
     },
     clusterGuides: [
       { slug: 'best-cat-enrichment-ideas-indoor-cats-2026', title: 'Best Cat Enrichment Ideas for Indoor Cats' },
@@ -162,8 +162,8 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     seoIntro: 'The right dog bed does more than provide comfort — for senior dogs and breeds prone to hip dysplasia and arthritis, an orthopedic bed with proper support can significantly improve mobility and reduce pain. Memory foam density, waterproof liners, and non-slip bottoms are features that separate a quality therapeutic bed from a standard cushion. Our guides cover how to choose the right size and support level for your dog\'s weight and health needs, with specific recommendations for large breeds, anxious dogs who benefit from bolstered calming beds, and outdoor-ready options for active lifestyles.',
     cornerstoneGuide: {
       slug: 'best-dog-bed-2026',
-      title: 'Best Dog Beds 2026 – Vet-Recommended Orthopedic Picks',
-      excerpt: 'Vet-recommended orthopedic dog beds tested and ranked for comfort, durability, and joint support.',
+      title: 'Best Dog Beds 2026 – Popular Orthopedic Picks',
+      excerpt: 'Popular orthopedic dog beds compared and ranked for comfort, durability, and joint support.',
     },
     clusterGuides: [
       { slug: 'best-orthopedic-dog-bed', title: 'Best Orthopedic Dog Beds' },

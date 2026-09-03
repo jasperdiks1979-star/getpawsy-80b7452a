@@ -211,8 +211,9 @@ const PrivacyPolicy = () => {
                     </a>
                   </div>
                   <div className="text-muted-foreground space-y-1">
-                    <p className="m-0 font-semibold text-foreground">GetPawsy LLC</p>
-                    <p className="m-0">New York, NY · United States</p>
+                    <p className="m-0 font-semibold text-foreground">Skidzo, trading as GetPawsy</p>
+                    <p className="m-0">Apeldoorn, Netherlands</p>
+                    <p className="m-0">KvK 78156955 · VAT ID NL003295015B69</p>
                     <p className="m-0 mt-3 text-sm">Online-only pet supply retailer</p>
                   </div>
                 </div>

@@ -25,7 +25,7 @@ export const CLUSTERS: Record<ClusterId, ClusterConfig> = {
     id: 'dog-training-behavior',
     label: 'Dog Training & Behavior',
     shortLabel: 'Dog Training',
-    description: 'Expert-reviewed tools and guides for dog training, behavior correction, and obedience.',
+    description: 'carefully selected tools and guides for dog training, behavior correction, and obedience.',
     icon: '🐕',
     guidePath: '/collections/dog',
     keywords: ['training', 'behavior', 'obedience', 'leash', 'collar', 'harness', 'toy', 'puzzle'],

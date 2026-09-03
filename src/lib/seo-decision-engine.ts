@@ -389,5 +389,5 @@ export function generateWeeklyReport(pages: PriorityPage[]): WeeklyReport {
 function titleVariant(slug: string, variant: number): string {
   const kw = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/2026/g, '').trim();
   if (variant === 1) return `${kw} (2026) – What Actually Works & Why`;
-  return `${kw} (2026) – Tested & Ranked by Experts`;
+  return `${kw} (2026) – Compared & Ranked by Experts`;
 }

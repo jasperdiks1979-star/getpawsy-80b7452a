@@ -94,7 +94,7 @@ export const MONEY_PAGES: MoneyPage[] = [
     path: '/guides/best-cat-litter-box-2026',
     type: 'guide', cluster: 'cat-litter', species: 'cat', boost: 1.5, minInbound: 20,
     targetKeyword: 'best cat litter box',
-    anchors: { exact: 'best cat litter boxes', partial: 'top litter box picks', semantic: 'expert-reviewed litter solutions' },
+    anchors: { exact: 'best cat litter boxes', partial: 'top litter box picks', semantic: 'carefully selected litter solutions' },
   },
   {
     path: '/guides/best-self-cleaning-litter-box-2026',
@@ -236,7 +236,7 @@ export const MONEY_PAGES: MoneyPage[] = [
     path: '/best-cat-litter-box-2026',
     type: 'guide', cluster: 'cat-litter', species: 'cat', boost: 1.5, minInbound: 20,
     targetKeyword: 'best cat litter box 2026',
-    anchors: { exact: 'best cat litter box 2026', partial: 'top litter box picks this year', semantic: 'expert-reviewed litter box recommendations' },
+    anchors: { exact: 'best cat litter box 2026', partial: 'top litter box picks this year', semantic: 'carefully selected litter box recommendations' },
   },
   {
     path: '/best-dog-car-seat-safety',

@@ -137,7 +137,7 @@ export default function SlowFeederOffer() {
     'Dishwasher safe',
     'Works for dogs & cats',
     'Multiple sizes available',
-    'Vet recommended design',
+    'Popular design',
   ];
 
   return (

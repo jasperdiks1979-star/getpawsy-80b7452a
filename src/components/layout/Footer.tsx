@@ -127,8 +127,9 @@ export const Footer = () => {
                 </span>
               </Link>
               <div className="text-sm text-background/60 space-y-1">
-                <p className="font-medium text-background/80">GetPawsy LLC</p>
-                <p>New York, NY · United States</p>
+                <p className="font-medium text-background/80">GetPawsy — a trading name of Skidzo</p>
+                <p>Apeldoorn, Netherlands · Serving the United States</p>
+                <p className="text-xs">KvK 78156955 · VAT ID NL003295015B69</p>
                 <p className="text-xs mt-0.5">Email: {SUPPORT_EMAIL}</p>
               </div>
               <a
@@ -160,7 +161,7 @@ export const Footer = () => {
               </div>
 
               <p className={premium ? "text-[11px] text-background/30 mt-3 leading-relaxed" : "text-xs text-background/40 mt-3 leading-relaxed"}>
-                GetPawsy LLC is a US-based online pet supply store serving customers across the United States. Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
+                GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States. Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
               </p>
 
               {/* Social Links */}

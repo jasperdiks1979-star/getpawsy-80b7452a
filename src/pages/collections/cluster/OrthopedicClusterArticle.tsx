@@ -39,7 +39,7 @@ const CLUSTERS: Record<string, ClusterData> = {
     slug: 'best-for-large-dogs',
     title: '7 Best Orthopedic Dog Beds for Large Dogs (2026)',
     seoTitle: 'Best Orthopedic Dog Beds for Large Dogs – Top 7 Picks (2026)',
-    metaDesc: 'Find the best orthopedic dog beds for large breeds like Labs, German Shepherds & Golden Retrievers. Expert-reviewed memory foam beds rated for 60-120+ lb dogs.',
+    metaDesc: 'Find the best orthopedic dog beds for large breeds like Labs, German Shepherds & Golden Retrievers. carefully selected memory foam beds rated for 60-120+ lb dogs.',
     h1: 'Best Orthopedic Dog Beds for Large Dogs',
     intro: 'Large breed dogs (60+ lbs) need beds with at least 5 inches of high-density memory foam to prevent bottoming out. Standard beds compress within weeks under heavy dogs, leaving them sleeping on the floor. We evaluated dozens of orthopedic beds specifically for Labradors, German Shepherds, Golden Retrievers, Rottweilers, and other large breeds — scoring on foam density, edge durability, cover quality, and real customer satisfaction.',
     sections: [
@@ -74,7 +74,7 @@ const CLUSTERS: Record<string, ClusterData> = {
     slug: 'memory-foam-under-100',
     title: 'Best Memory Foam Dog Beds Under $100 (2026)',
     seoTitle: 'Best Memory Foam Dog Beds Under $100 – Top Budget Picks (2026)',
-    metaDesc: 'Looking for an affordable memory foam dog bed? We tested 15+ beds under $100 for foam quality, durability & comfort. These 6 deliver genuine orthopedic support without the premium price.',
+    metaDesc: 'Looking for an affordable memory foam dog bed? We compared beds under $100 for foam quality, durability & comfort. These 6 deliver genuine orthopedic support without the premium price.',
     h1: 'Best Memory Foam Dog Beds Under $100',
     intro: 'You don\'t need to spend $200+ for genuine orthopedic support. We evaluated 15+ memory foam dog beds priced under $100 to find which ones actually deliver on their promises. The key is knowing what to look for: foam density over 1.5 lb/ft³, proper waterproofing, and washable covers that survive repeated use.',
     sections: [
@@ -168,7 +168,7 @@ const CLUSTERS: Record<string, ClusterData> = {
     slug: 'cooling',
     title: 'Best Cooling Orthopedic Dog Beds (2026)',
     seoTitle: 'Best Cooling Orthopedic Dog Beds – Top 5 Gel Foam Picks (2026)',
-    metaDesc: 'Standard memory foam traps heat. These gel-infused cooling orthopedic dog beds provide full joint support without overheating. Expert picks for hot climates & thick-coated breeds.',
+    metaDesc: 'Standard memory foam traps heat. These gel-infused cooling orthopedic dog beds provide full joint support without overheating. our picks for hot climates & thick-coated breeds.',
     h1: 'Best Cooling Orthopedic Dog Beds',
     intro: 'Standard memory foam retains body heat — a serious problem for dogs with thick coats, brachycephalic breeds that overheat easily, and pet owners in warm climates. Gel-infused and open-cell memory foam solves this by maintaining full orthopedic support while actively dissipating heat. We evaluated the top cooling orthopedic beds for heat regulation, foam quality, and real-world performance.',
     sections: [
@@ -247,7 +247,7 @@ export default function OrthopedicClusterArticle() {
     url: canonical,
     datePublished: '2026-02-20',
     dateModified: '2026-02-23',
-    author: { '@type': 'Person', name: 'Sarah Mitchell', url: `${BASE}/about-the-author` },
+    author: { '@type': 'Organization', name: 'GetPawsy Editorial', url: `${BASE}/about-the-author` },
     publisher: { '@type': 'Organization', name: 'GetPawsy', url: BASE },
     mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
   };
@@ -283,7 +283,7 @@ export default function OrthopedicClusterArticle() {
         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-8">
           <span>Updated Feb 2026</span>
           <span>·</span>
-          <span>By Sarah Mitchell, Pet Product Researcher</span>
+          <span>By the GetPawsy Editorial team</span>
           <span>·</span>
           <span>{cluster.sections.length + 2} min read</span>
         </div>
