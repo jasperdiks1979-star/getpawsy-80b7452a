@@ -1193,10 +1193,25 @@ async function releaseLock(key: string, err?: string) {
     .eq("cache_key", key);
 }
 
+/** Structured, PII-free cache observability. Key/window only — no visitor data. */
+function acLog(event: string, key: string, extra: Record<string, unknown> = {}) {
+  try {
+    console.log(JSON.stringify({ fn: "analytics-canonical", event, cache_key: key, ...extra }));
+  } catch { /* logging must never break a request */ }
+}
+
 export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unknown>> {
   const key = cacheKeyFor(opts.hours, opts.geo);
   const started = Date.now();
-  const payload = await computeEnvelope(opts);
+  acLog("recompute_start", key, { hours: opts.hours, geo: opts.geo });
+  let payload: Record<string, unknown>;
+  try {
+    payload = await computeEnvelope(opts);
+  } catch (e) {
+    acLog("recompute_failure", key, { duration_ms: Date.now() - started, error: (e as Error).message });
+    throw e;
+  }
+  acLog("recompute_success", key, { duration_ms: Date.now() - started });
   await writeCacheRow(
     key,
     opts.hours,
@@ -1297,6 +1312,7 @@ Deno.serve(async (req) => {
     // In-process memo (protects against burst re-renders in one isolate).
     const memo = cache.get(key);
     if (memo && Date.now() - memo.at < TTL_MS) {
+      acLog("cache_hit_memo", key, { hours, geo });
       return json({ ...memo.body, cached: true, cache_status: "hit" });
     }
 
@@ -1305,6 +1321,7 @@ Deno.serve(async (req) => {
       const ageMs = Date.now() - new Date(row.generated_at as string).getTime();
       const ageSeconds = Math.round(ageMs / 1000);
       if (ageMs <= freshMsFor(hours)) {
+        acLog("cache_hit", key, { hours, geo, age_seconds: ageSeconds });
         cache.set(key, { at: Date.now(), body: row.payload });
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
           cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours,
@@ -1320,8 +1337,9 @@ Deno.serve(async (req) => {
         // a phone. Age is always surfaced via `cache_age_seconds`/`cache_stale`
         // so no number is ever presented as fresher than it is, and the warmer
         // owns the actual rebuild.
+        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds });
         const bg = (async () => {
-          if (!(await acquireLock(key))) return;
+          if (!(await acquireLock(key))) { acLog("recompute_skipped_locked", key, { hours, geo }); return; }
           try { await refreshKey(opts); }
           catch (e) { await releaseLock(key, (e as Error).message); }
         })();
@@ -1337,8 +1355,9 @@ Deno.serve(async (req) => {
     // rebuild into the background and reports CACHE_NOT_READY instead of
     // holding a mobile connection open for minutes.
     if (!internalTrusted && hours >= 24) {
+      acLog("cache_miss", key, { hours, geo });
       const bg = (async () => {
-        if (!(await acquireLock(key))) return;
+        if (!(await acquireLock(key))) { acLog("recompute_skipped_locked", key, { hours, geo }); return; }
         try { await refreshKey(opts); }
         catch (e) { await releaseLock(key, (e as Error).message); }
       })();
