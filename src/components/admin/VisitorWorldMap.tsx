@@ -185,23 +185,47 @@ let mapboxTokenPromise: Promise<string | null> | null = null;
 /** Hard ceiling for the whole map startup chain (token + style load). */
 const MAP_INIT_TIMEOUT_MS = 15_000;
 
+/**
+ * Last failure reason from `get-mapbox-token`. The secret IS configured in
+ * Lovable Cloud, so a failed fetch is almost always a transient backend/auth
+ * outage (503 auth_unavailable) — reporting it as "add the secret" was
+ * misleading. Distinguish the two and retry retryable failures once.
+ */
+let mapboxTokenErrorReason: "missing_secret" | "unavailable" | null = null;
+
+export function mapboxTokenErrorMessage(): string {
+  return mapboxTokenErrorReason === "missing_secret"
+    ? "Map provider not configured. Add MAPBOX_PUBLIC_TOKEN in Lovable Cloud → Settings → Secrets. " +
+      "All other analytics on this dashboard continue to work."
+    : "Map provider temporarily unavailable (token service did not respond). " +
+      "All other analytics on this dashboard continue to work — retry to load the map.";
+}
+
 async function getMapboxToken(): Promise<string | null> {
   if (cachedMapboxToken) return cachedMapboxToken;
   if (!mapboxTokenPromise) {
     mapboxTokenPromise = (async () => {
-      const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-      if (error || !data?.token) {
-        console.error("[VisitorWorldMap] get-mapbox-token failed:", error);
-        return null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+        if (!error && data?.token) {
+          cachedMapboxToken = data.token as string;
+          mapboxTokenErrorReason = null;
+          return cachedMapboxToken;
+        }
+        const msg = (error as Error | null)?.message ?? String(data?.error ?? "");
+        mapboxTokenErrorReason = /not configured/i.test(msg) ? "missing_secret" : "unavailable";
+        console.error("[VisitorWorldMap] get-mapbox-token failed:", mapboxTokenErrorReason, msg);
+        if (mapboxTokenErrorReason === "missing_secret") return null;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
       }
-      cachedMapboxToken = data.token as string;
-      return cachedMapboxToken;
+      return null;
     })().finally(() => {
       mapboxTokenPromise = null;
     });
   }
   return mapboxTokenPromise;
 }
+
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string; minutes: number }[] = [
   { value: "live", label: "Live now", minutes: 2 },
@@ -997,10 +1021,8 @@ export const VisitorWorldMap = ({
           token = await getMapboxToken();
 
           if (!token) {
-            setMapError(
-              "Map provider unavailable. Add MAPBOX_PUBLIC_TOKEN in Lovable Cloud → Settings → Secrets. " +
-              "All other analytics on this dashboard continue to work."
-            );
+            setMapError(mapboxTokenErrorMessage());
+
             return;
           }
           mapTokenRef.current = token;

@@ -107,7 +107,10 @@ export interface TruthResponse {
   cache_age_seconds?: number | null;
   cache_stale?: boolean;
   cache_max_lag_seconds?: number;
+  /** True when this payload came from the browser's last-known-good cache. */
+  served_from_client_cache?: boolean;
 }
+
 
 export interface UseAnalyticsTruthOptions {
   hours?: number;
@@ -115,6 +118,49 @@ export interface UseAnalyticsTruthOptions {
   refetchIntervalMs?: number;
   enabled?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Client-side stale-while-revalidate.
+//
+// The edge function already persists a server cache with single-flight
+// locking, but a browser reload throws away React Query's in-memory cache, so
+// a slow/unavailable backend blanked the whole panel. The last SUCCESSFUL
+// payload per (hours, geo) is therefore mirrored into sessionStorage and
+// replayed as placeholder data — clearly marked `served_from_client_cache`
+// and `cache_stale` so no number is ever presented as fresher than it is.
+// ---------------------------------------------------------------------------
+const CLIENT_CACHE_PREFIX = "gp_analytics_truth_v1:";
+
+function clientCacheKey(hours: number, geo: string) {
+  return `${CLIENT_CACHE_PREFIX}${hours}|${geo}`;
+}
+
+function readClientCache(hours: number, geo: string): TruthResponse | undefined {
+  try {
+    const raw = window.sessionStorage.getItem(clientCacheKey(hours, geo));
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as TruthResponse;
+    if (!parsed?.ok) return undefined;
+    return { ...parsed, served_from_client_cache: true, cache_stale: true };
+  } catch {
+    return undefined;
+  }
+}
+
+function writeClientCache(hours: number, geo: string, payload: TruthResponse) {
+  try {
+    window.sessionStorage.setItem(clientCacheKey(hours, geo), JSON.stringify(payload));
+  } catch {
+    /* quota / private mode — cache is an optimisation, never a requirement */
+  }
+}
+
+/** Errors that must NOT be retried (a retry cannot change the outcome). */
+function isTerminalTruthError(err: unknown): boolean {
+  const m = (err as Error)?.message ?? "";
+  return /unauthorized|forbidden|admin access required/i.test(m);
+}
+
 
 /** Hard cap on attempts per query instance (initial + bounded retries). */
 export const ANALYTICS_TRUTH_MAX_ATTEMPTS = 3;
@@ -171,11 +217,17 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
     refetchInterval: opts.refetchIntervalMs ?? defaultInterval,
+    // Stale-while-revalidate: keep the previous window's payload visible while
+    // a new one loads, and fall back to the persisted last-known-good payload
+    // on a cold page load so the panel never blanks during a recompute.
+    placeholderData: (prev) => prev ?? readClientCache(hours, geo),
     // Bounded retries: a cold cache legitimately needs a second attempt, but a
     // panel must never sit in the "warming" state forever. After
     // ANALYTICS_TRUTH_MAX_ATTEMPTS attempts the query fails and the UI shows an
-    // explicit "Still warming — Retry now" surface instead of a spinner.
-    retry: ANALYTICS_TRUTH_MAX_ATTEMPTS - 1,
+    // explicit error surface (never a fabricated zero). Terminal auth errors
+    // are not retried at all — a retry cannot change their outcome.
+    retry: (failureCount, err) =>
+      !isTerminalTruthError(err) && failureCount < ANALYTICS_TRUTH_MAX_ATTEMPTS - 1,
     retryDelay: (attempt) => Math.min(2_000 * 2 ** attempt, 8_000),
     queryFn: async () => {
       const { data, error } = await withAttemptTimeout(
@@ -189,9 +241,13 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
       // Backward-compat: older cached responses may lack `sessions[]`. Coerce
       // to an empty array so consumers don't crash while the cache warms.
       if (!Array.isArray(data.sessions)) data.sessions = [];
-      return data as TruthResponse;
+      const payload = data as TruthResponse;
+      payload.served_from_client_cache = false;
+      writeClientCache(hours, geo, payload);
+      return payload;
     },
   });
+
 }
 
 
