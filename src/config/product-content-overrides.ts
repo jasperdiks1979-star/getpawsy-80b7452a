@@ -41,7 +41,8 @@ export type PdpSectionFlag =
   | 'litterBoxLovedSection'
   | 'reassuranceCallout'
   | 'problemSolution'
-  | 'crawlableRelatedLinks';
+  | 'crawlableRelatedLinks'
+  | 'whyPetParentsLoveIt';
 
 export interface PdpProblemSolutionRow {
   problem: string;
@@ -71,6 +72,8 @@ export interface ProductContentOverride {
   bestFor?: string[];
   /** Verified problem → solution rows rendered under the buy box. */
   problemSolution?: PdpProblemSolutionRow[];
+  /** Hides the "Best Value" badge on the Buy 2 volume tier (badge only — discount math untouched). */
+  hideBestValueBadge?: boolean;
   galleryFilter?: {
     imageOnly?: boolean;
     maxImages?: number;
@@ -329,7 +332,10 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
     'productVsAlternatives',
     'productIdealFor',
     'reassuranceCallout',
+    // Implicit emotional social proof — not verified for this SKU.
+    'whyPetParentsLoveIt',
   ],
+  hideBestValueBadge: true,
 };
 
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
