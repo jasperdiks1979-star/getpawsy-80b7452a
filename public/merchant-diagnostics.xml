@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-09-04T05:51:18.959Z" total_products="322">
+<merchant_diagnostics generated="2026-09-05T10:14:30.759Z" total_products="324">
   <summary>
-    <missing_gtin>22</missing_gtin>
+    <missing_gtin>23</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>13</overlength_title>
     <short_title>10</short_title>
     <out_of_stock>0</out_of_stock>
     <duplicate_titles>5</duplicate_titles>
     <duplicate_images>0</duplicate_images>
-    <missing_compare_at_price>3</missing_compare_at_price>
+    <missing_compare_at_price>4</missing_compare_at_price>
   </summary>
   <issues>
     <issue type="missing_gtin" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." />
+    <issue type="missing_compare_at_price" product_id="07ad844f-3a96-4fef-b8cd-8a6309d3bee4" name="Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="missing_compare_at_price" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
+    <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
     <issue type="overlength_title" product_id="2041764d-a50a-4f49-930e-63c710c5a27a" name="Blue-Yellow Color Options -- 1Pc Dog Water Fountain Multifunctional Automatic..." length="157" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
