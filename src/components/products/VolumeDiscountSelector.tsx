@@ -33,6 +33,7 @@ export const VolumeDiscountSelector = ({
   onQuantityChange,
   selectedQuantity = 1,
   contextLabel,
+  showBestValueBadge = true,
 }: VolumeDiscountSelectorProps) => {
   const [selected, setSelected] = useState<VolumeTier>(
     VOLUME_TIERS.find(t => t.quantity === selectedQuantity) || VOLUME_TIERS[0]
