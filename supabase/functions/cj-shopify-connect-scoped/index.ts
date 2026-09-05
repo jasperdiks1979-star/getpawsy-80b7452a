@@ -14,6 +14,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
 import { getCjAccessToken, resolveCjVariant, type CjBudget, CJ_API_BASE } from "../_shared/cj-resolver.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +110,8 @@ function shopifyEvidence(product: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const mode = String(body?.mode ?? "preflight");
 

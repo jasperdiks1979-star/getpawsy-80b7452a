@@ -3,6 +3,7 @@
 // No deletes, no inventory/price/media/title/handle/metafield/SKU changes, no publishing.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const REQUIRED_DOMAIN = "ukz3v8-0n.myshopify.com";
 const TARGET_GID = "gid://shopify/Product/15889810194764";
@@ -100,6 +101,8 @@ function json(payload: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const ledger = { productChangeStatus: 0, productUpdate: 0, productDelete: 0, inventoryMutations: 0, priceMutations: 0, mediaMutations: 0, publishMutations: 0 };
   try {
     const body = await req.json().catch(() => ({}));

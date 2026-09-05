@@ -5,6 +5,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const TARGET = {
   shop: "ukz3v8-0n.myshopify.com",
@@ -122,6 +123,8 @@ function phase4_method(p1: any, p2: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const cfg = getShopifyConfig();
     if (!cfg.domain.startsWith("ukz3v8-0n.")) {

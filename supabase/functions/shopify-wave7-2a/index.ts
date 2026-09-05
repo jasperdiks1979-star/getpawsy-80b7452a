@@ -17,6 +17,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -497,6 +498,8 @@ async function repairRedirectChains(dry_run: boolean) {
 // ── Main ──────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = Date.now();
 
   let body: { dry_run?: boolean } = { dry_run: true };

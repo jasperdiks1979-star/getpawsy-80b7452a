@@ -8,6 +8,7 @@
 
 import { shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_HANDLE = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats";
 const SECTION_FILE = "sections/ailurova-one-product-store.liquid";
@@ -436,6 +437,8 @@ async function run(req: Request) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try { return json(await run(req)); }
   catch (e: any) { return json({ verdict: "AILUROVA_LIVE_HOTFIX_ERROR", error: String(e?.message ?? e) }, 500); }
 });

@@ -6,6 +6,7 @@
 // - Never returns token material, client secret, or auth headers
 // - Performs ZERO mutations
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 import {
   getShopifyConfig,
   getShopifyTokenMeta,
@@ -43,6 +44,8 @@ const SHOP_QUERY = /* GraphQL */ `
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
 
   const out: Record<string, unknown> = {
     ok: false,

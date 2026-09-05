@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 // Narrowly scoped US price-list update for Ailurova.
 // Target SKU: CJFT268927601AZ (Light Gray variant).
@@ -78,6 +79,8 @@ async function verifyStorefront(): Promise<{ ok: boolean; note: string; html_len
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const body = await req.json().catch(() => ({}));
   const dryRun = body?.confirm !== CONFIRM;
 

@@ -3,6 +3,7 @@
 // Never touches protected product 15889810194764.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const ONLINE_STORE_PUB = "gid://shopify/Publication/355057631564";
 const PROTECTED_GID = "gid://shopify/Product/15889810194764";
@@ -110,6 +111,8 @@ function nonOnlineStorePubs(snap: Snapshot): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     // Auth gate: mutation phase requires exact confirm phrase; preflight is read-only.
 

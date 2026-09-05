@@ -15,6 +15,7 @@
 //   - Max 10 mutations. Aborts the batch on the first anomaly.
 
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 import {
   CJ_RESOLVER_VERSION,
   getCjAccessToken,
@@ -185,6 +186,8 @@ function aggregate(snaps: Snap[]) {
 // ─── Handler ───────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = nowIso();
   const startMs = Date.now();
   const runId = `batch-${Date.now()}`;

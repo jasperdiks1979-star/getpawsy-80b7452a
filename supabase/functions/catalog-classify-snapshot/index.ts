@@ -7,6 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
 import { CJ_RESOLVER_VERSION } from "../_shared/cj-resolver.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,8 @@ function skuIsMalformed(sku: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
   const runId = `stepB-${Date.now()}`;
   const started = new Date().toISOString();

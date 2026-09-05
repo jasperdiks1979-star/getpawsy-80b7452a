@@ -2,6 +2,7 @@
 // Queries currentAppInstallation.accessScopes and diffs against the required set.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 // Required Admin API scopes for full Wave 7.2 remediation coverage.
 const REQUIRED_SCOPES = [
@@ -39,6 +40,8 @@ const REQUIRED_SCOPES = [
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = new Date().toISOString();
   try {
     const cfg = getShopifyConfig();

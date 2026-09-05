@@ -12,6 +12,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -284,6 +285,8 @@ async function phase12Perf(): Promise<PhaseResult> {
 // ── HANDLER ────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const t0 = Date.now();
   const phases = [
     await phase1Theme(),

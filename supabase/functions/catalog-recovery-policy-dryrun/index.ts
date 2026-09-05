@@ -5,6 +5,7 @@
 // Writes performed: 0.
 
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,6 +112,8 @@ function proposeQty(us: number): number {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = Date.now();
   try {
     const { variants, pages, truncated } = await sweep();

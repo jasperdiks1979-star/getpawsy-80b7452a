@@ -2,6 +2,7 @@
 // No catalog/settings mutation. No order. No payment. Stops before payment submit.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const HANDLE = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats";
 const VARIANT_ID = 58044850536780;
@@ -81,6 +82,8 @@ const Q_ORDERS = `query O {
 
 Deno.serve(async (r0) => {
   if (r0.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(r0);
+  if (__gate) return __gate;
   const cb = () => `cb=${Date.now()}${Math.random().toString(36).slice(2, 7)}`;
   const out: Record<string, unknown> = { mode: "READ_ONLY + ephemeral cart", ts: new Date().toISOString(), config: getShopifyConfig() };
 

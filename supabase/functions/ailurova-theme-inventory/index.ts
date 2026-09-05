@@ -1,6 +1,7 @@
 // READ-ONLY theme file inventory for the live Ailurova theme. No mutations.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const THEME = "gid://shopify/OnlineStoreTheme/202525999436";
 const Q = `query T($id: ID!, $f: [String!]) {
@@ -17,6 +18,8 @@ const Q_LIST = `query L($id: ID!, $after: String) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const url = new URL(req.url);
   let want: string[] = [];
   if (req.method === "POST") { try { want = (await req.json()).filenames ?? []; } catch { /*noop*/ } }

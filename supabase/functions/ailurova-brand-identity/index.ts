@@ -14,6 +14,7 @@
 import { shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import ASSETS from "./assets.json" with { type: "json" };
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const CONFIRM = "CONFIRM_AILUROVA_BRAND_IDENTITY";
 
@@ -178,6 +179,8 @@ function patchSettingsData(raw: string): { patched: string; changes: Record<stri
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const confirm = body.confirm ?? new URL(req.url).searchParams.get("confirm");

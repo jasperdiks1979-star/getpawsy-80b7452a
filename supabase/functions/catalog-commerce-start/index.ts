@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch, getShopifyConfig, getShopifyTokenMeta } from "../_shared/shopify-token-provider.ts";
 import { CANONICAL_LOCATION_ID, getOnlineStorePublicationId } from "../_shared/commerce-helpers.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,8 @@ const SOURCE_RUN = "stepB-1783921456385";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const runId = `stepC-${Date.now()}`;
