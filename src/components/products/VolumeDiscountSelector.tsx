@@ -77,23 +77,24 @@ export const VolumeDiscountSelector = ({
       <div className="grid grid-cols-3 gap-2">
         {tiersWithPrices.map((tier) => {
           const isSelected = selected.quantity === tier.quantity;
-          
+          const showBestValue = showBestValueBadge && tier.isBestValue;
+
           return (
             <motion.button
               key={tier.quantity}
               onClick={() => handleSelect(tier)}
               className={`
                 relative p-3 rounded-xl border-2 transition-all text-left
-                ${isSelected 
-                  ? 'border-primary bg-primary/5 shadow-md' 
+                ${isSelected
+                  ? 'border-primary bg-primary/5 shadow-md'
                   : 'border-muted bg-card hover:border-primary/50'
                 }
-                ${tier.isBestValue ? 'ring-2 ring-amber-400/50' : ''}
+                ${showBestValue ? 'ring-2 ring-amber-400/50' : ''}
               `}
               whileTap={{ scale: 0.98 }}
             >
               {/* Best Value Badge */}
-              {tier.isBestValue && (
+              {showBestValue && (
                 <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
                   <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] px-2 py-0.5 shadow-sm">
                     <Star className="w-2.5 h-2.5 mr-0.5 fill-white" />

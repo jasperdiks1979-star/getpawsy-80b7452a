@@ -1857,6 +1857,7 @@ const ProductDetail = () => {
                   setVolumeDiscount(discountPct);
                 }}
                 selectedQuantity={quantity}
+                showBestValueBadge={!productContentOverride?.hideBestValueBadge}
                 contextLabel={
                   (product.category || '').toLowerCase().includes('cat')
                     ? 'Great value for multi-cat homes'
