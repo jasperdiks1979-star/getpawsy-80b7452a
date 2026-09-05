@@ -9,6 +9,8 @@ interface VolumeDiscountSelectorProps {
   selectedQuantity?: number;
   /** Context label — defaults to generic pet copy */
   contextLabel?: string;
+  /** Set false to hide the "Best Value" badge/highlight on the Buy 2 tier. Discount math is unaffected. */
+  showBestValueBadge?: boolean;
 }
 
 interface VolumeTier {

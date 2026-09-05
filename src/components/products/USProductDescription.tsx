@@ -73,16 +73,18 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
         </section>
       )}
 
-      {/* Section 3: Why Pet Parents Love It */}
-      <section className="bg-primary/5 rounded-xl p-5 border border-primary/10">
-        <h3 className="text-lg font-display font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Heart className="w-5 h-5 text-primary" />
-          Why Pet Parents Love It
-        </h3>
-        <p className="text-muted-foreground leading-relaxed">
-          {parsed.whyLoveIt}
-        </p>
-      </section>
+      {/* Section 3: Why Pet Parents Love It — hidden for SKUs whose override suppresses unverified emotional social proof */}
+      {!override?.hideSections?.includes('whyPetParentsLoveIt') && (
+        <section className="bg-primary/5 rounded-xl p-5 border border-primary/10">
+          <h3 className="text-lg font-display font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-primary" />
+            Why Pet Parents Love It
+          </h3>
+          <p className="text-muted-foreground leading-relaxed">
+            {parsed.whyLoveIt}
+          </p>
+        </section>
+      )}
 
       {/* Section 4: Product Details */}
       {parsed.productDetails.length > 0 && (
