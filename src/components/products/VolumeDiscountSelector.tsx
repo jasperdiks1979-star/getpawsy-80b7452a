@@ -115,7 +115,7 @@ export const VolumeDiscountSelector = ({
               )}
 
               {/* Content */}
-              <div className={tier.isBestValue ? 'pt-1' : ''}>
+              <div className={showBestValue ? 'pt-1' : ''}>
                 <p className="font-semibold text-sm">{tier.label}</p>
                 <p className="text-xs text-muted-foreground">{tier.sublabel}</p>
                 
