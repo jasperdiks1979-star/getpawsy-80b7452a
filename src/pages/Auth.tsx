@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { z } from 'zod';
+import { isTransportError } from '@/lib/auth/transportError';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,9 +70,12 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await signIn(loginEmail, loginPassword);
+      const { error, kind } = await signIn(loginEmail, loginPassword);
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+        // Email + password stay in the form so the attempt can be repeated.
+        if (kind === 'transport' || isTransportError(error)) {
+          toast.error("We couldn't reach the server. This is temporary — please try again.");
+        } else if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password');
         } else {
           toast.error(error.message);
@@ -82,8 +86,12 @@ const Auth = () => {
       toast.success('Welcome back!');
       navigate(nextPath, { replace: true });
     } catch (err) {
-      console.error('[Auth] signIn threw:', err);
-      toast.error('Login failed. Please try again.');
+      if (isTransportError(err)) {
+        toast.error("We couldn't reach the server. This is temporary — please try again.");
+      } else {
+        console.error('[Auth] signIn threw:', err);
+        toast.error('Login failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
