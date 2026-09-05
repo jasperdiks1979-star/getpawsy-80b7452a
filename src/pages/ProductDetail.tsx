@@ -120,6 +120,8 @@ import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
+import { PdpMobileQuickBuy } from "@/components/products/PdpMobileQuickBuy";
+import { PdpVerifiedProblemSolution } from "@/components/products/PdpVerifiedProblemSolution";
 import { EmotionalHook } from "@/components/pdp/emotional/EmotionalHook";
 import { SwipeBenefitChips } from "@/components/pdp/emotional/SwipeBenefitChips";
 import { MobileStickyTrustBar } from "@/components/pdp/emotional/MobileStickyTrustBar";
@@ -1300,13 +1302,20 @@ const ProductDetail = () => {
                     </p>
                   )}
                   <h1 className="text-2xl font-display font-bold text-foreground leading-tight break-words">
-                    {safeString(productDisplayName(product))}
+                    {productContentOverride?.displayTitle || safeString(productDisplayName(product))}
                   </h1>
+                  {productContentOverride?.mobileQuickBuy && productContentOverride.intro && (
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-snug">
+                      {productContentOverride.intro}
+                    </p>
+                  )}
                 </div>
-                <SwipeBenefitChips
-                  category={product.category || undefined}
-                  productName={product.name}
-                />
+                {!productContentOverride?.mobileQuickBuy && (
+                  <SwipeBenefitChips
+                    category={product.category || undefined}
+                    productName={product.name}
+                  />
+                )}
                 <MobileProductGallery
                 images={images}
                 productName={safeString(product.name)}
@@ -1318,6 +1327,15 @@ const ProductDetail = () => {
                   setLightboxOpen(true);
                 }}
                 />
+                {productContentOverride?.mobileQuickBuy && (
+                  <PdpMobileQuickBuy
+                    price={activePrice}
+                    bullets={productContentOverride.heroBullets || []}
+                    inStock={inStock}
+                    onAddToCart={handleAddToCart}
+                  />
+                )}
+
               </>
             ) : (
               <DesktopProductGallery
@@ -1390,7 +1408,7 @@ const ProductDetail = () => {
               )}
               {!isMobile && (
                 <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                  {safeString(productDisplayName(product))}
+                  {productContentOverride?.displayTitle || safeString(productDisplayName(product))}
                 </h1>
               )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
@@ -1399,12 +1417,18 @@ const ProductDetail = () => {
                   {adIntent.headline}
                 </p>
               )}
-              {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
-              <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
+              {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available.
+                  Hidden on mobile for SKUs that already show the intro above the gallery. */}
+              <p
+                className={`text-[15px] text-muted-foreground mt-2 leading-relaxed ${
+                  productContentOverride?.mobileQuickBuy && productContentOverride?.intro ? 'hidden md:block' : ''
+                }`}
+              >
                 {productContentOverride?.intro ||
                   (allowHeadlineOverride && adIntent.subline) ||
                   generateClarityIntro(product.name, product.category || "")}
               </p>
+
 
               {/* CI-2: Emotional hook — deterministic per category, gated by flag.
                   CI-9: under premiumPdpV2 we hide it on mobile (the subline +
@@ -1523,7 +1547,7 @@ const ProductDetail = () => {
                     productName={product.name}
                     category={product.category || undefined}
                     productId={product.id}
-                    bestForOverride={adIntent.bestFor}
+                    bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor}
                     trustCompact
                   />
                 </div>
@@ -1532,12 +1556,12 @@ const ProductDetail = () => {
                     productName={product.name}
                     category={product.category || undefined}
                     productId={product.id}
-                    bestForOverride={adIntent.bestFor}
+                    bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor}
                   />
                 </div>
               </>
             ) : (
-              <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
+              <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor} />
             )}
             {/*
               Trust Stack — PDP merchant trust signals. Fully duplicates the
@@ -1944,6 +1968,10 @@ const ProductDetail = () => {
             <WhyCustomersChoose />
           </motion.div>
         </div>
+
+        {/* Verified problem → solution — per-SKU override data only */}
+        <PdpVerifiedProblemSolution rows={productContentOverride?.problemSolution} />
+
 
         {/* Emotional trigger + delivery info consolidated */}
 
