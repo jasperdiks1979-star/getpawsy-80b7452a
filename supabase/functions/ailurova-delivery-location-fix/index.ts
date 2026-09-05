@@ -2,6 +2,7 @@
 // Default mode = readback (READ-ONLY). Mutation only with ?mode=execute&confirm=ASSIGN-146177655116
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PROFILE_GID = "gid://shopify/DeliveryProfile/146220056908";
 const GROUP_GID = "gid://shopify/DeliveryLocationGroup/146177655116";
@@ -83,6 +84,8 @@ async function cartProbe(domain: string, variantId: string) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode") ?? "readback";
   const confirm = url.searchParams.get("confirm") ?? "";

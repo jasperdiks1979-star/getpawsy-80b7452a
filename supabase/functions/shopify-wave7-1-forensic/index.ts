@@ -8,6 +8,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -189,6 +190,8 @@ async function supabaseCanonical() {
 // ── Main ───────────────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const [scopes, redirects, resources, cj, auditLog, canon] = await Promise.all([
       scopeAudit(), redirectAudit(), resourceProbes(), cjAudit(), auditLogForensics(), supabaseCanonical(),

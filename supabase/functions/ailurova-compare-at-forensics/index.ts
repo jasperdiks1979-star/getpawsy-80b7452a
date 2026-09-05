@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 // STRICTLY READ-ONLY forensic audit of the Ailurova compare-at price.
 // No mutations of any kind are performed by this function.
@@ -104,6 +105,8 @@ async function probe(url: string, ua: string, extra: Record<string, string> = {}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const out: Record<string, unknown> = { mode: "READ_ONLY", mutation_performed: "NO" };
 
   // A. Admin base prices

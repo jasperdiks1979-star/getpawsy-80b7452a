@@ -5,6 +5,7 @@
 
 import { shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_HANDLE = "ailurova-xl-stainless-steel-enclosed-cat-litter-box-for-large-cats";
 const PRODUCT_GID = "gid://shopify/Product/15889810194764";
@@ -317,6 +318,8 @@ function buildSafeSection(): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const url = new URL(req.url);
     let body: any = {};

@@ -4,6 +4,7 @@
 // changes. Requires an explicit confirmation phrase to execute.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const CONFIRM_PHRASE = "CONFIRM_AILUROVA_POLICIES_LAUNCH";
 const PROTECTED_GID = "gid://shopify/Product/15889810194764";
@@ -224,6 +225,8 @@ async function countPublished() {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const startedAt = new Date().toISOString();
   try {
     let body: any = {};

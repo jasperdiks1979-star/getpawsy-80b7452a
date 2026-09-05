@@ -23,6 +23,7 @@
 
 import { shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const LIVE_THEME_GID = "gid://shopify/OnlineStoreTheme/201779872076";
 const TARGET_THEME_NAME = "Ailurova — Lovable Final Draft";
@@ -572,6 +573,8 @@ async function execute(req: Request) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const out = await execute(req);
     return json(out);

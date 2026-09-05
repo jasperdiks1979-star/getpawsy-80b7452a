@@ -1,6 +1,7 @@
 // AILUROVA POLICY SCOPE AUDIT — read-only. No mutations of any kind.
 import { getShopifyConfig, shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const REQUIRED_POLICY_SCOPES = ["read_legal_policies", "write_legal_policies"];
 const REQUIRED_PAGE_SCOPES_MODERN = ["read_online_store_pages", "write_online_store_pages"];
@@ -34,6 +35,8 @@ async function readContactPage() {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const cfg = getShopifyConfig();
     const granted = await getGrantedScopes();

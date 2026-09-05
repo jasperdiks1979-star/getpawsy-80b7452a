@@ -4,6 +4,7 @@
 // are unavailable, we return NOT_VERIFIABLE_READ_ONLY for that phase.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PROTECTED_GID = "gid://shopify/Product/15889810194764";
 const ONLINE_STORE_PUB = "gid://shopify/Publication/355057631564";
@@ -185,6 +186,8 @@ async function followRedirects(startUrl: string, max = 5) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = Date.now();
   const report: any = { schema: "ailurova.launch_readiness.v1", started_at: new Date().toISOString(), mutations: {
     shopify: 0, theme: 0, inventory: 0, publication: 0, settings: 0, orders_created: 0, payments_submitted: 0,

@@ -12,6 +12,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const WAVE = "W3";
 const PACE_MS = 120;
@@ -512,6 +513,8 @@ async function phaseReport(s: SupabaseClient) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const url = new URL(req.url);
   const phase = url.searchParams.get("phase") ?? "report";
   const limit = Math.min(Math.max(parseInt(url.searchParams.get("limit") ?? "100", 10), 1), 500);

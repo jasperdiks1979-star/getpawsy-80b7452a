@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 // Phase 2: smallest safe mutation — base variant compareAtPrice 138.99 -> 119.00
 const PRODUCT_ID = "gid://shopify/Product/15889810194764";
@@ -38,6 +39,8 @@ async function probe(url: string, ua: string, headers: Record<string, string> = 
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const url = new URL(req.url);
   const mode = url.searchParams.get("mode") === "execute" ? "execute" : "preflight";
   const out: Record<string, unknown> = { mode, mutation_performed: "NO" };

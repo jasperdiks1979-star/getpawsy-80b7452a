@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const TARGET = "gid://shopify/OnlineStoreTheme/202525999436";
 const LIVE = "gid://shopify/OnlineStoreTheme/201779872076";
@@ -8,6 +9,8 @@ const Q = `query { themes(first:50){ nodes { id name role updatedAt processing }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const r = await shopifyAdminFetch<any>(Q, {});
   const themes = r.data?.themes?.nodes ?? [];
   const target = themes.find((t:any)=>t.id===TARGET);

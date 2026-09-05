@@ -4,6 +4,7 @@
 // No other policy, product, theme, SEO, menu, checkout or shipping object is touched.
 import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b, null, 2), {
@@ -43,6 +44,8 @@ function hits(body: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const url = new URL(req.url);
     const mode = url.searchParams.get('mode') ?? 'audit';

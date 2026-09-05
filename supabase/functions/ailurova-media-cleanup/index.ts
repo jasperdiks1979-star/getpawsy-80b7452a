@@ -4,6 +4,7 @@
 // Strictly scoped to product 15889810194764 media. No price/inventory/SEO/theme/checkout writes.
 import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_GID = 'gid://shopify/Product/15889810194764';
 
@@ -61,6 +62,8 @@ async function readState() {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const mode = body.mode ?? 'audit';

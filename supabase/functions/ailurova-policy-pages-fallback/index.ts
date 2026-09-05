@@ -16,6 +16,7 @@
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const CONFIRM_PHRASE = "CONFIRM_AILUROVA_POLICY_PAGES_FALLBACK";
 const PRIMARY_DOMAIN = "https://ailurova.com";
@@ -174,6 +175,8 @@ function json(data: unknown, status = 200) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const startedAt = new Date().toISOString();
   try {
     let body: any = {};

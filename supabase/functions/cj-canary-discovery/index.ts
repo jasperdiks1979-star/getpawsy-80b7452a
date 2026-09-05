@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const CJ_API_BASE = "https://developers.cjdropshipping.com/api2.0/v1";
 const corsHeaders = {
@@ -230,6 +231,8 @@ function semanticCompare(v: ShopVariant, m: CJExactMatch) {
 // ─── Main handler ─────────────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = Date.now();
   try {
     const body = await req.json().catch(() => ({}));

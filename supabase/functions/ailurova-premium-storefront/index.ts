@@ -20,6 +20,7 @@
 
 import { getShopifyConfig, shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const TARGET_THEME_GID = "gid://shopify/OnlineStoreTheme/202425401676";
 const LIVE_THEME_GID   = "gid://shopify/OnlineStoreTheme/201779872076";
@@ -471,6 +472,8 @@ function buildFooterGroupJson() {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
 
   const ledger = {
     draft_theme_files_changed: 0,

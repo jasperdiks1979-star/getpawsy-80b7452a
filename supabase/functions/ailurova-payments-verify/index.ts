@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_ID = "gid://shopify/Product/15889810194764";
 
@@ -14,6 +15,8 @@ const Q = `query($id: ID!) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const { domain } = getShopifyConfig();
   let g: any = null, gErr: any = null;
   try { g = await shopifyAdminFetch<any>(Q, { id: PRODUCT_ID }); }

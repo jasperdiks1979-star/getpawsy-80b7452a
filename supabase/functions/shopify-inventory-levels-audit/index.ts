@@ -2,6 +2,7 @@
 // InventoryItems, InventoryLevels, locations. No mutations.
 
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +59,8 @@ query LevelsMore($itemId: ID!, $cursor: String) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const started = Date.now();
     let cursor: string | null = null;

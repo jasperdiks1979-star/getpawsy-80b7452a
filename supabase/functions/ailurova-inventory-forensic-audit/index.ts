@@ -1,6 +1,7 @@
 // Ailurova SOLD OUT forensic — STRICTLY READ-ONLY.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_GID = "gid://shopify/Product/15889810194764";
 const CATALOG = "gid://shopify/MarketCatalog/190142939468";
@@ -20,6 +21,8 @@ query C($id: ID!, $cat: ID!) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const out: Record<string, unknown> = { mode: "READ_ONLY", ts: new Date().toISOString(), config: getShopifyConfig() };
   try { out.catalog = await shopifyAdminFetch(Q3, { id: PRODUCT_GID, cat: CATALOG }); }
   catch (e) { out.err = String(e); }

@@ -4,6 +4,7 @@
 import { shopifyAdminFetch } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_GID = "gid://shopify/Product/15889810194764";
 const VARIANT_GID = "gid://shopify/ProductVariant/58044850536780";
@@ -62,6 +63,8 @@ const Q_PUBLISHED = `{
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const started = Date.now();
   const report: Record<string, unknown> = {
     version: "launch-readiness-audit-ailurova@1.0.0",

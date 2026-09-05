@@ -5,6 +5,7 @@
 // taxes, domains, ads, merchant center, unrelated products.
 import { corsHeaders } from '../_shared/cors.ts';
 import { shopifyAdminFetch } from '../_shared/shopify-token-provider.ts';
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_GID = 'gid://shopify/Product/15889810194764';
 const BASE = 'https://www.ailurova.com';
@@ -89,6 +90,8 @@ async function readPages() {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   try {
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const mode = String(body.mode ?? 'audit');

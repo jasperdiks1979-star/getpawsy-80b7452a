@@ -4,6 +4,7 @@
 // of catalog/product/inventory state) guarded behind ?cart=1.
 import { corsHeaders } from "../_shared/cors.ts";
 import { shopifyAdminFetch, getShopifyConfig } from "../_shared/shopify-token-provider.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const PRODUCT_GID = "gid://shopify/Product/15889810194764";
 const VARIANT_GID = "gid://shopify/ProductVariant/58044850536780";
@@ -102,6 +103,8 @@ async function probe(url: string, init?: RequestInit) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const u = new URL(req.url);
   const out: Record<string, unknown> = {
     mode: "READ_ONLY", ts: new Date().toISOString(),

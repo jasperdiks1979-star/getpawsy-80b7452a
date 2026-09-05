@@ -2,6 +2,7 @@
 // Live theme is protected. Only 3 files, only 7 values. Read-back + preview verification.
 import { getShopifyConfig, shopifyAdminFetch, shopifyAdminRest } from "../_shared/shopify-token-provider.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const TARGET_THEME_GID = "gid://shopify/OnlineStoreTheme/202425401676";
 const LIVE_THEME_GID   = "gid://shopify/OnlineStoreTheme/201779872076";
@@ -127,6 +128,8 @@ function decodeBody(body: any): string | null {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const __gate = await requireInternalOrAdmin(req);
+  if (__gate) return __gate;
   const ledger = {
     themeFilesUpsert_calls: 0,
     files_written: 0,
