@@ -1963,6 +1963,10 @@ const ProductDetail = () => {
           </motion.div>
         </div>
 
+        {/* Verified problem → solution — per-SKU override data only */}
+        <PdpVerifiedProblemSolution rows={productContentOverride?.problemSolution} />
+
+
         {/* Emotional trigger + delivery info consolidated */}
 
         {/* Tabs Section */}
