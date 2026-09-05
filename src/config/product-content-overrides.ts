@@ -43,6 +43,11 @@ export type PdpSectionFlag =
   | 'problemSolution'
   | 'crawlableRelatedLinks';
 
+export interface PdpProblemSolutionRow {
+  problem: string;
+  solution: string;
+}
+
 export interface ProductContentOverride {
   benefits?: string[];
   specs?: PdpSpecRow[];
@@ -56,12 +61,21 @@ export interface ProductContentOverride {
   suppressUrgencyLine?: boolean;
   hideAdIntentHeadline?: boolean;
   hideEmotionalHook?: boolean;
+  /** Shopper-facing H1 replacement. Canonical name / SEO metadata are untouched. */
+  displayTitle?: string;
+  /** Exactly the 3 short bullets shown in the mobile above-the-fold quick-buy card. */
+  heroBullets?: string[];
+  /** Enables the mobile-only compact quick-buy card under the gallery. */
+  mobileQuickBuy?: boolean;
+  /** Verified problem → solution rows rendered under the buy box. */
+  problemSolution?: PdpProblemSolutionRow[];
   galleryFilter?: {
     imageOnly?: boolean;
     maxImages?: number;
     blockedUrlTokens?: string[];
   };
 }
+
 
 /**
  * Automatic Cat Litter Box – Self-Cleaning with App Control
