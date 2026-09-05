@@ -237,10 +237,104 @@ const COVERED_CAT_LITTER_BOX: ProductContentOverride = {
   ],
 };
 
+/**
+ * Enclosed Cat Litter Box – Dual Opening Anti-Splash Odor-Locking
+ * (slug: front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-e265)
+ *
+ * MANUAL product. Verified strictly from the product row: enclosed box with a
+ * front flip door plus a dual-opening (top) entry, anti-splash walls,
+ * odor-locking lid, anti-tracking design, White colorway, positioned for
+ * multi-cat households and apartments. No sensors, no motor, no app control,
+ * no automatic waste removal. Dimensions, materials, decibel levels, odor
+ * performance percentages and durability lifespans are NOT verified and are
+ * intentionally omitted.
+ */
+const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
+  displayTitle: 'Enclosed Cat Litter Box — Front Flip Door, Anti-Splash, Odor-Locking',
+  intro:
+    'An enclosed litter box built to keep litter and mess inside: a front flip door for your cat, a second top opening for you, anti-splash walls, and an odor-locking lid.',
+  inStockLine: 'In stock — ships to United States',
+  verifiedShippingLine: 'Estimated delivery: 5–10 business days',
+  supportLabel: 'Customer Support',
+  suppressUrgencyLine: true,
+  hideAdIntentHeadline: true,
+  hideEmotionalHook: true,
+  mobileQuickBuy: true,
+  heroBullets: [
+    'Front flip door plus a second top opening',
+    'Anti-splash walls and anti-tracking enclosed design',
+    'Odor-locking lid keeps the box covered between uses',
+  ],
+  benefits: [
+    'Front flip door your cat walks through, plus a top opening for scooping',
+    'Anti-splash walls help keep litter and spray inside the box',
+    'Enclosed anti-tracking design to reduce litter carried onto the floor',
+    'Odor-locking lid keeps the box closed between visits',
+    'Suitable for multi-cat households and apartment living',
+  ],
+  problemSolution: [
+    {
+      problem: 'Litter ends up all over the floor around the box.',
+      solution: 'The enclosed anti-tracking design and front flip door keep litter inside instead of following your cat out.',
+    },
+    {
+      problem: 'Spray and scatter get past low-walled open trays.',
+      solution: 'High anti-splash walls contain the mess inside the box.',
+    },
+    {
+      problem: 'An open box leaves smells out in the room.',
+      solution: 'The odor-locking lid keeps the box covered between visits.',
+    },
+    {
+      problem: 'Covered boxes can be awkward to clean.',
+      solution: 'The dual-opening design gives you a separate top access point for scooping.',
+    },
+  ],
+  specs: [
+    { label: 'Category', value: 'Cat Litter Boxes' },
+    { label: 'Type', value: 'Enclosed litter box — manual scooping' },
+    { label: 'Openings', value: 'Front flip door for your cat, plus a top opening for access' },
+    { label: 'Walls', value: 'Anti-splash walls' },
+    { label: 'Lid', value: 'Odor-locking lid' },
+    { label: 'Litter Containment', value: 'Anti-tracking enclosed design' },
+    { label: 'Color', value: 'White' },
+    { label: 'Suitable For', value: 'Multi-cat households and apartments' },
+    { label: 'Brand', value: 'GetPawsy' },
+  ],
+  steps: [
+    { step: '1', title: 'Add your usual litter', description: 'Fill the base with the litter your cat already uses and close the lid.' },
+    { step: '2', title: 'Your cat enters through the flip door', description: 'The front flip door leads into the enclosed space.' },
+    { step: '3', title: 'Mess stays inside', description: 'Anti-splash walls and the enclosed anti-tracking design keep litter and spray in the box.' },
+    { step: '4', title: 'Scoop through the top opening', description: 'Use the second, top opening for scooping as part of your normal routine.' },
+  ],
+  faqs: [
+    { q: 'Is this litter box automatic or self-cleaning?', a: 'No. This is a manual enclosed litter box — there are no sensors, motors or app control. You scoop it yourself.' },
+    { q: 'What does "dual opening" mean?', a: 'There are two ways in: a front flip door your cat walks through, and a top opening you can use for access and scooping.' },
+    { q: 'Does it help with litter tracking?', a: 'The box uses an enclosed anti-tracking design with a front flip door, which is built to keep litter inside the box rather than on your floor.' },
+    { q: 'What about odor?', a: 'The box has an odor-locking lid that keeps it covered between visits. Regular scooping is still needed to keep it fresh.' },
+    { q: 'Is it suitable for more than one cat?', a: 'It is positioned for multi-cat households and apartment living. In most multi-cat homes we still recommend having a second box available elsewhere.' },
+    { q: 'What litter can I use?', a: 'Your cat’s usual litter — there is no mechanism that restricts litter type.' },
+    { q: 'How long does shipping take?', a: 'We ship to the United States. Estimated delivery is 5–10 business days, and shipping options are confirmed at checkout.' },
+    { q: 'What is the return policy?', a: 'GetPawsy offers a 30-day return policy. Items must be unused and in original condition — contact support to start a return.' },
+  ],
+  hideSections: [
+    // Generic litter-box sections hardcode automatic / sensor / app-control
+    // claims that are false for this manual box, or repeat the same points.
+    'litterBoxConversionBoost',
+    'litterBoxLovedSection',
+    'problemSolution',
+    'productVsAlternatives',
+    'productIdealFor',
+    'reassuranceCallout',
+  ],
+};
+
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
   '128e0207-8a94-4d71-b428-5b7f5002528f': AUTOMATIC_CAT_LITTER_BOX,
   'e4474637-f447-4503-a342-5667c4c546a8': COVERED_CAT_LITTER_BOX,
+  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0': ENCLOSED_DUAL_OPENING_LITTER_BOX,
 };
+
 
 export function getProductContentOverride(productId?: string | null): ProductContentOverride | undefined {
   if (!productId) return undefined;
