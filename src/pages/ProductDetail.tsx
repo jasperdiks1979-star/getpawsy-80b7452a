@@ -1417,12 +1417,18 @@ const ProductDetail = () => {
                   {adIntent.headline}
                 </p>
               )}
-              {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available. */}
-              <p className="text-[15px] text-muted-foreground mt-2 leading-relaxed">
+              {/* Benefit subline — short, scannable value prop. Use ad-intent subline when available.
+                  Hidden on mobile for SKUs that already show the intro above the gallery. */}
+              <p
+                className={`text-[15px] text-muted-foreground mt-2 leading-relaxed ${
+                  productContentOverride?.mobileQuickBuy && productContentOverride?.intro ? 'hidden md:block' : ''
+                }`}
+              >
                 {productContentOverride?.intro ||
                   (allowHeadlineOverride && adIntent.subline) ||
                   generateClarityIntro(product.name, product.category || "")}
               </p>
+
 
               {/* CI-2: Emotional hook — deterministic per category, gated by flag.
                   CI-9: under premiumPdpV2 we hide it on mobile (the subline +

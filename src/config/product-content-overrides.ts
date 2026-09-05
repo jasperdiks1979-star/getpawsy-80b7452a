@@ -67,6 +67,8 @@ export interface ProductContentOverride {
   heroBullets?: string[];
   /** Enables the mobile-only compact quick-buy card under the gallery. */
   mobileQuickBuy?: boolean;
+  /** Verified "Best for" bullets; overrides generic ad-intent bullets. */
+  bestFor?: string[];
   /** Verified problem → solution rows rendered under the buy box. */
   problemSolution?: PdpProblemSolutionRow[];
   galleryFilter?: {
@@ -260,6 +262,7 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
   hideAdIntentHeadline: true,
   hideEmotionalHook: true,
   mobileQuickBuy: true,
+  bestFor: ['Multi-cat households', 'Apartment living', 'Cats that kick litter out'],
   heroBullets: [
     'Front flip door plus a second top opening',
     'Anti-splash walls and anti-tracking enclosed design',
