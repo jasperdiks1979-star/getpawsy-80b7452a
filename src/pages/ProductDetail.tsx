@@ -1547,7 +1547,7 @@ const ProductDetail = () => {
                     productName={product.name}
                     category={product.category || undefined}
                     productId={product.id}
-                    bestForOverride={adIntent.bestFor}
+                    bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor}
                     trustCompact
                   />
                 </div>
@@ -1556,12 +1556,12 @@ const ProductDetail = () => {
                     productName={product.name}
                     category={product.category || undefined}
                     productId={product.id}
-                    bestForOverride={adIntent.bestFor}
+                    bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor}
                   />
                 </div>
               </>
             ) : (
-              <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={adIntent.bestFor} />
+              <ConversionBlock productName={product.name} category={product.category || undefined} productId={product.id} bestForOverride={productContentOverride?.bestFor ?? adIntent.bestFor} />
             )}
             {/*
               Trust Stack — PDP merchant trust signals. Fully duplicates the
