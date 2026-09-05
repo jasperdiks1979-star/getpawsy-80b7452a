@@ -120,6 +120,8 @@ import { TikTokHero } from "@/components/products/TikTokHero";
 import { TikTokSalesFunnel } from "@/components/products/TikTokSalesFunnel";
 import { TikTokStickyCTA } from "@/components/products/TikTokStickyCTA";
 import { PdpStickyAtc } from "@/components/products/PdpStickyAtc";
+import { PdpMobileQuickBuy } from "@/components/products/PdpMobileQuickBuy";
+import { PdpVerifiedProblemSolution } from "@/components/products/PdpVerifiedProblemSolution";
 import { EmotionalHook } from "@/components/pdp/emotional/EmotionalHook";
 import { SwipeBenefitChips } from "@/components/pdp/emotional/SwipeBenefitChips";
 import { MobileStickyTrustBar } from "@/components/pdp/emotional/MobileStickyTrustBar";
