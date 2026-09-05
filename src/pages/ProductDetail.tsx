@@ -1302,13 +1302,20 @@ const ProductDetail = () => {
                     </p>
                   )}
                   <h1 className="text-2xl font-display font-bold text-foreground leading-tight break-words">
-                    {safeString(productDisplayName(product))}
+                    {productContentOverride?.displayTitle || safeString(productDisplayName(product))}
                   </h1>
+                  {productContentOverride?.mobileQuickBuy && productContentOverride.intro && (
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-snug">
+                      {productContentOverride.intro}
+                    </p>
+                  )}
                 </div>
-                <SwipeBenefitChips
-                  category={product.category || undefined}
-                  productName={product.name}
-                />
+                {!productContentOverride?.mobileQuickBuy && (
+                  <SwipeBenefitChips
+                    category={product.category || undefined}
+                    productName={product.name}
+                  />
+                )}
                 <MobileProductGallery
                 images={images}
                 productName={safeString(product.name)}
@@ -1320,6 +1327,15 @@ const ProductDetail = () => {
                   setLightboxOpen(true);
                 }}
                 />
+                {productContentOverride?.mobileQuickBuy && (
+                  <PdpMobileQuickBuy
+                    price={activePrice}
+                    bullets={productContentOverride.heroBullets || []}
+                    inStock={inStock}
+                    onAddToCart={handleAddToCart}
+                  />
+                )}
+
               </>
             ) : (
               <DesktopProductGallery
