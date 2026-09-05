@@ -1408,7 +1408,7 @@ const ProductDetail = () => {
               )}
               {!isMobile && (
                 <h1 className="text-2xl md:text-4xl font-display font-bold text-foreground leading-tight break-words">
-                  {safeString(productDisplayName(product))}
+                  {productContentOverride?.displayTitle || safeString(productDisplayName(product))}
                 </h1>
               )}
               {/* Benefit headline — Pinterest hook / ad intent override OR static category default */}
