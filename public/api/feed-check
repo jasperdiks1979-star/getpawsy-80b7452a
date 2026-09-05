@@ -11,7 +11,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-09-04T05:51:18.269Z</lastBuildDate>",
+    "    <lastBuildDate>2026-09-05T10:14:30.304Z</lastBuildDate>",
     "    <item>",
     "      <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>",
     "      <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>",
@@ -36,5 +36,5 @@
     "      <g:mpn>CJFT2742896</g:mpn>",
     "      <g:product_type>Pet Supplies &gt; Dogs &gt; Bowls &amp; Feeders</g:product_type>"
   ],
-  "file_size_bytes": 711620
+  "file_size_bytes": 716177
 }

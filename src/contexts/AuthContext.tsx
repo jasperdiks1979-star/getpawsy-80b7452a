@@ -22,6 +22,8 @@ import {
 } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { traceEffect, traceStateSet, traceAuthEvent, traceMount } from '@/lib/lcp-render-trace';
+import type { AdminResolution } from '@/lib/auth/isAdmin';
+import { isTransportError, withTimeout, AUTH_REQUEST_TIMEOUT_MS } from '@/lib/auth/transportError';
 
 // ── Types only — zero runtime cost, stripped at build ─────────────────────────
 interface AuthContextType {
@@ -31,9 +33,13 @@ interface AuthContextType {
   isAdmin: boolean;
   /** False until the server-side role check for the current user has settled. */
   isAdminResolved: boolean;
+  /** Tri-state role answer: true | false | 'unknown' (backend unreachable). */
+  adminStatus: AdminResolution;
+  /** Re-run the server-side role check (manual Retry). */
+  retryAdminCheck: () => Promise<void>;
   /** False until the initial getSession()/onAuthStateChange has settled. */
   isSessionResolved: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null; kind?: 'transport' | 'credentials' }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
@@ -56,29 +62,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Auth state resolves asynchronously via onAuthStateChange.
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminStatus, setAdminStatus] = useState<AdminResolution>(false);
   const [isAdminResolved, setIsAdminResolved] = useState(false);
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Guards against overlapping role checks. */
+  const adminCheckInFlightRef = useRef(false);
+  const currentUserRef = useRef<User | null>(null);
 
   // ── Stable action refs — recreated only when needed ───────────────────────
   const scheduleTokenRefreshRef = useRef<((expiresAt: number) => void) | null>(null);
 
-  const checkAdminRole = useCallback(async (user: User | null) => {
-    if (!user) { setIsAdmin(false); setIsAdminResolved(true); return false; }
-    // Dynamic import keeps isAdmin.ts (and its supabase dep) out of critical path
+  const checkAdminRole = useCallback(async (user: User | null): Promise<AdminResolution> => {
+    if (!user) {
+      setIsAdmin(false); setAdminStatus(false); setIsAdminResolved(true);
+      return false;
+    }
+    if (adminCheckInFlightRef.current) return 'unknown';
+    adminCheckInFlightRef.current = true;
     try {
-      const { resolveIsAdmin } = await import('@/lib/auth/isAdmin');
-      const result = await resolveIsAdmin(user);
-      setIsAdmin(result);
+      // Dynamic import keeps isAdmin.ts (and its supabase dep) out of critical path
+      const { resolveIsAdminTriState } = await import('@/lib/auth/isAdmin');
+      let result = await resolveIsAdminTriState(user);
+      // Exactly one bounded retry, only when the answer was never delivered.
+      if (result === 'unknown') {
+        console.warn('[auth] admin_role_unknown', { attempt: 1, willRetry: true });
+        await new Promise(r => setTimeout(r, 800));
+        result = await resolveIsAdminTriState(user);
+        if (result === 'unknown') {
+          console.warn('[auth] admin_role_unknown', { attempt: 2, willRetry: false });
+        }
+      }
+      setAdminStatus(result);
+      setIsAdmin(result === true);
+      // 'unknown' is NOT a settled answer — the guard must keep waiting.
+      setIsAdminResolved(result !== 'unknown');
       return result;
     } catch (e) {
-      console.error('[AuthProvider] admin role check failed:', e);
+      console.warn('[auth] admin_role_check_failed', { name: (e as Error)?.name ?? 'Error' });
       setIsAdmin(false);
-      return false;
+      setAdminStatus('unknown');
+      setIsAdminResolved(false);
+      return 'unknown';
     } finally {
-      setIsAdminResolved(true);
+      adminCheckInFlightRef.current = false;
     }
   }, []);
+
+  const retryAdminCheck = useCallback(async () => {
+    await checkAdminRole(currentUserRef.current);
+  }, [checkAdminRole]);
 
   const refreshSession = useCallback(async (): Promise<Session | null> => {
     try {
@@ -132,6 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const applySession = (source: string, session: Session | null) => {
       traceStateSet('AuthProvider', `session+user [${source}]`, !!session);
       setSession(prev => prev === session ? prev : session);
+      currentUserRef.current = session?.user ?? null;
       setUser(prev => {
         const next = session?.user ?? null;
         return prev?.id === next?.id ? prev : next;
@@ -189,10 +223,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (
+    email: string,
+    password: string,
+  ): Promise<{ error: Error | null; kind?: 'transport' | 'credentials' }> => {
     const supabase = await getSupabase();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+
+    const attempt = async () => {
+      try {
+        const { error } = await withTimeout(
+          supabase.auth.signInWithPassword({ email, password }),
+          AUTH_REQUEST_TIMEOUT_MS,
+        );
+        if (error) {
+          return {
+            error: error as unknown as Error,
+            kind: (isTransportError(error) ? 'transport' : 'credentials') as 'transport' | 'credentials',
+          };
+        }
+        return { error: null as Error | null };
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        return {
+          error: err,
+          kind: (isTransportError(err) ? 'transport' : 'credentials') as 'transport' | 'credentials',
+        };
+      }
+    };
+
+    let result = await attempt();
+    // Exactly one bounded retry, and only when the request never reached auth.
+    if (result.error && result.kind === 'transport') {
+      console.warn('[auth] signin_transport_failure', {
+        name: result.error.name, attempt: 1, willRetry: true,
+      });
+      await new Promise(r => setTimeout(r, 800));
+      result = await attempt();
+      if (result.error && result.kind === 'transport') {
+        console.warn('[auth] signin_transport_failure', {
+          name: result.error.name, attempt: 2, willRetry: false,
+        });
+      }
+    }
+    return result;
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
@@ -211,12 +284,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     const supabase = await getSupabase();
     await supabase.auth.signOut();
+    currentUserRef.current = null;
     setIsAdmin(false);
+    setAdminStatus(false);
     setIsAdminResolved(true);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, isAdminResolved, isSessionResolved, signIn, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ user, session, isLoading, isAdmin, adminStatus, retryAdminCheck, isAdminResolved, isSessionResolved, signIn, signUp, signOut, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

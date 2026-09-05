@@ -4,7 +4,7 @@
     <title>GetPawsy Product Feed</title>
     <link>https://getpawsy.pet</link>
     <description>Google Merchant product feed</description>
-    <lastBuildDate>2026-09-04T05:51:18.269Z</lastBuildDate>
+    <lastBuildDate>2026-09-05T10:14:30.304Z</lastBuildDate>
     <item>
       <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>
       <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>
@@ -191,6 +191,33 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJTC2680206</g:mpn>
       <g:product_type>Pet Supplies &gt; Cats &gt; Furniture</g:product_type>
+      <g:custom_label_0>Low-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Fall</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>07ad844f-3a96-4fef-b8cd-8a6309d3bee4</g:id>
+      <g:title><![CDATA[Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats]]></g:title>
+      <g:description><![CDATA[Tired of stagnant water for your beloved feline? Introduce your cat to the future of hydration with our Automatic Circulating Filter Cat Water Fountain! This innovative fountain doesn't just hold water – it constantly circulates and filters it, providing a fresh, enticing stream that encourages even the pickiest drinkers. Designed with your cat's health in mind, our cat water fountain features a multi-layer filtration system. It effectively removes hair, debris, and unpleasant odors, ensuring every sip is pure and clean. Worried about noise? Our ultra-quiet pump technology means barely a whisper, so your home remains a peaceful sanctuary. This automatic pet water dispenser helps prevent dehydration and promotes urinary tract health, a common concern for cat owners. The flowing water naturally attracts cats, often leading to increased water intake compared to a traditional bowl. Plus, its sleek, modern design seamlessly blends into any home décor. Give your furry friend the gift of fresh, continuous hydration. They'll thank you with purrs and playful moments!]]></g:description>
+      <g:link>https://getpawsy.pet/products/automatic-circulating-filter-cat-water-fountain</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/07ad844f-3a96-4fef-b8cd-8a6309d3bee4/3d230f6505d47cd3.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>26.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>0.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>5.99 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJYD2724344</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
       <g:custom_label_0>Low-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Fall</g:custom_label_2>
@@ -516,6 +543,34 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJTR2690044</g:mpn>
       <g:product_type>Pet Supplies &gt; Dogs &gt; Houses</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Fall</g:custom_label_2>
+    </item>
+    <item>
+      <g:id>10ba8425-750b-44b7-90e3-167c6736bdac</g:id>
+      <g:title><![CDATA[Cat Bed – Enclosed Pet Bed – Warm Sleeping Bag for Cats & Small Dogs]]></g:title>
+      <g:description><![CDATA[Product information: Color: S, M Specifications: Pet Closed-Style Sleeping Bag – Orange, Pet Closed-Style Sleeping Bag – Gray Suitable Gift-Giving Occasions: Wedding Celebrations, Parties, Other Function: Keeps Warm Material: PP Cotton Applicable Animals: Cats Category: Pet Beds & Cages Packing list: Pet Bed x1pc Product Image:]]></g:description>
+      <g:link>https://getpawsy.pet/products/enclosed-sleeping-bag-pet-bed-for-winter-warmth</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/10ba8425-750b-44b7-90e3-167c6736bdac/6d261552e1da03da.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>9.99 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Beds</g:google_product_category>
+      <g:shipping_weight>0.6 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>5.99 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:mpn>10ba8425-750b-44b7-90e3-167c6736bdac</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Beds</g:product_type>
       <g:custom_label_0>Mid-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Fall</g:custom_label_2>
@@ -1224,6 +1279,33 @@
       <g:custom_label_2>Fall</g:custom_label_2>
     </item>
     <item>
+      <g:id>29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1</g:id>
+      <g:title><![CDATA[GetPawsy 3-in-1 Slow Feeder Bowl - Anti-Choking Puzzle Feeder for Cats and Small Dogs]]></g:title>
+      <g:description><![CDATA[Pet slow food bowl anti choking cat bowl,3-in-1 Interactive Dog Feeder Puzzle, Lick Mat & Slow Feeder Bowl – Mental Stimulation Toy for Medium & Large Dogs 1.Engaging Rotating Tiers: Three large spinning layers with textured surfaces make dogs work for their food by licking, sniffing, and pawing—extending treat time while providing a rewarding mental challenge 2.Holds Up to 2 Cups of Food: Ideal for dry kibble, wet food, raw meals, or peanut butter; ideal for fast eaters who need a slower-paced feeding routine to prevent bloating, choking, or indigestion 3.Calms and Occupies Dogs Daily: Encourages natural foraging instincts and keeps dogs focused during solo time, crate rest, grooming prep, or stressful events like fireworks or separation periods 4.Durable and Dishwasher Friendly: Built for daily use with BPA-, PVC-, and phthalate-free materials; top-rack dishwasher safe for quick cleanup and long-term use as a feeder or boredom buster.]]></g:description>
+      <g:link>https://getpawsy.pet/products/pet-slow-food-bowl-anti-choking-cat-bowl-3in1-interactive-dog-feeder-puzzle-29d9</g:link>
+      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/29d9d63f-8728-4ac1-a2f8-83a5b2b0f1c1/1fdf7216e0dcbbea.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>56.49 USD</g:price>
+      <g:brand>GetPawsy</g:brand>
+      <g:condition>new</g:condition>
+      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>
+      <g:shipping_weight>0.8 kg</g:shipping_weight>
+      <g:shipping>
+        <g:country>US</g:country>
+        <g:service>Standard</g:service>
+        <g:price>0.00 USD</g:price>
+      </g:shipping>
+      <g:min_handling_time>1</g:min_handling_time>
+      <g:max_handling_time>2</g:max_handling_time>
+      <g:min_transit_time>5</g:min_transit_time>
+      <g:max_transit_time>10</g:max_transit_time>
+      <g:mpn>CJFT2715367</g:mpn>
+      <g:product_type>Pet Supplies &gt; Cats &gt; Bowls &amp; Feeders</g:product_type>
+      <g:custom_label_0>Mid-Margin</g:custom_label_0>
+      <g:custom_label_1>Standard</g:custom_label_1>
+      <g:custom_label_2>Fall</g:custom_label_2>
+    </item>
+    <item>
       <g:id>2b545173-fad4-435b-a61a-b3fcb7f0beed</g:id>
       <g:title><![CDATA[Dog Bed – 48" x 36" Elevated Portable Dog Cot Cooling Pet Bed with UV Protection Canopy Shade, Red]]></g:title>
       <g:description><![CDATA[Give your furry friend the ultimate outdoor retreat with our 48" x 36" Elevated Portable Dog Cot! This isn't just a dog bed; it's a personal oasis designed for comfort and protection under the American sun. Imagine your pup lounging happily on this durable elevated dog bed, staying cool even on the warmest days thanks to improved airflow. The strong, breathable fabric keeps your dog off hot surfaces, providing much-needed relief. Setting up is a breeze, making it perfect for your backyard, park trips, or camping adventures. But wait, there's more! This innovative pet cot comes with a built-in UV protection canopy shade, ensuring your beloved pet is shielded from harmful rays. No more worrying about sunburns or overheating during playtime outside. The vibrant red color adds a touch of style to any outdoor space, and its portable design means comfort can go wherever you and your dog do. Invest in your dog's comfort and health today!]]></g:description>
@@ -1273,33 +1355,6 @@
       <g:max_transit_time>10</g:max_transit_time>
       <g:mpn>CJPB2679994</g:mpn>
       <g:product_type>Pet Supplies &gt; Dogs &gt; Beds</g:product_type>
-      <g:custom_label_0>Mid-Margin</g:custom_label_0>
-      <g:custom_label_1>Standard</g:custom_label_1>
-      <g:custom_label_2>Fall</g:custom_label_2>
-    </item>
-    <item>
-      <g:id>2d25aa9d-ba6e-45a8-a93e-0cdf085f2842</g:id>
-      <g:title><![CDATA[Wall Mounted Cat House, Cat Wall Furniture, Cat Wall Shelf with Washable Cushion, Natural]]></g:title>
-      <g:description><![CDATA[Tired of tripping over cat trees? Give your feline friend the ultimate vertical playground with our Wall Mounted Cat House! This stylish and sturdy cat wall furniture transforms unused vertical space into a cozy haven and exciting climbing adventure for your beloved cat. Crafted from natural, durable wood, this cat wall shelf integrates seamlessly into any home decor. Your cat will adore their elevated perch, perfect for surveying their kingdom or enjoying a quiet nap. Plus, the included washable cushion ensures maximum comfort and easy cleaning – a lifesaver for busy pet parents! More than just a shelf, it's a dedicated cat condo that satisfies their natural instincts to climb and explore. Help reduce stress and boredom for indoor cats by giving them engaging cat furniture that also saves precious floor space. Elevate your home and your cat's happiness!]]></g:description>
-      <g:link>https://getpawsy.pet/products/wall-mounted-cat-house-cat-wall-furniture-cat-wall-shelf-with-washable-cushion-natural</g:link>
-      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/2d25aa9d-ba6e-45a8-a93e-0cdf085f2842/75d9f5c5770d8002.jpg</g:image_link>
-      <g:availability>in stock</g:availability>
-      <g:price>79.99 USD</g:price>
-      <g:brand>GetPawsy</g:brand>
-      <g:condition>new</g:condition>
-      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Cat Supplies &gt; Cat Houses &amp; Condos</g:google_product_category>
-      <g:shipping_weight>1.9 kg</g:shipping_weight>
-      <g:shipping>
-        <g:country>US</g:country>
-        <g:service>Standard</g:service>
-        <g:price>0.00 USD</g:price>
-      </g:shipping>
-      <g:min_handling_time>1</g:min_handling_time>
-      <g:max_handling_time>2</g:max_handling_time>
-      <g:min_transit_time>5</g:min_transit_time>
-      <g:max_transit_time>10</g:max_transit_time>
-      <g:mpn>CJTC2610337</g:mpn>
-      <g:product_type>Pet Supplies &gt; Cats &gt; Houses</g:product_type>
       <g:custom_label_0>Mid-Margin</g:custom_label_0>
       <g:custom_label_1>Standard</g:custom_label_1>
       <g:custom_label_2>Fall</g:custom_label_2>
