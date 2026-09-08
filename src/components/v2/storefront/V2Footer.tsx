@@ -6,6 +6,11 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
   FREE_SHIPPING_THRESHOLD,
+  BUSINESS_OPERATOR,
+  BUSINESS_LOCATION,
+  BUSINESS_KVK,
+  BUSINESS_VAT_ID,
+  MERCHANT_IDENTITY_STATEMENT,
 } from '@/lib/shipping-constants';
 
 const linkClass =
@@ -43,6 +48,15 @@ export function V2Footer() {
           >
             {SUPPORT_EMAIL}
           </a>
+          <div className="mt-4 space-y-0.5 text-xs leading-relaxed text-muted-foreground">
+            <p className="m-0 font-medium text-foreground/80">
+              {BUSINESS_NAME} — a trading name of {BUSINESS_OPERATOR}
+            </p>
+            <p className="m-0">{BUSINESS_LOCATION}</p>
+            <p className="m-0">
+              KvK {BUSINESS_KVK} · VAT ID {BUSINESS_VAT_ID}
+            </p>
+          </div>
         </div>
 
         <Column title="Shop" items={SHOP_NAV} />
@@ -51,6 +65,9 @@ export function V2Footer() {
       </div>
 
       <div className="border-t border-border/70">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-6 text-xs leading-relaxed text-muted-foreground sm:px-6">
+          <p className="m-0">{MERCHANT_IDENTITY_STATEMENT}</p>
+        </div>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="m-0">
             © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.

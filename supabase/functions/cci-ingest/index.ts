@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     req.headers.get('x-country') ||
     null;
   const country = bodyCountry || headerCountry || null;
-  const { error } = await sb.from('cci_events').insert({
+  const row = {
     session_id,
     visitor_id: body.visitor_id ? String(body.visitor_id) : null,
     event_name,
@@ -68,9 +68,27 @@ Deno.serve(async (req) => {
     funnel_stage: body.funnel_stage ? String(body.funnel_stage) : null,
     confidence: typeof body.confidence === 'number' ? body.confidence : null,
     meta: (body.meta && typeof body.meta === 'object') ? body.meta : {},
-  });
+  };
+
+  // Single bounded retry: the only observed 500s come from transient database
+  // unavailability (the insert never lands), so one short retry recovers the
+  // event instead of silently dropping it. No unique key is involved, and a
+  // failed insert writes nothing, so this cannot duplicate a stored row.
+  let error = (await sb.from('cci_events').insert(row)).error;
   if (error) {
-    return new Response(JSON.stringify({ ok: false, error: error.message }), {
+    console.error('cci_insert_failed', JSON.stringify({
+      attempt: 1, event_name, code: error.code ?? null,
+      details: error.details ?? null, hint: error.hint ?? null, message: error.message,
+    }));
+    await new Promise((r) => setTimeout(r, 250));
+    error = (await sb.from('cci_events').insert(row)).error;
+  }
+  if (error) {
+    console.error('cci_insert_failed', JSON.stringify({
+      attempt: 2, event_name, code: error.code ?? null,
+      details: error.details ?? null, hint: error.hint ?? null, message: error.message,
+    }));
+    return new Response(JSON.stringify({ ok: false, error: error.message, code: error.code ?? null }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
