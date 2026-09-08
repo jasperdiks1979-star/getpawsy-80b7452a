@@ -65,6 +65,9 @@ export function V2Footer() {
       </div>
 
       <div className="border-t border-border/70">
+        <div className="mx-auto w-full max-w-6xl px-4 pt-6 text-xs leading-relaxed text-muted-foreground sm:px-6">
+          <p className="m-0">{MERCHANT_IDENTITY_STATEMENT}</p>
+        </div>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p className="m-0">
             © {new Date().getFullYear()} {BUSINESS_NAME}. All rights reserved.
