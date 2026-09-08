@@ -48,6 +48,15 @@ export function V2Footer() {
           >
             {SUPPORT_EMAIL}
           </a>
+          <div className="mt-4 space-y-0.5 text-xs leading-relaxed text-muted-foreground">
+            <p className="m-0 font-medium text-foreground/80">
+              {BUSINESS_NAME} — a trading name of {BUSINESS_OPERATOR}
+            </p>
+            <p className="m-0">{BUSINESS_LOCATION}</p>
+            <p className="m-0">
+              KvK {BUSINESS_KVK} · VAT ID {BUSINESS_VAT_ID}
+            </p>
+          </div>
         </div>
 
         <Column title="Shop" items={SHOP_NAV} />
