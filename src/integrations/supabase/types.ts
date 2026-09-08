@@ -78187,6 +78187,46 @@ export type Database = {
         Returns: Json
       }
       aee_priority_score: { Args: { p: string }; Returns: number }
+      analytics_canonical_session_agg: {
+        Args: { p_since: string; p_until: string }
+        Returns: {
+          city: string
+          country: string
+          device: string
+          f_classification_reason: string
+          f_duration_evidence_source: string
+          f_effective_duration_seconds: number
+          f_engagement_ms: number
+          f_exclude_from_commercial: boolean
+          f_interaction_count: number
+          f_is_bot: boolean
+          f_is_internal: boolean
+          f_technical_path: boolean
+          f_traffic_class: string
+          f_traffic_quality: string
+          first_seen_at: string
+          has_add_to_cart: boolean
+          has_checkout: boolean
+          has_product_view: boolean
+          has_purchase: boolean
+          has_view_cart: boolean
+          landing_page: string
+          last_seen_at: string
+          latitude: number
+          longitude: number
+          order_value: number
+          page_path: string
+          page_views: number
+          referrer: string
+          session_id: string
+          utm_campaign: string
+          utm_content: string
+          utm_medium: string
+          utm_source: string
+          va_is_internal: boolean
+          visitor_id: string
+        }[]
+      }
       apply_pinterest_perf_weights: { Args: never; Returns: Json }
       apply_pinterest_pin_repair: {
         Args: {
