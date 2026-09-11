@@ -78198,6 +78198,7 @@ export type Database = {
           f_effective_duration_seconds: number
           f_engagement_ms: number
           f_exclude_from_commercial: boolean
+          f_has_flags: boolean
           f_interaction_count: number
           f_is_bot: boolean
           f_is_internal: boolean
