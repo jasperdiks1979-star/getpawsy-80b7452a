@@ -190,7 +190,28 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const timings: Record<string, number> = {};
     const mark = (label: string) => { timings[label] = Date.now() - t0; };
 
-    // ── canonical_events ───────────────────────────────────────
+    // ── window sizing ──────────────────────────────────────────
+    // A 90-day window is ~100k canonical_events + ~115k visitor_activity +
+    // ~46k canonical_sessions rows — 260+ paged round trips, which is exactly
+    // what pushed long-window dashboard requests past the 150s edge idle
+    // timeout (504). For windows longer than 48h the per-session aggregation
+    // is done inside Postgres (`analytics_canonical_session_agg`) and returned
+    // as ONE row per session in a single round trip. Session-level semantics
+    // are identical — the classifier still sees one object per session — so
+    // distinct visitor/session counts and strict-v3 verdicts are unchanged.
+    const FAST_PATH = hours > 48;
+    let rpcSessions: any[] = [];
+    if (FAST_PATH) {
+      const { data, error } = await supabase.rpc("analytics_canonical_session_agg_json", {
+        p_since: since,
+        p_until: until,
+      });
+      if (error) throw error;
+      rpcSessions = Array.isArray(data) ? data : [];
+    }
+    mark("session_rollup");
+
+    // ── canonical_events (short windows only) ──────────────────
     const events: any[] = [];
     const PAGE = 1000;
     // PERF: one single pass over the window. The column list is the UNION of
@@ -208,7 +229,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
     const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
-    let pagingDone = false;
+    let pagingDone = FAST_PATH;
     while (!pagingDone) {
       const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
       const wave = await Promise.all(
