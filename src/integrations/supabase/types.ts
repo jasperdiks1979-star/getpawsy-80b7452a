@@ -78227,6 +78227,10 @@ export type Database = {
           visitor_id: string
         }[]
       }
+      analytics_canonical_session_agg_json: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
       apply_pinterest_perf_weights: { Args: never; Returns: Json }
       apply_pinterest_pin_repair: {
         Args: {
