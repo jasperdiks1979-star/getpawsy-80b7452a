@@ -449,6 +449,47 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       if (!s.city && r.city) s.city = r.city;
       if (!s.utm_content && r.utm_content) s.utm_content = r.utm_content;
     }
+    // Long windows: the same per-session shape, aggregated in Postgres.
+    if (FAST_PATH) {
+      for (const r of rpcSessions) {
+        const sid = String(r.session_id);
+        sessionAgg.set(sid, {
+          session_id: sid,
+          visitor_id: r.visitor_id ?? null,
+          country: r.country ?? null,
+          city: r.city ?? null,
+          latitude: r.latitude != null ? Number(r.latitude) : null,
+          longitude: r.longitude != null ? Number(r.longitude) : null,
+          first_seen_at: r.first_seen_at,
+          last_seen_at: r.last_seen_at,
+          page_views: Number(r.page_views ?? 0),
+          source: classifySource({
+            utm_source: r.utm_source,
+            utm_medium: r.utm_medium,
+            referrer: r.referrer,
+          }),
+          device: r.device ?? null,
+          utm_source: r.utm_source ?? null,
+          utm_medium: r.utm_medium ?? null,
+          utm_campaign: r.utm_campaign ?? null,
+          utm_content: r.utm_content ?? null,
+          referrer: r.referrer ?? null,
+          page_path: r.page_path ?? null,
+          landing_page: r.landing_page ?? null,
+          landing_page_at: null,
+          has_product_view: r.has_product_view === true,
+          has_add_to_cart: r.has_add_to_cart === true,
+          has_view_cart: r.has_view_cart === true,
+          has_checkout: r.has_checkout === true,
+          has_purchase: r.has_purchase === true,
+          order_value: Number(r.order_value ?? 0),
+          is_internal: false,
+          va_is_internal: r.va_is_internal === true,
+        });
+        // Only funnel input that is not derived from sessionAgg below.
+        if (r.has_product_view === true) perStage.CANONICAL_PRODUCT_VIEW.add(sid);
+      }
+    }
 
     // Enrich with lat/lng + is_internal from visitor_activity for the same
     // session_ids. This is READ-ONLY and never contributes to counts — only
