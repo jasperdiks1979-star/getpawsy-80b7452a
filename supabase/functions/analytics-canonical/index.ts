@@ -619,7 +619,30 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // request window instead, then join in memory.
     const wantedSids = new Set(sidsForFlags);
     let flagsScanError: string | null = null;
-    {
+    if (FAST_PATH) {
+      // Same flag rows, already joined per session by the rollup function.
+      // `f_has_flags` distinguishes "no canonical_sessions row" from "row with
+      // all-false flags", so the eligibility fallback behaves identically.
+      for (const r of rpcSessions) {
+        const sid = String(r.session_id);
+        if (!wantedSids.has(sid) || r.f_has_flags !== true) continue;
+        flagsMap.set(sid, {
+          is_internal: r.f_is_internal === true,
+          is_bot: r.f_is_bot === true,
+          technical_path: r.f_technical_path === true,
+          exclude_from_commercial: r.f_exclude_from_commercial === true,
+          traffic_class: (r.f_traffic_class as string | null) ?? null,
+          traffic_quality: (r.f_traffic_quality as string | null) ?? null,
+          effective_duration_seconds: r.f_effective_duration_seconds != null
+            ? Number(r.f_effective_duration_seconds) : null,
+          duration_evidence_source: (r.f_duration_evidence_source as string | null) ?? null,
+          interaction_count: r.f_interaction_count != null ? Number(r.f_interaction_count) : null,
+          engagement_ms: r.f_engagement_ms != null ? Number(r.f_engagement_ms) : null,
+          classification_reason: (r.f_classification_reason as string | null) ?? null,
+        });
+      }
+    }
+    if (!FAST_PATH) {
       const CS_PAGE = 1000;
       const CS_WAVE = 6;
       let csFrom = 0;
