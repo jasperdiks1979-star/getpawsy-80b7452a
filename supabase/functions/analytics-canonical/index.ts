@@ -506,7 +506,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // could ever match — and join in memory. Same monotonicity guarantee
     // (window-bounded), a fraction of the round trips.
     const vaRows: any[] = [];
-    {
+    if (!FAST_PATH) {
       const VA_PAGE = 1000;
       const VA_WAVE = 6;
       let vaFrom = 0;
