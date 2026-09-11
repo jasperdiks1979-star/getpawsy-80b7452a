@@ -686,7 +686,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     }
     // Any session whose flag row was not found in the window scan is looked
     // up directly in small, URL-safe chunks so coverage stays complete.
-    const missingSids = sidsForFlags.filter((sid) => !flagsMap.has(sid));
+    const missingSids = FAST_PATH ? [] : sidsForFlags.filter((sid) => !flagsMap.has(sid));
     const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
