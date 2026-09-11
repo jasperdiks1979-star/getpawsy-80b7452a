@@ -202,12 +202,23 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const FAST_PATH = hours > 48;
     let rpcSessions: any[] = [];
     if (FAST_PATH) {
-      const { data, error } = await supabase.rpc("analytics_canonical_session_agg_json", {
-        p_since: since,
-        p_until: until,
-      });
-      if (error) throw error;
-      rpcSessions = Array.isArray(data) ? data : [];
+      // One bounded retry: a cold plan under DB contention can brush the 60s
+      // gateway statement timeout, while the warm repeat costs ~1.5s.
+      let lastErr: unknown = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { data, error } = await supabase.rpc("analytics_canonical_session_agg_json", {
+          p_since: since,
+          p_until: until,
+        });
+        if (!error) { rpcSessions = Array.isArray(data) ? data : []; lastErr = null; break; }
+        lastErr = error;
+        console.error(JSON.stringify({
+          fn: "analytics-canonical", event: "session_rollup_failed",
+          attempt, hours, message: (error as { message?: string })?.message ?? "unknown",
+        }));
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
+      }
+      if (lastErr) throw lastErr;
     }
     mark("session_rollup");
 
