@@ -78198,6 +78198,7 @@ export type Database = {
           f_effective_duration_seconds: number
           f_engagement_ms: number
           f_exclude_from_commercial: boolean
+          f_has_flags: boolean
           f_interaction_count: number
           f_is_bot: boolean
           f_is_internal: boolean
@@ -78226,6 +78227,10 @@ export type Database = {
           va_is_internal: boolean
           visitor_id: string
         }[]
+      }
+      analytics_canonical_session_agg_json: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
       }
       apply_pinterest_perf_weights: { Args: never; Returns: Json }
       apply_pinterest_pin_repair: {
