@@ -1060,7 +1060,13 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         .maybeSingle();
       defaultForInternal = cfg?.value === true || cfg?.value === "true";
     } catch { /* noop */ }
-    if (!wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
+    if (FAST_PATH) {
+      // The v2 bucket block classifies raw events, which the long-window fast
+      // path deliberately does not load. v1 totals/funnel/sessions are
+      // complete and unchanged; only this diagnostic block is skipped.
+      respBody.v2_skipped = "long_window_fast_path";
+    }
+    if (!FAST_PATH && !wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
       try {
         const gate = await checkCanonicalV2Gate(req, { trustedInternal: internalTrusted });
         respBody.v2_gate = {
