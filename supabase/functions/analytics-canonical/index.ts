@@ -190,39 +190,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const timings: Record<string, number> = {};
     const mark = (label: string) => { timings[label] = Date.now() - t0; };
 
-    // ── window sizing ──────────────────────────────────────────
-    // A 90-day window is ~100k canonical_events + ~115k visitor_activity +
-    // ~46k canonical_sessions rows — 260+ paged round trips, which is exactly
-    // what pushed long-window dashboard requests past the 150s edge idle
-    // timeout (504). For windows longer than 48h the per-session aggregation
-    // is done inside Postgres (`analytics_canonical_session_agg`) and returned
-    // as ONE row per session in a single round trip. Session-level semantics
-    // are identical — the classifier still sees one object per session — so
-    // distinct visitor/session counts and strict-v3 verdicts are unchanged.
-    const FAST_PATH = hours > 48;
-    let rpcSessions: any[] = [];
-    if (FAST_PATH) {
-      // One bounded retry: a cold plan under DB contention can brush the 60s
-      // gateway statement timeout, while the warm repeat costs ~1.5s.
-      let lastErr: unknown = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const { data, error } = await supabase.rpc("analytics_canonical_session_agg_json", {
-          p_since: since,
-          p_until: until,
-        });
-        if (!error) { rpcSessions = Array.isArray(data) ? data : []; lastErr = null; break; }
-        lastErr = error;
-        console.error(JSON.stringify({
-          fn: "analytics-canonical", event: "session_rollup_failed",
-          attempt, hours, message: (error as { message?: string })?.message ?? "unknown",
-        }));
-        if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
-      }
-      if (lastErr) throw lastErr;
-    }
-    mark("session_rollup");
-
-    // ── canonical_events (short windows only) ──────────────────
+    // ── canonical_events ───────────────────────────────────────
     const events: any[] = [];
     const PAGE = 1000;
     // PERF: one single pass over the window. The column list is the UNION of
@@ -240,7 +208,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
     const PAGE_WAVE = 6; // pages fetched concurrently
     let from = 0;
-    let pagingDone = FAST_PATH;
+    let pagingDone = false;
     while (!pagingDone) {
       const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
       const wave = await Promise.all(
@@ -460,47 +428,6 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       if (!s.city && r.city) s.city = r.city;
       if (!s.utm_content && r.utm_content) s.utm_content = r.utm_content;
     }
-    // Long windows: the same per-session shape, aggregated in Postgres.
-    if (FAST_PATH) {
-      for (const r of rpcSessions) {
-        const sid = String(r.session_id);
-        sessionAgg.set(sid, {
-          session_id: sid,
-          visitor_id: r.visitor_id ?? null,
-          country: r.country ?? null,
-          city: r.city ?? null,
-          latitude: r.latitude != null ? Number(r.latitude) : null,
-          longitude: r.longitude != null ? Number(r.longitude) : null,
-          first_seen_at: r.first_seen_at,
-          last_seen_at: r.last_seen_at,
-          page_views: Number(r.page_views ?? 0),
-          source: classifySource({
-            utm_source: r.utm_source,
-            utm_medium: r.utm_medium,
-            referrer: r.referrer,
-          }),
-          device: r.device ?? null,
-          utm_source: r.utm_source ?? null,
-          utm_medium: r.utm_medium ?? null,
-          utm_campaign: r.utm_campaign ?? null,
-          utm_content: r.utm_content ?? null,
-          referrer: r.referrer ?? null,
-          page_path: r.page_path ?? null,
-          landing_page: r.landing_page ?? null,
-          landing_page_at: null,
-          has_product_view: r.has_product_view === true,
-          has_add_to_cart: r.has_add_to_cart === true,
-          has_view_cart: r.has_view_cart === true,
-          has_checkout: r.has_checkout === true,
-          has_purchase: r.has_purchase === true,
-          order_value: Number(r.order_value ?? 0),
-          is_internal: false,
-          va_is_internal: r.va_is_internal === true,
-        });
-        // Only funnel input that is not derived from sessionAgg below.
-        if (r.has_product_view === true) perStage.CANONICAL_PRODUCT_VIEW.add(sid);
-      }
-    }
 
     // Enrich with lat/lng + is_internal from visitor_activity for the same
     // session_ids. This is READ-ONLY and never contributes to counts — only
@@ -517,7 +444,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // could ever match — and join in memory. Same monotonicity guarantee
     // (window-bounded), a fraction of the round trips.
     const vaRows: any[] = [];
-    if (!FAST_PATH) {
+    {
       const VA_PAGE = 1000;
       const VA_WAVE = 6;
       let vaFrom = 0;
@@ -630,30 +557,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     // request window instead, then join in memory.
     const wantedSids = new Set(sidsForFlags);
     let flagsScanError: string | null = null;
-    if (FAST_PATH) {
-      // Same flag rows, already joined per session by the rollup function.
-      // `f_has_flags` distinguishes "no canonical_sessions row" from "row with
-      // all-false flags", so the eligibility fallback behaves identically.
-      for (const r of rpcSessions) {
-        const sid = String(r.session_id);
-        if (!wantedSids.has(sid) || r.f_has_flags !== true) continue;
-        flagsMap.set(sid, {
-          is_internal: r.f_is_internal === true,
-          is_bot: r.f_is_bot === true,
-          technical_path: r.f_technical_path === true,
-          exclude_from_commercial: r.f_exclude_from_commercial === true,
-          traffic_class: (r.f_traffic_class as string | null) ?? null,
-          traffic_quality: (r.f_traffic_quality as string | null) ?? null,
-          effective_duration_seconds: r.f_effective_duration_seconds != null
-            ? Number(r.f_effective_duration_seconds) : null,
-          duration_evidence_source: (r.f_duration_evidence_source as string | null) ?? null,
-          interaction_count: r.f_interaction_count != null ? Number(r.f_interaction_count) : null,
-          engagement_ms: r.f_engagement_ms != null ? Number(r.f_engagement_ms) : null,
-          classification_reason: (r.f_classification_reason as string | null) ?? null,
-        });
-      }
-    }
-    if (!FAST_PATH) {
+    {
       const CS_PAGE = 1000;
       const CS_WAVE = 6;
       let csFrom = 0;
@@ -697,7 +601,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     }
     // Any session whose flag row was not found in the window scan is looked
     // up directly in small, URL-safe chunks so coverage stays complete.
-    const missingSids = FAST_PATH ? [] : sidsForFlags.filter((sid) => !flagsMap.has(sid));
+    const missingSids = sidsForFlags.filter((sid) => !flagsMap.has(sid));
     const flagRows = await mapChunksParallel(missingSids, 200, CONCURRENCY, (batch) =>
       supabase
         .from("canonical_sessions")
@@ -1071,13 +975,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         .maybeSingle();
       defaultForInternal = cfg?.value === true || cfg?.value === "true";
     } catch { /* noop */ }
-    if (FAST_PATH) {
-      // The v2 bucket block classifies raw events, which the long-window fast
-      // path deliberately does not load. v1 totals/funnel/sessions are
-      // complete and unchanged; only this diagnostic block is skipped.
-      respBody.v2_skipped = "long_window_fast_path";
-    }
-    if (!FAST_PATH && !wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
+    if (!wantsV1Fallback && (wantsV2Explicit || defaultForInternal)) {
       try {
         const gate = await checkCanonicalV2Gate(req, { trustedInternal: internalTrusted });
         respBody.v2_gate = {
