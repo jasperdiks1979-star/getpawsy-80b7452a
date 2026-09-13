@@ -50,7 +50,7 @@ const CRAWLER_PATTERNS = [
   'bot', 'crawler', 'spider', 'scraper', 'headless', 'phantom',
   'selenium', 'puppeteer', 'playwright', 'lighthouse', 'pagespeed',
   'curl', 'wget', 'python-requests', 'go-http-client', 'okhttp',
-  'facebookexternalhit', 'twitterbot', 'pinterestbot', 'pinterest',
+  'facebookexternalhit', 'twitterbot', 'pinterestbot',
   'tiktokbot', 'bytespider', 'googlebot', 'bingbot', 'ahrefsbot',
   'semrushbot', 'yandexbot', 'duckduckbot', 'slurp', 'baiduspider',
   'discordbot', 'whatsapp', 'telegrambot', 'linkedinbot', 'embedly',
