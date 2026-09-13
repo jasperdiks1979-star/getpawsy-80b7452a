@@ -379,10 +379,37 @@ serve(async (req) => {
           coupon_percent: couponPercent,
         });
       } catch (e) {
-        // Don't fail checkout if coupon creation fails — log and continue
-        // without discount. Better to capture a sale at full price than to
-        // lose it. The mismatch will be visible in `total_value` metadata.
-        console.error("[CREATE-CHECKOUT] Failed to create dynamic coupon:", e);
+        // FAIL CLOSED. Charging the shopper more than the UI displayed is a
+        // price-parity violation, so abort the checkout instead of silently
+        // dropping the discount. One bounded retry first.
+        console.error("[CREATE-CHECKOUT] Dynamic coupon creation failed, retrying once:", e);
+        try {
+          await new Promise((r) => setTimeout(r, 400));
+          const retryCoupon = await stripe.coupons.create({
+            amount_off: totalDeductionCents,
+            currency: "usd",
+            duration: "once",
+            name: "Order discount",
+            metadata: {
+              tier_percent: String(tierPercent),
+              coupon_code: normalizedCode,
+              coupon_percent: String(couponPercent),
+              subtotal_cents: String(subtotalCents),
+              retry: "1",
+            },
+          });
+          discounts.push({ coupon: retryCoupon.id });
+        } catch (e2) {
+          console.error("[CREATE-CHECKOUT] Discount unavailable — failing closed:", e2);
+          return new Response(
+            JSON.stringify({
+              error: "discount_unavailable",
+              message:
+                "We couldn't apply your discount just now, so we stopped before charging you. Please try again in a moment.",
+            }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
       }
     }
 
