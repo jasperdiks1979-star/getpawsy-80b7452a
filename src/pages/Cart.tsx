@@ -66,13 +66,16 @@ const Cart = () => {
   // Apply flat rate shipping for orders under threshold
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
   
-  // Tiered incentive discount
-  const currentTier = getApplicableTier(totalPrice);
+  // Tiered incentive discount — VOLUME discount: never applies to a single
+  // unit. Mirrors the server guard in supabase/functions/create-checkout.
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const currentTier = totalUnits >= 2 ? getApplicableTier(totalPrice) : null;
   const tierDiscountPercent = currentTier?.discountPercent ?? 0;
   const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
-  
-  const tax = (totalPrice - tierDiscountAmount) * 0.08;
-  const total = totalPrice - tierDiscountAmount + shipping + tax;
+
+  // No tax is charged or estimated here: Stripe Checkout is the single source
+  // of truth for tax. Displaying an invented 8% broke price parity.
+  const total = totalPrice - tierDiscountAmount + shipping;
   
   // Calculate progress to free shipping
   const shippingProgress = Math.min((totalPrice / FREE_SHIPPING_THRESHOLD) * 100, 100);
@@ -293,7 +296,7 @@ const Cart = () => {
               
               {/* Tiered Incentive Progress */}
               <div className="mb-4">
-                <TieredIncentiveBar subtotal={totalPrice} />
+                <TieredIncentiveBar subtotal={totalPrice} unitCount={totalUnits} />
                 {totalPrice < FREE_SHIPPING_THRESHOLD && (
                   <FreeShippingNudge 
                     amountNeeded={amountToFreeShipping} 
@@ -322,8 +325,8 @@ const Cart = () => {
                   )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax (estimated)</span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Tax</span>
+                  <span className="font-medium text-muted-foreground">Calculated at checkout</span>
                 </div>
               </div>
 

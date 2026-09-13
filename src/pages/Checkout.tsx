@@ -291,8 +291,12 @@ const Checkout = () => {
 
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
   
-  // Tiered incentive discount (automatic, stacks with coupon)
-  const currentTier = getApplicableTier(totalPrice);
+  // Tiered incentive discount (automatic, stacks with coupon).
+  // VOLUME discount: never applies to a single unit — mirrors the server
+  // guard in supabase/functions/create-checkout/index.ts so the displayed
+  // total always equals the Stripe-charged total.
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const currentTier = totalUnits >= 2 ? getApplicableTier(totalPrice) : null;
   const tierDiscountPercent = currentTier?.discountPercent ?? 0;
   const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
   
@@ -305,12 +309,10 @@ const Checkout = () => {
   const total = totalPrice - totalDiscountAmount + shipping;
 
   // Klarna eligibility — only show messaging when Stripe actually offers it.
-  // IMPORTANT: Stripe only charges Σ(line_items) − coupon% — shipping
-  // and the (frontend-only) tier discount are NOT sent to Stripe (see
-  // supabase/functions/create-checkout/index.ts). The Klarna installment
-  // shown to the user MUST be derived from that exact Stripe-charged
-  // amount, otherwise "4 × $X.XX" would not equal what Klarna debits.
-  const stripeChargedTotal = Math.max(0, totalPrice - couponDiscountAmount);
+  // create-checkout now charges exactly subtotal − tier% − coupon% + shipping
+  // (one dynamic Stripe coupon + shipping line), so the Klarna installment is
+  // derived from `total` — the same number the shopper sees.
+  const stripeChargedTotal = Math.max(0, total);
   const klarna = useKlarnaEligibility(stripeChargedTotal, { country: 'US', currency: 'usd' });
   const klarnaSplit = splitKlarnaInstallments(stripeChargedTotal, 'USD');
 

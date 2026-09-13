@@ -13,10 +13,15 @@ import {
 
 interface TieredIncentiveBarProps {
   subtotal: number;
+  /** Total units in cart. Percentage tiers are volume rewards and require 2+ units. */
+  unitCount?: number;
 }
 
-export const TieredIncentiveBar = ({ subtotal }: TieredIncentiveBarProps) => {
-  const currentTier = getApplicableTier(subtotal);
+export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveBarProps) => {
+  const qualifiesForVolume = unitCount >= 2;
+  const rawTier = getApplicableTier(subtotal);
+  const currentTier =
+    rawTier && rawTier.discountPercent > 0 && !qualifiesForVolume ? null : rawTier;
   const nextTier = getNextTier(subtotal);
   const maxThreshold = TIERED_INCENTIVES[TIERED_INCENTIVES.length - 1].threshold;
   const progress = Math.min(100, (subtotal / maxThreshold) * 100);
