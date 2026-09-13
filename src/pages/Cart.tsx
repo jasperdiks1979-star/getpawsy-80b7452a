@@ -296,7 +296,7 @@ const Cart = () => {
               
               {/* Tiered Incentive Progress */}
               <div className="mb-4">
-                <TieredIncentiveBar subtotal={totalPrice} />
+                <TieredIncentiveBar subtotal={totalPrice} unitCount={totalUnits} />
                 {totalPrice < FREE_SHIPPING_THRESHOLD && (
                   <FreeShippingNudge 
                     amountNeeded={amountToFreeShipping} 
