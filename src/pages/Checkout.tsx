@@ -291,8 +291,12 @@ const Checkout = () => {
 
   const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
   
-  // Tiered incentive discount (automatic, stacks with coupon)
-  const currentTier = getApplicableTier(totalPrice);
+  // Tiered incentive discount (automatic, stacks with coupon).
+  // VOLUME discount: never applies to a single unit — mirrors the server
+  // guard in supabase/functions/create-checkout/index.ts so the displayed
+  // total always equals the Stripe-charged total.
+  const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const currentTier = totalUnits >= 2 ? getApplicableTier(totalPrice) : null;
   const tierDiscountPercent = currentTier?.discountPercent ?? 0;
   const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
   
