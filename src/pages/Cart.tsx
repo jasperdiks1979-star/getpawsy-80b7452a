@@ -25,6 +25,7 @@ import {
   TRUST_BADGES,
   US_FULFILLMENT_NOTE,
   getApplicableTier,
+  getTierDiscountPercent,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
