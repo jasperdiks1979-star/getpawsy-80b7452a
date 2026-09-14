@@ -43,6 +43,80 @@ export const getNextTier = (subtotal: number) => {
   return null;
 };
 
+// ============= CANONICAL CART INCENTIVE RULES =============
+// Single source of truth shared by Cart, Checkout and the incentive bar.
+// Mirrors the server guard in supabase/functions/create-checkout/index.ts.
+//
+//   Free shipping        : subtotal >= FREE_SHIPPING_THRESHOLD (any unit count)
+//   Percentage discount  : VOLUME reward — requires 2+ units, then
+//                          subtotal >= 65 -> 5%, subtotal >= 99 -> 10%
+
+/** Minimum total unit quantity required for any percentage (volume) discount */
+export const VOLUME_DISCOUNT_MIN_UNITS = 2;
+
+/** True when the cart holds enough units to earn a percentage volume discount */
+export const qualifiesForVolumeDiscount = (unitCount: number): boolean =>
+  unitCount >= VOLUME_DISCOUNT_MIN_UNITS;
+
+/** Canonical tier percentage for a cart. Returns 0 when not eligible. */
+export const getTierDiscountPercent = (subtotal: number, unitCount: number): number => {
+  if (!qualifiesForVolumeDiscount(unitCount)) return 0;
+  return getApplicableTier(subtotal)?.discountPercent ?? 0;
+};
+
+export interface CartIncentiveState {
+  volumeEligible: boolean;
+  freeShippingUnlocked: boolean;
+  freeShippingRemaining: number;
+  /** Highest tier actually earned (respects the unit-count rule) */
+  currentTier: { threshold: number; label: string; discountPercent: number } | null;
+  discountPercent: number;
+  /** Next tier reachable by spending more, if any */
+  nextTier:
+    | { threshold: number; label: string; discountPercent: number; remaining: number; requiresMoreUnits: boolean }
+    | null;
+  /** Tier already reached by spend but locked purely by unit count */
+  pendingVolumeTier: { threshold: number; label: string; discountPercent: number } | null;
+  unitsNeededForVolume: number;
+  allRewardsUnlocked: boolean;
+}
+
+/** Everything the cart UI needs, derived from the same rules as the charge. */
+export const getCartIncentiveState = (subtotal: number, unitCount: number): CartIncentiveState => {
+  const volumeEligible = qualifiesForVolumeDiscount(unitCount);
+  const isUnlocked = (t: { threshold: number; discountPercent: number }) =>
+    subtotal >= t.threshold && (t.discountPercent === 0 || volumeEligible);
+
+  const unlocked = TIERED_INCENTIVES.filter(isUnlocked);
+  const currentTier = unlocked.length ? { ...unlocked[unlocked.length - 1] } : null;
+
+  const nextSpendTier = TIERED_INCENTIVES.find((t) => subtotal < t.threshold);
+  const nextTier = nextSpendTier
+    ? {
+        ...nextSpendTier,
+        remaining: Math.max(0, nextSpendTier.threshold - subtotal),
+        requiresMoreUnits: nextSpendTier.discountPercent > 0 && !volumeEligible,
+      }
+    : null;
+
+  const spendReached = [...TIERED_INCENTIVES].reverse().find(
+    (t) => subtotal >= t.threshold && t.discountPercent > 0,
+  );
+  const pendingVolumeTier = !volumeEligible && spendReached ? { ...spendReached } : null;
+
+  return {
+    volumeEligible,
+    freeShippingUnlocked: subtotal >= FREE_SHIPPING_THRESHOLD,
+    freeShippingRemaining: Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal),
+    currentTier,
+    discountPercent: currentTier?.discountPercent ?? 0,
+    nextTier,
+    pendingVolumeTier,
+    unitsNeededForVolume: Math.max(0, VOLUME_DISCOUNT_MIN_UNITS - unitCount),
+    allRewardsUnlocked: volumeEligible && !nextTier && !!currentTier,
+  };
+};
+
 /** Flat shipping rate for orders under threshold in USD */
 export const FLAT_SHIPPING_RATE = 5.99;
 
