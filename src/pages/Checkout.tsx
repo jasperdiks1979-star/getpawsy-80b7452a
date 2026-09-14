@@ -41,6 +41,7 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURNS_POLICY_SHORT,
   getApplicableTier,
+  getTierDiscountPercent,
 } from '@/lib/shipping-constants';
 import {
   Breadcrumb,
