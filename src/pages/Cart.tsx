@@ -70,8 +70,8 @@ const Cart = () => {
   // Tiered incentive discount — VOLUME discount: never applies to a single
   // unit. Mirrors the server guard in supabase/functions/create-checkout.
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-  const currentTier = totalUnits >= 2 ? getApplicableTier(totalPrice) : null;
-  const tierDiscountPercent = currentTier?.discountPercent ?? 0;
+  const tierDiscountPercent = getTierDiscountPercent(totalPrice, totalUnits);
+  const currentTier = tierDiscountPercent > 0 ? getApplicableTier(totalPrice) : null;
   const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
 
   // No tax is charged or estimated here: Stripe Checkout is the single source
