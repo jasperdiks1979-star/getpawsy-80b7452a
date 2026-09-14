@@ -1,30 +1,24 @@
 /**
  * Tiered Incentive Progress Bar
- * Shows current tier + next unlock with animated progress.
- * Lightweight — no external deps beyond lucide icons.
+ *
+ * Display logic is derived entirely from `getCartIncentiveState` so it can
+ * never diverge from the amount actually charged. Percentage tiers are VOLUME
+ * rewards and require 2+ units; free shipping depends on subtotal only.
  */
-import { Truck, Gift, Sparkles, CheckCircle } from 'lucide-react';
-import {
-  FREE_SHIPPING_THRESHOLD,
-  TIERED_INCENTIVES,
-  getApplicableTier,
-  getNextTier,
-} from '@/lib/shipping-constants';
+import { Truck, Gift, Sparkles, CheckCircle, PackagePlus } from 'lucide-react';
+import { TIERED_INCENTIVES, getCartIncentiveState } from '@/lib/shipping-constants';
 
 interface TieredIncentiveBarProps {
   subtotal: number;
-  /** Total units in cart. Percentage tiers are volume rewards and require 2+ units. */
+  /** Total units in cart. Percentage tiers require 2+ units. */
   unitCount?: number;
 }
 
 export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveBarProps) => {
-  const qualifiesForVolume = unitCount >= 2;
-  const rawTier = getApplicableTier(subtotal);
-  const currentTier =
-    rawTier && rawTier.discountPercent > 0 && !qualifiesForVolume ? null : rawTier;
-  const nextTier = getNextTier(subtotal);
+  const state = getCartIncentiveState(subtotal, unitCount);
+  const { currentTier, nextTier, pendingVolumeTier } = state;
   const maxThreshold = TIERED_INCENTIVES[TIERED_INCENTIVES.length - 1].threshold;
-  const progress = Math.min(100, (subtotal / maxThreshold) * 100);
+  const progress = Math.min(100, Math.max(0, (subtotal / maxThreshold) * 100));
 
   return (
     <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
@@ -39,7 +33,11 @@ export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveB
           <>
             <Truck className="w-4 h-4 text-primary shrink-0" />
             <span className="text-foreground">
-              Add <span className="font-bold text-primary">${(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2)}</span> for free shipping
+              Add{' '}
+              <span className="font-bold text-primary">
+                ${state.freeShippingRemaining.toFixed(2)}
+              </span>{' '}
+              for free shipping
             </span>
           </>
         )}
@@ -58,11 +56,14 @@ export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveB
             }}
           />
         </div>
-        {/* Tier markers */}
+        {/* Tier markers — a percentage marker only reads as unlocked when the
+            volume rule is satisfied too. */}
         <div className="flex justify-between mt-1">
           {TIERED_INCENTIVES.map((tier) => {
             const position = (tier.threshold / maxThreshold) * 100;
-            const isUnlocked = subtotal >= tier.threshold;
+            const isUnlocked =
+              subtotal >= tier.threshold &&
+              (tier.discountPercent === 0 || state.volumeEligible);
             return (
               <div
                 key={tier.threshold}
@@ -85,8 +86,25 @@ export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveB
         </div>
       </div>
 
+      {/* Volume teaser — spend already qualifies, only the item count is short */}
+      {pendingVolumeTier && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
+          <PackagePlus className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span>
+            Add{' '}
+            <span className="font-semibold text-primary">
+              {state.unitsNeededForVolume} more item
+              {state.unitsNeededForVolume === 1 ? '' : 's'}
+            </span>{' '}
+            to unlock{' '}
+            <span className="font-semibold text-foreground">{pendingVolumeTier.label}</span> —
+            volume savings apply to orders of 2 or more items.
+          </span>
+        </div>
+      )}
+
       {/* Next tier teaser */}
-      {nextTier && (
+      {!pendingVolumeTier && nextTier && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
           {nextTier.discountPercent > 0 ? (
             <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -96,12 +114,13 @@ export const TieredIncentiveBar = ({ subtotal, unitCount = 2 }: TieredIncentiveB
           <span>
             Spend <span className="font-semibold text-primary">${nextTier.remaining.toFixed(2)}</span> more to unlock{' '}
             <span className="font-semibold text-foreground">{nextTier.label}</span>
+            {nextTier.requiresMoreUnits && ' (orders of 2 or more items)'}
           </span>
         </div>
       )}
 
       {/* All tiers unlocked */}
-      {!nextTier && currentTier && (
+      {state.allRewardsUnlocked && (
         <div className="flex items-center gap-2 text-xs text-[hsl(var(--success))] font-medium pt-1">
           <Sparkles className="w-3.5 h-3.5 shrink-0" />
           <span>All rewards unlocked! Maximum savings applied.</span>
