@@ -297,8 +297,8 @@ const Checkout = () => {
   // guard in supabase/functions/create-checkout/index.ts so the displayed
   // total always equals the Stripe-charged total.
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-  const currentTier = totalUnits >= 2 ? getApplicableTier(totalPrice) : null;
-  const tierDiscountPercent = currentTier?.discountPercent ?? 0;
+  const tierDiscountPercent = getTierDiscountPercent(totalPrice, totalUnits);
+  const currentTier = tierDiscountPercent > 0 ? getApplicableTier(totalPrice) : null;
   const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
   
   // Coupon discount (applied after tier discount)
