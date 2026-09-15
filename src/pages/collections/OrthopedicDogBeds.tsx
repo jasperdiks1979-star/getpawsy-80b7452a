@@ -254,7 +254,7 @@ export default function OrthopedicDogBeds() {
             {/* Payment method logos */}
             <div className="mt-6 flex items-center gap-3 flex-wrap">
               <span className="text-xs text-primary-foreground/50">Accepted:</span>
-              {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'PayPal'].map(m => (
+              {['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay'].map(m => (
                 <span key={m} className="text-[11px] font-medium text-primary-foreground/70 bg-primary-foreground/10 rounded px-2 py-0.5">{m}</span>
               ))}
             </div>

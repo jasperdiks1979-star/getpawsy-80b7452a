@@ -48,7 +48,7 @@ export function LocalBusinessSchema({
     },
     priceRange: '$$',
     currenciesAccepted: 'USD',
-    paymentAccepted: 'Credit Card, Debit Card, PayPal, Apple Pay, Google Pay',
+    paymentAccepted: 'Credit Card, Debit Card, Apple Pay, Google Pay',
     areaServed: [
       { '@type': 'Country', name: 'United States' },
     ],

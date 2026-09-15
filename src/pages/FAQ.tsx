@@ -84,7 +84,7 @@ const FAQ = () => {
         },
         {
           question: 'What payment methods do you accept?',
-          answer: 'We accept major credit cards (Visa, Mastercard, American Express) and secure online payment methods including PayPal.',
+          answer: 'We accept major credit cards (Visa, Mastercard, American Express) through Stripe. Apple Pay and Google Pay are available on supported devices when offered by Stripe.',
         },
       ],
     },

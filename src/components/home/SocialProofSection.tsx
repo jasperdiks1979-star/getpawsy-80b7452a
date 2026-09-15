@@ -28,7 +28,7 @@ export function SocialProofSection() {
     {
       icon: ShieldCheck,
       title: 'Secure Checkout',
-      detail: 'SSL-encrypted payments via Stripe & PayPal',
+      detail: 'SSL-encrypted payments via Stripe',
     },
     {
       icon: Mail,

@@ -18,7 +18,7 @@ const pillars = [
   {
     icon: ShieldCheck,
     title: 'Secure Checkout',
-    description: 'All payments processed securely via Stripe with 256-bit SSL encryption. We accept Visa, Mastercard, PayPal & Apple Pay.',
+    description: 'All payments processed securely via Stripe with 256-bit SSL encryption. We accept Visa, Mastercard and American Express. Apple Pay and Google Pay are available on supported devices when offered by Stripe.',
   },
   {
     icon: Mail,

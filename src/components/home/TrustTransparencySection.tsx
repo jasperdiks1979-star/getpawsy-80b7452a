@@ -27,7 +27,7 @@ const trustPoints = [
     title: 'Secure Checkout',
     lines: [
       'Payments processed securely via Stripe.',
-      'Supported: Visa, Mastercard, PayPal, Apple Pay.',
+      'Supported: Visa, Mastercard, American Express. Apple Pay and Google Pay on supported devices.',
     ],
   },
   {
