@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target
 import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
 import { runPostPaymentTracking, sendFailureAlert } from "../_shared/post-payment-tracking.ts";
 import { sendGa4PurchaseMp } from "../_shared/ga4-measurement-protocol.ts";
+import { getStripeKey } from "../_shared/stripe-key.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
