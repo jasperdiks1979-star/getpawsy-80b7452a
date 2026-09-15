@@ -116,12 +116,12 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
       {showLabel && (
         <span className={`text-xs ${labelColor}`}>{label}</span>
       )}
-      {filtered.map(({ name, icon: Icon, width }) => (
+      {filtered.map(({ name, icon: Icon, width, title }) => (
         <span
           key={name}
           className={`inline-flex items-center justify-center h-6 px-2 rounded ${badgeBg} ${badgeBorder} ${iconColor}`}
-          title={name}
-          aria-label={name}
+          title={title || name}
+          aria-label={title || name}
         >
           <Icon className={`${width} h-4`} />
         </span>
