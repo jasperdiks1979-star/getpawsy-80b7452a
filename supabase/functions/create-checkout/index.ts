@@ -118,21 +118,13 @@ serve(async (req) => {
     //   If STRIPE_SECRET_KEY_LIVE exists → ALWAYS use it (live).
     //   Else fall back to STRIPE_SECRET_KEY (test).
     // STRIPE_MODE env var ("live"/"test") can force a mode for emergency rollback.
-    const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
-    const testKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const modeOverride = (Deno.env.get("STRIPE_MODE") || "").toLowerCase();
-    let stripeKey: string | undefined;
-    if (modeOverride === "test") stripeKey = testKey;
-    else if (modeOverride === "live") stripeKey = liveKey;
-    else stripeKey = liveKey || testKey;
+    const selection = getStripeKey();
+    const stripeKey = selection.key;
+    const modeOverride = selection.override || "";
     if (!stripeKey) {
       throw new Error("No Stripe key configured (STRIPE_SECRET_KEY_LIVE or STRIPE_SECRET_KEY)");
     }
-    const stripeMode: "test" | "live" | "unknown" = stripeKey.startsWith("sk_live_")
-      ? "live"
-      : stripeKey.startsWith("sk_test_")
-        ? "test"
-        : "unknown";
+    const stripeMode = selection.mode;
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode, "override:", modeOverride || "(none)");
 

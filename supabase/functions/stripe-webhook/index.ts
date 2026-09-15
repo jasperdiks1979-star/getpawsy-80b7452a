@@ -364,13 +364,9 @@ serve(async (req) => {
 
   // Same key selection as create-checkout: live preferred when available,
   // STRIPE_MODE override for emergency rollback.
-  const liveKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE");
-  const testKey = Deno.env.get("STRIPE_SECRET_KEY");
-  const modeOverride = (Deno.env.get("STRIPE_MODE") || "").toLowerCase();
-  let stripeKey: string | undefined;
-  if (modeOverride === "test") stripeKey = testKey;
-  else if (modeOverride === "live") stripeKey = liveKey;
-  else stripeKey = liveKey || testKey;
+  const stripeSelection = getStripeKey();
+  const stripeKey = stripeSelection.key;
+  console.log("[STRIPE-WEBHOOK] Stripe mode:", stripeSelection.mode);
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
   if (!stripeKey || !webhookSecret) {
