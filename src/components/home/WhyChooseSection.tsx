@@ -16,7 +16,7 @@ const REASONS = [
   {
     icon: ShieldCheck,
     title: 'Secure Checkout',
-    desc: 'Payments via Stripe. Visa, Mastercard, PayPal, Apple Pay accepted.',
+    desc: 'Payments via Stripe. Visa, Mastercard and American Express accepted; Apple Pay and Google Pay on supported devices.',
   },
 ] as const;
 

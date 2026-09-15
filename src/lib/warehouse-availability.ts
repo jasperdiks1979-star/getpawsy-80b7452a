@@ -27,7 +27,7 @@ export interface WarehouseResolution {
   status: WarehouseStatus;
   label: 'In Stock' | 'Available' | 'Sold Out';
   shippingLabel: 'Fast US Shipping' | 'Ships From Overseas' | null;
-  estimatedDelivery: '3-7 business days' | '7-15 business days' | null;
+  estimatedDelivery: '5-10 business days' | '7-15 business days' | null;
   pinterestEligible: boolean;
   source: WarehouseSource;
   isFallback: boolean;
@@ -78,7 +78,7 @@ export function resolveWarehouse(
         status: 'in_stock_us',
         label: 'In Stock',
         shippingLabel: 'Fast US Shipping',
-        estimatedDelivery: '3-7 business days',
+        estimatedDelivery: '5-10 business days',
         pinterestEligible: true,
         source: 'US',
         isFallback: false,
@@ -118,7 +118,7 @@ export function resolveWarehouse(
     status: 'in_stock_us',
     label: 'In Stock',
     shippingLabel: 'Fast US Shipping',
-    estimatedDelivery: '3-7 business days',
+    estimatedDelivery: '5-10 business days',
     pinterestEligible: true,
     source: 'US',
     isFallback: false,

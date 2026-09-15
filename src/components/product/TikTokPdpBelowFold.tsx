@@ -53,7 +53,7 @@ export default function TikTokPdpBelowFold({ product }: { product: Product }) {
         <details className="rounded-lg bg-muted/40 px-3 py-2 mt-2">
           <summary className="cursor-pointer font-semibold">How long does shipping take?</summary>
           <p className="mt-2 text-foreground/80">
-            Orders ship within 1–2 business days and arrive in 3–7 business days within the US.
+            Orders ship within 1–2 business days and arrive in 5–10 business days within the US.
           </p>
         </details>
         <details className="rounded-lg bg-muted/40 px-3 py-2 mt-2">

@@ -110,7 +110,7 @@ export function WebsiteSchema({
       opens: '00:00',
       closes: '23:59',
     },
-    paymentAccepted: ['Credit Card', 'Debit Card', 'PayPal', 'Apple Pay', 'Google Pay'],
+    paymentAccepted: ['Credit Card', 'Debit Card', 'Apple Pay', 'Google Pay'],
     currenciesAccepted: 'USD',
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
@@ -229,7 +229,7 @@ export function WebsiteSchema({
         name: 'What payment methods do you accept?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'We accept all major credit cards (Visa, Mastercard, American Express), PayPal, Apple Pay, and Google Pay. All payments are processed securely through Stripe.',
+          text: 'We accept all major credit cards (Visa, Mastercard, American Express). Apple Pay and Google Pay are available on supported devices. All payments are processed securely through Stripe.',
         },
       },
       {

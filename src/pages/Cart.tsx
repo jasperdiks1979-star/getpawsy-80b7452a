@@ -379,7 +379,7 @@ const Cart = () => {
               <PaymentBadges
                 variant="dark"
                 showLabel={false}
-                methods={['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay', 'PayPal']}
+                methods={['Visa', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay']}
                 className="mt-3 justify-center"
               />
 

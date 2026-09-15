@@ -28,7 +28,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Is checkout secure?',
-    a: 'Yes. All payments are processed securely through Stripe with 256-bit SSL encryption. We accept Visa, Mastercard, PayPal, and Apple Pay.',
+    a: 'Yes. All payments are processed securely through Stripe with 256-bit SSL encryption. We accept Visa, Mastercard and American Express. Apple Pay and Google Pay are available on supported devices when offered by Stripe.',
   },
   {
     q: 'How can I contact customer support?',

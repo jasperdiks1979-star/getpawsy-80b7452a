@@ -789,7 +789,7 @@ export default function LinkInBio() {
         {/* Trust line — factual, no invented metrics */}
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] font-semibold text-foreground/70">
           <span className="inline-flex items-center gap-1">🇺🇸 US warehouse</span>
-          <span className="inline-flex items-center gap-1">🚚 3–7 day delivery</span>
+          <span className="inline-flex items-center gap-1">🚚 5–10 business day delivery</span>
           <span className="inline-flex items-center gap-1">↩ 30-day returns</span>
         </div>
 
@@ -873,7 +873,7 @@ export default function LinkInBio() {
               📦 Limited US stock — restocks take 4–6 weeks
             </p>
             <p className="text-[12px] text-foreground/75 leading-tight">
-              🚚 3–7 day shipping from US warehouse
+              🚚 5–10 business day shipping
             </p>
           </aside>
         )}
@@ -894,7 +894,7 @@ export default function LinkInBio() {
             </div>
             <div className="flex flex-col items-center text-center gap-1 rounded-xl border border-border/60 bg-card px-2 py-3">
               <span className="text-xl" aria-hidden="true">🚚</span>
-              <span className="text-[11px] font-bold text-foreground leading-tight">3–7 Day Delivery</span>
+              <span className="text-[11px] font-bold text-foreground leading-tight">5–10 Day Delivery</span>
             </div>
           </section>
         )}

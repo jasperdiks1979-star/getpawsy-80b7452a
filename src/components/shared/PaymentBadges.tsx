@@ -31,13 +31,11 @@ const ApplePayIcon = ({ className = '' }: { className?: string }) => (
   </svg>
 );
 
-const PayPalIcon = ({ className = '' }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="0" y="12.5" fontSize="11" fontWeight="700" fontFamily="system-ui, sans-serif" letterSpacing="-0.3">
-      <tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan>
-    </text>
-  </svg>
-);
+// PayPal is intentionally NOT listed: it is not enabled on the Stripe
+// account that processes our checkout, so showing it would promise a payment
+// method the shopper cannot actually use.
+
+
 
 const StripeIcon = ({ className = '' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 50 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -57,16 +55,33 @@ interface PaymentBadge {
   name: string;
   icon: React.FC<{ className?: string }>;
   width: string;
+  /** Wording used for the tooltip / screen-reader label. */
+  title?: string;
 }
+
+/** Wallets are only offered when the device and Stripe support them. */
+const WALLET_NOTE = 'Available on supported devices when offered by Stripe';
+
+/**
+ * Only payment methods we can actually accept are listed.
+ * Cards and Stripe are unconditional; wallets are labelled as conditional.
+ */
+export const SUPPORTED_PAYMENT_METHODS = [
+  'Visa',
+  'Mastercard',
+  'Amex',
+  'Apple Pay',
+  'Google Pay',
+  'Stripe',
+] as const;
 
 const badges: PaymentBadge[] = [
   { name: 'Visa', icon: VisaIcon, width: 'w-10' },
   { name: 'Mastercard', icon: MastercardIcon, width: 'w-6' },
   { name: 'Amex', icon: AmexIcon, width: 'w-10' },
-  { name: 'Apple Pay', icon: ApplePayIcon, width: 'w-10' },
-  { name: 'Google Pay', icon: GooglePayIcon, width: 'w-11' },
-  { name: 'PayPal', icon: PayPalIcon, width: 'w-12' },
-  { name: 'Stripe', icon: StripeIcon, width: 'w-10' },
+  { name: 'Apple Pay', icon: ApplePayIcon, width: 'w-10', title: `Apple Pay — ${WALLET_NOTE}` },
+  { name: 'Google Pay', icon: GooglePayIcon, width: 'w-11', title: `Google Pay — ${WALLET_NOTE}` },
+  { name: 'Stripe', icon: StripeIcon, width: 'w-10', title: 'Secure payment via Stripe' },
 ];
 
 interface PaymentBadgesProps {
@@ -101,12 +116,12 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
       {showLabel && (
         <span className={`text-xs ${labelColor}`}>{label}</span>
       )}
-      {filtered.map(({ name, icon: Icon, width }) => (
+      {filtered.map(({ name, icon: Icon, width, title }) => (
         <span
           key={name}
           className={`inline-flex items-center justify-center h-6 px-2 rounded ${badgeBg} ${badgeBorder} ${iconColor}`}
-          title={name}
-          aria-label={name}
+          title={title || name}
+          aria-label={title || name}
         >
           <Icon className={`${width} h-4`} />
         </span>
