@@ -31,13 +31,11 @@ const ApplePayIcon = ({ className = '' }: { className?: string }) => (
   </svg>
 );
 
-const PayPalIcon = ({ className = '' }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="0" y="12.5" fontSize="11" fontWeight="700" fontFamily="system-ui, sans-serif" letterSpacing="-0.3">
-      <tspan fill="#003087">Pay</tspan><tspan fill="#009CDE">Pal</tspan>
-    </text>
-  </svg>
-);
+// PayPal is intentionally NOT listed: it is not enabled on the Stripe
+// account that processes our checkout, so showing it would promise a payment
+// method the shopper cannot actually use.
+
+
 
 const StripeIcon = ({ className = '' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 50 20" fill="none" xmlns="http://www.w3.org/2000/svg">
