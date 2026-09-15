@@ -55,16 +55,33 @@ interface PaymentBadge {
   name: string;
   icon: React.FC<{ className?: string }>;
   width: string;
+  /** Wording used for the tooltip / screen-reader label. */
+  title?: string;
 }
+
+/** Wallets are only offered when the device and Stripe support them. */
+const WALLET_NOTE = 'Available on supported devices when offered by Stripe';
+
+/**
+ * Only payment methods we can actually accept are listed.
+ * Cards and Stripe are unconditional; wallets are labelled as conditional.
+ */
+export const SUPPORTED_PAYMENT_METHODS = [
+  'Visa',
+  'Mastercard',
+  'Amex',
+  'Apple Pay',
+  'Google Pay',
+  'Stripe',
+] as const;
 
 const badges: PaymentBadge[] = [
   { name: 'Visa', icon: VisaIcon, width: 'w-10' },
   { name: 'Mastercard', icon: MastercardIcon, width: 'w-6' },
   { name: 'Amex', icon: AmexIcon, width: 'w-10' },
-  { name: 'Apple Pay', icon: ApplePayIcon, width: 'w-10' },
-  { name: 'Google Pay', icon: GooglePayIcon, width: 'w-11' },
-  { name: 'PayPal', icon: PayPalIcon, width: 'w-12' },
-  { name: 'Stripe', icon: StripeIcon, width: 'w-10' },
+  { name: 'Apple Pay', icon: ApplePayIcon, width: 'w-10', title: `Apple Pay — ${WALLET_NOTE}` },
+  { name: 'Google Pay', icon: GooglePayIcon, width: 'w-11', title: `Google Pay — ${WALLET_NOTE}` },
+  { name: 'Stripe', icon: StripeIcon, width: 'w-10', title: 'Secure payment via Stripe' },
 ];
 
 interface PaymentBadgesProps {
