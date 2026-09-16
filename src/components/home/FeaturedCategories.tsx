@@ -1,12 +1,19 @@
 import { Link } from 'react-router-dom';
 
+/**
+ * Cat-first category grid.
+ *
+ * Every tile maps to a category that actually holds merchandised products
+ * (see docs/commercial-rebuild/phase2). The dog and outdoor range still exists
+ * and keeps its URLs, but it is no longer part of primary merchandising.
+ */
 const CATEGORIES = [
-  { label: 'Shop Cats', href: '/collections/cats', hint: 'Trees, litter boxes & toys' },
-  { label: 'Shop Dogs', href: '/collections/dogs', hint: 'Beds, travel & training' },
-  { label: 'Litter Boxes', href: '/collections/cat-litter-boxes', hint: 'Enclosed & self-cleaning' },
-  { label: 'Cat Trees', href: '/collections/cat-trees-and-condos', hint: 'Towers & condos' },
-  { label: 'Dog Beds', href: '/collections/dog-beds', hint: 'Orthopedic & elevated' },
-  { label: 'All Products', href: '/products', hint: 'Browse the full catalog' },
+  { label: 'Litter boxes', href: '/products?category=Cat+Litter+Boxes', hint: 'Enclosed, top-entry & stainless steel' },
+  { label: 'Cat trees & condos', href: '/products?category=Cat+Trees+%26+Condos', hint: 'Towers, wall shelves & scratching posts' },
+  { label: 'Toys & enrichment', href: '/products?category=Cat+Toys', hint: 'Puzzle feeders, wands & solo play' },
+  { label: 'Beds & hideaways', href: '/products?category=Cat+Beds', hint: 'Calming beds, caves & window perches' },
+  { label: 'Bowls & feeders', href: '/products?category=Cat+Bowls+%26+Feeders', hint: 'Slow feeders, fountains & raised bowls' },
+  { label: 'All cat products', href: '/products', hint: 'Browse the full range' },
 ];
 
 /** Compact category grid — the primary "where do I go next" step on mobile. */

@@ -467,7 +467,7 @@ export default function DogTrainingBehaviorTools() {
         <SoftEmailCapture
           variant="collection"
           headline="Get Our Free Training Guide"
-          description="Join 5,000+ dog owners getting weekly training tips and exclusive product deals."
+          description="Get occasional training tips and product updates. No spam — unsubscribe anytime."
         />
       </section>
 

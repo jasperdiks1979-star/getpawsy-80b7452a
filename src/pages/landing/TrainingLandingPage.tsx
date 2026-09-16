@@ -331,7 +331,7 @@ export default function TrainingLandingPage() {
       <section className="bg-primary/5 border-y border-primary/10 py-10">
         <div className="container text-center max-w-xl">
           <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3">Ready to Transform Your Walks?</h2>
-          <p className="text-muted-foreground mb-6">Join thousands of dog owners who've already made the switch.</p>
+          <p className="text-muted-foreground mb-6">Pick the tool that matches the behaviour you are working on.</p>
           <Button
             size="lg"
             className="text-lg px-8 py-6"

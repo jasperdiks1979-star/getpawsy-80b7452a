@@ -8,7 +8,7 @@
  *   🚚 Delivery 3–5 business days
  *   🔒 Secure Stripe checkout
  *   ↩ 30-day returns
- *   ⭐ Thousands of happy pet owners
+ *   (removed: an invented customer count is not a trust signal)
  *
  * Responsive: strip stays on ONE line on desktop/tablet; on mobile it wraps
  * into two lines using flex-wrap. Uses theme tokens only, no hard-coded

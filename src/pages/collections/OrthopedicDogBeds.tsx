@@ -74,11 +74,6 @@ const SIZE_GUIDE = [
   { weight: '90+ lbs', size: 'XL', breeds: 'German Shepherd, Rottweiler, Great Dane' },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Sarah M.', location: 'Austin, TX', rating: 5, text: 'My 11-year-old Lab had been struggling to get up every morning. Within a week of switching to an orthopedic bed, he\'s moving so much better. I wish I\'d made the switch years ago.', dog: 'Charlie, Labrador, 11 years' },
-  { name: 'Mike R.', location: 'Denver, CO', rating: 5, text: 'After my German Shepherd\'s hip surgery, the vet specifically recommended an orthopedic bed. The memory foam support has been incredible for his recovery. He actually stays on it now instead of the cold floor.', dog: 'Bear, German Shepherd, 8 years' },
-  { name: 'Jennifer L.', location: 'Portland, OR', rating: 5, text: 'We tried 3 different "orthopedic" beds from big box stores before finding a real one here. The difference in foam quality is night and day. Our arthritic Pit Bull finally sleeps through the night.', dog: 'Luna, Pitbull, 9 years' },
-];
 
 const ATTACK_PAGES = [
   { href: '/collections/all', label: 'Best Orthopedic Beds for Large Dogs' },
@@ -178,7 +173,7 @@ export default function OrthopedicDogBeds() {
         <link rel="alternate" hrefLang="x-default" href={CANONICAL} />
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
         <meta property="og:title" content="7 Best Orthopedic Dog Beds for Joint Support (2026)" />
-        <meta property="og:description" content="Premium memory foam dog beds for arthritis & hip dysplasia. Trusted by 10,000+ pet parents. Free shipping on eligible orders over $35." />
+        <meta property="og:description" content="Memory foam dog beds for arthritis and hip dysplasia. Free shipping on eligible orders over $35. 30-day returns." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={CANONICAL} />
         <meta property="og:site_name" content="GetPawsy" />
@@ -225,13 +220,13 @@ export default function OrthopedicDogBeds() {
               Free Shipping Available • 30-Day Trial • US Delivery
             </p>
             <p className="text-xs text-primary-foreground/50 mb-6 flex items-center gap-1.5">
-              <Heart className="w-3.5 h-3.5" /> Over 2,000 happy dog owners served
+              <Heart className="w-3.5 h-3.5" /> Memory foam beds built for joint support
             </p>
 
             {/* Trust badges */}
             <div className="flex flex-wrap gap-3 mb-8">
               {[
-                { icon: <Star className="w-4 h-4 fill-current" />, text: '4.8★ Customer Rating' },
+                { icon: <Truck className="w-4 h-4" />, text: 'Ships from a US warehouse' },
                 { icon: <Truck className="w-4 h-4" />, text: 'Free Shipping on Orders $35+' },
                 { icon: <ShieldCheck className="w-4 h-4" />, text: '30-Day Returns' },
                 { icon: <Lock className="w-4 h-4" />, text: 'Secure Checkout' },
@@ -772,45 +767,12 @@ export default function OrthopedicDogBeds() {
           </Button>
         </section>
 
-        {/* ─── SECTION 6: SOCIAL PROOF ─── */}
-        <section className="mb-16">
-          <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">What Pet Parents Are Saying</h2>
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="bg-card border rounded-2xl p-6">
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(t.rating)].map((_, j) => <Star key={j} className="w-4 h-4 fill-primary text-primary" />)}
-                </div>
-                <p className="text-sm leading-relaxed mb-4 italic">"{t.text}"</p>
-                <div>
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.location}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{t.dog}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* Before/After story */}
-          <div className="bg-secondary/30 border border-secondary rounded-2xl p-6 md:p-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Heart className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-lg">Before &amp; After: Charlie's Story</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              <strong>Before:</strong> Charlie, an 11-year-old Labrador, was struggling to stand up every morning. His owners noticed him limping after naps and avoiding his usual spots on the floor. The vet confirmed early-stage arthritis in both hips.
-            </p>
-            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-              <strong>After 2 weeks on an orthopedic memory foam bed:</strong> Charlie started getting up without hesitation. His morning stiffness visibly decreased, and he began seeking out his bed for naps instead of the cold tile floor. His owners report he's more playful and energetic during walks.
-            </p>
-          </div>
-        </section>
-
         {/* ─── WHY CHOOSE GETPAWSY ─── */}
         <section className="mb-16">
           <h2 className="text-2xl md:text-3xl font-display font-bold mb-6">Why Choose GetPawsy?</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: '🔬', title: 'Foam Density Tested', desc: 'Every bed is rated for foam density (lb/ft³) so you know exactly what you\'re getting.' },
+              { icon: '📋', title: 'Specs Before Claims', desc: 'We list the dimensions and materials the supplier documents — and nothing we cannot verify.' },
               { icon: '💬', title: 'Dedicated Support', desc: 'Real people, real answers. Our customer care team responds within 24 hours.' },
               { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
               { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Return it within 30 days to arrange a return. No questions.' },

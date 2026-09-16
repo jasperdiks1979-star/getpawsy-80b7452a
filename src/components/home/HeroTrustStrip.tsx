@@ -1,50 +1,26 @@
 import { Truck, ShieldCheck, PackageCheck } from 'lucide-react';
-import { StarRating } from '@/components/ui/star-rating';
 import {
   DELIVERY_TIME_STANDARD,
   FREE_SHIPPING_THRESHOLD,
+  PROCESSING_TIME,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 
 /**
- * Compact trust + recent-reviews strip placed directly under the hero.
+ * Compact trust strip placed directly under the hero.
  *
- * Goal: reinforce trust in the first scroll-frame on every breakpoint
- * (mobile horizontal scroll → tablet 2-col → desktop 4-col grid) without
- * pushing the product grid further down the page.
- *
- * - Reviews are short, US-style first-name + last-initial snippets so they
- *   read as authentic without misrepresenting individuals.
- * - Ship-time / returns badges reuse central shipping constants so copy
- *   stays in sync with the rest of the site (PDP, cart, footer).
+ * The invented testimonial block and the hardcoded 4.8 rating that used to
+ * live here were removed: they were not written by customers and there is no
+ * rating data behind them. Only verifiable policy facts remain — our own
+ * processing time, our own free-shipping threshold and our own return window.
+ * Real reviews appear on product pages once customers write them.
  */
-
-const RECENT_REVIEWS = [
-  {
-    name: 'Sarah M.',
-    location: 'Austin, TX',
-    rating: 5,
-    text: 'Arrived in 6 days and my cat actually uses it. Litter smell is gone.',
-  },
-  {
-    name: 'Jason R.',
-    location: 'Denver, CO',
-    rating: 5,
-    text: 'Solid build, easy setup. Way better than what we had from the big-box store.',
-  },
-  {
-    name: 'Priya S.',
-    location: 'Brooklyn, NY',
-    rating: 4,
-    text: 'Shipping was quick and support replied within a day. Recommend.',
-  },
-] as const;
 
 const SHIP_BADGES = [
   {
     icon: Truck,
-    title: 'Ships within 24h',
-    subtitle: `Delivery in ${DELIVERY_TIME_STANDARD}`,
+    title: `Processed in ${PROCESSING_TIME}`,
+    subtitle: `Estimated delivery ${DELIVERY_TIME_STANDARD} after dispatch`,
   },
   {
     icon: PackageCheck,
@@ -62,7 +38,7 @@ export function HeroTrustStrip() {
   return (
     <section
       className="border-b border-border/40 bg-background"
-      aria-label="Recent reviews and shipping guarantees"
+      aria-label="Shipping and returns"
     >
       <div className="container px-4 md:px-6 py-6 md:py-10">
         {/* Ship-time badges — horizontal scroll on mobile, grid on md+. */}
@@ -102,42 +78,6 @@ export function HeroTrustStrip() {
             </li>
           ))}
         </ul>
-
-        {/* Recent reviews — single column on mobile, 3-up on lg. */}
-        <div className="mt-6 md:mt-8">
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <h2 className="text-sm md:text-base font-semibold text-foreground">
-              What pet parents are saying
-            </h2>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <StarRating rating={4.8} size="sm" />
-              <span className="font-medium text-foreground">4.8</span>
-              <span className="hidden sm:inline">/ 5</span>
-            </div>
-          </div>
-
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 m-0">
-            {RECENT_REVIEWS.map((review) => (
-              <li
-                key={review.name}
-                className="rounded-xl border border-border/40 bg-card px-4 py-3.5 shadow-sm"
-              >
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {review.name}
-                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                      · {review.location}
-                    </span>
-                  </p>
-                  <StarRating rating={review.rating} size="sm" />
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  “{review.text}”
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </section>
   );

@@ -947,10 +947,6 @@ const BestsellerDetail = () => {
                 {/* Trust Line - Compact Trust Signals */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1.5">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span>Loved by 500+ dog owners across the US</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-primary" />
                     <span>Estimated delivery: 5–10 business days</span>
                   </span>

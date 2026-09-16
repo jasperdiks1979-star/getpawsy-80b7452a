@@ -209,7 +209,7 @@ const Blog = () => {
     const categoryDescriptions: Record<string, { title: string; description: string; keywords: string[] }> = {
       Dogs: {
         title: 'Dog Care Blog 2026 | Training, Nutrition & Health Tips | GetPawsy',
-        description: 'Expert dog care guides: puppy training tips, best dog food recommendations, health advice & behavior solutions. Trusted by 10,000+ pet parents. Start reading now!',
+        description: 'Practical dog care guides: puppy training, feeding, health and behaviour. Written and maintained by the GetPawsy team.',
         keywords: [...SEO_KEYWORDS.dog.general.slice(0, 6), 'dog care blog', 'puppy training guide', 'dog nutrition tips', 'dog health advice', 'dog behavior tips', 'best dog products 2026'],
       },
       Cats: {

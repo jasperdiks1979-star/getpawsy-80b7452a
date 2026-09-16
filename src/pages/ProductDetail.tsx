@@ -143,6 +143,7 @@ import {
   RETURN_WINDOW_DAYS,
   getTierDiscountPercent,
 } from "@/lib/shipping-constants";
+import { getDeliveryTruth, hasProvenUsOrigin } from "@/lib/delivery-truth";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
   Breadcrumb,
@@ -1867,7 +1868,13 @@ const ProductDetail = () => {
               </div>
               {inStock && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  {productContentOverride?.verifiedShippingLine ?? "Orders processed within 1–2 business days"}
+                  {/* Delivery truth: the shipping origin is the only evidenced
+                      per-product delivery fact. Products without a proven US
+                      warehouse get no speed claim at all. */}
+                  {hasProvenUsOrigin((product as any).supplier_warehouse)
+                    ? (productContentOverride?.verifiedShippingLine ??
+                       getDeliveryTruth((product as any).supplier_warehouse).line)
+                    : getDeliveryTruth((product as any).supplier_warehouse).line}
                 </p>
               )}
             </div>

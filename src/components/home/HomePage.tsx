@@ -124,7 +124,7 @@ const HomePage = () => {
             <SoftEmailCapture
               variant="collection"
               headline="Get $5 off your first order"
-              description="Join 2,000+ US pet owners getting helpful product picks and care tips. No spam — unsubscribe anytime."
+              description="Get occasional product picks and cat care tips by email. No spam — unsubscribe anytime."
             />
           </div>
         </section>
@@ -147,10 +147,10 @@ const HomePage = () => {
     return (
       <Layout>
         <Helmet>
-          <title>Smart Pet Essentials | Free US Shipping $35+ | GetPawsy</title>
+          <title>Cat Litter Boxes, Trees &amp; Indoor Essentials | GetPawsy</title>
           <meta
             name="description"
-            content="Make pet care easier every day. Smart, practical products for a cleaner home and a happier pet. Free shipping over $35. 30-day returns. Trusted by US pet owners."
+            content="Practical indoor-cat essentials: enclosed litter boxes, cat trees, puzzle toys, beds and feeders. Ships from a US warehouse. Free shipping over $35. 30-day returns."
           />
         </Helmet>
 
@@ -162,8 +162,9 @@ const HomePage = () => {
               About GetPawsy
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              GetPawsy is a registered pet supply business serving all 50 US states with estimated delivery in {DELIVERY_TIME_STANDARD}.
-              We carefully select each product for quality, comfort, and everyday practicality.
+              GetPawsy is a registered pet supply business serving all 50 US states. Most items ship from a US
+              warehouse; estimated delivery is {DELIVERY_TIME_STANDARD} after dispatch and your exact shipping
+              option is confirmed at checkout. We select each product for quality, comfort and everyday practicality.
             </p>
             <p className="text-xs text-muted-foreground/60 mt-3">
               Last updated: {SITE_LAST_UPDATED}
@@ -179,10 +180,10 @@ const HomePage = () => {
   return (
     <Layout>
       <Helmet>
-        <title>Smart Pet Essentials | Free US Shipping $35+ | GetPawsy</title>
+        <title>Cat Litter Boxes, Trees &amp; Indoor Essentials | GetPawsy</title>
         <meta
           name="description"
-          content="Make pet care easier every day. Smart, practical products for a cleaner home and a happier pet. Free shipping over $35. 30-day returns. Trusted by US pet owners."
+          content="Practical indoor-cat essentials: enclosed litter boxes, cat trees, puzzle toys, beds and feeders. Ships from a US warehouse. Free shipping over $35. 30-day returns."
         />
       </Helmet>
 
@@ -259,7 +260,7 @@ const HomePage = () => {
           <SoftEmailCapture
             variant="collection"
             headline="Get $5 off your first order"
-            description="Join 2,000+ US pet owners getting helpful product picks and care tips. No spam — unsubscribe anytime."
+            description="Get occasional product picks and cat care tips by email. No spam — unsubscribe anytime."
           />
         </div>
       </section>
