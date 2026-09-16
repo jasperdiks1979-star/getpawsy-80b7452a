@@ -59,13 +59,19 @@ describe("ProductDetail.handleAddToCart — ATC dedup regression", () => {
   });
 
   it("never blocks ATC with an early return on geo state", () => {
-    // The only allowed early return is the out-of-stock guard.
+    // Only two early returns are legitimate, both deliberate commerce guards:
+    //  - out_of_stock
+    //  - variant_not_selected (Commerce N: explicit option choice before ATC)
     const earlyReturns = body.match(/return\s*;/g) ?? [];
-    // out_of_stock branch is the single legitimate early return.
     expect(body).toMatch(/reason:\s*['"]out_of_stock['"]/);
+    expect(body).toMatch(/reason:\s*['"]variant_not_selected['"]/);
+    // No geo/region condition may guard a return.
+    expect(body).not.toMatch(/if\s*\([^)]*geoBlocked[^)]*\)\s*(\{[^}]*)?return\s*;/);
+    expect(body).not.toMatch(/if\s*\([^)]*visitorCountry[^)]*\)\s*(\{[^}]*)?return\s*;/);
     expect(
       earlyReturns.length,
       "handleAddToCart must not early-return for geo reasons — cart writes are unconditional.",
-    ).toBeLessThanOrEqual(1);
+    ).toBeLessThanOrEqual(2);
   });
+
 });

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Activity, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { TruthLabel } from '@/components/admin/TruthLabel';
 
 /**
  * Expectation model — every "expected" event is declared with the *condition*
@@ -81,9 +82,12 @@ export default function TrackingHealth() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [canonical, setCanonical] = useState<Record<CanonicalStage, number> | null>(null);
-  const [context, setContext] = useState<{ tiktokSessions: number; paidOrders: number; tiktokVariantImpressions: number }>(
-    { tiktokSessions: 0, paidOrders: 0, tiktokVariantImpressions: 0 },
-  );
+  const [context, setContext] = useState<{
+    tiktokSessions: number;
+    paidOrders: number;
+    tiktokVariantImpressions: number;
+    storefrontActivity: number;
+  }>({ tiktokSessions: 0, paidOrders: 0, tiktokVariantImpressions: 0, storefrontActivity: 0 });
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -123,6 +127,10 @@ export default function TrackingHealth() {
       tiktokSessions: tiktokRes.count ?? 0,
       paidOrders: ordersRes.count ?? 0,
       tiktokVariantImpressions: variantRes.count ?? 0,
+      // Any non-QA funnel row at all == the storefront was actually used in the
+      // window. Without this, a zero-traffic night made every "always" event
+      // look broken.
+      storefrontActivity: (rawRes.data ?? []).length,
     });
     setLoading(false);
   }, []);
@@ -163,8 +171,11 @@ export default function TrackingHealth() {
       let conditionLabel = 'always';
       switch (def.expectation.kind) {
         case 'always':
-          required = true;
-          conditionLabel = 'Every 24h window';
+          // Only required when the storefront actually saw activity. No
+          // traffic is NOT a tracking failure.
+          conditionMet = context.storefrontActivity > 0;
+          required = conditionMet;
+          conditionLabel = `storefrontActivity>0 (saw ${context.storefrontActivity})`;
           break;
         case 'on_purchase':
           conditionMet = context.paidOrders > 0;
@@ -192,10 +203,14 @@ export default function TrackingHealth() {
           break;
       }
 
+      const noActivity = context.storefrontActivity === 0;
       const broken = required && effectiveCount === 0;
-      let status: 'ok' | 'broken' | 'na' | 'renamed' | 'obsolete' | 'stale';
-      if (def.expectation.kind === 'renamed') {
-        status = effectiveCount > 0 ? 'renamed' : 'broken';
+      let status: 'ok' | 'broken' | 'na' | 'renamed' | 'obsolete' | 'stale' | 'no_activity';
+      if (noActivity && def.expectation.kind !== 'obsolete') {
+        // Nothing happened in the window — no verdict is possible.
+        status = effectiveCount > 0 ? 'ok' : 'no_activity';
+      } else if (def.expectation.kind === 'renamed') {
+        status = effectiveCount > 0 ? 'renamed' : (required ? 'broken' : 'na');
       } else if (def.expectation.kind === 'obsolete') {
         status = 'obsolete';
       } else if (broken) {
@@ -247,8 +262,10 @@ export default function TrackingHealth() {
               Tracking Health
             </h1>
             <p className="text-sm text-muted-foreground">
-              Last 24h pixel heartbeat from lp_funnel_events. Flags expected events with zero recent rows.
+              Last 24h pixel heartbeat from lp_funnel_events. Expected events are only flagged
+              broken when the storefront actually had activity in the window.
             </p>
+            <TruthLabel truth="live_truth" className="mt-2" showDescription />
           </div>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
@@ -260,6 +277,17 @@ export default function TrackingHealth() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Query failed</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {context.storefrontActivity === 0 && !loading && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>No storefront activity in the last 24h</AlertTitle>
+            <AlertDescription>
+              Zero non-QA funnel rows were recorded, so tracking cannot be verified either way.
+              This is reported as “no activity”, not as a failure.
+            </AlertDescription>
           </Alert>
         )}
 
@@ -356,7 +384,7 @@ type ExpectedRow = {
   lastSeen: string | null;
   degraded: number;
   invalid: number;
-  status: 'ok' | 'broken' | 'na' | 'renamed' | 'obsolete' | 'stale';
+  status: 'ok' | 'broken' | 'na' | 'renamed' | 'obsolete' | 'stale' | 'no_activity';
   expectationKind: string;
   conditionLabel: string;
   reason: string;
@@ -439,6 +467,12 @@ function StatusBadge({ status }: { status: ExpectedRow['status'] }) {
       return <Badge variant="destructive">broken</Badge>;
     case 'stale':
       return <Badge variant="secondary">stale</Badge>;
+    case 'no_activity':
+      return (
+        <Badge variant="outline" className="text-muted-foreground" title="No storefront activity in this window — no verdict possible.">
+          no activity
+        </Badge>
+      );
     case 'na':
       return <Badge variant="outline" className="text-muted-foreground">N/A</Badge>;
     case 'renamed':

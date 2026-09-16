@@ -8,7 +8,7 @@
 // dashboard MUST consume this function via `useCanonicalFunnel`.
 //
 // Input (query or body): { hours?: number, geo?: 'US'|'all' }
-//    hours defaults to 24, capped at 24*30.
+//    hours defaults to 24, capped at 24*90 (largest supported window).
 //    geo   defaults to 'all'.
 //
 // Output: {
@@ -126,14 +126,23 @@ function classifySource(row: { utm_source?: string | null; referrer?: string | n
   return "referral";
 }
 
-function parseInput(url: URL, body: any): { hours: number; geo: "US" | "all" } {
+// Max supported window. MUST cover every window id in
+// src/lib/analyticsWindows.ts (largest = 90d / 2160h); a lower cap silently
+// served a 30d result while the UI labelled it "90d".
+export const MAX_WINDOW_HOURS = 24 * 90;
+
+function parseInput(
+  url: URL,
+  body: any,
+): { hours: number; geo: "US" | "all"; requestedHours: number; clamped: boolean } {
   const rawH = body?.hours ?? url.searchParams.get("hours");
   const rawG = body?.geo ?? url.searchParams.get("geo");
   let hours = Number(rawH);
   if (!Number.isFinite(hours) || hours <= 0) hours = 24;
-  hours = Math.min(hours, 24 * 30);
+  const requestedHours = hours;
+  hours = Math.min(hours, MAX_WINDOW_HOURS);
   const geo = (rawG === "US" ? "US" : "all") as "US" | "all";
-  return { hours, geo };
+  return { hours, geo, requestedHours, clamped: hours < requestedHours };
 }
 
 // Tiny in-memory cache; 30s TTL keyed on inputs.
@@ -1225,7 +1234,13 @@ export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unkn
 
 function withCacheMeta(
   payload: Record<string, unknown>,
-  meta: { cache: "hit" | "miss" | "stale"; generatedAt: string | null; ageSeconds: number | null; hours: number },
+  meta: {
+    cache: "hit" | "miss" | "stale";
+    generatedAt: string | null;
+    ageSeconds: number | null;
+    hours: number;
+    requestedHours?: number;
+  },
 ) {
   return {
     ...payload,
@@ -1236,6 +1251,10 @@ function withCacheMeta(
     cache_stale: meta.cache === "stale",
     cache_max_lag_seconds: freshMsFor(meta.hours) / 1000,
     cache_source_window_hours: meta.hours,
+    // Truth labelling: when the caller asked for a longer window than the
+    // backend supports, say so instead of returning a shorter window silently.
+    window_hours_requested: meta.requestedHours ?? meta.hours,
+    window_clamped: (meta.requestedHours ?? meta.hours) > meta.hours,
   };
 }
 
@@ -1255,7 +1274,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     let body: any = null;
     if (req.method === "POST") { try { body = await req.json(); } catch { body = null; } }
-    const { hours, geo } = parseInput(url, body);
+    const { hours, geo, requestedHours } = parseInput(url, body);
     const envParam = String(url.searchParams.get("envelope") || body?.envelope || "").toLowerCase();
     const deepDiagnostics =
       body?.deep_diagnostics === true || url.searchParams.get("deep_diagnostics") === "true";
@@ -1266,7 +1285,7 @@ Deno.serve(async (req) => {
 
     // Deep diagnostics always bypass the cache (they add expensive probes).
     if (deepDiagnostics) return json(withCacheMeta(await computeEnvelope(opts), {
-      cache: "miss", generatedAt: null, ageSeconds: null, hours,
+      cache: "miss", generatedAt: null, ageSeconds: null, hours, requestedHours,
     }));
 
     // Warmer / explicit rebuild path.
@@ -1286,7 +1305,7 @@ Deno.serve(async (req) => {
             (Date.now() - new Date(locked.generated_at as string).getTime()) / 1000,
           );
           return json(withCacheMeta(locked.payload as Record<string, unknown>, {
-            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours,
+            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours, requestedHours,
           }));
         }
         return json({
@@ -1301,7 +1320,7 @@ Deno.serve(async (req) => {
       try {
         const payload = await refreshKey(opts);
         return json(withCacheMeta(payload, {
-          cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours,
+          cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours, requestedHours,
         }));
       } catch (e) {
         await releaseLock(key, (e as Error).message);
@@ -1324,7 +1343,7 @@ Deno.serve(async (req) => {
         acLog("cache_hit", key, { hours, geo, age_seconds: ageSeconds });
         cache.set(key, { at: Date.now(), body: row.payload });
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours,
+          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
         }));
       }
       const staleServable = ageMs <= maxStaleMsFor(hours) || (!internalTrusted && hours >= 24);
@@ -1345,7 +1364,7 @@ Deno.serve(async (req) => {
         })();
         try { (globalThis as any).EdgeRuntime?.waitUntil?.(bg); } catch { /* noop */ }
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours,
+          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
         }));
       }
     }
@@ -1374,7 +1393,7 @@ Deno.serve(async (req) => {
     const payload = await refreshKey(opts);
     cache.set(key, { at: Date.now(), body: payload });
     return json(withCacheMeta(payload, {
-      cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours,
+      cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours, requestedHours,
     }));
   } catch (e) {
     return json({ ok: false, error: (e as Error).message }, 500);

@@ -11,6 +11,10 @@ export const TECHNICAL_PREFIXES = [
   "/rest/",
   "/auth/v1/",
   "/realtime/",
+  "/diagnostics/",
+  "/debug/",
+  "/__ops/",
+  "/dashboard/",
 ];
 
 export const TECHNICAL_EXACT = new Set([
@@ -20,6 +24,15 @@ export const TECHNICAL_EXACT = new Set([
   "/health",
   "/status",
   "/ping",
+  "/admin",
+  "/dashboard",
+  "/live-map",
+  "/founder-mode",
+  "/merchant-fix-checklist",
+  "/pinterest-tag-health",
+  "/debug",
+  "/diagnostics",
+  "/__ops",
 ]);
 
 export const TECHNICAL_REGEX: RegExp[] = [

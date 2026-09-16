@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
+import { isTechnicalPath } from '@/lib/technicalRoutes';
 
 /**
  * Safe Pinterest Tag — deferred, non-blocking, wrapped in error boundary.
@@ -10,9 +11,13 @@ import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundar
 const PinterestTagInner = () => {
   const location = useLocation();
 
+  // Never load or fire the marketing tag on technical/admin/diagnostic routes.
+  const technical = isTechnicalPath(location.pathname);
+
   // Defer Pinterest initialization until after first paint
   useEffect(() => {
     if (!MARKETING_FLAGS.PINTEREST_ENABLED) return;
+    if (technical) return;
 
     fireMarketingAsync('pinterest-init', async () => {
       const { initPinterestTag, isProductionDomain } = await import('@/hooks/usePinterestTracking');
@@ -20,11 +25,12 @@ const PinterestTagInner = () => {
         initPinterestTag();
       }
     }, 'pinterest');
-  }, []);
+  }, [technical]);
 
   // Track page visits on route change — deferred
   useEffect(() => {
     if (!MARKETING_FLAGS.PINTEREST_ENABLED) return;
+    if (technical) return;
 
     fireMarketingAsync('pinterest-pagevisit', async () => {
       const { trackPinterestEvent, isProductionDomain } = await import('@/hooks/usePinterestTracking');
@@ -43,7 +49,7 @@ const PinterestTagInner = () => {
         }
       }
     }, 'pinterest');
-  }, [location.pathname]);
+  }, [location.pathname, technical]);
 
   return null;
 };

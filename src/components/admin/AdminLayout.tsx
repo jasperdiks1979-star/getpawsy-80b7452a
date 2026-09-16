@@ -68,7 +68,6 @@ const navItems = [
   { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
   { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
   { to: '/admin/pinterest-ad-studio', label: '★ Pinterest Ad Studio', icon: Pin },
-  { to: '/admin/pinterest-health', label: 'Pinterest Health', icon: Activity },
   { to: '/admin/pinterest-products', label: 'Pinterest Top 25', icon: Pin },
   { to: '/admin/pinterest-scheduler', label: 'Pinterest Scheduler', icon: Pin },
   { to: '/admin/pinterest-trends', label: 'Pinterest Trends', icon: Pin },
