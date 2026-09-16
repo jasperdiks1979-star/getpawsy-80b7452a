@@ -9,51 +9,40 @@ import { useQuickAdd } from '@/hooks/useQuickAdd';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 import { getTrustLabel } from '@/lib/trust-labels';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 
 /**
- * Bestsellers Right Now — conversion-optimized product grid + scroll.
+ * Our Cat Essentials — curated hero/core range grid + scroll.
+ * Source of truth: products_shop merch_role hero|core, ordered by merch_rank.
+ * No sales-rank, popularity or review claim is rendered without real data.
  */
 export const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const quickAdd = useQuickAdd();
 
   const { data: bestsellers, isLoading } = useQuery({
-    queryKey: ['homepage-bestsellers'],
+    queryKey: ['homepage-core-range'],
     queryFn: async () => {
+      // Curated range only — hero + core roles from products_shop, ordered by the
+      // merchandising rank we set. No sales-volume or popularity claim is made.
       const { data, error } = await supabase
-        .from('bestsellers')
-        .select(`
-          *,
-          products_public!bestsellers_product_id_fkey (
-            id,
-            name,
-            slug,
-            price,
-            compare_at_price,
-            image_url,
-            category,
-            stock,
-            variants
-          )
-        `)
-        .eq('is_active', true)
-        .order('rank', { ascending: true })
-        .limit(8);
+        .from('products_shop')
+        .select('id, name, slug, price, compare_at_price, image_url, category, stock, variants, merch_role, merch_rank')
+        .in('merch_role', ['hero', 'core'])
+        .order('merch_rank', { ascending: true })
+        .limit(24);
 
       if (error) throw error;
 
-      const rows = (data || []).filter(b => {
-        const p = b.products_public;
+      const rows = (data || []).filter((p) => {
         if (!p) return false;
         if (!p.image_url || p.image_url === '/placeholder.svg') return false;
-        if (typeof p.stock === 'number' && p.stock <= 0) return false;
         if (typeof p.price !== 'number' || p.price <= 5 || p.price > 1500) return false;
         return true;
       });
 
-      // Mission First Revenue #6 — fetch verified review aggregates for these products.
-      // Only render a rating pill when real reviews exist (no fabricated stars).
-      const ids = rows.map((b: any) => b.products_public?.id).filter(Boolean);
+      // Only render a rating when real reviews exist (no fabricated stars).
+      const ids = rows.map((p) => p.id).filter(Boolean);
       const ratingByProduct: Record<string, { avg: number; count: number }> = {};
       if (ids.length) {
         const { data: revs } = await supabase
@@ -71,9 +60,12 @@ export const BestsellersSection = () => {
           r.avg = r.count > 0 ? r.avg / r.count : 0;
         });
       }
-      return rows.map((b: any) => ({
-        ...b,
-        _rating: ratingByProduct[b.products_public?.id] || null,
+      return rows.slice(0, 8).map((p) => ({
+        id: p.id,
+        products_public: p,
+        hero_headline: null as string | null,
+        slug: p.slug,
+        _rating: ratingByProduct[p.id] || null,
       }));
     },
   });
@@ -92,10 +84,10 @@ export const BestsellersSection = () => {
         <div className="flex items-end justify-between mb-4">
           <div>
             <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-              Bestsellers Right Now
+              Our Cat Essentials
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Popular items customers are currently ordering
+              The core indoor-cat range we stock and ship from our US warehouse
             </p>
           </div>
           <div className="hidden md:flex gap-2">
@@ -177,7 +169,7 @@ export const BestsellersSection = () => {
                       <p className="text-sm font-bold text-primary mt-1">
                         ${price.toFixed(2)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Free shipping over $35</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Free shipping over ${FREE_SHIPPING_THRESHOLD}</p>
                     </div>
                   </Link>
                   <button
@@ -207,7 +199,7 @@ export const BestsellersSection = () => {
         {!isLoading && bestsellers && bestsellers.length > 0 && (
           <div className="text-center mt-6">
             <Button asChild variant="outline" className="rounded-full">
-              <Link to="/bestsellers">View All Bestsellers</Link>
+              <Link to="/bestsellers">View all our picks</Link>
             </Button>
           </div>
         )}
