@@ -21,7 +21,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { updateOutcome } from "../_shared/governanceLedger.ts";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const DEFAULT_WINDOW_DAYS = 14;
 const DEFAULT_GROSS_MARGIN = 0.30; // overridable per decision via proposal.gross_margin
@@ -373,7 +373,7 @@ async function briefing() {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const guard = await requireInternalOrAdmin(req);
+  const guard = await requireMonitorCaller(req);
   if (guard) return guard;
   try {
     const body = await req.json().catch(() => ({}));

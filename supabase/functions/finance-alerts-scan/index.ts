@@ -11,7 +11,7 @@
 // Emits one row per (alert_type, subject_id) at most (dedup on scan run).
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +33,7 @@ type Alert = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const guard = await requireInternalOrAdmin(req);
+  const guard = await requireMonitorCaller(req);
   if (guard) return guard;
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);

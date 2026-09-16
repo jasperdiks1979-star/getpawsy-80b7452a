@@ -1,7 +1,7 @@
 // AI Governance & Audit Layer (AGAL) — independent auditor.
 // Read-only over operational AI tables; append-only writes to AGAL tables.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -185,7 +185,7 @@ async function recordDecision(payload: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const __gate = await requireInternalOrAdmin(req);
+  const __gate = await requireMonitorCaller(req);
   if (__gate) return __gate;
   try {
     const url = new URL(req.url);

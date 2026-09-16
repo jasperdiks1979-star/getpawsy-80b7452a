@@ -9,7 +9,7 @@
 // Extends production-validation-runner — does not replace it.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const PROD_URL = "https://getpawsy.pet";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -241,7 +241,7 @@ async function journey(): Promise<{ checks: Check[]; checkout_ok: boolean; strip
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const guard = await requireInternalOrAdmin(req);
+  const guard = await requireMonitorCaller(req);
   if (guard) return guard;
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });

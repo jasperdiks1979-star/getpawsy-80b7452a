@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -175,7 +175,7 @@ serve(async (req) => {
   }
 
   // HARDENED: require internal-secret (cron) or admin JWT. Anon requests are rejected.
-  const gate = await requireInternalOrAdmin(req);
+  const gate = await requireMonitorCaller(req);
   if (gate) return gate;
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
