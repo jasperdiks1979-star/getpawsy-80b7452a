@@ -143,6 +143,7 @@ import {
 } from "@/lib/shipping-constants";
 import { getDeliveryTruth, hasProvenUsOrigin } from "@/lib/delivery-truth";
 import { VerifiedSpecs } from "@/components/product/VerifiedSpecs";
+import { buildProductEvidence, evidenceBenefitBullets } from "@/lib/product-evidence";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
   Breadcrumb,
