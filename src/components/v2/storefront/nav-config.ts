@@ -11,10 +11,9 @@ export interface NavItem {
 }
 
 export const PRIMARY_NAV: NavItem[] = [
-  { label: 'Shop', href: '/products', description: 'Browse the full catalog' },
-  { label: 'Cats', href: '/collections/cat', description: 'Litter boxes, trees, scratchers' },
-  { label: 'Dogs', href: '/collections/dog', description: 'Beds, travel gear, walking' },
-  { label: 'Best Sellers', href: '/bestsellers', description: 'Most popular right now' },
+  { label: 'Shop', href: '/products', description: 'Browse cat essentials' },
+  { label: 'Cats', href: '/collections/cats', description: 'Litter boxes, trees and enrichment' },
+  { label: 'Sets', href: '/bundles', description: 'Shop compatible product sets' },
   { label: 'Help', href: '/help', description: 'Support, shipping & returns' },
 ];
 
@@ -28,10 +27,10 @@ export const POLICY_NAV: NavItem[] = [
 ];
 
 export const SHOP_NAV: NavItem[] = [
-  { label: 'All products', href: '/products' },
-  { label: 'Cat supplies', href: '/collections/cat' },
-  { label: 'Dog supplies', href: '/collections/dog' },
-  { label: 'Best sellers', href: '/bestsellers' },
+  { label: 'Cat essentials', href: '/products' },
+  { label: 'Litter boxes', href: '/collections/cat-litter-boxes' },
+  { label: 'Cat trees', href: '/collections/cat-trees-and-condos' },
+  { label: 'Sets', href: '/bundles' },
   { label: 'Pet care guides', href: '/guides' },
 ];
 

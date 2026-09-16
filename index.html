@@ -151,7 +151,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>GetPawsy — Cat Litter Boxes, Trees &amp; Indoor Essentials</title>
     <meta name="description" content="Practical indoor-cat essentials: enclosed litter boxes, cat trees, puzzle toys, beds and feeders. Ships from a US warehouse. Free shipping over $35, 30-day returns." />
-    <meta name="keywords" content="pet products, cat trees, litter boxes, dog beds, pet supplies, GetPawsy" />
+    <meta name="keywords" content="cat products, cat trees, litter boxes, indoor cat essentials, GetPawsy" />
     <meta name="author" content="GetPawsy" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
@@ -304,7 +304,7 @@
           if (productName.length > 80) productName = productName.substring(0, 77) + '...';
           document.title = productName + ' | GetPawsy';
           var descMetaP = document.querySelector('meta[name="description"]');
-          if (descMetaP) descMetaP.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. Premium pet product with fast US shipping and 30-day returns.');
+          if (descMetaP) descMetaP.setAttribute('content', 'Shop ' + productName + ' at GetPawsy. See current product details, pricing, shipping options and 30-day return information.');
 
           // Inject minimal JSON-LD skeleton
           var jsonLd = {
@@ -351,7 +351,7 @@
           if (raw) {
             document.title = slugToName(raw) + cfg.suf;
             var dmU = document.querySelector('meta[name="description"]');
-            if (dmU) dmU.setAttribute('content', slugToName(raw) + ' — expert pet care guide from GetPawsy.');
+            if (dmU) dmU.setAttribute('content', slugToName(raw) + ' — practical pet care information from GetPawsy.');
           }
           break;
         }
@@ -392,8 +392,8 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@GetPawsy" />
-    <meta name="twitter:title" content="GetPawsy — Premium Pet Products for Dogs & Cats" />
-    <meta name="twitter:description" content="Cat trees, litter boxes, dog beds, toys & more. Free shipping on eligible orders $35+. 30-day returns." />
+    <meta name="twitter:title" content="GetPawsy — Indoor Cat Essentials" />
+    <meta name="twitter:description" content="Litter boxes, cat trees and enrichment products. Free shipping on eligible orders $35+. 30-day returns." />
     <meta name="twitter:image" content="https://getpawsy.pet/og-image.png" />
 
     <!--
@@ -410,11 +410,11 @@
         if (p === '/' || p === '') {
           var m = document.createElement('link');
           m.rel = 'preload'; m.as = 'image'; m.fetchPriority = 'high';
-          m.href = '/hero/dog-training-hero-mobile.webp'; m.media = '(max-width: 768px)';
+          m.href = '/hero/cat-litter-box-hero-mobile.webp'; m.media = '(max-width: 768px)';
           document.head.appendChild(m);
           var d = document.createElement('link');
           d.rel = 'preload'; d.as = 'image'; d.fetchPriority = 'high';
-          d.href = '/hero/dog-training-hero-desktop.webp'; d.media = '(min-width: 769px)';
+          d.href = '/hero/cat-litter-box-hero.webp'; d.media = '(min-width: 769px)';
           document.head.appendChild(d);
         }
         // /go (TikTok prelander) — preload the LCP candidate (demo video
@@ -619,16 +619,16 @@
             <picture>
               <source
                 media="(max-width: 768px)"
-                srcset="/hero/dog-training-hero-mobile.webp"
+                 srcset="/hero/cat-litter-box-hero-mobile.webp"
                 type="image/webp"
                 width="896"
                 height="1184"
               />
               <img
-                src="/hero/dog-training-hero-desktop.webp"
-                alt="Happy pets — premium pet products for dogs and cats"
-                width="1920"
-                height="1080"
+                 src="/hero/cat-litter-box-hero.webp"
+                 alt="Enclosed cat litter box in a clean indoor space"
+                 width="1200"
+                 height="669"
                 fetchpriority="high"
                 decoding="async"
                 class="hero-lcp-img"
@@ -638,23 +638,23 @@
           </div>
           <div style="position:relative;z-index:10;padding:64px 24px;max-width:1280px;margin:0 auto;width:100%">
             <div style="max-width:672px">
-              <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">PREMIUM PET PRODUCTS — US SHIPPING</p>
+               <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;color:#c2501f;opacity:0.8;margin:0 0 12px">INDOOR CAT ESSENTIALS · US WAREHOUSE RANGE</p>
               <h1 style="font-family:'Playfair Display','Playfair Fallback',Georgia,serif;font-size:clamp(2.25rem,5vw,3.75rem);font-weight:700;line-height:1.05;letter-spacing:-0.015em;color:#1a1a1a;margin:0 0 24px">
-                Premium Pet Comfort<br/><span style="color:#c2501f">Starts Here</span>
+                 A Cleaner Home<br/><span style="color:#c2501f">For You and Your Cat</span>
               </h1>
               <p style="font-family:'DM Sans','DM Sans Fallback',sans-serif;font-size:clamp(1rem,2vw,1.25rem);color:#6b7280;max-width:512px;line-height:1.6;margin:0 0 32px">
-                Smart solutions for safer, cleaner, stress-free pet living.
+                 A focused range of litter boxes, cat trees and enrichment toys for indoor cats.
               </p>
               <div style="display:flex;flex-wrap:wrap;gap:16px;position:relative;z-index:50;pointer-events:auto">
-                <a href="/bestsellers" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                  Shop Bestsellers →
+                 <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 40px;border-radius:9999px;background:#1a1a1a;color:#fff;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                   Shop Cat Essentials →
                 </a>
-                <a href="/products" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-                  Browse All Products →
+                 <a href="/bundles" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;border-radius:9999px;background:transparent;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;text-decoration:none;border:1px solid #d1d5db;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+                   Explore Sets →
                 </a>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:20px;padding-top:16px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:500;color:#6b7280">
-                <span>✔ Free Shipping on Orders $35+</span><span>✔ 30-Day Returns</span><span>✔ Tracked Shipping</span>
+                 <span>Free shipping on orders $35+</span><span>30-day returns</span><span>Delivery details confirmed at checkout</span>
               </div>
             </div>
           </div>
@@ -664,7 +664,7 @@
       <!-- Recovery UI: NON-BLOCKING banner if React fails to mount -->
       <div id="boot-recovery" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:10px 16px;font-family:system-ui,sans-serif;font-size:13px;color:#92400e;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1280px;margin:0 auto">
-          <span>⚠️ The page didn't load correctly.</span>
+           <span>GetPawsy could not finish loading.</span>
           <div style="display:flex;gap:8px;flex-shrink:0">
             <button onclick="location.reload()" style="padding:4px 12px;border-radius:6px;border:none;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-weight:500">Reload</button>
             <button id="hard-reload-btn" style="padding:4px 12px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#333;font-size:12px;cursor:pointer;font-weight:500">Hard Reload</button>
@@ -681,23 +681,20 @@
          ═══════════════════════════════════════════════════════════════ -->
     <noscript>
       <div style="padding:24px;max-width:900px;margin:0 auto;font-family:system-ui,sans-serif;font-size:14px;color:#333;line-height:1.7">
-        <h1 style="font-size:24px;margin-bottom:8px">GetPawsy — Pet Supplies Store</h1>
-        <p>GetPawsy is an independent online store focused on high-quality pet products for dogs, cats, and small animals. Customer support: support@getpawsy.pet. Shipping destination: United States. Operating location: Apeldoorn, Netherlands. Currency: USD.</p>
-        <p>Customer satisfaction is our priority. We carefully select our pet products to ensure quality and comfort for your pets.</p>
+         <h1 style="font-size:24px;margin-bottom:8px">GetPawsy — Indoor Cat Essentials</h1>
+         <p>GetPawsy is an independent online store focused on litter boxes, cat trees and enrichment products for indoor cats. Customer support: support@getpawsy.pet. Shipping destination: United States. Operating location: Apeldoorn, Netherlands. Currency: USD.</p>
+         <p>Product pages distinguish supplier-documented facts from information that is not available.</p>
 
         <hr style="margin:16px 0;border:none;border-top:1px solid #ddd">
 
         <h2 style="font-size:18px">Shipping Policy</h2>
         <p><strong>Processing Time:</strong> 1–2 business days. Orders are processed within 1–2 business days after payment confirmation.</p>
-        <p><strong>Delivery Time:</strong> 3–7 business days. Estimated delivery: 3–7 business days to the United States.</p>
-        <p><strong>Tracking:</strong> All orders receive a tracking number.</p>
-        <p><strong>Carriers:</strong> Orders are delivered via trusted carrier partners.</p>
+         <p><strong>Delivery:</strong> Available shipping options, costs and delivery timing are confirmed at checkout before payment.</p>
         <p>Free shipping on orders over $35. Standard shipping: $5.99 for orders under $35. Business days exclude weekends and U.S. holidays.</p>
 
         <h2 style="font-size:18px">Returns &amp; Refunds</h2>
-        <p><strong>30-day return policy.</strong> Customers can return unused items within 30 days of delivery.</p>
-        <p>Items must be unused and in original packaging.</p>
-        <p>To start a return, contact: support@getpawsy.pet. Refunds are processed within 5 business days to your original payment method.</p>
+         <p><strong>30-day return policy.</strong> Return eligible items within 30 days according to our return policy.</p>
+         <p>To start a return, contact support@getpawsy.pet with your order number and photos of any issues.</p>
 
         <h2 style="font-size:18px">Privacy Policy</h2>
         <p>We collect personal information such as name, email address, and shipping information to process your orders securely.</p>
@@ -726,8 +723,8 @@
           <a href="/terms">Terms</a>
           <a href="/contact">Contact</a>
           <a href="/about">About</a>
-          <a href="/products">Shop All Products</a>
-          <a href="/bestsellers">Bestsellers</a>
+           <a href="/products">Shop Cat Essentials</a>
+           <a href="/bundles">Sets</a>
         </nav>
       </div>
     </noscript>

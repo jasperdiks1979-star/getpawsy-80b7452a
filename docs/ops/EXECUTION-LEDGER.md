@@ -1,7 +1,7 @@
 # GetPawsy autonomous execution ledger
 
 Machine-readable resumption record. Source of truth for "what is still open".
-Last verified: 2026-09-16 18:55 UTC.
+Last verified: 2026-09-16 21:02 UTC.
 
 Global verification at last run: `vitest` 1072 passed / 1 skipped / 0 failed,
 `tsgo --noEmit` clean, build OK, production smoke `/ /shop /bundles /cart
@@ -112,3 +112,16 @@ No checkout/payment/refund/order/customer-email/supplier/ads behaviour touched. 
 | production smoke | `/ /shop /bundles /admin/analytics/visitor-world-map-pro /sitemap.xml` all 200 |
 
 SECURITY B: **COMPLETE**. NEXT_OPEN_PHASE: none internally actionable — remaining items are the five externally gated ones listed above.
+
+## Production delivery / fallback / homepage consistency repair (2026-09-16)
+
+| item | status | evidence |
+|---|---|---|
+| Raw HTML and pre-hydration shell | COMPLETE | `index.html` uses cat litter-box imagery and cat-first copy; stale bestseller, broad-pet and 3–7-day delivery claims removed |
+| No-JavaScript fallback | COMPLETE | Skidzo/GetPawsy identity preserved; shipping timing is checkout-confirmed; $35 free-shipping threshold and 30-day returns retained |
+| Hydrated homepage | COMPLETE | `V2HomePage.tsx` queries the exact five documented hero IDs in source order, removes dog/bestseller primary merchandising, and links validated Sets; legacy `HomePage.tsx` now aliases this sole implementation |
+| Successful boot recovery cleanup | COMPLETE | `src/main.tsx` removes both recovery elements immediately after a healthy mount; desktop/mobile browser checks found zero recovery banners |
+| Public guide claim path | COMPLETE | historical unsupported comparison configuration is fail-closed by `getDominationConfig`; collection and schema consumers receive no legacy claim payload |
+| Regression coverage | COMPLETE | `homepage-delivery-consistency`, Phase 10/12, and Security B focused tests: 48 passed; full suite: 1120 passed / 1 skipped; `tsgo --noEmit` clean; build OK |
+
+Local desktop/mobile readback: five documented product slugs visible, cat-first H1 present, no stale copy, no recovery warning, and no horizontal overflow. Production readback after deployment: raw HTML and crawler shell are cat-first with checkout-confirmed delivery; `/`, `/products`, `/shop`, `/bundles`, `/cart`, `/checkout`, `/admin`, `/sitemap.xml`, `/robots.txt`, and `/guides` returned 200. Hydrated desktop/mobile checks showed all five hero links, zero recovery banners, zero stale phrases, no page errors or mobile overflow; `/admin` redirected to sign-in. Security scan: 0 critical/error findings (three user-ignored warnings only). Security B and all checkout/payment/order/refund/admin controls unchanged.
