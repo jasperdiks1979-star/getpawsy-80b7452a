@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
 import { useEffect } from 'react';
 import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
+import { getCartSessionId } from '@/lib/cartSession';
 import { trackCci } from '@/lib/cci';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
@@ -89,6 +90,7 @@ const Cart = () => {
     try {
       fireCheckoutClick({
         source_component,
+        cart_id: getCartSessionId(),
         item_count: items.reduce((s, i) => s + i.quantity, 0),
         value: Number(total.toFixed(2)),
         currency: 'USD',

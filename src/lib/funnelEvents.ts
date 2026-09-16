@@ -10,6 +10,7 @@
  * "real user action" in the /admin/funnel-health dashboard.
  */
 import { supabase } from '@/integrations/supabase/client';
+import { getCartSessionId } from '@/lib/cartSession';
 import { getBotClassification, recordEventTimingSample, markEngagementVerified } from '@/lib/botDetection';
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
 import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
@@ -451,14 +452,23 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
     // means the cart context never hydrated. We still record the event
     // (envelope intact) so Clean KPIs include the intent, and tag it as
     // degraded so the dashboard can surface it for repair.
-    const hasCartId = typeof input.cart_id === 'string' && input.cart_id.length > 0;
+    // Cart identity always resolves to the persistent cart session id, so a
+    // checkout event is never degraded merely because a caller forgot to
+    // pass cart_id. Same id as abandoned-cart rows.
+    const explicitCartId =
+      typeof input.cart_id === 'string' && input.cart_id.length > 0 ? input.cart_id : null;
+    let cartId: string | null = explicitCartId;
+    if (!cartId) {
+      try { cartId = getCartSessionId(); } catch { cartId = null; }
+    }
+    const hasCartId = typeof cartId === 'string' && cartId.length > 0;
     const hasItems = typeof input.item_count === 'number' && input.item_count > 0;
     const degraded = !hasCartId || !hasItems;
     const env = envelope({
       event_source: 'user_click',
       source_component: input.source_component,
       event: input.step,
-      product_id: input.cart_id ?? null,
+      product_id: cartId,
     });
     // Always log the attempt so we can see in a single test why an
     // event was (or wasn't) inserted. No PII, only flags + keys.
@@ -521,7 +531,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       is_bot: env.is_bot,
       bot_reason: env.bot_reason,
       geo_quality: env.geo_quality,
-      cart_id: input.cart_id ?? null,
+      cart_id: cartId,
       item_count: input.item_count ?? null,
       destination_url: input.destination_url ?? null,
       error_reason: input.error_reason ?? null,

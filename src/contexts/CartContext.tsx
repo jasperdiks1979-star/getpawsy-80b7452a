@@ -15,6 +15,12 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
+import { getCartSessionId, clearCartSessionId } from '@/lib/cartSession';
+import {
+  syncAbandonedCart as syncAbandonedCartRow,
+  forgetAbandonedCartRow,
+  type AbandonedCartStore,
+} from '@/lib/abandonedCartSync';
 // ⚡ CRITICAL FIX: sonner, marketingClient, and useVisitorTracking were sync-imported,
 // pulling ~160KB (sonner + supabase SDK via trackVisitorEvent) into the main bundle.
 // Now all three are lazily imported — only loaded when actually called.
@@ -62,15 +68,8 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Get or create a persistent session ID for abandoned cart tracking
-const getCartSessionId = (): string => {
-  let sessionId = localStorage.getItem('pawsy-cart-session-id');
-  if (!sessionId) {
-    sessionId = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-    localStorage.setItem('pawsy-cart-session-id', sessionId);
-  }
-  return sessionId;
-};
+// Cart identity is owned by src/lib/cartSession.ts — the SAME id is used for
+// abandoned-cart rows and for `cart_id` on checkout funnel events.
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -119,15 +118,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const abandonedCartEmail = useRef<string | null>(localStorage.getItem('pawsy-cart-email'));
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync cart to abandoned_carts table
+  // Sync cart to abandoned_carts table.
+  // All writes go through the serialized, idempotent helper so a single cart
+  // session can never create more than one active row (no historic deletes).
   const syncAbandonedCart = useCallback(async (cartItems: CartItem[], email?: string | null) => {
     if (cartItems.length === 0) return;
-    
+
     const sessionId = getCartSessionId();
     const customerEmail = email || abandonedCartEmail.current;
     const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-    // Simplify items to JSON-compatible format
+
     const simplifiedItems = cartItems.map(item => ({
       id: item.id,
       name: item.name,
@@ -136,41 +136,55 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       quantity: item.quantity,
       variant: item.variant || null,
     }));
-    
-    try {
-      const supabase = await getSupabase();
-      // Check if cart already exists for this session
-      const { data: existingCart } = await supabase
-        .from('abandoned_carts')
-        .select('id')
-        .eq('session_id', sessionId)
-        .is('recovered_at', null)
-        .maybeSingle();
 
-      if (existingCart) {
+    const store: AbandonedCartStore = {
+      async findActive(sid) {
+        const supabase = await getSupabase();
+        const { data } = await supabase
+          .from('abandoned_carts')
+          .select('id')
+          .eq('session_id', sid)
+          .is('recovered_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return data ? { id: (data as { id: string }).id } : null;
+      },
+      async update(id, payload) {
+        const supabase = await getSupabase();
         const { error } = await supabase
           .from('abandoned_carts')
           .update({
-            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
-            cart_total: cartTotal,
-            customer_email: customerEmail,
+            cart_items: JSON.parse(JSON.stringify(payload.items)),
+            cart_total: payload.cartTotal,
+            customer_email: payload.customerEmail ?? null,
           })
-          .eq('id', existingCart.id);
+          .eq('id', id);
         if (error) console.error('Error updating abandoned cart:', error);
-      } else {
-        const { error } = await supabase
+      },
+      async insert(payload) {
+        const supabase = await getSupabase();
+        const { data, error } = await supabase
           .from('abandoned_carts')
           .insert([{
-            session_id: sessionId,
-            customer_email: customerEmail,
-            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
-            cart_total: cartTotal,
-          }]);
+            session_id: payload.sessionId,
+            customer_email: payload.customerEmail ?? null,
+            cart_items: JSON.parse(JSON.stringify(payload.items)),
+            cart_total: payload.cartTotal,
+          }])
+          .select('id')
+          .maybeSingle();
         if (error) console.error('Error inserting abandoned cart:', error);
-      }
-    } catch (error) {
-      console.error('Error syncing abandoned cart:', error);
-    }
+        return data ? { id: (data as { id: string }).id } : null;
+      },
+    };
+
+    await syncAbandonedCartRow(store, {
+      sessionId,
+      customerEmail,
+      items: simplifiedItems,
+      cartTotal,
+    });
   }, []);
 
   // Debounced sync - wait 2 seconds after last cart change
@@ -470,8 +484,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Error marking cart as recovered:', error);
       }
-      // Generate new session ID for future carts
-      localStorage.removeItem('pawsy-cart-session-id');
+      // Start a fresh cart identity for future carts (row history is kept).
+      forgetAbandonedCartRow(sessionId);
+      clearCartSessionId();
     }
     setItems([]);
   }, [items.length]);

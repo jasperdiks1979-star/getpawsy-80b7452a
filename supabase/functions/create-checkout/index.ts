@@ -637,7 +637,7 @@ serve(async (req) => {
       code: e?.code,
       statusCode: e?.statusCode,
       param: e?.param,
-      hasStripeKey: !!Deno.env.get("STRIPE_SECRET_KEY"),
+      hasStripeKey: !!getStripeKey().key,
       hasServiceRoleKey: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
     });
     return new Response(
