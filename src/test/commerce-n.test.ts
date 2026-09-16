@@ -55,9 +55,9 @@ describe('N-3 single pricing contract', () => {
     ]).totalCents;
 
     expect(pdp.subtotalCents).toBe(15826);
-    expect(pdp.tierPercent).toBe(5);
-    expect(pdp.tierDeductionCents).toBe(791);
-    expect(pdp.totalCents).toBe(15035); // $150.35
+    expect(pdp.tierPercent).toBe(10); // 158.26 >= $99 with 2 units
+    expect(pdp.tierDeductionCents).toBe(1583);
+    expect(pdp.totalCents).toBe(14243); // $142.43
     expect(cart.totalCents).toBe(pdp.totalCents);
     expect(stripeIntendedCents).toBe(pdp.totalCents);
   });
@@ -67,9 +67,9 @@ describe('N-3 single pricing contract', () => {
     expect(src).not.toMatch(/discount:\s*15/);
     expect(src).not.toMatch(/discount:\s*25/);
     expect(src).toContain('cart-pricing');
-    // Buy-2 of a $79.13 item earns the canonical 5%, never 15%.
-    expect(client.quoteForBundle(7913, 2).tierPercent).toBe(5);
-    expect(client.quoteForBundle(7913, 3).tierPercent).toBe(10);
+    // Buy-2 of a $79.13 item earns the canonical tier, never a PDP-only 15%.
+    expect(client.quoteForBundle(7913, 2).tierPercent).toBe(10);
+    expect(client.quoteForBundle(3400, 2).tierPercent).toBe(5); // $68 -> 5%
   });
 
   it('single units never earn a percentage tier', () => {
@@ -227,7 +227,7 @@ describe('N-1 settlement gating', () => {
     expect(gateIdx).toBeGreaterThan(-1);
     expect(gateIdx).toBeLessThan(src.indexOf('await createCJDropshippingOrder'));
     expect(gateIdx).toBeLessThan(src.indexOf('await sendOrderConfirmationEmail'));
-    expect(gateIdx).toBeLessThan(src.indexOf('deductPackagingInventory'));
+    expect(gateIdx).toBeLessThan(src.indexOf('await deductPackagingInventory('));
   });
   it('an already-paid order never repeats side effects', () => {
     const src = read('supabase/functions/stripe-webhook/index.ts');
