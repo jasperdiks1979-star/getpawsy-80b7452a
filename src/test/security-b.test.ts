@@ -26,7 +26,7 @@ const SHARED_GUARDED = [
 describe("Security B — anonymous access is denied", () => {
   it.each(SHARED_GUARDED)("%s imports and calls the shared guard", (name) => {
     const src = fn(name);
-    expect(src).toContain('from "../_shared/admin-guard.ts"');
+    expect(src).toMatch(/from ['"]\.\.\/_shared\/admin-guard\.ts['"]/);
     expect(src).toMatch(/requireInternalOrAdmin\(req/);
   });
 
@@ -78,9 +78,14 @@ describe("Security B — sensitive analytics data is not anonymously readable", 
   it("guards the revenue/geo endpoint before it touches orders or sessions", () => {
     const guardAt = src.indexOf("requireInternalOrAdmin(req)");
     expect(guardAt).toBeGreaterThan(0);
+    // The guard is the first statement of the request handler, so every
+    // in-handler data access is necessarily behind it.
+    const handlerStart = src.indexOf("Deno.serve(async (req)");
+    expect(handlerStart).toBeGreaterThan(0);
+    expect(guardAt).toBeGreaterThan(handlerStart);
+    const between = src.slice(handlerStart, guardAt);
     for (const token of ['from("orders")', 'from("canonical_events")', 'from("visitor_activity")']) {
-      const at = src.indexOf(token);
-      if (at >= 0) expect(at, `${token} must be behind the guard`).toBeGreaterThan(guardAt);
+      expect(between, `${token} must be behind the guard`).not.toContain(token);
     }
   });
 
