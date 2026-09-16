@@ -327,9 +327,42 @@ export function validateLinePrice(input: {
 
 // ── L (Commerce N): exact variant stock + locked fulfillment warehouse ──────
 
+/**
+ * Warehouse inventory the supplier records for one variant in one country.
+ * `null` when the payload carries no inventory record for that country.
+ *
+ * This is the supplier's own per-warehouse figure (`verifiedWarehouse`), and it
+ * outranks the flat `stock` field: in the live catalogue 45 variants across 38
+ * merchandised products carry `stock: 0` next to a US warehouse record holding
+ * hundreds of units. Trusting the flat field there blocked checkout for
+ * products that are genuinely in stock.
+ */
+export function variantWarehouseStockOf(
+  variant: CatalogVariant | null | undefined,
+  countryCode = "US",
+): number | null {
+  if (!variant) return null;
+  const inventories = (variant as Record<string, unknown>).inventories;
+  if (!Array.isArray(inventories)) return null;
+  let best: number | null = null;
+  for (const entry of inventories) {
+    if (!entry || typeof entry !== "object") continue;
+    const rec = entry as Record<string, unknown>;
+    if (String(rec.countryCode ?? "").toUpperCase() !== countryCode.toUpperCase()) continue;
+    for (const key of ["totalInventory", "cjInventory", "inventoryNum", "storageNum"]) {
+      const n = Number(rec[key]);
+      if (Number.isFinite(n)) best = best === null ? n : Math.max(best, n);
+    }
+  }
+  return best;
+}
+
 /** Exact stock for a variant. `null` = supplier reports no per-variant stock. */
 export function variantStockOf(variant: CatalogVariant | null | undefined): number | null {
   if (!variant) return null;
+  // Per-warehouse inventory wins when the supplier provides it.
+  const warehouse = variantWarehouseStockOf(variant);
+  if (warehouse !== null) return warehouse;
   const v = variant as Record<string, unknown>;
   for (const key of ["variantStock", "stock", "quantity", "inventory"]) {
     const raw = v[key];
