@@ -2,6 +2,7 @@
 // Pulls last N hours from source tables, normalizes to canonical_events.
 // Idempotent via dedup_key UNIQUE.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { type Canon, semanticDedupKey } from "../_shared/canonicalDedup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
