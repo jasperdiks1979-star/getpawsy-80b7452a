@@ -85,18 +85,22 @@ const MyClaims = () => {
     enabled: !!user,
   });
 
+  // Ownership is enforced server-side by row-level security; the explicit
+  // email filter is defence in depth so a policy change can never widen this
+  // list beyond the signed-in customer's own claims.
   const { data: claims, isLoading } = useQuery({
-    queryKey: ["my-claims", user?.id],
+    queryKey: ["my-claims", user?.id, userProfile?.email],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("disputes")
         .select("*")
+        .eq("customer_email", userProfile!.email as string)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data as Dispute[];
     },
-    enabled: !!user,
+    enabled: !!user && !!userProfile?.email,
   });
 
   if (authLoading) {

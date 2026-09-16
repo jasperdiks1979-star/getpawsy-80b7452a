@@ -5,6 +5,13 @@ import { sendTikTokServerEvent } from "../_shared/tiktok-events-api.ts";
 import { runPostPaymentTracking, sendFailureAlert } from "../_shared/post-payment-tracking.ts";
 import { sendGa4PurchaseMp } from "../_shared/ga4-measurement-protocol.ts";
 import { getStripeKey } from "../_shared/stripe-key.ts";
+import {
+  classifyRefund,
+  deriveLegacyStatus,
+  refundStateAfter,
+  supplierCancellationFor,
+  type FulfillmentStatus,
+} from "../_shared/order-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -437,6 +444,38 @@ serve(async (req) => {
 
     console.log("[STRIPE-WEBHOOK] Event received:", event.type, event.id);
 
+    // ── J: exactly-once processing ───────────────────────────────────────────
+    // A Stripe event id may be delivered many times. The primary key on
+    // stripe_webhook_events makes the FIRST delivery the only one that runs any
+    // order mutation, order creation or supplier fulfillment.
+    {
+      const sessionId =
+        (event.data.object as { id?: string; object?: string })?.object === "checkout.session"
+          ? (event.data.object as { id?: string }).id ?? null
+          : null;
+      const { error: claimError } = await supabaseAdmin
+        .from("stripe_webhook_events")
+        .insert({
+          event_id: event.id,
+          event_type: event.type,
+          stripe_session_id: sessionId,
+          status: "processing",
+        });
+
+      if (claimError) {
+        // 23505 = duplicate key → already handled (or in flight). Ack, do nothing.
+        console.log(
+          "[STRIPE-WEBHOOK] Duplicate event ignored:",
+          event.id,
+          (claimError as { code?: string }).code ?? claimError.message,
+        );
+        return new Response(
+          JSON.stringify({ received: true, duplicate: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      }
+    }
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -526,6 +565,8 @@ serve(async (req) => {
             .from("orders")
             .update({
               status: "paid",
+              payment_status: "paid",
+              paid_at: new Date().toISOString(),
               stripe_payment_intent_id: session.payment_intent as string,
               shipping_address: session.shipping_details,
               payment_method: paymentMethod,
@@ -557,6 +598,8 @@ serve(async (req) => {
               stripe_session_id: session.id,
               stripe_payment_intent_id: session.payment_intent as string,
               status: "paid",
+              payment_status: "paid",
+              paid_at: new Date().toISOString(),
               total_amount: totalValue,
               currency: session.currency || "usd",
               customer_email: customerEmail,
@@ -758,7 +801,7 @@ serve(async (req) => {
 
         const { error } = await supabaseAdmin
           .from("orders")
-          .update({ status: "expired" })
+          .update({ status: "expired", payment_status: "expired" })
           .eq("stripe_session_id", session.id);
 
         if (error) {
@@ -774,7 +817,7 @@ serve(async (req) => {
         // Update order status if we have the payment intent
         const { error } = await supabaseAdmin
           .from("orders")
-          .update({ status: "paid" })
+          .update({ status: "paid", payment_status: "paid", paid_at: new Date().toISOString() })
           .eq("stripe_payment_intent_id", paymentIntent.id);
 
         if (error) {
@@ -789,7 +832,7 @@ serve(async (req) => {
 
         const { error } = await supabaseAdmin
           .from("orders")
-          .update({ status: "failed" })
+          .update({ status: "failed", payment_status: "failed" })
           .eq("stripe_payment_intent_id", paymentIntent.id);
 
         if (error) {
@@ -803,13 +846,72 @@ serve(async (req) => {
         console.log("[STRIPE-WEBHOOK] Charge refunded:", charge.id);
 
         if (charge.payment_intent) {
-          const { error } = await supabaseAdmin
+          const pi = charge.payment_intent as string;
+          const { data: refundedOrder } = await supabaseAdmin
             .from("orders")
-            .update({ status: "refunded" })
-            .eq("stripe_payment_intent_id", charge.payment_intent as string);
+            .select("id, total_amount, cj_order_id, fulfillment_status")
+            .eq("stripe_payment_intent_id", pi)
+            .maybeSingle();
 
-          if (error) {
-            console.error("[STRIPE-WEBHOOK] Error updating refunded order:", error);
+          const refundedCents = Number(charge.amount_refunded ?? 0);
+          const totalCents = refundedOrder
+            ? Math.round(Number(refundedOrder.total_amount ?? 0) * 100)
+            : Number(charge.amount ?? 0);
+          const refundState = refundStateAfter({
+            previous: "none",
+            succeeded: true,
+            refundedTotalCents: refundedCents,
+            orderTotalCents: totalCents,
+          });
+
+          if (refundedOrder) {
+            // Ledger first — one row per Stripe refund id, idempotent.
+            for (const r of charge.refunds?.data ?? []) {
+              const { error: ledgerError } = await supabaseAdmin
+                .from("order_refunds")
+                .upsert(
+                  {
+                    order_id: refundedOrder.id,
+                    stripe_refund_id: r.id,
+                    stripe_payment_intent_id: pi,
+                    amount_cents: Number(r.amount ?? 0),
+                    currency: r.currency ?? charge.currency ?? "usd",
+                    kind: classifyRefund(refundedCents, totalCents),
+                    state: r.status === "succeeded" ? "succeeded" : (r.status ?? "pending"),
+                    reason: r.reason ?? null,
+                    external_confirmed_at:
+                      r.status === "succeeded" ? new Date().toISOString() : null,
+                    supplier_cancellation_state: supplierCancellationFor({
+                      paymentStatus: "paid",
+                      fulfillmentStatus: (refundedOrder.fulfillment_status ??
+                        "unfulfilled") as FulfillmentStatus,
+                      refundState: "none",
+                      cjOrderId: refundedOrder.cj_order_id,
+                      totalCents,
+                      refundedAmountCents: 0,
+                    }),
+                  },
+                  { onConflict: "stripe_refund_id" },
+                );
+              if (ledgerError) {
+                console.error("[STRIPE-WEBHOOK] Refund ledger write failed:", ledgerError.message);
+              }
+            }
+
+            const { error } = await supabaseAdmin
+              .from("orders")
+              .update({
+                status: deriveLegacyStatus({ paymentStatus: "paid", refundState }),
+                refund_state: refundState,
+                refunded_amount_cents: refundedCents,
+              })
+              .eq("id", refundedOrder.id);
+
+            if (error) {
+              console.error("[STRIPE-WEBHOOK] Error updating refunded order:", error);
+            }
+          } else {
+            console.warn("[STRIPE-WEBHOOK] Refund for unknown payment intent:", pi);
           }
         }
         break;
@@ -819,7 +921,11 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log("[STRIPE-WEBHOOK] Async payment succeeded:", session.id);
         const pi = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
-        const patch: Record<string, unknown> = { status: "paid" };
+        const patch: Record<string, unknown> = {
+          status: "paid",
+          payment_status: "paid",
+          paid_at: new Date().toISOString(),
+        };
         if (pi) patch.stripe_payment_intent_id = pi;
         const { error } = await supabaseAdmin
           .from("orders")
@@ -835,7 +941,7 @@ serve(async (req) => {
         console.log("[STRIPE-WEBHOOK] Async payment failed:", session.id);
         const { error } = await supabaseAdmin
           .from("orders")
-          .update({ status: "failed" })
+          .update({ status: "failed", payment_status: "failed" })
           .eq("stripe_session_id", session.id)
           .neq("status", "paid");
         if (error) console.error("[STRIPE-WEBHOOK] async_payment_failed update error:", error);
@@ -855,6 +961,11 @@ serve(async (req) => {
       default:
         console.log("[STRIPE-WEBHOOK] Unhandled event type:", event.type);
     }
+
+    await supabaseAdmin
+      .from("stripe_webhook_events")
+      .update({ status: "processed", processed_at: new Date().toISOString() })
+      .eq("event_id", event.id);
 
     return new Response(
       JSON.stringify({ received: true }),

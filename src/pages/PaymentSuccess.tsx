@@ -20,6 +20,10 @@ import { ReferralShareWidget } from '@/components/referral/ReferralShareWidget';
 import { PostPurchaseOffer } from '@/components/cart/PostPurchaseOffer';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { SoftEmailCapture } from '@/components/email/SoftEmailCapture';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
+
+type VerifyState = 'checking' | 'confirmed' | 'pending' | 'unconfirmed';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -31,6 +35,32 @@ const PaymentSuccess = () => {
   const lpFiredRef = useRef(false);
   const premiumThankYou = getConversionFlag('premiumThankYou');
   const premiumPostPurchase = getConversionFlag('premiumPostPurchase');
+  // J: the `session_id` query parameter is NOT proof of payment. Nothing on
+  // this page claims success until the server has verified the session with
+  // Stripe and the order row agrees.
+  const [verifyState, setVerifyState] = useState<VerifyState>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!sessionId) return;
+    setVerifyState('checking');
+    supabase.functions
+      .invoke('verify-payment-session', { body: { sessionId } })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.ok) {
+          setVerifyState('unconfirmed');
+          return;
+        }
+        setVerifyState(data.confirmed ? 'confirmed' : 'pending');
+      })
+      .catch(() => {
+        if (!cancelled) setVerifyState('unconfirmed');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   // Mark a recent successful purchase so the homepage can show a quiet
   // returning-visitor welcome strip for ~30 days. Storage only — no PII.
@@ -52,6 +82,8 @@ const PaymentSuccess = () => {
   useEffect(() => {
     if (lpFiredRef.current) return;
     if (!sessionId) return;
+    // Purchase analytics only fire on a server-verified payment.
+    if (verifyState !== 'confirmed') return;
     // Cross-mount idempotency: refresh / back-button must not re-fire
     // payment_success or the canonical purchase mirror for the same
     // Stripe session. Keyed by session_id so distinct orders still fire.
@@ -146,10 +178,12 @@ const PaymentSuccess = () => {
     } catch {
       /* analytics never breaks UX */
     }
-  }, [sessionId, totalPrice, items]);
+  }, [sessionId, totalPrice, items, verifyState]);
 
   useEffect(() => {
-    // Track purchase conversion and clear cart only once
+    // Track purchase conversion and clear cart only once, and only after the
+    // server confirmed the payment.
+    if (verifyState !== 'confirmed') return;
     if (!tracked && sessionId && items.length > 0) {
       // Cross-mount idempotency for GA4 / Google Ads / Pinterest / TikTok
       // purchase conversion. Without this, a refresh on /payment-success
@@ -269,7 +303,60 @@ const PaymentSuccess = () => {
       trackGoogleAdsPageView('purchase');
       setTracked(true);
     }
-  }, [sessionId, items, totalPrice, clearCart, tracked]);
+  }, [sessionId, items, totalPrice, clearCart, tracked, verifyState]);
+
+  if (sessionId && verifyState === 'checking') {
+    return (
+      <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
+        <div className="container px-4 md:px-6 py-16 text-center">
+          <Loader2 className="w-8 h-8 mx-auto mb-6 animate-spin text-muted-foreground" />
+          <h1 className="text-2xl font-bold mb-3">Confirming your payment…</h1>
+          <p className="text-muted-foreground">
+            This only takes a moment. Please don't close this page.
+          </p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (sessionId && verifyState === 'pending') {
+    return (
+      <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
+        <div className="container px-4 md:px-6 py-16 text-center max-w-xl mx-auto">
+          <h1 className="text-2xl font-bold mb-3">Payment processing</h1>
+          <p className="text-muted-foreground mb-8">
+            Your payment hasn't been confirmed yet. Some payment methods take a
+            little longer. We'll email you as soon as it clears — you don't need
+            to pay again.
+          </p>
+          <Link to="/track-order">
+            <Button variant="outline">Track your order</Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (sessionId && verifyState === 'unconfirmed') {
+    return (
+      <Layout>
+        <Helmet><meta name="robots" content="noindex, nofollow" /></Helmet>
+        <div className="container px-4 md:px-6 py-16 text-center max-w-xl mx-auto">
+          <h1 className="text-2xl font-bold mb-3">We couldn't confirm your payment</h1>
+          <p className="text-muted-foreground mb-8">
+            Nothing is lost — if your payment went through you'll receive a
+            confirmation email. Please don't pay twice; contact us and we'll
+            check it for you.
+          </p>
+          <Link to="/contact">
+            <Button>Contact support</Button>
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!sessionId) {
     return (

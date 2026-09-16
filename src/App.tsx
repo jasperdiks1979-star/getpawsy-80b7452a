@@ -267,6 +267,7 @@ const Shipping = lazyWithRetry(() => import("./pages/Shipping"));
 const FAQ = lazyWithRetry(() => import("./pages/FAQ"));
 const HelpCenter = lazyWithRetry(() => import("./pages/HelpCenter"));
 const TrackOrder = lazyWithRetry(() => import("./pages/TrackOrder"));
+const MyClaims = lazyWithRetry(() => import("./pages/MyClaims"));
 const BestsellerDetail = lazyWithRetry(() => import("./pages/BestsellerDetail"));
 const Bestsellers = lazyWithRetry(() => import("./pages/Bestsellers"));
 const LiveMap = lazyWithRetry(() => import("./pages/LiveMap"));
@@ -1193,6 +1194,22 @@ const App = () => {
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <TrackOrder />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="/track-order"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <TrackOrder />
+                              </Suspense>
+                            }
+                          />
+                          <Route
+                            path="/my-claims"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <MyClaims />
                               </Suspense>
                             }
                           />
