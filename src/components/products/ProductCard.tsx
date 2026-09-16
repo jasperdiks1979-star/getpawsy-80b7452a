@@ -124,18 +124,26 @@ export const ProductCard = memo(
         return;
       }
 
+      // Quick add may only build an EXACT cart line. A product with more than
+      // one purchasable option goes to the PDP chooser instead of silently
+      // defaulting to the first variant (which the server rejects at checkout).
+      const plan = quickAdd(
+        {
+          id: product.id,
+          slug: product.slug ?? undefined,
+          name: displayName(product),
+          price: cardPrice,
+          image_url: product.image_url,
+          category: product.category ?? undefined,
+          variants: product.variants ?? [],
+        },
+        { displayPrice: cardPrice },
+      );
+      if (plan.kind !== "add") return;
+
       hapticSuccess();
       triggerConfetti(e.currentTarget as HTMLElement);
       triggerAddToCart(product.image_url || "/placeholder.svg", e.currentTarget as HTMLElement);
-
-      addItem({
-        id: product.id,
-        slug: product.slug ?? undefined,
-        name: displayName(product),
-        price: cardPrice,
-        image: product.image_url || "/placeholder.svg",
-      });
-      toast.success("Added to cart");
     };
 
     const handleToggleWishlist = (e: React.MouseEvent) => {
