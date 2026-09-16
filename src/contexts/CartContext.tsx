@@ -62,15 +62,8 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Get or create a persistent session ID for abandoned cart tracking
-const getCartSessionId = (): string => {
-  let sessionId = localStorage.getItem('pawsy-cart-session-id');
-  if (!sessionId) {
-    sessionId = `cart-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-    localStorage.setItem('pawsy-cart-session-id', sessionId);
-  }
-  return sessionId;
-};
+// Cart identity is owned by src/lib/cartSession.ts — the SAME id is used for
+// abandoned-cart rows and for `cart_id` on checkout funnel events.
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
