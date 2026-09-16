@@ -78,11 +78,12 @@ const Bestsellers = () => {
         'our_picks',
         'Our picks',
         products.slice(0, 20).map((p, index) => ({
-          item_id: p.id,
-          item_name: p.name,
+          id: p.id,
+          name: p.name,
           price: p.price,
-          index,
+          position: index + 1,
         })),
+
       );
     }
   }, [products]);
