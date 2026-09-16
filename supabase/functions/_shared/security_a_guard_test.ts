@@ -50,8 +50,13 @@ function installFetchStub(calls: Call[], opts: { admin: boolean }) {
   };
 }
 
+// Modules are only evaluated once per process, so cache the captured handler.
+const handlerCache = new Map<string, (req: Request) => Promise<Response>>();
+
 /** Import an edge function module and capture the handler it registers. */
 async function loadHandler(path: string): Promise<(req: Request) => Promise<Response>> {
+  const cached = handlerCache.get(path);
+  if (cached) return cached;
   let captured: ((req: Request) => Promise<Response>) | null = null;
   const originalServe = Deno.serve;
   // deno-lint-ignore no-explicit-any
@@ -66,6 +71,7 @@ async function loadHandler(path: string): Promise<(req: Request) => Promise<Resp
     (Deno as any).serve = originalServe;
   }
   assert(captured, `no handler registered by ${path}`);
+  handlerCache.set(path, captured!);
   return captured!;
 }
 
@@ -80,7 +86,7 @@ const GUARDED = [
 const EXTERNAL_HOSTS = ["cjdropshipping.com", "api.stripe.com"];
 
 for (const fn of GUARDED) {
-  Deno.test(`${fn.name}: unauthenticated request is rejected with 401`, async () => {
+  Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: unauthenticated request is rejected with 401`, fn: async () => {
     const calls: Call[] = [];
     const restore = installFetchStub(calls, { admin: false });
     try {
@@ -98,7 +104,7 @@ for (const fn of GUARDED) {
     }
   });
 
-  Deno.test(`${fn.name}: signed-in non-admin is rejected with 403`, async () => {
+  Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: signed-in non-admin is rejected with 403`, fn: async () => {
     const calls: Call[] = [];
     const restore = installFetchStub(calls, { admin: false });
     try {
@@ -115,7 +121,7 @@ for (const fn of GUARDED) {
     }
   });
 
-  Deno.test(`${fn.name}: wrong internal secret does not authorize`, async () => {
+  Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: wrong internal secret does not authorize`, fn: async () => {
     const calls: Call[] = [];
     const restore = installFetchStub(calls, { admin: false });
     try {
@@ -132,7 +138,7 @@ for (const fn of GUARDED) {
     }
   });
 
-  Deno.test(`${fn.name}: correct internal secret is accepted`, async () => {
+  Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: correct internal secret is accepted`, fn: async () => {
     const calls: Call[] = [];
     const restore = installFetchStub(calls, { admin: true });
     try {
@@ -149,7 +155,7 @@ for (const fn of GUARDED) {
     }
   });
 
-  Deno.test(`${fn.name}: admin JWT is accepted`, async () => {
+  Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: admin JWT is accepted`, fn: async () => {
     const calls: Call[] = [];
     const restore = installFetchStub(calls, { admin: true });
     try {
