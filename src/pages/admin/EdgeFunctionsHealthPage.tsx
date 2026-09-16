@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { TruthLabel } from '@/components/admin/TruthLabel';
 
 /**
  * Edge Functions Health
@@ -54,7 +55,7 @@ function StatusBadge({ status, bootError }: { status: ProbeStatus; bootError: bo
   if (status === 'success') {
     return (
       <Badge variant="outline" className="gap-1 bg-green-500/15 text-green-600 border-green-500/30">
-        <CheckCircle2 className="w-3 h-3" /> Success
+        <CheckCircle2 className="w-3 h-3" /> Boots OK
       </Badge>
     );
   }
@@ -117,10 +118,12 @@ export default function EdgeFunctionsHealthPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Edge Functions Health</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
-            Boot-pings every deployed edge function and reports TypeScript runtime status.
-            A function returning a boot error means it failed to import (syntax, type, or
-            missing dependency) and is currently unreachable.
+            Boot-pings every deployed edge function with an OPTIONS request and reports whether
+            the module imports. “Boots OK” means the function loads and answers a preflight — it
+            does <strong>not</strong> mean the function behaves correctly end to end, and it does not
+            exercise secrets, database access or business logic.
           </p>
+          <TruthLabel truth="diagnostic" className="mt-2" showDescription />
         </div>
         <Button onClick={runCheck} disabled={running} size="lg" className="shrink-0">
           {running ? (

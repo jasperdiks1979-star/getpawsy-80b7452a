@@ -59,8 +59,6 @@ const LazyAdminShell = lazy(() =>
 // Defer non-critical initializers — don't block first paint
 const setupGlobalErrorHandler = () => import("@/lib/error-reporter").then((m) => m.setupGlobalErrorHandler());
 const initDataHealer = () => import("@/lib/data-healer").then((m) => m.initDataHealer());
-const initLegacyLinkGuard = () => import("@/lib/legacy-link-guard").then((m) => m.initLegacyLinkGuard());
-const initLegacyFetchGuard = () => import("@/lib/legacy-link-guard").then((m) => m.initLegacyFetchGuard());
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 import { AdminOnly } from "@/components/auth/AdminOnly";
 
@@ -75,8 +73,6 @@ if (typeof window !== "undefined") {
   requestAnimationFrame(() => {
     setupGlobalErrorHandler().catch(() => {});
     initDataHealer().catch(() => {});
-    initLegacyLinkGuard().catch(() => {});
-    initLegacyFetchGuard().catch(() => {});
     import("@/lib/founder-mode").then((m) => m.consumeFounderKeyFromUrl()).catch(() => {});
     import("@/lib/traffic").then((m) => m.consumeInternalParamFromUrl()).catch(() => {});
     import("@/lib/analytics").then((m) => m.initAnalyticsUserProperties()).catch(() => {});
@@ -1314,6 +1310,7 @@ const App = () => {
                             element={<LpRedirect />}
                           />
                           <Route
+                            path="/why-trust-our-reviews"
                             element={
                               <Suspense fallback={<RouteLoader />}>
                                 <WhyTrustOurReviews />
@@ -1572,9 +1569,11 @@ const App = () => {
                           <Route
                             path="/__ops/growth-verification"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <GrowthVerification />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GrowthVerification />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
 
@@ -1594,9 +1593,11 @@ const App = () => {
                           <Route
                             path="/merchant-fix-checklist"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <MerchantFixChecklist />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MerchantFixChecklist />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
 
@@ -3049,7 +3050,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="market-intelligence"
+                              path="market-intelligence-suite"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <MarketIntelligencePage />
@@ -3425,7 +3426,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="product-intelligence"
+                              path="product-intelligence-suite"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <ProductIntelligencePage />
@@ -3497,7 +3498,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="pinterest-recovery"
+                              path="pinterest-recovery-dashboard"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestRecoveryDashboard />
@@ -4284,7 +4285,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="pinterest-intelligence"
+                              path="pinterest-intelligence-legacy"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestIntelligence />
@@ -4384,14 +4385,6 @@ const App = () => {
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestBackdropPreviewPage />
-                                </Suspense>
-                              }
-                            />
-                            <Route
-                              path="pcie2-wave-analytics"
-                              element={
-                                <Suspense fallback={<RouteLoader />}>
-                                  <PcieWaveAnalyticsPage />
                                 </Suspense>
                               }
                             />
@@ -4516,7 +4509,7 @@ const App = () => {
                               }
                             />
                             <Route
-                              path="pinterest-cleanup"
+                              path="pinterest-cleanup-legacy"
                               element={
                                 <Suspense fallback={<RouteLoader />}>
                                   <PinterestCleanup />
