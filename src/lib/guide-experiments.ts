@@ -52,7 +52,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Cat Litter Box (2026) – 12 Tested Picks for Odor Control, Large & Multi-Cat Homes',
-      metaDescription: 'we compared the best cat litter boxes of 2026 for odor control, large breeds, and multi-cat homes. Compare features, pros & cons, and find your perfect fit in minutes.',
+      metaDescription: 'this guide compares the best cat litter boxes of 2026 for odor control, large breeds, and multi-cat homes. Compare features, pros & cons, and find your perfect fit in minutes.',
     },
     variantB: {
       id: 'B',
@@ -94,7 +94,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Cat Litter Box Furniture & Enclosures (2026) – Reviewed & Tested for Every Home',
-      metaDescription: 'We reviewed the best litter box furniture and enclosures for 2026. Hidden designs, real owner feedback, and picks for small apartments to large homes.',
+      metaDescription: 'This guide reviews the best litter box furniture and enclosures for 2026. Hidden designs, real owner feedback, and picks for small apartments to large homes.',
     },
     variantB: {
       id: 'B',
@@ -115,7 +115,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Litter Boxes for Multiple Cats (2026) – Tested Picks With Pros & Cons',
-      metaDescription: 'Own 2+ cats? We compared the best litter boxes for multi-cat households. Compare size, odor control & durability. Real owner picks with pros & cons.',
+      metaDescription: 'Own 2+ cats? This guide compares the best litter boxes for multi-cat households. Compare size, odor control & durability. Real owner picks with pros & cons.',
     },
     variantB: {
       id: 'B',
@@ -136,7 +136,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Extra Large Litter Boxes for Big Cats (2026) – Tested for Maine Coons & Large Breeds',
-      metaDescription: 'Need a bigger litter box? We compared extra-large options for Maine Coons and large breeds. Compare dimensions, materials & real owner feedback.',
+      metaDescription: 'Need a bigger litter box? This guide compares extra-large options for Maine Coons and large breeds. Compare dimensions, materials & real owner feedback.',
     },
     variantB: {
       id: 'B',
@@ -157,7 +157,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Cat Trees for Small Apartments (2026) – Space-Saving Picks, Tested & Reviewed',
-      metaDescription: 'Living small? We compared the best cat trees for apartments and small spaces. Compact, stylish picks with real owner reviews and space-saving tips.',
+      metaDescription: 'Living small? This guide compares the best cat trees for apartments and small spaces. Compact, stylish picks with real owner reviews and space-saving tips.',
     },
     variantB: {
       id: 'B',

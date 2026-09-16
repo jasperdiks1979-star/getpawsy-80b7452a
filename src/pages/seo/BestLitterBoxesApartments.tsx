@@ -8,7 +8,7 @@ export default function BestLitterBoxesApartments() {
       metaDescription="Top-rated compact litter boxes for apartments & studios. Space-saving designs, odor control solutions, and furniture-style enclosures. our picks."
       h1="Best Litter Boxes for Apartments — 2026 our picks"
       subtitle="Space-saving litter boxes designed for apartments and studios — compact designs, superior odor control, and furniture-style options that guests won't even notice."
-      introText="In a house, you can hide the litter box in a basement or utility room. In an apartment, it's often in the bathroom, closet, or — worst case — the living room. This changes your priorities: you need maximum odor control, minimal tracking, compact design, and quiet operation. We compared the top apartment-friendly litter boxes on published specifications to find the ones that actually work in small spaces."
+      introText="In a house, you can hide the litter box in a basement or utility room. In an apartment, it's often in the bathroom, closet, or — worst case — the living room. This changes your priorities: you need maximum odor control, minimal tracking, compact design, and quiet operation. This guide compares the top apartment-friendly litter boxes on their published specifications."
       parentPage={{ title: 'Best Cat Litter Box 2026', href: '/best-cat-litter-box-2026' }}
       lastUpdated="2026-03-18"
       picks={[
