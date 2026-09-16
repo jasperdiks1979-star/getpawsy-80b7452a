@@ -1,7 +1,7 @@
 # GetPawsy autonomous execution ledger
 
 Machine-readable resumption record. Source of truth for "what is still open".
-Last verified: 2026-09-16 18:55 UTC.
+Last verified: 2026-09-16 21:02 UTC.
 
 Global verification at last run: `vitest` 1072 passed / 1 skipped / 0 failed,
 `tsgo --noEmit` clean, build OK, production smoke `/ /shop /bundles /cart
@@ -117,10 +117,11 @@ SECURITY B: **COMPLETE**. NEXT_OPEN_PHASE: none internally actionable — remain
 
 | item | status | evidence |
 |---|---|---|
-| Raw HTML and pre-hydration shell | IN PROGRESS | `index.html` now uses the cat litter-box imagery and cat-first copy; stale bestseller, broad-pet and 3–7-day delivery claims removed |
-| No-JavaScript fallback | IN PROGRESS | Skidzo/GetPawsy identity preserved; shipping timing is checkout-confirmed; $35 free-shipping threshold and 30-day returns retained |
-| Hydrated homepage | IN PROGRESS | `V2HomePage.tsx` queries the exact five documented hero IDs in source order, removes dog/bestseller primary merchandising, and links validated Sets |
-| Successful boot recovery cleanup | IN PROGRESS | `src/main.tsx` removes both recovery elements immediately after a healthy mount |
-| Regression coverage | IN PROGRESS | `src/test/homepage-delivery-consistency.test.ts` locks stale phrases/assets, exact hero identity, shipping fallback wording and recovery cleanup |
+| Raw HTML and pre-hydration shell | COMPLETE | `index.html` uses cat litter-box imagery and cat-first copy; stale bestseller, broad-pet and 3–7-day delivery claims removed |
+| No-JavaScript fallback | COMPLETE | Skidzo/GetPawsy identity preserved; shipping timing is checkout-confirmed; $35 free-shipping threshold and 30-day returns retained |
+| Hydrated homepage | COMPLETE | `V2HomePage.tsx` queries the exact five documented hero IDs in source order, removes dog/bestseller primary merchandising, and links validated Sets; legacy `HomePage.tsx` now aliases this sole implementation |
+| Successful boot recovery cleanup | COMPLETE | `src/main.tsx` removes both recovery elements immediately after a healthy mount; desktop/mobile browser checks found zero recovery banners |
+| Public guide claim path | COMPLETE | historical unsupported comparison configuration is fail-closed by `getDominationConfig`; collection and schema consumers receive no legacy claim payload |
+| Regression coverage | COMPLETE | `homepage-delivery-consistency`, Phase 10/12, and Security B focused tests: 48 passed; full suite: 1120 passed / 1 skipped; `tsgo --noEmit` clean; build OK |
 
-Verification and production readback pending. Security B and all checkout/payment/order/refund/admin controls unchanged.
+Local desktop/mobile readback: five documented product slugs visible, cat-first H1 present, no stale copy, no recovery warning, and no horizontal overflow. Final production readback follows deployment. Security B and all checkout/payment/order/refund/admin controls unchanged.
