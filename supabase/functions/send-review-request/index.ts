@@ -7,6 +7,25 @@ const corsHeaders = {
 };
 
 /**
+ * Store-owner addresses used for live payment smoke tests. Mirrors
+ * INTERNAL_ORDER_EMAILS in src/components/admin/CommercialKpiCard.tsx.
+ */
+const INTERNAL_ORDER_EMAILS = [
+  "jasperdiks@hotmail.com",
+  "jasperdiks1979@gmail.com",
+];
+/** Live smoke tests are charged at token amounts; treat them as internal too. */
+const SMOKE_TEST_MAX_AMOUNT = 2;
+
+function isInternalOrder(row: { customer_email: string | null; total_amount?: number | string | null }): boolean {
+  const email = (row.customer_email || "").trim().toLowerCase();
+  if (INTERNAL_ORDER_EMAILS.includes(email)) return true;
+  const amount = Number(row.total_amount || 0);
+  return amount > 0 && amount <= SMOKE_TEST_MAX_AMOUNT;
+}
+
+
+/**
  * Cron-triggered: finds delivered orders from ~7 days ago without a review request,
  * creates the request row, and sends a friendly review email.
  * Trust-first: no urgency, no fake incentives.
@@ -40,7 +59,7 @@ serve(async (req) => {
 
     const { data: orders, error: fetchError } = await supabase
       .from("orders")
-      .select("id, customer_email, items, shipping_address, created_at")
+      .select("id, customer_email, items, shipping_address, created_at, total_amount")
       // Delivered only. A shipped order has not demonstrably arrived, and the
       // email says "since your order arrived" — that must be true when sent.
       .eq("status", "delivered")
@@ -56,6 +75,13 @@ serve(async (req) => {
     const results: { email: string; success: boolean }[] = [];
 
     for (const order of orders || []) {
+      // Owner / smoke-test orders are real Stripe charges but not customers.
+      // Same rule as the commercial KPI card — they must never be mailed.
+      if (isInternalOrder(order)) {
+        console.log(`[REVIEW-REQUEST] skipped internal/owner order ${order.id}`);
+        continue;
+      }
+
       // Check if already requested
       const { data: existing } = await supabase
         .from("review_requests")
