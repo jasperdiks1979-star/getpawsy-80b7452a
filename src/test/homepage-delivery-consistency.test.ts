@@ -6,6 +6,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8'
 const html = read('index.html');
 const home = read('src/components/v2/storefront/V2HomePage.tsx');
 const main = read('src/main.tsx');
+const nav = read('src/components/v2/storefront/nav-config.ts');
 
 const HERO_IDS = [
   '2022147992715550722',
@@ -17,7 +18,7 @@ const HERO_IDS = [
 
 describe('homepage delivery consistency', () => {
   it('keeps stale generic merchandising out of raw and hydrated homepages', () => {
-    const renderedSources = `${html}\n${home}`;
+    const renderedSources = `${html}\n${home}\n${nav}`;
     for (const phrase of [
       'Shop Bestsellers',
       'Best sellers',
@@ -25,9 +26,16 @@ describe('homepage delivery consistency', () => {
       'most-loved',
       'PREMIUM PET PRODUCTS',
       'Premium Pet Comfort',
+      'Most popular right now',
     ]) {
       expect(renderedSources).not.toContain(phrase);
     }
+  });
+
+  it('keeps dog and ranking links out of primary storefront navigation', () => {
+    expect(nav).not.toContain("href: '/collections/dog'");
+    expect(nav).not.toContain("href: '/bestsellers'");
+    expect(nav).toContain("href: '/bundles'");
   });
 
   it('never uses the dog-training campaign artwork as homepage imagery', () => {

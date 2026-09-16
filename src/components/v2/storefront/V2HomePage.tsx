@@ -7,10 +7,7 @@ import { V2Layout } from './V2Layout';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
 import {
   FREE_SHIPPING_THRESHOLD,
-  DELIVERY_TIME_STANDARD,
   RETURN_WINDOW_DAYS,
-  SUPPORT_EMAIL,
-  RESPONSE_TIME,
 } from '@/lib/shipping-constants';
 const heroDesktop = '/hero/cat-litter-box-hero.webp';
 const heroMobile = '/hero/cat-litter-box-hero-mobile.webp';
@@ -25,8 +22,8 @@ const HERO_PRODUCT_IDS = [
 
 const CATEGORIES = [
   { href: '/collections/cat-litter-boxes', title: 'Litter boxes', copy: 'Options for cleaner indoor spaces', image: '/categories/litter-boxes.jpg' },
-  { href: '/collections/cat-trees', title: 'Cat trees', copy: 'Climbing, resting and scratching spaces', image: '/categories/cat-trees.jpg' },
-  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'Play and enrichment for indoor cats', image: '/categories/toys.jpg' },
+  { href: '/collections/cat-trees-and-condos', title: 'Cat trees', copy: 'Climbing, resting and scratching spaces', image: '/categories/cat-trees.jpg' },
+  { href: '/collections/cats', title: 'Cat toys', copy: 'Play and enrichment for indoor cats', image: '/categories/toys.jpg' },
 ];
 
 const REASSURANCE = [
