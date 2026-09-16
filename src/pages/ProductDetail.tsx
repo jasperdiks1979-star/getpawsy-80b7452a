@@ -22,10 +22,7 @@ import {
   Star,
   Clock,
   MessageSquare,
-  Ruler,
-  Weight,
   Box,
-  Info,
   Home,
   CheckCircle,
 } from "lucide-react";
@@ -144,6 +141,7 @@ import {
   getTierDiscountPercent,
 } from "@/lib/shipping-constants";
 import { getDeliveryTruth, hasProvenUsOrigin } from "@/lib/delivery-truth";
+import { VerifiedSpecs } from "@/components/product/VerifiedSpecs";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
   Breadcrumb,
