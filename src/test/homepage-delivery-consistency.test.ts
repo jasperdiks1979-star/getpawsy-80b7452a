@@ -7,6 +7,7 @@ const html = read('index.html');
 const home = read('src/components/v2/storefront/V2HomePage.tsx');
 const main = read('src/main.tsx');
 const nav = read('src/components/v2/storefront/nav-config.ts');
+const compatibilityHome = read('src/components/home/HomePage.tsx');
 
 const HERO_IDS = [
   'e265e7fe-af60-4efc-b927-5c4f79fc1bf0',
@@ -36,6 +37,11 @@ describe('homepage delivery consistency', () => {
     expect(nav).not.toContain("href: '/collections/dog'");
     expect(nav).not.toContain("href: '/bestsellers'");
     expect(nav).toContain("href: '/bundles'");
+  });
+
+  it('routes the legacy homepage import to the same canonical implementation', () => {
+    expect(compatibilityHome).toContain("export { V2HomePage as default } from '@/components/v2/storefront/V2HomePage'");
+    expect(compatibilityHome).not.toMatch(/bestsellers|SocialProofSection|ProductRail/i);
   });
 
   it('never uses the dog-training campaign artwork as homepage imagery', () => {
