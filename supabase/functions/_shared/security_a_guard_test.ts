@@ -102,7 +102,7 @@ for (const fn of GUARDED) {
     } finally {
       restore();
     }
-  });
+  } });
 
   Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: signed-in non-admin is rejected with 403`, fn: async () => {
     const calls: Call[] = [];
@@ -119,7 +119,7 @@ for (const fn of GUARDED) {
     } finally {
       restore();
     }
-  });
+  } });
 
   Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: wrong internal secret does not authorize`, fn: async () => {
     const calls: Call[] = [];
@@ -136,7 +136,7 @@ for (const fn of GUARDED) {
     } finally {
       restore();
     }
-  });
+  } });
 
   Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: correct internal secret is accepted`, fn: async () => {
     const calls: Call[] = [];
@@ -153,7 +153,7 @@ for (const fn of GUARDED) {
     } finally {
       restore();
     }
-  });
+  } });
 
   Deno.test({ sanitizeOps: false, sanitizeResources: false, name: `${fn.name}: admin JWT is accepted`, fn: async () => {
     const calls: Call[] = [];
@@ -170,5 +170,5 @@ for (const fn of GUARDED) {
     } finally {
       restore();
     }
-  });
+  } });
 }
