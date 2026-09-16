@@ -15,6 +15,12 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
+import { getCartSessionId, clearCartSessionId } from '@/lib/cartSession';
+import {
+  syncAbandonedCart as syncAbandonedCartRow,
+  forgetAbandonedCartRow,
+  type AbandonedCartStore,
+} from '@/lib/abandonedCartSync';
 // ⚡ CRITICAL FIX: sonner, marketingClient, and useVisitorTracking were sync-imported,
 // pulling ~160KB (sonner + supabase SDK via trackVisitorEvent) into the main bundle.
 // Now all three are lazily imported — only loaded when actually called.
