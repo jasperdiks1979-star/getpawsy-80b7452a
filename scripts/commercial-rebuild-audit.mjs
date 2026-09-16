@@ -162,7 +162,11 @@ function score(p) {
   if (!p.image_url || imgs === 0) gates.push('MISSING_IMAGERY');
   if (p.inventory_manual_block) gates.push('INVENTORY_BLOCKED');
 
-  const blocking = gates.filter((g) => !g.startsWith('ADMIN_REVIEW') && g !== 'MARGIN_UNKNOWN');
+  // UNUSABLE_SHIPPING_PROMISE fires on 100% of the catalog (shipping_days_* is
+  // unpopulated everywhere) — it is a systemic data gap, not a per-product defect,
+  // so it is recorded but excluded from the per-product blocking count.
+  const SYSTEMIC = new Set(['UNUSABLE_SHIPPING_PROMISE', 'MARGIN_UNKNOWN']);
+  const blocking = gates.filter((g) => !g.startsWith('ADMIN_REVIEW') && !SYSTEMIC.has(g));
 
   // Preliminary role (no catalog mutation)
   const cat = txt(p.primary_species).toLowerCase();
