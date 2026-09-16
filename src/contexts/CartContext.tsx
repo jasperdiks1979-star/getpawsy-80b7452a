@@ -484,8 +484,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('Error marking cart as recovered:', error);
       }
-      // Generate new session ID for future carts
-      localStorage.removeItem('pawsy-cart-session-id');
+      // Start a fresh cart identity for future carts (row history is kept).
+      forgetAbandonedCartRow(sessionId);
+      clearCartSessionId();
     }
     setItems([]);
   }, [items.length]);
