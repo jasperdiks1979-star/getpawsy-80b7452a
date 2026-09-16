@@ -192,6 +192,7 @@ CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 const Checkout = () => {
   const { items, totalPrice, setAbandonedCartEmail } = useCart();
   const { issues: variantIssues } = useCartVariantIssues(items);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
