@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import {
+  EXCEPTION_CODES,
+  parseCartLineId,
+  resolveExactVariant,
+} from "../_shared/order-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +80,10 @@ interface OrderItem {
   price: number;
   quantity: number;
   variant?: string;
+  /** K: exact supplier identity carried from the cart line. */
+  product_id?: string;
+  cj_variant_id?: string;
+  sku?: string;
 }
 
 // Get CJ access token from cache or request new one
@@ -132,12 +141,15 @@ async function getAccessToken(supabase: any): Promise<string> {
   return data.data.accessToken;
 }
 
-// Get product details including variant ID
+// Resolve the EXACT supplier variant for an order line.
+// K invariant: never substitute a different variant. When the exact variant
+// cannot be resolved the order line fails closed and the order is flagged.
 async function getProductVariant(
   supabase: any,
   productId: string,
-  variantName?: string
-): Promise<{ vid: string; sku: string } | null> {
+  variantName?: string,
+  exactVariantId?: string | null,
+): Promise<{ vid: string; sku: string } | { error: string }> {
   const { data: product, error } = await supabase
     .from("products")
     .select("cj_product_id, sku, variants")
@@ -146,45 +158,86 @@ async function getProductVariant(
 
   if (error || !product) {
     console.error("[CREATE-CJ-ORDER] Product not found:", productId);
-    return null;
+    return { error: "product_not_found" };
   }
 
-  // Check if product has variants - we MUST use variant ID (vid), not product ID (pid)
-  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
-    const variants = product.variants as Array<{
-      vid: string;
-      variantSku: string;
-      variantNameEn?: string;
-      variantKey?: string;
-    }>;
-    
-    // If a variant name was specified, try to find matching variant
-    if (variantName) {
-      const matchingVariant = variants.find(
-        (v: any) => 
-          v.variantNameEn?.toLowerCase() === variantName.toLowerCase() ||
-          v.variantKey?.toLowerCase().includes(variantName.toLowerCase())
-      );
-      
-      if (matchingVariant) {
-        console.log("[CREATE-CJ-ORDER] Found matching variant:", matchingVariant.vid);
-        return { vid: matchingVariant.vid, sku: matchingVariant.variantSku };
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
+  if (variants.length > 0) {
+    // 1. Exact supplier variant id carried from the cart line — authoritative.
+    if (exactVariantId) {
+      const resolved = resolveExactVariant(variants, exactVariantId);
+      if (!resolved.ok) {
+        console.error("[CREATE-CJ-ORDER] Exact variant not found:", exactVariantId);
+        return { error: EXCEPTION_CODES.VARIANT_IDENTITY_MISSING };
       }
+      const v = resolved.variant!;
+      return { vid: String(v.vid), sku: String(v.variantSku ?? "") };
     }
-    
-    // Use the first variant if no match or no variant name specified
-    const firstVariant = variants[0];
-    console.log("[CREATE-CJ-ORDER] Using first variant:", firstVariant.vid);
-    return { vid: firstVariant.vid, sku: firstVariant.variantSku };
+
+    // 2. Legacy orders only carry a human variant label.
+    if (variantName) {
+      const match = variants.find(
+        (v: any) =>
+          v.variantNameEn?.toLowerCase() === variantName.toLowerCase() ||
+          v.variantKey?.toLowerCase().includes(variantName.toLowerCase()),
+      );
+      if (match) return { vid: String(match.vid), sku: String(match.variantSku ?? "") };
+      console.error("[CREATE-CJ-ORDER] Variant label did not match any variant:", variantName);
+      return { error: EXCEPTION_CODES.VARIANT_IDENTITY_MISSING };
+    }
+
+    // 3. Single-variant product: unambiguous, safe to use.
+    if (variants.length === 1) {
+      return { vid: String(variants[0].vid), sku: String(variants[0].variantSku ?? "") };
+    }
+
+    console.error("[CREATE-CJ-ORDER] Ambiguous variant for product:", productId);
+    return { error: EXCEPTION_CODES.VARIANT_IDENTITY_MISSING };
   }
 
-  // Fallback: If no variants, try to use cj_product_id (but this may not work for all products)
-  console.warn("[CREATE-CJ-ORDER] Product has no variants, using cj_product_id as fallback");
   if (product.cj_product_id) {
     return { vid: product.cj_product_id, sku: product.sku || "" };
   }
 
-  return null;
+  return { error: EXCEPTION_CODES.VARIANT_IDENTITY_MISSING };
+}
+
+// Record an explicit exception + deterministic recovery entry.
+async function recordOrderException(
+  supabase: any,
+  orderId: string,
+  code: string,
+  detail: string,
+  nextAttemptMinutes = 5,
+): Promise<void> {
+  try {
+    await supabase.from("order_exceptions").upsert(
+      {
+        order_id: orderId,
+        code,
+        detail: detail.slice(0, 500),
+        state: "open",
+        next_attempt_at: new Date(Date.now() + nextAttemptMinutes * 60_000).toISOString(),
+      },
+      { onConflict: "order_id,code" },
+    );
+    await supabase
+      .from("orders")
+      .update({ exception_status: code, exception_reason: detail.slice(0, 500) })
+      .eq("id", orderId);
+  } catch (e) {
+    console.error("[CREATE-CJ-ORDER] Failed to record exception:", e);
+  }
+}
+
+// Release a fulfillment claim so the recovery queue can retry it later.
+async function releaseFulfillmentClaim(supabase: any, orderId: string): Promise<void> {
+  await supabase
+    .from("orders")
+    .update({ fulfillment_status: "failed", fulfillment_claimed_at: null })
+    .eq("id", orderId)
+    .eq("fulfillment_status", "claimed");
 }
 
 // Parse shipping aging string to estimated days
@@ -483,9 +536,35 @@ serve(async (req) => {
       );
     }
 
-    // Check order status
-    if (order.status !== "paid") {
-      throw new Error(`Order is not paid yet. Status: ${order.status}`);
+    // Check order status (authoritative payment axis, legacy column as fallback)
+    const paymentStatus = order.payment_status ?? order.status;
+    if (paymentStatus !== "paid") {
+      throw new Error(`Order is not paid yet. Status: ${paymentStatus}`);
+    }
+
+    // ── J: exactly-once fulfillment claim ───────────────────────────────────
+    // The claim is atomic in the database. A second concurrent call (webhook
+    // retry, manual admin retry) is refused here and never reaches CJ.
+    const { data: claimRows, error: claimError } = await supabaseAdmin.rpc(
+      "claim_order_fulfillment",
+      { p_order_id: orderId },
+    );
+    if (claimError) {
+      throw new Error(`Fulfillment claim failed: ${claimError.message}`);
+    }
+    const claim = Array.isArray(claimRows) ? claimRows[0] : claimRows;
+    if (!claim?.claimed) {
+      console.log("[CREATE-CJ-ORDER] Fulfillment not claimed:", claim?.reason);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: claim?.reason ?? "not_claimable",
+          cjOrderId: claim?.cj_order_ref ?? null,
+          alreadyCreated: claim?.reason === "already_fulfilled",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
     }
 
     // Parse shipping address from Stripe format
@@ -517,11 +596,36 @@ serve(async (req) => {
     const cjProducts: CJOrderProduct[] = [];
 
     for (const item of items) {
-      const variantInfo = await getProductVariant(supabaseAdmin, item.id, item.variant);
-      
-      if (!variantInfo) {
-        console.warn(`[CREATE-CJ-ORDER] Could not find CJ variant for product ${item.id}, skipping`);
-        continue;
+      const parsed = parseCartLineId(String(item.id));
+      const productId = item.product_id ?? parsed.productId;
+      const exactVariantId = item.cj_variant_id ?? parsed.variantId;
+
+      const variantInfo = await getProductVariant(
+        supabaseAdmin,
+        productId,
+        item.variant,
+        exactVariantId,
+      );
+
+      if ("error" in variantInfo) {
+        // Fail closed: never ship a different variant than the one bought.
+        await recordOrderException(
+          supabaseAdmin,
+          orderId,
+          EXCEPTION_CODES.VARIANT_IDENTITY_MISSING,
+          `Line ${item.id}: ${variantInfo.error}`,
+          0,
+        );
+        await releaseFulfillmentClaim(supabaseAdmin, orderId);
+        return new Response(
+          JSON.stringify({
+            error: "variant_identity_missing",
+            orderId,
+            line: item.id,
+            message: "Exact supplier variant could not be resolved; manual review required.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
       }
 
       cjProducts.push({
@@ -531,6 +635,7 @@ serve(async (req) => {
     }
 
     if (cjProducts.length === 0) {
+      await releaseFulfillmentClaim(supabaseAdmin, orderId);
       throw new Error("No valid CJ products found in order");
     }
 
@@ -555,6 +660,13 @@ serve(async (req) => {
       );
       
       if (!shippingInfo) {
+        await recordOrderException(
+          supabaseAdmin,
+          orderId,
+          EXCEPTION_CODES.FULFILLMENT_FAILED,
+          "No shipping methods available for this destination",
+        );
+        await releaseFulfillmentClaim(supabaseAdmin, orderId);
         throw new Error("No shipping methods available for this order");
       }
       
@@ -582,10 +694,18 @@ serve(async (req) => {
           .from("orders")
           .update({
             cj_order_status: `error: ${result.error}`,
+            fulfillment_status: "failed",
+            fulfillment_claimed_at: null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", orderId);
 
+        await recordOrderException(
+          supabaseAdmin,
+          orderId,
+          EXCEPTION_CODES.FULFILLMENT_FAILED,
+          String(result.error),
+        );
         throw new Error(`CJ order creation failed: ${result.error}`);
       }
 
@@ -595,6 +715,8 @@ serve(async (req) => {
           cj_order_id: result.orderId,
           cj_order_status: "created",
           cj_order_created_at: new Date().toISOString(),
+          fulfillment_status: "fulfillment_created",
+          fulfilled_at: new Date().toISOString(),
           cj_shipping_info: {
             warehouse: "US",
             logisticName: shippingInfo.logisticName,
@@ -639,10 +761,18 @@ serve(async (req) => {
         .from("orders")
         .update({
           cj_order_status: `error: ${result.error}`,
+          fulfillment_status: "failed",
+          fulfillment_claimed_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", orderId);
 
+      await recordOrderException(
+        supabaseAdmin,
+        orderId,
+        EXCEPTION_CODES.FULFILLMENT_FAILED,
+        String(result.error),
+      );
       throw new Error(`CJ order creation failed: ${result.error}`);
     }
 
@@ -653,6 +783,8 @@ serve(async (req) => {
         cj_order_id: result.orderId,
         cj_order_status: "created",
         cj_order_created_at: new Date().toISOString(),
+        fulfillment_status: "fulfillment_created",
+        fulfilled_at: new Date().toISOString(),
         cj_shipping_info: {
           warehouse: optimalWarehouse.warehouseCode,
           warehouseName: optimalWarehouse.warehouseName,
