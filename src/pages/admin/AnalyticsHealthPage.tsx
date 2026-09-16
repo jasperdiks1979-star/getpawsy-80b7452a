@@ -76,13 +76,18 @@ export default function AnalyticsHealthPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {loading && <div className="text-muted-foreground text-sm">Loading…</div>}
-        {rows.map((r) => (
-          <div key={r.probe_key} className={`rounded-lg border p-4 ${STATUS_COLOR[r.status] || "border-border"}`}>
+        {rows.map((r) => {
+          const freshness = evaluateFreshness(r.checked_at, CADENCES.hourly);
+          return (
+          <div key={r.probe_key} className={`rounded-lg border p-4 ${freshness.canClaimLive ? STATUS_COLOR[r.status] || "border-border" : "border-border"}`}>
             <div className="flex items-center justify-between">
               <div className="font-semibold">{r.probe_key}</div>
-              <span className="uppercase text-xs px-2 py-0.5 rounded bg-background/40">{r.status}</span>
+              <span className="uppercase text-xs px-2 py-0.5 rounded bg-background/40">
+                {freshness.canClaimLive ? r.status : `${r.status} (last known)`}
+              </span>
             </div>
             <div className="text-xs mt-2 space-y-1">
+              <FreshnessBadge lastUpdated={r.checked_at} cadence={CADENCES.hourly} />
               <div>Last success: {r.last_success_at ? new Date(r.last_success_at).toLocaleString() : "—"}</div>
               <div>Latency: {r.latency_ms ?? "—"} ms</div>
               <div>Checked: {new Date(r.checked_at).toLocaleString()}</div>
