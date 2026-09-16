@@ -61,6 +61,7 @@ const navLinks = [
   { href: '/collections/cats', label: 'Cats' },
   { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
+  { href: '/bundles', label: 'Sets' },
   { href: '/guides', label: 'Guides' },
   { href: '/contact', label: 'Contact' },
 ];
