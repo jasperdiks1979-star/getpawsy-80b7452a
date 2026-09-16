@@ -20,6 +20,7 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
 import { traceMount, traceEffect, traceStateSet } from '@/lib/lcp-render-trace';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,9 +70,11 @@ const navLinks = [
   { href: '/contact', label: 'Contact' },
 ];
 
+// Both claims are checkable against the shipping policy and the catalogue:
+// free shipping is conditional on the threshold, so the threshold is shown.
 const promoItems = [
-  { label: 'Free Shipping', icon: Truck, href: '/products' },
-  { label: 'New Arrivals', icon: Gift, href: '/products' },
+  { label: `Free shipping over $${FREE_SHIPPING_THRESHOLD}`, icon: Truck, href: '/shipping' },
+  { label: 'Ships from a US warehouse', icon: Gift, href: '/shipping' },
 ];
 
 // Category item component for mega menu (uses canonical registry)
