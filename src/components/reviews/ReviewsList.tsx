@@ -259,7 +259,7 @@ export const ReviewsList = ({ reviews, onReviewDeleted }: ReviewsListProps) => {
 
       {/* Trust footer */}
       <p className="text-xs text-muted-foreground text-center pt-4 border-t border-border/30">
-        Based on customer feedback · All reviews are from verified purchases
+        Published after moderation · Only reviews matched to a paid order show a verified-purchase badge
       </p>
     </div>
   );

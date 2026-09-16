@@ -8,7 +8,6 @@ import {
   Lock,
   Smartphone,
   Clock,
-  Flame,
   Heart,
   CheckCircle2,
 } from "lucide-react";
@@ -85,13 +84,6 @@ export function LitterBoxConversionBoost({
               </motion.div>
             </AnimatePresence>
 
-            {/* Top-left urgency chip */}
-            {inStock && (
-              <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-xs font-semibold text-foreground shadow-md backdrop-blur-sm">
-                <Flame className="h-3.5 w-3.5 text-destructive" />
-                <span>Popular this week</span>
-              </div>
-            )}
 
             {/* Top-right app-control chip */}
             <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-primary/90 px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-md backdrop-blur-sm">

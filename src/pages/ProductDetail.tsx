@@ -529,7 +529,17 @@ const ProductDetail = () => {
 
   const isLitterBoxProduct =
     !!product && /litter\s*box/i.test(`${product.name} ${product.category || ''}`);
-  const showTikTokVariant = isTikTok && isLitterBoxProduct;
+  /**
+   * Phase 8 truth fix: the litter-box conversion blocks describe a
+   * self-cleaning, app-controlled, sensor-driven unit. No such product exists
+   * in the curated range — every stocked litter box is manual. Those blocks
+   * may therefore only render for a product whose own title documents
+   * automatic/self-cleaning operation. Do NOT widen this back to
+   * `isLitterBoxProduct`.
+   */
+  const isAutomaticLitterBoxProduct =
+    !!product && /(self[-\s]?clean|automatic|robot)/i.test(`${product.name}`) && isLitterBoxProduct;
+  const showTikTokVariant = isTikTok && isAutomaticLitterBoxProduct;
   const productContentOverride = useMemo(() => getProductContentOverride(product?.id), [product?.id]);
 
   // Fire a single PDP-load analytics event capturing which variant actually
@@ -1408,7 +1418,7 @@ const ProductDetail = () => {
                 Suppressed when the TikTok-only hero is already taking the
                 top slot to avoid stacking two heroes.
               */}
-              {isLitterBoxProduct && !showTikTokVariant && !isSectionHiddenForProduct(product?.id, 'litterBoxConversionBoost') && (
+              {isAutomaticLitterBoxProduct && !showTikTokVariant && !isSectionHiddenForProduct(product?.id, 'litterBoxConversionBoost') && (
                 <LitterBoxConversionBoost
                   images={safeArray<string>(product.images)}
                   productName={product.name}
@@ -2218,7 +2228,7 @@ const ProductDetail = () => {
         )}
 
         {/* Litter Box-only emotional reinforcement before reviews */}
-        {isLitterBoxProduct && !isSectionHiddenForProduct(product?.id, 'litterBoxLovedSection') && <LitterBoxLovedSection />}
+        {isAutomaticLitterBoxProduct && !isSectionHiddenForProduct(product?.id, 'litterBoxLovedSection') && <LitterBoxLovedSection />}
 
         {/* Reviews Section — only show list when ≥3 reviews exist */}
         <motion.section
