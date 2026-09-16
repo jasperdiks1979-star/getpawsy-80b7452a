@@ -1144,7 +1144,13 @@ const ProductDetail = () => {
     }
 
 
-    const savings = volumeDiscount > 0 ? ` (${volumeDiscount}% off!)` : "";
+    // Volume rewards are cart-level; only claim them when the cart actually
+    // earns one under the canonical rules.
+    const earnedPercent = getTierDiscountPercent(
+      Math.round(cartPrice * quantity * 100) / 100,
+      quantity,
+    );
+    const savings = earnedPercent > 0 ? ` (${earnedPercent}% off applied in cart!)` : "";
     toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
     trackCci('add_to_cart_success', {
       product_id: product?.id,
@@ -1615,6 +1621,7 @@ const ProductDetail = () => {
             {/* Variants - PRIORITY: Show immediately after price for visibility */}
             {variants.length > 1 && (
               <motion.div
+                id="pdp-variant-picker"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
@@ -1936,7 +1943,7 @@ const ProductDetail = () => {
                 size="lg"
                 className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!inStock || variantChoiceMissing}
               >
                 <ShoppingCart className="w-5 h-5" />
                 Add to Cart
@@ -2577,7 +2584,7 @@ const ProductDetail = () => {
                 className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!inStock || variantChoiceMissing}
               >
                 <ShoppingCart className="w-4 h-4" />
                 Add to Cart
