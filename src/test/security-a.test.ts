@@ -4,7 +4,20 @@ import { resolve } from "node:path";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
-const GUARD_CALL = "requireInternalOrAdmin(req)";
+// Two guard entry points exist. `requireInternalOrAdmin` is the default.
+// Cron-driven monitors use `requireMonitorCaller`, which accepts the shared
+// internal secret and otherwise delegates to requireInternalOrAdmin.
+const GUARDS: Record<string, { module: string; call: string }> = {
+  default: { module: 'from "../_shared/admin-guard.ts"', call: "requireInternalOrAdmin(req)" },
+  monitor: { module: 'from "../_shared/monitor-auth.ts"', call: "requireMonitorCaller(req)" },
+};
+
+const MONITOR_FNS = new Set([
+  "supabase/functions/analytics-health-probe/index.ts",
+  "supabase/functions/visitor-map-stabilization-monitor/index.ts",
+]);
+
+const guardFor = (p: string) => (MONITOR_FNS.has(p) ? GUARDS.monitor : GUARDS.default);
 
 describe("Security A — edge function authorization", () => {
   const fns = [
@@ -16,14 +29,17 @@ describe("Security A — edge function authorization", () => {
 
   it.each(fns)("%s imports the shared guard", (p) => {
     const src = read(p);
-    expect(src).toContain('from "../_shared/admin-guard.ts"');
-    expect(src).toContain(GUARD_CALL);
+    const g = guardFor(p);
+    expect(src).toContain(g.module);
+    expect(src).toContain(g.call);
   });
 
   it.each(fns)("%s runs the guard before any privileged work", (p) => {
     const src = read(p);
+    const GUARD_CALL = guardFor(p).call;
     const guardAt = src.indexOf(GUARD_CALL);
     expect(guardAt).toBeGreaterThan(0);
+
 
     // Every privileged/third-party operation inside the request handler must
     // come after the guard call.
