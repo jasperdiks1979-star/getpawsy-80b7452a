@@ -96,3 +96,19 @@ Scan snapshot context: the four critical findings are dated `2026-09-16T17:00:16
 | Regression coverage | `src/test/security-b.test.ts` (30 tests) | anon denial, guard-before-privileged-work ordering, revenue/geo behind guard, warmer internal-secret path, mapped admin callers unchanged, no secrets in client bundle |
 
 No checkout/payment/refund/order/customer-email/supplier/ads behaviour touched. No new cron job, no polling, no extra DB load.
+
+### Security B — verification + release (2026-09-16 19:33 UTC)
+
+| check | result |
+|---|---|
+| deploy | `aci-orchestrator` redeployed |
+| anon POST `aci-orchestrator` / wrong secret | 401 / 401 |
+| anon POST `analytics-canonical`, `add-internal-links-to-blogs`, `genesis-omega-boardroom-certify` | 401 |
+| anon POST `analytics-canonical-warmer` (wrong secret) | 401 |
+| `admin_guard_audit_log` (last 30m) | anon calls `unauthorized`; `analytics-canonical` `internal_secret` → `allowed` ×6 (cron warmer/monitors unaffected) |
+| tests | 1109 passed / 1 skipped (incl. new `security-b.test.ts`, 30 tests) |
+| typecheck / build | clean / build OK |
+| security scan | 0 critical, 0 error findings; 3 pre-existing warns already dismissed by the user |
+| production smoke | `/ /shop /bundles /admin/analytics/visitor-world-map-pro /sitemap.xml` all 200 |
+
+SECURITY B: **COMPLETE**. NEXT_OPEN_PHASE: none internally actionable — remaining items are the five externally gated ones listed above.
