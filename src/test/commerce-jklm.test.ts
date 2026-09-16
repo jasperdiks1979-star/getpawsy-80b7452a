@@ -87,11 +87,12 @@ describe("J — payment settlement", () => {
 
   it("webhook dedupes on the Stripe event id before any order mutation", () => {
     const src = read("supabase/functions/stripe-webhook/index.ts");
-    const dedupeAt = src.indexOf('.from("stripe_webhook_events")');
+    // Commerce N: the dedupe is now a leased claim RPC, still before the switch.
+    const dedupeAt = src.indexOf('"claim_stripe_webhook_event"');
     const switchAt = src.indexOf("switch (event.type)");
     expect(dedupeAt).toBeGreaterThan(-1);
     expect(dedupeAt).toBeLessThan(switchAt);
-    expect(src).toContain("duplicate: true");
+    expect(src).toContain("duplicate: terminal");
     expect(src).toContain("payment_status: \"paid\"");
   });
 
