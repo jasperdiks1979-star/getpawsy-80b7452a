@@ -241,6 +241,17 @@ const Cart = () => {
                   {item.variant && (
                     <p className="text-sm text-muted-foreground">{safeString(item.variant)}</p>
                   )}
+                  {variantIssues.has(item.id) && (
+                    <p className="mt-1 text-sm text-destructive">
+                      This item needs an option before checkout.{' '}
+                      <Link
+                        to={variantIssues.get(item.id)!.url}
+                        className="underline font-medium"
+                      >
+                        Choose an option
+                      </Link>
+                    </p>
+                  )}
                   <p className={
                     premium
                       ? 'text-[15px] font-semibold text-foreground mt-1 tracking-tight'
