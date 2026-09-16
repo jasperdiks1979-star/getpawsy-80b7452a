@@ -363,14 +363,6 @@ export const FrequentlyBoughtTogether = ({
         </div>
       </div>
 
-      {/* Urgency copy for dog beds */}
-      {isDogBed && curatedCompanions && (
-        <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          Most customers add this for better comfort
-        </p>
-      )}
-
       {/* Products Row */}
       <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
         {allProducts.map((product, index) => {
