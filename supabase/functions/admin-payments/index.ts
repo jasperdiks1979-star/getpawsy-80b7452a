@@ -291,7 +291,9 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
 
   const admin = svcClient();
 
-  // Sync smoke_test_runs status
+  // Sync smoke_test_runs status.
+  // NEVER downgrade a refunded run back to "paid": once a refund is recorded
+  // (refunded_at set) the row is terminal, so the filter excludes it.
   const isPaid = session.payment_status === "paid";
   if (piId) {
     await admin.from("smoke_test_runs")
@@ -299,8 +301,10 @@ async function handleSmokeTestVerify(body: any): Promise<Response> {
         payment_intent_id: piId,
         status: isPaid ? "paid" : (session.status === "expired" ? "expired" : "pending"),
       })
-      .eq("stripe_session_id", sessionId);
+      .eq("stripe_session_id", sessionId)
+      .is("refunded_at", null);
   }
+
 
   // ── Backfill checkout_redirect_success for the smoke test ───────────────
   // The admin smoke-test flow bypasses the Checkout.tsx page (which is what

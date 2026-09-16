@@ -537,6 +537,8 @@ serve(async (req) => {
             const piId = typeof session.payment_intent === "string"
               ? session.payment_intent
               : session.payment_intent?.id ?? null;
+            // A refunded smoke run is terminal — a replayed/late webhook must
+            // never set it back to "paid".
             await supabaseAdmin.from("smoke_test_runs")
               .update({
                 status: session.payment_status === "paid" ? "paid" : "pending",
@@ -544,7 +546,9 @@ serve(async (req) => {
                 webhook_received_at: new Date().toISOString(),
                 webhook_event_id: event.id,
               })
-              .eq("stripe_session_id", session.id);
+              .eq("stripe_session_id", session.id)
+              .is("refunded_at", null);
+
 
             await supabaseAdmin.from("checkout_funnel_events").insert({
               session_id: session.metadata?.initiator ?? "smoke_test",
