@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X, Truck, RotateCcw, Package } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCart } from '@/contexts/CartContext';
 import { useCartVariantIssues } from '@/hooks/useCartVariantIssues';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
