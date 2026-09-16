@@ -11,6 +11,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import fs from "fs";
 import {
   CANONICAL_ECOMMERCE_EVENTS,
@@ -52,12 +54,18 @@ vi.mock("@/integrations/supabase/client", () => {
 
 async function renderPage() {
   const { default: FunnelHealthCenter } = await import("@/pages/admin/FunnelHealthCenter");
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, staleTime: Infinity } },
+  });
   return render(
-    <HelmetProvider>
-      <FunnelHealthCenter />
-    </HelmetProvider>,
+    <QueryClientProvider client={qc}>
+      <HelmetProvider>
+        <FunnelHealthCenter />
+      </HelmetProvider>
+    </QueryClientProvider>,
   );
 }
+
 
 beforeEach(() => {
   setTables({});

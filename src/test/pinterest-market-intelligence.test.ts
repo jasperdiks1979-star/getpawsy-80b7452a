@@ -13,9 +13,24 @@ describe("Phase 9 — Pinterest Market Intelligence", () => {
     expect(src).toContain("market_opportunity_gaps");
     expect(src).toContain("pinterest_competitor_patterns");
     expect(src).toContain("market_ai_recommendations");
-    // Read-only: no inserts / updates / deletes
-    expect(/\.insert\(|\.update\(|\.delete\(/.test(src)).toBe(false);
+    // The engine persists its OWN intelligence tables (opportunities, run audit,
+    // XAI decisions) but must never mutate the upstream signal sources it reads.
+    const READ_ONLY_SOURCES = [
+      "pinterest_trend_signals",
+      "pmin_keyword_trends",
+      "market_trend_clusters",
+      "pinterest_competitor_patterns",
+      "pinterest_competitor_opportunities",
+      "pinterest_pin_performance",
+    ];
+    for (const table of READ_ONLY_SOURCES) {
+      const mutation = new RegExp(
+        `from\\(["'\`]${table}["'\`]\\)[\\s\\S]{0,200}?\\.(insert|upsert|update|delete)\\(`,
+      );
+      expect(mutation.test(src), `${table} must not be mutated`).toBe(false);
+    }
   });
+
 
   it("registers admin page and route", () => {
     expect(fs.existsSync(pagePath)).toBe(true);
