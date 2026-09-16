@@ -194,6 +194,10 @@ try {
   // Mark successful mount
   markMounted();
   (window as any).__BOOT_OK__ = true;
+  // A recovery banner may have been inserted outside #root by the pre-boot
+  // guard. A healthy React mount must always remove every recovery remnant.
+  document.getElementById('chunk-recovery')?.remove();
+  document.getElementById('boot-recovery')?.remove();
   if (import.meta.env.DEV) console.log("BOOT SUCCESS");
 
   // Post-mount vitals checks (geometry, preload, image policy, LCP, budget) — dev/preview only

@@ -112,3 +112,15 @@ No checkout/payment/refund/order/customer-email/supplier/ads behaviour touched. 
 | production smoke | `/ /shop /bundles /admin/analytics/visitor-world-map-pro /sitemap.xml` all 200 |
 
 SECURITY B: **COMPLETE**. NEXT_OPEN_PHASE: none internally actionable — remaining items are the five externally gated ones listed above.
+
+## Production delivery / fallback / homepage consistency repair (2026-09-16)
+
+| item | status | evidence |
+|---|---|---|
+| Raw HTML and pre-hydration shell | IN PROGRESS | `index.html` now uses the cat litter-box imagery and cat-first copy; stale bestseller, broad-pet and 3–7-day delivery claims removed |
+| No-JavaScript fallback | IN PROGRESS | Skidzo/GetPawsy identity preserved; shipping timing is checkout-confirmed; $35 free-shipping threshold and 30-day returns retained |
+| Hydrated homepage | IN PROGRESS | `V2HomePage.tsx` queries the exact five documented hero IDs in source order, removes dog/bestseller primary merchandising, and links validated Sets |
+| Successful boot recovery cleanup | IN PROGRESS | `src/main.tsx` removes both recovery elements immediately after a healthy mount |
+| Regression coverage | IN PROGRESS | `src/test/homepage-delivery-consistency.test.ts` locks stale phrases/assets, exact hero identity, shipping fallback wording and recovery cleanup |
+
+Verification and production readback pending. Security B and all checkout/payment/order/refund/admin controls unchanged.
