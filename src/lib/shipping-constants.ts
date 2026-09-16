@@ -8,10 +8,18 @@
  * Last Updated: 2025-01-31
  */
 
+import {
+  FREE_SHIPPING_THRESHOLD_CENTS,
+  PRICING_TIERS,
+  VOLUME_DISCOUNT_MIN_UNITS as ENGINE_MIN_UNITS,
+  tierPercentFor,
+  toCents,
+} from '@/lib/cart-pricing';
+
 // ============= SHIPPING CONSTANTS =============
 
 /** Free shipping threshold in USD */
-export const FREE_SHIPPING_THRESHOLD = 35;
+export const FREE_SHIPPING_THRESHOLD = FREE_SHIPPING_THRESHOLD_CENTS / 100;
 
 // ============= TIERED INCENTIVE THRESHOLDS =============
 // Derived from the CANONICAL pricing engine (src/lib/cart-pricing.ts) so the
