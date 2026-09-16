@@ -18,11 +18,7 @@ const SRC = process.argv[2] || '/tmp/audit/products.json';
 const OUT = 'docs/commercial-rebuild';
 fs.mkdirSync(OUT, { recursive: true });
 
-const rows = fs
-  .readFileSync(SRC, 'utf8')
-  .split('\n')
-  .filter(Boolean)
-  .map((l) => JSON.parse(l));
+const rows = JSON.parse(fs.readFileSync(SRC, 'utf8'));
 
 const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 const txt = (v) => (v == null ? '' : String(v));
@@ -64,13 +60,24 @@ function score(p) {
   const cn = num(p.cn_stock) ?? 0;
   const stock = num(p.stock) ?? 0;
   const eff = num(p.effective_stock) ?? Math.max(us + eu + cn, stock);
+  // Variant payload often carries per-warehouse inventory the columns have not absorbed yet.
+  let variantUs = 0;
+  let variantAny = 0;
+  for (const v of Array.isArray(p.variants) ? p.variants : []) {
+    for (const inv of Array.isArray(v.inventories) ? v.inventories : []) {
+      const n = Number(inv.cjInventory ?? inv.totalInventory ?? 0) || 0;
+      variantAny += n;
+      if (String(inv.countryCode || '').toUpperCase() === 'US') variantUs += n;
+    }
+  }
   if (us >= 20) c.us_stock = 15;
   else if (us > 0) c.us_stock = 12;
   else if (eu > 0) c.us_stock = 7;
   else if (cn > 0) c.us_stock = 5;
   else if (eff > 0) c.us_stock = 4;
   else c.us_stock = 0;
-  ev.push(`stock us=${us} eu=${eu} cn=${cn} effective=${eff}`);
+  if (c.us_stock === 0 && variantUs > 0) { c.us_stock = 6; inf.push(`column stock is 0 but CJ variant payload reports ${variantUs} US units — needs re-sync before trusting`); }
+  ev.push(`stock us=${us} eu=${eu} cn=${cn} effective=${eff}; variant payload us=${variantUs} total=${variantAny}`);
 
   // 3. Shipping reliability (10)
   const dmax = num(p.shipping_days_max);

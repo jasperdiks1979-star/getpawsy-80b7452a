@@ -1,0 +1,320 @@
+{
+  "generated_at": "2026-09-16T13:19:56.409Z",
+  "source": "production catalog (read-only export)",
+  "total_products": 774,
+  "active": 432,
+  "commercially_visible": 342,
+  "us_stocked": 440,
+  "with_cost_data": 773,
+  "clean_no_blocking_gates": 0,
+  "by_role": {
+    "CORE_CANDIDATE": 234,
+    "LONGTAIL": 199,
+    "RETIRE_CANDIDATE": 282,
+    "ACCESSORY_CANDIDATE": 59
+  },
+  "by_species": {
+    "cat": 220,
+    "dog": 285,
+    "unknown": 207,
+    "both": 62
+  },
+  "gate_counts": {
+    "UNUSABLE_SHIPPING_PROMISE": 774,
+    "INVENTORY_BLOCKED": 27,
+    "UNACCEPTABLE_MARGIN": 211,
+    "DUPLICATE": 59,
+    "NO_REAL_STOCK": 236,
+    "NO_US_DELIVERY_PATH": 236,
+    "INSUFFICIENT_SPECS": 53,
+    "UNRELIABLE_SUPPLIER": 107,
+    "ADMIN_REVIEW": 3,
+    "NO_SUPPLIER_MAPPING": 1,
+    "MARGIN_UNKNOWN": 1,
+    "MISSING_IMAGERY": 1
+  },
+  "score_distribution": {
+    "80+": 23,
+    "70-79": 148,
+    "60-69": 283,
+    "45-59": 221,
+    "<45": 99
+  },
+  "top_25": [
+    {
+      "slug": "front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-e265",
+      "title": "Enclosed Cat Litter Box – Dual Opening Anti-Splash Odor-Locking for Cats",
+      "score": 87,
+      "role": "CORE_CANDIDATE",
+      "price": 79.13,
+      "margin_pct": 60,
+      "us_stock": 292,
+      "views_90d": 136,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "extra-large-stainless-steel-cat-litter-box-for-big-cats-with-flip-cover-high-c882",
+      "title": "Cat Litter Box – Extra Large Stainless Steel High-Sided Enclosure",
+      "score": 87,
+      "role": "CORE_CANDIDATE",
+      "price": 141.07,
+      "margin_pct": 60,
+      "us_stock": 3,
+      "views_90d": 7,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "xl-stainless-steel-litter-box-w-100-flip-top-scoop-step-top-side-entry-enclosed-litter-box-for-big-c",
+      "title": "Litter Box with Flip Top for Big Cat Convenience",
+      "score": 87,
+      "role": "CORE_CANDIDATE",
+      "price": 119.99,
+      "margin_pct": 42.7,
+      "us_stock": 68,
+      "views_90d": 20,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "fully-enclosed-cat-litter-box-with-front-entry-and-top-exit-plastic-gray-white",
+      "title": " Fully Enclosed Cat Litter Box with Front Entry and Top Exit, Plastic, Gray & White",
+      "score": 86,
+      "role": "CORE_CANDIDATE",
+      "price": 96.49,
+      "margin_pct": 49.9,
+      "us_stock": 154,
+      "views_90d": 17,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "1set-wireless-electric-dog-fence-pet-shock-boundary-containment-system-electric-3eeb",
+      "title": "Dog Training Collar – Wireless Electric Shock Boundary System for Dogs",
+      "score": 85,
+      "role": "LONGTAIL",
+      "price": 90.95,
+      "margin_pct": 50.1,
+      "us_stock": 44,
+      "views_90d": 0,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|INVENTORY_BLOCKED"
+    },
+    {
+      "slug": "covered-cat-litter-box-easy-cleaning-kitty-litter-box-with-front-entrance-top-exit-scoop-for-odor-co",
+      "title": " Covered Cat Litter Box, Easy Cleaning Kitty Litter Box with Front Entrance, Top Exit, Scoop, for Odor Control, White",
+      "score": 84,
+      "role": "CORE_CANDIDATE",
+      "price": 98.99,
+      "margin_pct": 42.8,
+      "us_stock": 147,
+      "views_90d": 24,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "51cm-large-fully-enclosed-top-entry-cat-litter-box-front-flip-door-dual-opening-b5f5",
+      "title": "Top Entry Cat Litter Box – Enclosed Toilet with Front Flip Door & Odor Lock",
+      "score": 84,
+      "role": "CORE_CANDIDATE",
+      "price": 76.63,
+      "margin_pct": 60,
+      "us_stock": 300,
+      "views_90d": 0,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "dome-covered-cat-litter-box-with-lid-white-and-orange",
+      "title": " Dome Covered Cat Litter Box with Lid, White and Orange",
+      "score": 84,
+      "role": "CORE_CANDIDATE",
+      "price": 89.49,
+      "margin_pct": 42.8,
+      "us_stock": 84,
+      "views_90d": 28,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "pawhut-cat-litter-box-enclosure-with-barn-door-cat-hole-white",
+      "title": "Hidden Cat Litter Box Enclosure – Furniture Style Cabinet with Barn Door",
+      "score": 84,
+      "role": "LONGTAIL",
+      "price": 171.99,
+      "margin_pct": 33.2,
+      "us_stock": 34,
+      "views_90d": 32,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "adjustable-height-3-step-4-step-cat-stairs-with-cat-scratching-post-cat-condo-toy-ball-for-bed-sofa-",
+      "title": " Adjustable Height 3 Step/4 Step Cat Stairs with Cat Scratching Post, Cat Condo, Toy Ball, for Bed, Sofa, Couch, Gray",
+      "score": 84,
+      "role": "CORE_CANDIDATE",
+      "price": 125.99,
+      "margin_pct": 42.9,
+      "us_stock": 166,
+      "views_90d": 17,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "54-cat-tree-tower-multi-level-with-sisal-grab-post-indoor-apartment-with-ladder-plush-toys-rest-and-",
+      "title": "Cat Tower – Multi-Level Fun With Sisal Scratching Post",
+      "score": 84,
+      "role": "CORE_CANDIDATE",
+      "price": 158.99,
+      "margin_pct": 42.8,
+      "us_stock": 6594,
+      "views_90d": 7,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "59in-large-tall-christmas-tree-cat-tower-with-2-cat-condos-scratching-post-soft-fleece-cat-tree-with",
+      "title": "Christmas Tree Cat Tower for Festive Cat Play & Rest",
+      "score": 83,
+      "role": "CORE_CANDIDATE",
+      "price": 145.99,
+      "margin_pct": 43,
+      "us_stock": 207,
+      "views_90d": 24,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "cat-litter-box-easy-to-clean-open-with-scoop-green",
+      "title": "Easy-Clean Cat Litter Box – Open Design with Scoop & Green Bin",
+      "score": 82,
+      "role": "LONGTAIL",
+      "price": 135.99,
+      "margin_pct": 42.8,
+      "us_stock": 428,
+      "views_90d": 0,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|DUPLICATE"
+    },
+    {
+      "slug": "cat-tree-with-litter-box-enclosure-scratching-posts-bed-climbing-platforms-for-indoor-cats-white",
+      "title": " Cat Tree with Litter Box Enclosure, Scratching Posts, Bed, Climbing Platforms for Indoor Cats, White",
+      "score": 81,
+      "role": "LONGTAIL",
+      "price": 185.99,
+      "margin_pct": 33.5,
+      "us_stock": 74,
+      "views_90d": 34,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "pawhut-pet-ramp-for-dogs-cats-with-non-slip-carpet-white",
+      "title": "Non-Slip Pet Ramp – Carpeted White Ramp for Dogs & Cats",
+      "score": 81,
+      "role": "CORE_CANDIDATE",
+      "price": 140.99,
+      "margin_pct": 43,
+      "us_stock": 41,
+      "views_90d": 21,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "automatic-cat-litter-box-self-cleaning-app-control",
+      "title": "GetPawsy Automatic Cat Litter Box – Self-Cleaning with App Control",
+      "score": 81,
+      "role": "LONGTAIL",
+      "price": 268.99,
+      "margin_pct": 33.3,
+      "us_stock": 254,
+      "views_90d": 143,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "6-in-deep-cat-litter-box-odor-free-litter-box-with-filtering-foot-board",
+      "title": "6 In Deep Cat Litter Box Odor-Free Litter Box With Filtering Foot Board",
+      "score": 81,
+      "role": "CORE_CANDIDATE",
+      "price": 114.99,
+      "margin_pct": 42.8,
+      "us_stock": 48,
+      "views_90d": 18,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
+      "title": "Cat Litter Box Enclosure Wooden Litter Box Furniture Hidden 2 Rooms Black",
+      "score": 80,
+      "role": "LONGTAIL",
+      "price": 284.99,
+      "margin_pct": 33.4,
+      "us_stock": 44,
+      "views_90d": 50,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "hooded-cat-litter-box-w-litter-mat-litter-particle-catching-gray",
+      "title": "Hooded Cat Litter Box – Enclosed Design with Litter Mat",
+      "score": 80,
+      "role": "CORE_CANDIDATE",
+      "price": 128.99,
+      "margin_pct": 42.8,
+      "us_stock": 31,
+      "views_90d": 47,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "dog-chew-toys-two-pack-dog-toothbrush-care-cleaning-stick-toothbrush-chew-stick-af8d",
+      "title": "Durable Dog Toothbrush Chew Toy – Dental Care & Cleaning Stick for Dogs",
+      "score": 80,
+      "role": "CORE_CANDIDATE",
+      "price": 39.95,
+      "margin_pct": 60.2,
+      "us_stock": 380,
+      "views_90d": 22,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "gothic-cat-tree-cat-tower-with-coffin-bed-2-spacious-condos-sisal-scratching-1b13",
+      "title": "Gothic Cat Tree Condo – Coffin Bed Tower with Sisal Scratching Posts",
+      "score": 80,
+      "role": "LONGTAIL",
+      "price": 186.99,
+      "margin_pct": 33.5,
+      "us_stock": 89,
+      "views_90d": 20,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "26-compact-cat-tree-with-2-condos-sisal-scratching-posts-anti-tip-cat-tower-for-8e5e",
+      "title": "Compact Cat Tree Condo – Sisal Scratching Post for Small Spaces",
+      "score": 80,
+      "role": "CORE_CANDIDATE",
+      "price": 97.49,
+      "margin_pct": 42.7,
+      "us_stock": 230,
+      "views_90d": 30,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    },
+    {
+      "slug": "covered-cat-litter-box-with-lid-scoop-deodorizing-bags-for-odor-control-privacy-0555",
+      "title": "Covered Cat Litter Box – Privacy Hood with Scoop & Deodorizing Bags",
+      "score": 80,
+      "role": "LONGTAIL",
+      "price": 98.99,
+      "margin_pct": 50,
+      "us_stock": 98,
+      "views_90d": 0,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|DUPLICATE"
+    },
+    {
+      "slug": "81-cat-tree-w-cat-scratching-posts-scratching-board-condos-beds-hammocks-toy-balls-rope-cat-toy-gray",
+      "title": "Cat Tree: 81\" Adventure Playground for Feline Fun",
+      "score": 79,
+      "role": "LONGTAIL",
+      "price": 233.99,
+      "margin_pct": 33.2,
+      "us_stock": 84,
+      "views_90d": 33,
+      "gates": "UNUSABLE_SHIPPING_PROMISE|UNACCEPTABLE_MARGIN"
+    },
+    {
+      "slug": "pawhut-floor-to-ceiling-cat-tree-cat-climbing-tower-with-sisal-covered-631f",
+      "title": "Cat Activity Tree – Multi-Level Floor-to-Ceiling Sisal Scratching Posts for Cats",
+      "score": 79,
+      "role": "CORE_CANDIDATE",
+      "price": 136.99,
+      "margin_pct": 42.8,
+      "us_stock": 36,
+      "views_90d": 0,
+      "gates": "UNUSABLE_SHIPPING_PROMISE"
+    }
+  ]
+}
