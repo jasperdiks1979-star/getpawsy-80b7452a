@@ -47,9 +47,6 @@ const CHECKOUT_MAP: Record<string, Canon> = {
   purchase: "CANONICAL_PURCHASE",
 };
 
-function dedup(parts: Array<string | null | undefined>): string {
-  return parts.map((p) => p ?? "").join("|");
-}
 
 /**
  * Exact UTM extraction from a stored URL / path+query.
