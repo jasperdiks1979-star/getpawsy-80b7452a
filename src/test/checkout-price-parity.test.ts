@@ -159,7 +159,14 @@ describe('P0-3 discount failure fails closed', () => {
     expect(src).toContain('retry: "1"');
   });
 
-  it('server still gates the tier on total quantity >= 2', () => {
-    expect(src).toMatch(/totalItems\s*>=\s*2/);
+  it('server still gates the tier on total quantity via the canonical engine', () => {
+    // Commerce N: the >= 2 rule now lives in the shared pricing engine, which
+    // create-checkout calls instead of keeping its own copy.
+    expect(src).toContain('computeCartQuote');
+    const engine = readFileSync(
+      resolve(process.cwd(), 'supabase/functions/_shared/pricing-engine.ts'),
+      'utf8',
+    );
+    expect(engine).toContain('VOLUME_DISCOUNT_MIN_UNITS = 2');
   });
 });
