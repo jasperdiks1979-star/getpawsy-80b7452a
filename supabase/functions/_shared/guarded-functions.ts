@@ -99,6 +99,11 @@ export const GUARDED_EDGE_FUNCTIONS = [
   "shopify-wave7-2a",
   "us-market-catalog-provision",
   "us-price-launch-configure",
+  // Security A batch
+  "analytics-health-probe",
+  "audit-warehouse-shipping",
+  "create-cj-order",
+  "visitor-map-stabilization-monitor",
 ] as const;
 
 export type GuardedEdgeFunction = (typeof GUARDED_EDGE_FUNCTIONS)[number];
