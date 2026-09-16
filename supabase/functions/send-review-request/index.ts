@@ -127,7 +127,7 @@ serve(async (req) => {
       ${itemsHtml}
 
       <div style="text-align:center;margin:28px 0 16px;">
-        <a href="https://getpawsy.pet/products/${topItem?.slug || ""}#reviews?order=${order.id}" 
+        <a href="https://getpawsy.pet/products/${topItem?.slug || ""}?order=${order.id}#reviews" 
            style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;text-decoration:none;padding:14px 36px;border-radius:8px;font-weight:600;font-size:15px;">
           Share Your Experience ✨
         </a>
