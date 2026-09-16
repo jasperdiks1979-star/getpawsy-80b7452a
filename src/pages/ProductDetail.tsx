@@ -141,6 +141,7 @@ import {
   FLAT_SHIPPING_RATE,
   US_FULFILLMENT_NOTE,
   RETURN_WINDOW_DAYS,
+  getTierDiscountPercent,
 } from "@/lib/shipping-constants";
 import { VolumeDiscountSelector } from "@/components/products/VolumeDiscountSelector";
 import {
