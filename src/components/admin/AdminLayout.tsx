@@ -105,24 +105,31 @@ export function AdminLayout() {
                   </button>
                 </div>
                 <ScrollArea className="flex-1 py-2 h-[calc(100vh-60px)]">
-                  <nav className="space-y-0.5 px-2">
-                    {navItems.map((item) => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.end}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
-                            isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                          )
-                        }
-                      >
-                        <item.icon className="h-3.5 w-3.5 shrink-0" />
-                        <span>{item.label}</span>
-                      </NavLink>
+                  <nav className="space-y-3 px-2">
+                    {ADMIN_NAV_SECTIONS.map((section) => (
+                      <div key={section.id} className="space-y-0.5">
+                        <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                          {section.title}
+                        </p>
+                        {section.items.map((item) => (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            className={({ isActive }) =>
+                              cn(
+                                'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
+                                isActive
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              )
+                            }
+                          >
+                            <item.icon className="h-3.5 w-3.5 shrink-0" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        ))}
+                      </div>
                     ))}
                   </nav>
                 </ScrollArea>
