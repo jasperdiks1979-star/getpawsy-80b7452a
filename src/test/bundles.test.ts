@@ -43,7 +43,7 @@ const twoOptionProduct = base({
 function componentsFor(products: BundleCatalogProduct[]): BundleComponent[] {
   const def = { slug: 's', name: 'S', intro: '', componentSlugs: products.map((p) => p.slug) };
   const status = evaluateBundle(def, new Map(products.map((p) => [p.slug, p])));
-  if (!status.active) throw new Error(`expected active, got ${JSON.stringify(status.reasons)}`);
+  if (!status.active) throw new Error(`expected active, got ${JSON.stringify(status)}`);
   return status.components;
 }
 
