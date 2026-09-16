@@ -813,6 +813,16 @@ const Checkout = () => {
         } catch {
           /* ignore */
         }
+        // Server fail-closed on an item whose option is missing/invalid: give a
+        // recovery path (product page) instead of a generic checkout failure.
+        if (parsed?.code === 'variant_unavailable') {
+          const productId = (parsed as { product_id?: string }).product_id;
+          const line = items.find((i) => i.id === productId || i.id.startsWith(`${productId}`));
+          toast.error("This item's option is no longer available. Please choose one again.");
+          setIsProcessing(false);
+          navigate(line?.slug ? `/products/${line.slug}` : productId ? `/products/${productId}` : '/cart');
+          return;
+        }
         if (parsed?.code === 'cj_shipping_unavailable' || parsed?.code === 'country_not_supported') {
           const destName =
             SUPPORTED_COUNTRIES.find((c) => c.code === shippingCountry)?.name || shippingCountry;
