@@ -1,6 +1,7 @@
 /**
  * Top 3 winner products — used for homepage badges, collection highlights,
- * and ad prioritization. Hand-curated based on price, margin, and conversion potential.
+ * and ad prioritization. Hand-curated by us based on price, margin and range fit. These are NOT
+ * sales rankings — no sales-volume or popularity claim may be rendered from them.
  */
 
 export interface TopWinner {
@@ -15,19 +16,19 @@ export const TOP_WINNERS: TopWinner[] = [
     productId: 'c7177ee4-5509-492f-965f-617402968f5c',
     slug: 'elevated-cooling-dog-bed-outdoor-pet-cot',
     badge: 'top-pick',
-    label: 'Top Pick',
+    label: 'Our pick',
   },
   {
     productId: '128e0207-8a94-4d71-b428-5b7f5002528f',
     slug: 'automatic-cat-litter-box-self-cleaning-app-control',
     badge: 'best-seller',
-    label: 'Best Seller',
+    label: 'Our pick',
   },
   {
     productId: '18028997-901a-40b8-8790-9e7b3ec558bf',
     slug: 'foldable-dog-stroller-pet-travel-cart',
     badge: 'most-popular',
-    label: 'Most Popular',
+    label: 'Our pick',
   },
 ];
 

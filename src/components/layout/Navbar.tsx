@@ -20,6 +20,7 @@ import Star from 'lucide-react/dist/esm/icons/star';
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 // framer-motion removed — CSS animations used instead (perf: critical path, saves ~60KB gzip)
 import { traceMount, traceEffect, traceStateSet } from '@/lib/lcp-render-trace';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { useCart } from '@/contexts/CartContext';
 import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,21 +55,26 @@ function emitCartOpen(source: 'cart_icon_desktop' | 'cart_icon_mobile', itemCoun
   }
 }
 
+// Primary navigation is cat-first: it mirrors the categories that actually
+// hold merchandised stock. The dog/outdoor legacy range stays live and
+// indexable and is reachable from the footer and the sitemap — it is simply
+// not part of the primary browse path.
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/collections/dogs', label: 'Dogs' },
-  { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/cats', label: 'Cats' },
-  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
+  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
+  { href: '/collections/cat-toys', label: 'Cat Toys' },
   { href: '/bundles', label: 'Sets' },
   { href: '/guides', label: 'Guides' },
   { href: '/contact', label: 'Contact' },
 ];
 
+// Both claims are checkable against the shipping policy and the catalogue:
+// free shipping is conditional on the threshold, so the threshold is shown.
 const promoItems = [
-  { label: 'Free Shipping', icon: Truck, href: '/products' },
-  { label: 'New Arrivals', icon: Gift, href: '/products' },
+  { label: `Free shipping over $${FREE_SHIPPING_THRESHOLD}`, icon: Truck, href: '/shipping' },
+  { label: 'Ships from a US warehouse', icon: Gift, href: '/shipping' },
 ];
 
 // Category item component for mega menu (uses canonical registry)

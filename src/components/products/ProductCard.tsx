@@ -188,9 +188,9 @@ export const ProductCard = memo(
       if (isOutOfStock) {
         return { label: "Sold out", className: "bg-muted text-muted-foreground" } as const;
       }
-      if (bestSeller) return { label: "Best Seller", className: "bg-foreground text-background" } as const;
-      if (topRated) return { label: "Top Rated", className: "bg-foreground text-background" } as const;
-      if (popularChoice) return { label: "Popular", className: "bg-primary text-primary-foreground" } as const;
+      if (bestSeller) return { label: "Our pick", className: "bg-foreground text-background" } as const;
+      if (topRated) return { label: "Our pick", className: "bg-foreground text-background" } as const;
+      if (popularChoice) return { label: "Our pick", className: "bg-primary text-primary-foreground" } as const;
       if (discount && discount > 0) {
         return { label: `-${discount}%`, className: "bg-destructive text-destructive-foreground" } as const;
       }
@@ -260,14 +260,14 @@ export const ProductCard = memo(
               ) : (
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
                 {bestSeller && !isOutOfStock && (
-                  <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">🏆 Best Seller</Badge>
+                  <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">Our pick</Badge>
                 )}
                 {topRated && !isOutOfStock && !bestSeller && (
-                  <Badge className="bg-emerald-600 text-white shadow-soft text-[10px]">⭐ Top Rated</Badge>
+                  <Badge className="bg-emerald-600 text-white shadow-soft text-[10px]">Our pick</Badge>
                 )}
                 {popularChoice && !isOutOfStock && !bestSeller && !topRated && (
                   <Badge className="bg-primary text-primary-foreground shadow-soft text-[10px]">
-                    🔥 Popular Choice
+                    Our pick
                   </Badge>
                 )}
                 {discount && discount > 0 && (

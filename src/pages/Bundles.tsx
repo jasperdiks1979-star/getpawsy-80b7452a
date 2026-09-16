@@ -43,7 +43,6 @@ const Bundles = () => {
           name="description"
           content="Curated sets of indoor cat essentials that ship together from our US warehouse. Choose every option yourself — nothing is substituted."
         />
-        <link rel="canonical" href="https://getpawsy.pet/bundles" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-10 md:py-14">

@@ -7,29 +7,33 @@ import { Layout } from '@/components/layout/Layout';
 import { SITE_URL } from '@/lib/constants';
 import { ArrowRight } from 'lucide-react';
 
+// Only categories that currently hold merchandised, in-stock products appear
+// here — a hub link to an empty collection is a dead end for shoppers and a
+// thin page for crawlers. Counts are the live merchandised catalogue.
 const CATEGORY_SECTIONS = [
   {
-    title: '🐕 Dog Supplies',
+    title: 'Litter & hygiene',
     categories: [
-      { name: 'Dog Toys', slug: 'dog-toys', description: 'Interactive & durable toys for every breed' },
-      { name: 'Dog Beds', slug: 'dog-beds', description: 'Orthopedic, elevated & calming beds' },
-      { name: 'Dog Carriers', slug: 'dog-carriers', description: 'Travel carriers, strollers & car seats' },
-      { name: 'Collars & Leashes', slug: 'dog-collars-leashes', description: 'Training collars, harnesses & leashes' },
-      { name: 'Dog Bowls', slug: 'dog-bowls', description: 'Slow feeders, elevated bowls & fountains' },
-      { name: 'Dog Grooming', slug: 'dog-grooming', description: 'Brushes, shampoos & grooming tools' },
+      { name: 'Cat Litter Boxes', slug: 'cat-litter-boxes', description: 'Covered, top-entry and high-sided boxes' },
+      { name: 'Cat Grooming', slug: null, href: '/products?category=cat-grooming', description: 'Brushes and de-shedding tools' },
     ],
   },
   {
-    title: '🐈 Cat Supplies',
+    title: 'Climbing & rest',
     categories: [
-      { name: 'Cat Toys', slug: 'cat-toys', description: 'Feather teasers, laser & interactive toys' },
-      { name: 'Cat Trees & Condos', slug: 'cat-trees-and-condos', description: 'Scratching posts, towers & condos' },
-      { name: 'Cat Litter Boxes', slug: 'cat-litter-boxes', description: 'Self-cleaning & enclosed litter solutions' },
-      { name: 'Cat Carriers', slug: 'cat-carriers', description: 'Backpack carriers & travel crates' },
-      { name: 'Cat Feeders', slug: 'automatic-cat-feeders', description: 'Automatic feeders & water fountains' },
+      { name: 'Cat Trees & Condos', slug: 'cat-trees-and-condos', description: 'Towers, condos and scratching posts' },
+      { name: 'Cat Beds', slug: 'cat-beds', description: 'Cushions, caves and perches' },
     ],
   },
-];
+  {
+    title: 'Play & feeding',
+    categories: [
+      { name: 'Cat Toys', slug: 'cat-toys', description: 'Wands, balls and puzzle enrichment' },
+      { name: 'Bowls & Feeders', slug: null, href: '/products?category=cat-bowls-feeders', description: 'Bowls, feeders and fountains' },
+      { name: 'Cat Starter Sets', slug: null, href: '/bundles', description: 'Curated sets that ship together' },
+    ],
+  },
+] as const;
 
 export default function ShopHub() {
   const { data: featuredProducts } = useQuery({
@@ -52,18 +56,18 @@ export default function ShopHub() {
   return (
     <Layout>
       <Helmet>
-        <title>Shop Pet Supplies – Dog & Cat Products | GetPawsy</title>
-        <meta name="description" content="Browse all pet supplies at GetPawsy. Shop dog toys, beds, carriers, cat trees, litter boxes and more. Free shipping on qualifying orders." /><meta name="robots" content="index, follow" />
+        <title>Shop Cat Supplies — Litter Boxes, Trees, Toys | GetPawsy</title>
+        <meta name="description" content="Browse cat litter boxes, cat trees and condos, beds, toys and feeders at GetPawsy. Every item ships from a US warehouse." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
         {/* Hero */}
         <header className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Shop All Pet Supplies
+            Shop Cat Supplies
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-base sm:text-lg">
-            Discover premium dog and cat products — from interactive toys and orthopedic beds to travel carriers and grooming essentials. Everything your pet needs, all in one place.
+            Litter boxes, cat trees, beds, toys and feeders for indoor cats — every category below holds products we can ship today.
           </p>
           <div className="flex justify-center gap-4 mt-6">
             <Link to="/products" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition">
@@ -79,8 +83,8 @@ export default function ShopHub() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {section.categories.map((cat) => (
                 <Link
-                  key={cat.slug}
-                  to={`/collections/${cat.slug}`}
+                  key={cat.name}
+                  to={'href' in cat && cat.href ? cat.href : `/collections/${cat.slug}`}
                   className="group p-4 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200"
                 >
                   <h3 className="font-semibold text-foreground text-sm group-hover:text-primary transition-colors">{cat.name}</h3>
