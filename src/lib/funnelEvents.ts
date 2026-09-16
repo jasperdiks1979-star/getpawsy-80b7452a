@@ -10,6 +10,7 @@
  * "real user action" in the /admin/funnel-health dashboard.
  */
 import { supabase } from '@/integrations/supabase/client';
+import { getCartSessionId } from '@/lib/cartSession';
 import { getBotClassification, recordEventTimingSample, markEngagementVerified } from '@/lib/botDetection';
 import { getFirstTouch, getLastTouch, classifySource } from '@/lib/attribution';
 import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib/geoClassify';
@@ -530,7 +531,7 @@ export function fireCheckoutEvent(input: CheckoutEventInput): void {
       is_bot: env.is_bot,
       bot_reason: env.bot_reason,
       geo_quality: env.geo_quality,
-      cart_id: input.cart_id ?? null,
+      cart_id: cartId,
       item_count: input.item_count ?? null,
       destination_url: input.destination_url ?? null,
       error_reason: input.error_reason ?? null,

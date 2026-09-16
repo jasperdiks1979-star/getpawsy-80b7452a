@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
 import { trackCheckoutFunnel } from '@/lib/checkoutFunnel';
+import { getCartSessionId } from '@/lib/cartSession';
 import { fireCheckoutClick, fireCheckoutRedirect, fireCheckoutError, fireCheckoutEvent } from '@/lib/funnelEvents';
 import { trackCci } from '@/lib/cci';
 import { ttTrackInitiateCheckout } from '@/lib/tiktok-pixel';
@@ -686,6 +687,7 @@ const Checkout = () => {
     // the create-checkout invoke later fails.
     fireCheckoutClick({
       source_component: 'checkout_stripe_button',
+      cart_id: getCartSessionId(),
       item_count: items.reduce((s, i) => s + i.quantity, 0),
       value: Number(stripeChargedTotal.toFixed(2)),
       currency: 'USD',
@@ -718,6 +720,8 @@ const Checkout = () => {
       fireCheckoutEvent({
         step: 'checkout_redirect_attempt',
         source_component: 'checkout_stripe_button',
+        cart_id: getCartSessionId(),
+        item_count: items.reduce((s, i) => s + i.quantity, 0),
         value: Number(stripeChargedTotal.toFixed(2)),
         currency: 'USD',
       });
@@ -822,6 +826,8 @@ const Checkout = () => {
         // Redirect to Stripe Checkout
         fireCheckoutRedirect({
           source_component: 'checkout_stripe_button',
+          cart_id: getCartSessionId(),
+          item_count: items.reduce((s, i) => s + i.quantity, 0),
           value: Number(stripeChargedTotal.toFixed(2)),
           currency: 'USD',
           destination_url: data.url,
