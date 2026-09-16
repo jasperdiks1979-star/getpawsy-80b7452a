@@ -480,9 +480,16 @@ const Cart = () => {
               <p className="text-base font-semibold text-foreground tracking-tight">${total.toFixed(2)}</p>
             </div>
             <Link
-              to="/checkout"
-              className="flex-1"
-              onClick={() => handleCartCheckoutClick('cart_sticky_button')}
+              to={hasVariantIssues ? '/cart' : '/checkout'}
+              aria-disabled={hasVariantIssues}
+              className={`flex-1 ${hasVariantIssues ? 'pointer-events-none opacity-60' : ''}`}
+              onClick={(e) => {
+                if (hasVariantIssues) {
+                  e.preventDefault();
+                  return;
+                }
+                handleCartCheckoutClick('cart_sticky_button');
+              }}
             >
               <Button size="lg" className="w-full gap-2 rounded-full font-semibold h-12">
                 Checkout
