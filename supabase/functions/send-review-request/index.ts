@@ -41,7 +41,9 @@ serve(async (req) => {
     const { data: orders, error: fetchError } = await supabase
       .from("orders")
       .select("id, customer_email, items, shipping_address, created_at")
-      .in("status", ["delivered", "shipped"])
+      // Delivered only. A shipped order has not demonstrably arrived, and the
+      // email says "since your order arrived" — that must be true when sent.
+      .eq("status", "delivered")
       .not("customer_email", "is", null)
       .lt("created_at", fiveDaysAgo)
       .gt("created_at", tenDaysAgo)
@@ -62,6 +64,19 @@ serve(async (req) => {
         .maybeSingle();
 
       if (existing) continue;
+
+      // Suppression: never mail an address that unsubscribed.
+      const { data: suppressed } = await supabase
+        .from("newsletter_subscribers")
+        .select("email, is_active")
+        .eq("email", order.customer_email)
+        .eq("is_active", false)
+        .maybeSingle();
+
+      if (suppressed) {
+        console.log(`[REVIEW-REQUEST] suppressed (unsubscribed): ${order.customer_email}`);
+        continue;
+      }
 
       const items = Array.isArray(order.items) ? order.items : [];
       if (items.length === 0) continue;
@@ -112,7 +127,7 @@ serve(async (req) => {
       ${itemsHtml}
 
       <div style="text-align:center;margin:28px 0 16px;">
-        <a href="https://getpawsy.pet/contact?subject=Product+Review&order=${order.id.slice(0, 8)}" 
+        <a href="https://getpawsy.pet/products/${topItem?.slug || ""}#reviews?order=${order.id}" 
            style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;text-decoration:none;padding:14px 36px;border-radius:8px;font-weight:600;font-size:15px;">
           Share Your Experience ✨
         </a>
@@ -125,6 +140,10 @@ serve(async (req) => {
       <div style="border-top:1px solid #e5e7eb;margin-top:28px;padding-top:20px;text-align:center;">
         <p style="color:#9ca3af;font-size:12px;">© ${new Date().getFullYear()} GetPawsy. All rights reserved.</p>
         <a href="https://getpawsy.pet" style="color:#10b981;text-decoration:none;font-size:13px;">Visit our shop</a>
+        <p style="color:#9ca3af;font-size:12px;margin:12px 0 0;">
+          Don't want emails like this?
+          <a href="https://getpawsy.pet/unsubscribe?email=${encodeURIComponent(order.customer_email)}" style="color:#9ca3af;">Unsubscribe</a>.
+        </p>
       </div>
     </div>
   </div>
