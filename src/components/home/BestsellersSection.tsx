@@ -5,7 +5,7 @@ import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useCart } from '@/contexts/CartContext';
+import { useQuickAdd } from '@/hooks/useQuickAdd';
 import { BestsellersGridSkeleton } from './BestsellersSkeleton';
 import { getCanonicalCardPrice } from '@/lib/canonical-pricing';
 import { getTrustLabel } from '@/lib/trust-labels';
@@ -15,7 +15,7 @@ import { getTrustLabel } from '@/lib/trust-labels';
  */
 export const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { addItem } = useCart();
+  const quickAdd = useQuickAdd();
 
   const { data: bestsellers, isLoading } = useQuery({
     queryKey: ['homepage-bestsellers'],
@@ -182,13 +182,17 @@ export const BestsellersSection = () => {
                   </Link>
                   <button
                     onClick={() => {
-                      addItem({
-                        id: product.id,
-                        slug: (product as any).slug ?? undefined,
-                        name: product.name || 'Product',
-                        price,
-                        image: imageUrl,
-                      });
+                      quickAdd(
+                        {
+                          id: product.id,
+                          slug: (product as any).slug ?? undefined,
+                          name: product.name || 'Product',
+                          price,
+                          image_url: imageUrl,
+                          variants: (product as { variants?: unknown }).variants ?? [],
+                        },
+                        { displayPrice: price },
+                      );
                     }}
                     className="w-full mt-2 py-2.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
