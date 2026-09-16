@@ -63,7 +63,7 @@ const FooterSection = ({ title, children, className, premium }: { title: string;
 const footerLinks = {
   shop: [
     { label: 'All Products', href: '/products' },
-    { label: 'Bestsellers', href: '/bestsellers' },
+    { label: 'Our Picks', href: '/bestsellers' },
     { label: 'Shop Dogs', href: '/collections/dogs' },
     { label: 'Shop Cats', href: '/collections/cats' },
     { label: 'All Collections', href: '/collections' },
