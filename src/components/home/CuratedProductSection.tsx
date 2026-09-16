@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useCart } from '@/contexts/CartContext';
+import { useQuickAdd } from '@/hooks/useQuickAdd';
 import { getTrustLabel } from '@/lib/trust-labels';
 
 interface Props {
@@ -14,14 +14,14 @@ interface Props {
  * Curated product grid — fetches specific products by ID, filters to in-stock only.
  */
 export function CuratedProductSection({ title, subtitle, productIds }: Props) {
-  const { addItem } = useCart();
+  const quickAdd = useQuickAdd();
 
   const { data: products } = useQuery({
     queryKey: ['curated-products', productIds],
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
-        .select('id, name, slug, price, compare_at_price, image_url, stock')
+        .select('id, name, slug, price, compare_at_price, image_url, stock, variants')
         .in('id', productIds)
         .eq('is_active', true);
 
@@ -89,13 +89,17 @@ export function CuratedProductSection({ title, subtitle, productIds }: Props) {
                 </Link>
                 <button
                   onClick={() =>
-                    addItem({
-                      id: p.id,
-                      slug: p.slug ?? undefined,
-                      name: p.name || 'Product',
-                      price,
-                      image: p.image_url || '/placeholder.svg',
-                    })
+                    quickAdd(
+                      {
+                        id: p.id,
+                        slug: p.slug ?? undefined,
+                        name: p.name || 'Product',
+                        price,
+                        image_url: p.image_url,
+                        variants: (p as { variants?: unknown }).variants ?? [],
+                      },
+                      { displayPrice: price },
+                    )
                   }
                   className="w-full mt-2 py-2.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
