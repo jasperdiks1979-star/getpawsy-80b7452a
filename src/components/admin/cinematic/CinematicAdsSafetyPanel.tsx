@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertTriangle, Shield, RefreshCw, FileText, Play, ExternalLink, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { RiskyActionButton } from "@/components/admin/RiskyActionButton";
 
 type SafetyJob = {
   id: string;
