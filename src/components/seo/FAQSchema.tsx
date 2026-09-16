@@ -56,8 +56,8 @@ export const COMMON_PRODUCT_FAQS: FAQItem[] = [
     answer: FAQ_RETURNS_ANSWER,
   },
   {
-    question: 'Are your products safe for pets?',
-    answer: 'Yes, all our products are carefully selected and tested to ensure they are safe for your beloved pets. We prioritize quality and safety in every product we offer.',
+    question: 'How do you select the products you sell?',
+    answer: 'We select products by comparing published manufacturer specifications and supplier stock records. We do not test products ourselves, and we only publish specifications the manufacturer states.',
   },
   {
     question: 'How can I track my order?',
@@ -69,55 +69,26 @@ export const COMMON_PRODUCT_FAQS: FAQItem[] = [
   },
 ];
 
-// Generate product-specific FAQs
-export function generateProductFAQs(productName: string, category?: string): FAQItem[] {
+/**
+ * Product FAQ structured data.
+ *
+ * Answers are limited to store policy and to what the product page itself
+ * states. Category-guessed answers (machine-washable covers, non-toxic
+ * materials, natural ingredients, "most customers complete assembly in
+ * 30-60 minutes") asserted facts no manufacturer record contains and were
+ * being published to search engines as FAQPage markup, so they are gone.
+ */
+export function generateProductFAQs(productName: string, _category?: string): FAQItem[] {
   const baseFaqs: FAQItem[] = [
     {
-      question: `Is the ${productName} suitable for all pet sizes?`,
-      answer: `The ${productName} comes in various sizes to accommodate different pet sizes. Please check the product specifications for exact dimensions and weight recommendations.`,
+      question: `What are the exact dimensions and materials of the ${productName}?`,
+      answer: `Every dimension, material and weight figure the manufacturer documents for the ${productName} is listed in the specifications on its product page. We do not publish figures the manufacturer has not stated.`,
     },
     {
-      question: `How do I clean the ${productName}?`,
-      answer: `Most of our products are easy to clean. For specific care instructions, please refer to the product description or contact our customer support team.`,
-    },
-    {
-      question: `What materials is the ${productName} made from?`,
-      answer: `We use high-quality, pet-safe materials in all our products. Check the product description for specific material information.`,
+      question: `Which size or colour of the ${productName} will I receive?`,
+      answer: `You receive exactly the option selected at checkout. Out-of-stock options cannot be selected and we never substitute one option for another.`,
     },
   ];
-
-  // Add category-specific FAQs
-  if (category) {
-    const categoryLower = category.toLowerCase();
-    
-    if (categoryLower.includes('bed') || categoryLower.includes('furniture')) {
-      baseFaqs.push({
-        question: `Is the ${productName} machine washable?`,
-        answer: `Many of our pet beds feature removable, machine-washable covers. Check the product details for specific washing instructions.`,
-      });
-    }
-    
-    if (categoryLower.includes('toy')) {
-      baseFaqs.push({
-        question: `Is the ${productName} safe for chewing?`,
-        answer: `Our pet toys are made from durable, non-toxic materials. However, always supervise your pet during play and replace toys showing signs of wear.`,
-      });
-    }
-    
-    if (categoryLower.includes('food') || categoryLower.includes('treat')) {
-      baseFaqs.push({
-        question: `What are the ingredients in the ${productName}?`,
-        answer: `We use only natural, high-quality ingredients in our pet food and treats. Check the product label for a complete ingredient list.`,
-      });
-    }
-    
-    if (categoryLower.includes('cat tree') || categoryLower.includes('scratching')) {
-      baseFaqs.push({
-        question: `How do I assemble the ${productName}?`,
-        answer: `The ${productName} comes with easy-to-follow assembly instructions and all necessary hardware. Most customers complete assembly in 30-60 minutes.`,
-      });
-    }
-  }
 
   return [...baseFaqs, ...COMMON_PRODUCT_FAQS.slice(0, 2)];
 }

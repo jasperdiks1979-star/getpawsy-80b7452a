@@ -316,11 +316,8 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
         <TrendingUp className="w-5 h-5 text-primary" />
         <div>
           <h3 className="text-lg font-semibold">
-            {hasDogBed ? "Complete Your Dog's Comfort Setup" : 'Customers Also Bought'}
+            {hasDogBed ? "Complete Your Dog's Comfort Setup" : 'You may also like'}
           </h3>
-          {hasDogBed && (
-            <p className="text-xs text-muted-foreground">Most customers add these for the full experience</p>
-          )}
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

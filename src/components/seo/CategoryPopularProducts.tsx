@@ -41,7 +41,7 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
       <div className="flex items-center gap-2 mb-6">
         <Star className="w-5 h-5 text-primary" />
         <h2 className="text-2xl font-semibold">
-          Popular in {shortName}
+          Our picks in {shortName}
         </h2>
       </div>
       <div className="grid sm:grid-cols-3 gap-4">
@@ -78,7 +78,7 @@ export function CategoryPopularProducts({ categoryName, products }: CategoryPopu
               })()}
               {i === 0 && (
                 <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
-                  Best Seller
+                  Our pick
                 </Badge>
               )}
             </div>
