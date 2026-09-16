@@ -199,7 +199,7 @@ const LitterBoxFunnel = () => {
           </div>
           <h2 className="text-lg font-display font-bold text-foreground mb-2">Loved by Pet Owners</h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Thousands of cat owners have simplified their daily routine with this self-cleaning litter box.
+            Designed to cut the daily litter routine down to a quick scoop-and-go.
           </p>
         </section>
 

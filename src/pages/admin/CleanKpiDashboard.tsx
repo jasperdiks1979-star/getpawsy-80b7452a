@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { CommercialKpiCard } from '@/components/admin/CommercialKpiCard';
 
 type Range = '24h' | '7d' | '30d';
 type GeoTier = 'all' | 'us' | 'non_us' | 'unknown';
@@ -270,6 +271,9 @@ export default function CleanKpiDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Money-side KPIs — bounded read of orders for the same window. */}
+        <CommercialKpiCard hours={rangeHours(range)} />
       </div>
     </>
   );

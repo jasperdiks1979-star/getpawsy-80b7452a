@@ -508,13 +508,19 @@ const Bestsellers = () => {
       {/* ─── Featured Snippet Block ─────────────────────────────────── */}
       <section className="py-12 md:py-16">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">What Are the Best Pet Products to Buy in 2026?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">How we choose what to stock</h2>
           <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-            The best pet products to buy in 2026 are those that combine proven durability, pet safety certifications, and consistent owner satisfaction. Based on verified purchase data from thousands of US pet parents, the top categories include orthopedic memory foam dog beds, interactive puzzle feeders for canine enrichment, self-cleaning cat litter boxes that reduce maintenance by 80%, and stainless steel slow feeder bowls that prevent bloat and improve digestion.
+            We keep a deliberately small indoor-cat range instead of a huge unfiltered catalog.
+            A product only stays listed when we can verify the things that decide whether it is
+            worth buying: it ships from a US warehouse, stock is real, the specifications are
+            documented, and the price holds up against comparable options.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Unlike generic marketplaces that list millions of unfiltered products, our bestseller rankings are updated every 30 days using a transparent scoring model that weighs customer reviews (40%), repeat purchase rate (30%), return rate (20%), and product safety evaluations (10%). This data-driven approach ensures only genuinely loved products earn a spot on this page.
+            We do not rank products by invented scores or claimed satisfaction figures. This page
+            reflects what we actually stock and what people actually buy here — nothing more. As
+            customers write reviews, those reviews appear on the product pages themselves.
           </p>
+
         </div>
       </section>
 

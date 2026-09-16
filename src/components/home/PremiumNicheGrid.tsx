@@ -52,7 +52,7 @@ const niches = [
   {
     slug: 'bestsellers',
     title: 'Our Bestsellers',
-    benefit: 'The most popular products, carefully selected by thousands of US pet families.',
+    benefit: 'A small, deliberately curated range for indoor cats.',
     trust: 'Top-rated • Curated collection',
     image: bestsellersImg,
     alt: 'Curated premium pet product flat lay with warm lighting',

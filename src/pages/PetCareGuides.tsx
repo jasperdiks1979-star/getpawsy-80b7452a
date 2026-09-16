@@ -333,7 +333,7 @@ const PetCareGuides = () => {
           <p className="text-muted-foreground leading-relaxed">
             Every guide in our library follows a rigorous editorial process. We start by identifying the
             questions pet owners actually ask — using search data, veterinarian consultations, and feedback
-            from our community of over 50,000 pet parents. From there, our writers research current
+            from the questions our customers actually send us. From there, our writers research current
             veterinary guidelines, test products hands-on when possible, and structure each guide around
             actionable advice rather than filler content.
           </p>
