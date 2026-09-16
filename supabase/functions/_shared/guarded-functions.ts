@@ -106,6 +106,18 @@ export const GUARDED_EDGE_FUNCTIONS = [
   "audit-warehouse-shipping",
   "create-cj-order",
   "visitor-map-stabilization-monitor",
+  // Security B batch
+  "aci-orchestrator",
+  "add-internal-links-to-blogs",
+  "analytics-canonical",
+  "genesis-omega-architect",
+  "genesis-omega-board",
+  "genesis-omega-boardroom-certify",
+  "genesis-omega-infinity",
+  "genesis-omega-perpetual",
+  "genesis-omega-truth",
+  "genesis-v15-twin",
+  "genesis-golden-adaptive-wave",
 ] as const;
 
 export type GuardedEdgeFunction = (typeof GUARDED_EDGE_FUNCTIONS)[number];
