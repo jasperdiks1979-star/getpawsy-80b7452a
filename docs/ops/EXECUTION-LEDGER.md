@@ -56,3 +56,19 @@ Resume point is whichever OPEN item above receives external input first.
 
 Verification: 1079 passed / 1 skipped / 0 failed, `tsgo --noEmit` clean, build OK,
 production smoke all 200. No database, payment, supplier, email or ad action taken.
+
+## NEXT_OPEN_PHASE — Security B: unauthenticated edge functions (4 critical findings, 2026-09-16)
+
+Surfaced by the publish-time security scan, not previously in the roadmap. All four are
+edge functions reachable without authentication:
+
+1. `aci-orchestrator*` — can write internal automation state.
+2. `add-internal-links` — can rewrite all published blog content.
+3. `analytics-canonical` — leaks revenue, funnel and visitor geolocation data.
+4. `genesis-omega*` — can write certification/intelligence data.
+
+Planned fix: apply `requireInternalOrAdmin` / `requireMonitorCaller` from
+`supabase/functions/_shared/`, exactly as Security A did, after enumerating every caller
+(cron jobs already send `x-internal-secret`; admin dashboards call with a user JWT).
+Must be done caller-first — `analytics-canonical` backs live admin dashboards and the
+stabilization monitor, so guarding it blind would break them.
