@@ -13,14 +13,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const INTERNAL     = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
 
-type Canon =
-  | "CANONICAL_PAGE_VIEW"
-  | "CANONICAL_PRODUCT_VIEW"
-  | "CANONICAL_ADD_TO_CART"
-  | "CANONICAL_CART"
-  | "CANONICAL_CHECKOUT"
-  | "CANONICAL_PURCHASE"
-  | "CANONICAL_ENGAGEMENT";
 
 const CCI_MAP: Record<string, Canon> = {
   page_view: "CANONICAL_PAGE_VIEW",
