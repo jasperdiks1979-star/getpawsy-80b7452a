@@ -63,17 +63,15 @@ export const getNextTier = (subtotal: number) => {
 //                          subtotal >= 65 -> 5%, subtotal >= 99 -> 10%
 
 /** Minimum total unit quantity required for any percentage (volume) discount */
-export const VOLUME_DISCOUNT_MIN_UNITS = 2;
+export const VOLUME_DISCOUNT_MIN_UNITS = ENGINE_MIN_UNITS;
 
 /** True when the cart holds enough units to earn a percentage volume discount */
 export const qualifiesForVolumeDiscount = (unitCount: number): boolean =>
   unitCount >= VOLUME_DISCOUNT_MIN_UNITS;
 
 /** Canonical tier percentage for a cart. Returns 0 when not eligible. */
-export const getTierDiscountPercent = (subtotal: number, unitCount: number): number => {
-  if (!qualifiesForVolumeDiscount(unitCount)) return 0;
-  return getApplicableTier(subtotal)?.discountPercent ?? 0;
-};
+export const getTierDiscountPercent = (subtotal: number, unitCount: number): number =>
+  tierPercentFor(toCents(subtotal), unitCount);
 
 export interface CartIncentiveState {
   volumeEligible: boolean;
