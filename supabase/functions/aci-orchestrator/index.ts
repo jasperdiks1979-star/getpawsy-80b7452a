@@ -42,7 +42,13 @@ async function invoke(fn: string): Promise<Step> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Fail closed: internal secret OR admin JWT only. Runs before any DB write.
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
+
   const url = new URL(req.url);
+
   const trigger = url.searchParams.get("trigger") ?? "manual";
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
