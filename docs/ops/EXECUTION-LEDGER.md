@@ -72,3 +72,27 @@ Planned fix: apply `requireInternalOrAdmin` / `requireMonitorCaller` from
 (cron jobs already send `x-internal-secret`; admin dashboards call with a user JWT).
 Must be done caller-first — `analytics-canonical` backs live admin dashboards and the
 stabilization monitor, so guarding it blind would break them.
+
+## SECURITY B — caller map + hardening (2026-09-16 19:2x UTC)
+
+### B1 — read-only caller map (inspection only, no production mutation)
+
+| function | callers (exact) | invocation | current auth | freq | data | anon needed? | required auth | proposed control | regression risk | verification |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `aci-orchestrator` | `src/pages/admin/AutonomousCommercePage.tsx:88` (`supabase.functions.invoke`); `cmdr-orchestrator/index.ts:103` **plan row only — never invokes**; no cron job (`cron.job` scan: none) | admin browser invoke (user JWT) | **NONE — anonymous** | manual | writes `aci_runs`, `aci_run_steps`, `aci_audit_log`; fans out to 4 internal fns with service-role bearer | no | admin JWT or internal secret | `requireInternalOrAdmin` first statement in handler | low — only caller already sends an admin JWT | `src/test/security-b.test.ts`; live anon call must be 401 |
+| `add-internal-links-to-blogs` | no runtime caller in `src/`, `scripts/`, other functions, or `cron.job` | — | **already guarded** (`admin-guard.ts`, line 189, before any `.update()`) | — | rewrites `blog_posts.content` | no | admin JWT / internal secret | no change — already narrowest | none | `security-b.test.ts` guard-order assertions |
+| `analytics-canonical` | `src/hooks/useCanonicalFunnel.ts`, `useAnalyticsTruth.ts`, `CleanAnalyticsPanel`, `VisitorWorldMap`, `ProKpiHeader`, `SessionEvidencePanel`, `V2EnvelopeBadge`, `PinterestTrafficPanel`, `AnalyticsCanaryV2`, `FunnelHealthCenter`, `CustomerJourneyCenterPage`, `LiveEventsPage`, `PinterestAttributionHealthPage`, `VisitorWorldMapProPage` (all `supabase.functions.invoke`, admin JWT, behind `AdminRouteGuard`); `visitor-map-stabilization-monitor`, `analytics-canonical-warmer`, `world-map-debug`, `edge-functions-health` (fn→fn, `x-internal-secret`); `scripts/analytics-truth-parity-probe.mjs` (CI) | invoke + fn→fn | **already guarded** (line 1264, first statement of handler) | dashboards on demand; warmer via cron jobs 343–354 (15–360 min) | revenue totals, funnel, order values, per-session lat/long/city | **no** | admin JWT or internal secret | no change; warmer keeps its own dedicated `ANALYTICS_WARMER_SECRET` | high if broken → asserted both ways | `security-b.test.ts` + live 401 anon + dashboards load |
+| `genesis-omega-architect` | `src/pages/admin/GenesisOmegaArchitectPage.tsx:43` (`supabase.functions.invoke`) | admin browser invoke | inline JWT + `user_roles` admin check, 401/403 fail-closed | manual | read-only inventory via service role | no | admin role | keep inline server-side role check (already strictest: role-verified, not merely logged in) | none | `security-b.test.ts` role-check ordering assertions |
+| `genesis-omega-board` / `-boardroom-certify` / `-infinity` / `-perpetual` / `-truth`, `genesis-v15-twin`, `genesis-golden-adaptive-wave` | admin Genesis pages (`GenesisOmegaPage`, `GenesisBoardroomV5Page`, `GenesisPerpetualCompanyPage`, `GenesisOmegaTruthPage`, `GenesisDigitalCompanyPage`) via `supabase.functions.invoke` | admin browser invoke | **already guarded** (`requireInternalOrAdmin` before any write) | manual | certification/intelligence writes via service role | no | admin JWT / internal secret | no change | none | `security-b.test.ts` guard + order assertions |
+
+Scan snapshot context: the four critical findings are dated `2026-09-16T17:00:16Z`. Code inspection at 19:2x UTC shows three of the four were already remediated in-code before that snapshot was consumed; only `aci-orchestrator` was genuinely unguarded.
+
+### B2 — hardening applied
+
+| change | file | effect |
+|---|---|---|
+| `requireInternalOrAdmin` as first handler statement; `x-internal-secret` added to CORS allow-headers | `supabase/functions/aci-orchestrator/index.ts` | anonymous callers get 401 before any DB write or fan-out |
+| Security B batch registered | `supabase/functions/_shared/guarded-functions.ts` | 11 function names added to the canonical guarded registry |
+| Regression coverage | `src/test/security-b.test.ts` (30 tests) | anon denial, guard-before-privileged-work ordering, revenue/geo behind guard, warmer internal-secret path, mapped admin callers unchanged, no secrets in client bundle |
+
+No checkout/payment/refund/order/customer-email/supplier/ads behaviour touched. No new cron job, no polling, no extra DB load.
