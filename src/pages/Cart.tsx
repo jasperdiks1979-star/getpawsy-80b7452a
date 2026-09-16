@@ -371,10 +371,23 @@ const Cart = () => {
                 </div>
               )}
 
+              {hasVariantIssues && (
+                <p className="mt-4 text-sm text-destructive" data-testid="cart-variant-blocker">
+                  Choose an option for the highlighted item to continue.
+                </p>
+              )}
+
               <Link
-                to="/checkout"
-                className="block mt-4"
-                onClick={() => handleCartCheckoutClick('cart_proceed_button')}
+                to={hasVariantIssues ? '/cart' : '/checkout'}
+                aria-disabled={hasVariantIssues}
+                className={`block mt-4 ${hasVariantIssues ? 'pointer-events-none opacity-60' : ''}`}
+                onClick={(e) => {
+                  if (hasVariantIssues) {
+                    e.preventDefault();
+                    return;
+                  }
+                  handleCartCheckoutClick('cart_proceed_button');
+                }}
               >
                 {/* Mission First Revenue P0.2 — trust strip directly above primary CTA */}
                 <TrustStripAboveATC className="mb-3 justify-center" compact />
