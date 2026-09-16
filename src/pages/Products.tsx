@@ -152,9 +152,11 @@ const Products = () => {
       // other heavy JSONB columns (~1.9 MB) and regularly exceeded the
       // statement timeout, leaving the grid stuck at "0 of 0".
       const { data, error } = await supabase
-        .from('products_public')
+        // products_shop = the curated cat-first range only. Retired and legacy
+        // long-tail products keep working URLs but never appear in listings.
+        .from('products_shop')
         .select(
-          'id, name, name_clean, slug, description, category, image_url, price, compare_at_price, sku, stock, is_active, shipping_time, supplier_name, created_at, updated_at, primary_species, is_duplicate, dedupe_key, canonical_product_id, cj_product_id, seo_tier',
+          'id, name, name_clean, slug, description, category, image_url, price, compare_at_price, sku, stock, is_active, shipping_time, supplier_name, created_at, updated_at, primary_species, is_duplicate, dedupe_key, canonical_product_id, cj_product_id, seo_tier, merch_role, merch_rank',
         )
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -243,7 +245,8 @@ const Products = () => {
 
       // Get product counts per category name
       const { data: products } = await supabase
-        .from('products_public')
+        // Only categories that hold curated-range products should be offered.
+        .from('products_shop')
         .select('category')
         .eq('is_active', true);
       

@@ -45,7 +45,7 @@ export const PostPurchaseOffer = ({ purchasedProductIds }: PostPurchaseOfferProp
       const baseIds = purchasedProductIds.map(id => id.split('-')[0]);
       
       const { data: purchasedProducts } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('category')
         .in('id', baseIds);
 
@@ -53,7 +53,7 @@ export const PostPurchaseOffer = ({ purchasedProductIds }: PostPurchaseOfferProp
 
       // Find related product from same category
       let query = supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, price, image_url, slug, compare_at_price')
         .eq('is_active', true)
         .gt('price', 10) // Skip very cheap items

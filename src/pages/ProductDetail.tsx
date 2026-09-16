@@ -1206,9 +1206,10 @@ const ProductDetail = () => {
 
   return (
     <Layout>
-      {/* Tier C products get noindex to preserve crawl budget; all others stay indexable */}
+      {/* Retired (out-of-range) and Tier C products get noindex to preserve
+          crawl budget; legacy long-tail and in-range products stay indexable. */}
       <Helmet>
-        {(product as any).seo_tier === "C" ? (
+        {(product as any).seo_noindex === true || (product as any).seo_tier === "C" ? (
           <>
             <meta name="robots" content="noindex, follow" />
             <meta name="googlebot" content="noindex, follow" />

@@ -12,7 +12,7 @@ export default function RecentProducts() {
     queryKey: ['recent-products'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, slug, price, image_url, category, created_at')
         .eq('is_active', true)
         .not('image_url', 'is', null)

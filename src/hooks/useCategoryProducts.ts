@@ -121,7 +121,7 @@ export function useCategoryProducts(categorySlug: string | null) {
 
       // Step 2: Query products matching any of these category names
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('*')
         .eq('is_active', true)
         .gt('stock', 0)

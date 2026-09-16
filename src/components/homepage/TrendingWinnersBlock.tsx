@@ -17,7 +17,7 @@ import { Star } from 'lucide-react';
  */
 async function fetchWinners() {
   const { data: fallback } = await supabase
-    .from('products_public')
+    .from('products_shop')
     .select('id, name, slug, price, compare_at_price, image_url')
     .eq('is_active', true)
     .gt('stock', 0)

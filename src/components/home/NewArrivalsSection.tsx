@@ -14,7 +14,7 @@ export function NewArrivalsSection() {
     queryFn: async () => {
       const supabase = await getSupabase();
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, slug, image_url, price, compare_at_price, variants, category, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })

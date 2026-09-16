@@ -175,7 +175,7 @@ export const usePersonalizedRecommendations = ({
       let recentlyViewedCategories: string[] = [];
       if (recentlyViewedIds.length > 0) {
         const { data: viewedProducts } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('category')
           .in('id', recentlyViewedIds.slice(0, 10));
 
@@ -201,7 +201,7 @@ export const usePersonalizedRecommendations = ({
 
       // Fetch candidate products
       const { data: candidateProducts, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('*')
         .eq('is_active', true)
         .neq('id', currentProductId)
@@ -226,7 +226,7 @@ export const usePersonalizedRecommendations = ({
         const existingIds = new Set(scoredProducts.map(p => p.id));
 
         const { data: fallbackProducts } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('*')
           .eq('is_active', true)
           .eq('category', currentCategory)

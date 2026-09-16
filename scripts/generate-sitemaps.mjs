@@ -163,13 +163,13 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
   let products;
@@ -221,12 +221,12 @@ async function main() {
   );
   let productCatalog = await fetchAllPages(
     "products_public",
-    "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+    "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null"
   );
   if (!productCatalog || productCatalog.length === 0) {
     productCatalog = await fetchAllPages(
       "products",
-      "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+      "select=name,slug,category&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null"
     );
   }
   if (!productCatalog) productCatalog = [];

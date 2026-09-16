@@ -15,7 +15,7 @@ const CatHub = () => {
     queryKey: ['cat-hub-products'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
         .in('category', CAT_SILO.categories)
