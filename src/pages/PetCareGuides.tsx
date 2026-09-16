@@ -465,7 +465,7 @@ const PetCareGuides = () => {
               },
               {
                 q: 'Do you test the products you recommend?',
-                a: 'Whenever possible, yes. For categories like dog car seats, litter boxes, and grooming tools, we conduct hands-on testing with real pets. For products we can\'t test directly, we analyze verified customer reviews, manufacturer specifications, and safety certifications.',
+                a: 'No. GetPawsy is a retailer, not a testing laboratory, and we do not perform laboratory or in-home testing. Our selections are desk research: manufacturer specifications, supplier documentation, materials, safety certifications where published, availability and price comparison. Our full method is on the How We Select Products page.',
               },
               {
                 q: 'Can I suggest a guide topic?',

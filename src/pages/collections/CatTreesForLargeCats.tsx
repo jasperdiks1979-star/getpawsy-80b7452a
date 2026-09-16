@@ -134,7 +134,8 @@ export default function CatTreesForLargeCats() {
     '@type': 'Organization',
     name: 'GetPawsy',
     url: 'https://getpawsy.pet',
-    aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', bestRating: '5', worstRating: '1', ratingCount: '287', reviewCount: '287' },
+    // No aggregateRating: GetPawsy has zero approved customer reviews, so a
+    // store rating would be fabricated structured data.
   };
 
   return (

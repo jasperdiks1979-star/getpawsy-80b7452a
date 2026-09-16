@@ -370,6 +370,17 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Phase 7 outbound-email kill switch. All customer-facing email is disabled
+  // until the store owner explicitly enables it by setting
+  // OUTBOUND_CUSTOMER_EMAIL_ENABLED=true. Fail-closed: absent value = disabled.
+  if (Deno.env.get("OUTBOUND_CUSTOMER_EMAIL_ENABLED") !== "true") {
+    console.log("[outbound-email] disabled: OUTBOUND_CUSTOMER_EMAIL_ENABLED is not 'true'. No email sent.");
+    return new Response(
+      JSON.stringify({ sent: 0, disabled: true, reason: "OUTBOUND_CUSTOMER_EMAIL_ENABLED is not set to 'true'" }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+    );
+  }
+
   try {
     // ========== AUTHENTICATION CHECK ==========
     const authHeader = req.headers.get("Authorization");

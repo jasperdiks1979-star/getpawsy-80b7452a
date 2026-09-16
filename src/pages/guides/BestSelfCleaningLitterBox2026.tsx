@@ -532,7 +532,7 @@ export default function BestSelfCleaningLitterBox2026() {
         {/* Trust Footer */}
         <footer className="border-t pt-6 text-center text-xs text-muted-foreground space-y-1">
           <p>Last updated: February 2026 · Written by the GetPawsy Editorial Team</p>
-          <p>All product recommendations are based on hands-on testing and veterinary research.</p>
+          <p>Recommendations are desk research: manufacturer specifications, supplier documentation and published sources. We do not perform laboratory or in-home testing.</p>
           <p>
             <Link to="/why-trust-our-reviews" className="text-primary hover:underline">Why Trust Our Reviews</Link>
             {' · '}
