@@ -142,7 +142,7 @@ function generateOutreachAsset(guide: GuideInput): OutreachAsset {
 
 I recently published a comprehensive guide about ${topic} that I thought might be valuable for your readers.
 
-The guide covers practical advice, product comparisons, and common mistakes pet parents make — all based on hands-on testing.
+The guide covers practical advice, product comparisons based on manufacturer specifications, and common mistakes pet parents make.
 
 If you're interested, feel free to reference it in your content:
 ${BASE_URL}/guides/${guide.slug}

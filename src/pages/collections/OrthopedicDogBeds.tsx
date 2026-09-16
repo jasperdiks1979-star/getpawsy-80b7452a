@@ -160,7 +160,9 @@ export default function OrthopedicDogBeds() {
     { '@type': 'ListItem', position: 2, name: 'Products', item: `${BASE}/products` },
     { '@type': 'ListItem', position: 3, name: 'Orthopedic Dog Beds', item: CANONICAL },
   ]};
-  const reviewSchema = { '@context': 'https://schema.org', '@type': 'Organization', name: 'GetPawsy', url: BASE, aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', bestRating: '5', worstRating: '1', ratingCount: '312', reviewCount: '312' } };
+  // No aggregateRating: GetPawsy has zero approved customer reviews, so a store
+  // rating would be fabricated structured data.
+  const reviewSchema = { '@context': 'https://schema.org', '@type': 'Organization', name: 'GetPawsy', url: BASE };
 
   return (
     <Layout>

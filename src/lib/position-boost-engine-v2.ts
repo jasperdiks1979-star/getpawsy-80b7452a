@@ -64,7 +64,7 @@ function buildTitle(slug: string, position: number): string {
 
 function buildBuyerIntro(slug: string): string {
   const name = humanize(slug).toLowerCase();
-  return `Looking for the best ${name} in 2026? Our team of pet experts and veterinarians have tested and compared the top options available today. Whether you're shopping for a puppy, adult dog, or senior pet, this guide breaks down what actually matters — quality, safety, and real-world durability. We've cut through the marketing hype to bring you honest recommendations based on hands-on testing. Every product featured here meets our strict safety standards and has been verified by real pet owners across the US.`;
+  return `Looking for the best ${name} in 2026? This guide compares the options we stock using manufacturer specifications, materials and supplier documentation — GetPawsy is a retailer and does not test products itself. It breaks down what actually matters: build quality, published safety information, sizing and availability, so you can judge the trade-offs yourself.`;
 }
 
 function buildFaq(slug: string): Array<{ question: string; answer: string }> {

@@ -233,12 +233,6 @@ export default function TrainingLandingPage() {
           <div>
             <Badge className="mb-3 bg-primary text-primary-foreground">⭐ Trainer Recommended</Badge>
             <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-2">{data.primaryProduct.name}</h2>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex">
-                {[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 fill-primary text-primary" />)}
-              </div>
-              <span className="text-xs text-muted-foreground">(127 reviews)</span>
-            </div>
             <div className="text-2xl font-bold text-foreground mb-4">${data.primaryProduct.price.toFixed(2)}</div>
 
             {/* Benefits above CTA */}
@@ -308,7 +302,8 @@ export default function TrainingLandingPage() {
         )}
       </section>
 
-      {/* ─── REVIEWS ─── */}
+      {/* ─── REVIEWS ─── renders only when order-verified reviews exist (currently none) */}
+      {data.reviews.length > 0 && (
       <section className="bg-muted/30 py-12 md:py-16">
         <div className="container max-w-2xl">
           <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-8">What Dog Owners Say</h2>
@@ -326,6 +321,7 @@ export default function TrainingLandingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ─── CTA 2 ─── */}
       <section className="bg-primary/5 border-y border-primary/10 py-10">

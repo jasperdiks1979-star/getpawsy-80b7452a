@@ -43,6 +43,7 @@ export interface LandingPageData {
   beforeAfter: { before: string; after: string }[];
   benefits: string[];
   socialProof: { stat: string; label: string }[];
+  /** Always empty until order-verified reviews exist. */
   reviews: LandingReview[];
   faq: LandingFAQ[];
   primaryProduct: LandingProduct;
@@ -85,11 +86,10 @@ export const NO_PULL_HARNESS_LANDING: LandingPageData = {
     { stat: '30-Day', label: 'Return policy included' },
     { stat: 'XS–XXL', label: 'Size range available' },
   ],
-  reviews: [
-    { name: 'Sarah M.', location: 'Austin, TX', stars: 5, text: 'My 70-lb Lab used to drag me everywhere. First walk with this harness — total transformation. No more choking, no more arm pain.', verified: true },
-    { name: 'Mike R.', location: 'Denver, CO', stars: 5, text: 'Tried prong collars, choke chains, everything. This is the only thing that actually works without hurting my dog.', verified: true },
-    { name: 'Jessica L.', location: 'Portland, OR', stars: 4, text: 'Great for my reactive German Shepherd. The dual handles give me instant control when we pass other dogs. Game changer.', verified: true },
-  ],
+    // Reviews intentionally empty: GetPawsy has zero approved customer reviews.
+  // Invented testimonials (including a fabricated veterinarian endorsement) were
+  // removed in Phase 7. Only order-verified reviews may ever appear here.
+  reviews: [],
   faq: [
     { q: 'Does it work for strong pullers?', a: 'Yes. The front-clip design creates a mechanical disadvantage that even 100-lb dogs can\'t overcome. It redirects their pulling force to the side, naturally turning them back toward you.' },
     { q: 'Will it hurt my dog?', a: 'No. Unlike choke chains and prong collars, this harness distributes all force across the chest — completely bypassing the neck. It\'s the method recommended by veterinary behaviorists.' },
@@ -165,11 +165,10 @@ export const RECALL_TRAINING_LANDING: LandingPageData = {
     { stat: '4.7/5', label: 'Customer rating' },
     { stat: '$50', label: 'vs $800 for private training' },
   ],
-  reviews: [
-    { name: 'David K.', location: 'Nashville, TN', stars: 5, text: 'My Beagle used to vanish the moment I unclipped the leash. After 6 weeks with this kit, she comes back every single time. Worth every penny.', verified: true },
-    { name: 'Amanda T.', location: 'San Diego, CA', stars: 5, text: 'The long line is amazing — waterproof and doesn\'t tangle. My Golden now has reliable recall at the beach.', verified: true },
-    { name: 'Chris W.', location: 'Chicago, IL', stars: 4, text: 'Great quality kit. The treat pouch is genius — one-hand magnetic closure means I can reward instantly.', verified: true },
-  ],
+    // Reviews intentionally empty: GetPawsy has zero approved customer reviews.
+  // Invented testimonials (including a fabricated veterinarian endorsement) were
+  // removed in Phase 7. Only order-verified reviews may ever appear here.
+  reviews: [],
   faq: [
     { q: 'What\'s included in the kit?', a: 'A 15ft biothane long line (waterproof, easy-clean), a food-grade silicone treat pouch with magnetic closure, and access to our step-by-step recall training guide.' },
     { q: 'Will this work for my stubborn dog?', a: 'Yes. Recall training works for all breeds and ages. The key is consistent practice with high-value rewards. Our guide covers exact techniques for \'stubborn\' breeds like Huskies and Beagles.' },
@@ -245,11 +244,10 @@ export const STOP_PULLING_LANDING: LandingPageData = {
     { stat: 'Pet-Tested', label: 'Designed for comfort and safety' },
     { stat: '30 Days', label: 'Easy returns' },
   ],
-  reviews: [
-    { name: 'Dr. Lisa P.', location: 'Veterinarian, FL', stars: 5, text: 'I recommend harnesses over collars for every dog that pulls. This one has the best combination of control and comfort I\'ve seen at this price point.', verified: true },
-    { name: 'Tom H.', location: 'Phoenix, AZ', stars: 5, text: 'My French Bulldog has a sensitive trachea. This harness completely eliminated the gagging. I wish I\'d switched years ago.', verified: true },
-    { name: 'Rachel S.', location: 'Seattle, WA', stars: 5, text: 'After our vet warned about tracheal collapse from collar use, we switched immediately. Night and day difference.', verified: true },
-  ],
+    // Reviews intentionally empty: GetPawsy has zero approved customer reviews.
+  // Invented testimonials (including a fabricated veterinarian endorsement) were
+  // removed in Phase 7. Only order-verified reviews may ever appear here.
+  reviews: [],
   faq: [
     { q: 'Are collars really that dangerous?', a: 'For dogs that pull, yes. Collars concentrate all leash force on the neck, which contains the trachea, thyroid gland, and cervical vertebrae. Studies show repeated collar pressure can cause tracheal collapse (irreversible in small breeds), thyroid damage, and elevated eye pressure.' },
     { q: 'Is this harness approved by vets?', a: 'Front-clip harnesses are recommended by the American Veterinary Society of Animal Behavior (AVSAB), ASPCA, and RSPCA as the safest walking tool for dogs who pull.' },
