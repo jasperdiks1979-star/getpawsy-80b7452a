@@ -81,6 +81,7 @@ import { StockNotificationForm } from "@/components/products/StockNotificationFo
 import { RecentlyViewedCarousel } from "@/components/products/RecentlyViewedCarousel";
 import { usePdpBotRenderTrace } from "@/hooks/usePdpBotRenderTrace";
 import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
+import { categoryCollectionHref } from "@/lib/canonical-category-registry";
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
 import { RelatedGuides } from "@/components/guides/RelatedGuides";

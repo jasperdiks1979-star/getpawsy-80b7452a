@@ -337,3 +337,25 @@ export function resolveToCanonical(slug: string): string | null {
   if (aliased && VALID_COLLECTION_SLUGS.has(aliased)) return aliased;
   return null;
 }
+
+/**
+ * Build a safe browse link for a product's raw category label.
+ *
+ * Raw category text ("Cat Bowls & Feeders") slugified naively produced
+ * /collections/cat-bowls-&-feeders, which is not a live collection and bounced
+ * the shopper through a redirect. Resolve through the canonical registry first;
+ * fall back to the filtered product grid, which always renders.
+ */
+export function categoryCollectionHref(rawCategory: string | null | undefined): string {
+  const label = (rawCategory ?? '').trim();
+  if (!label) return '/products';
+  const slug = label
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (!slug) return '/products';
+  const canonical = resolveToCanonical(slug);
+  if (canonical) return `/collections/${canonical}`;
+  return `/products?category=${encodeURIComponent(slug)}`;
+}
