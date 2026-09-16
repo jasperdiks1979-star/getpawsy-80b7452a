@@ -44291,6 +44291,149 @@ export type Database = {
         }
         Relationships: []
       }
+      order_exceptions: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          detail: string | null
+          id: string
+          next_attempt_at: string | null
+          order_id: string
+          resolved_at: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          next_attempt_at?: string | null
+          order_id: string
+          resolved_at?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          next_attempt_at?: string | null
+          order_id?: string
+          resolved_at?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_exceptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_exceptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_exceptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_refunds: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          external_confirmed_at: string | null
+          failure_message: string | null
+          id: string
+          idempotency_key: string | null
+          kind: string
+          notes: string | null
+          order_id: string
+          reason: string | null
+          requested_by: string | null
+          state: string
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
+          supplier_cancellation_state: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          external_confirmed_at?: string | null
+          failure_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          kind?: string
+          notes?: string | null
+          order_id: string
+          reason?: string | null
+          requested_by?: string | null
+          state?: string
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          supplier_cancellation_state?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          external_confirmed_at?: string | null
+          failure_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          kind?: string
+          notes?: string | null
+          order_id?: string
+          reason?: string | null
+          requested_by?: string | null
+          state?: string
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
+          supplier_cancellation_state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_sms_alerts: {
         Row: {
           amount: number | null
@@ -44350,6 +44493,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          checkout_attempt_id: string | null
           cj_order_created_at: string | null
           cj_order_id: string | null
           cj_order_status: string | null
@@ -44357,14 +44501,25 @@ export type Database = {
           created_at: string
           currency: string
           customer_email: string | null
+          exception_reason: string | null
+          exception_status: string | null
+          fulfilled_at: string | null
+          fulfillment_attempts: number
+          fulfillment_claimed_at: string | null
+          fulfillment_status: string
+          fulfillment_warehouse: string | null
           ga_client_id: string | null
           ga4_mp_sent_at: string | null
           id: string
           is_klarna: boolean
           items: Json
           order_access_token: string | null
+          paid_at: string | null
           payment_method: string | null
           payment_method_detected_at: string | null
+          payment_status: string
+          refund_state: string
+          refunded_amount_cents: number
           shipping_address: Json | null
           status: string
           stripe_payment_intent_id: string | null
@@ -44377,6 +44532,7 @@ export type Database = {
           wallet_type: string | null
         }
         Insert: {
+          checkout_attempt_id?: string | null
           cj_order_created_at?: string | null
           cj_order_id?: string | null
           cj_order_status?: string | null
@@ -44384,14 +44540,25 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_email?: string | null
+          exception_reason?: string | null
+          exception_status?: string | null
+          fulfilled_at?: string | null
+          fulfillment_attempts?: number
+          fulfillment_claimed_at?: string | null
+          fulfillment_status?: string
+          fulfillment_warehouse?: string | null
           ga_client_id?: string | null
           ga4_mp_sent_at?: string | null
           id?: string
           is_klarna?: boolean
           items: Json
           order_access_token?: string | null
+          paid_at?: string | null
           payment_method?: string | null
           payment_method_detected_at?: string | null
+          payment_status?: string
+          refund_state?: string
+          refunded_amount_cents?: number
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
@@ -44404,6 +44571,7 @@ export type Database = {
           wallet_type?: string | null
         }
         Update: {
+          checkout_attempt_id?: string | null
           cj_order_created_at?: string | null
           cj_order_id?: string | null
           cj_order_status?: string | null
@@ -44411,14 +44579,25 @@ export type Database = {
           created_at?: string
           currency?: string
           customer_email?: string | null
+          exception_reason?: string | null
+          exception_status?: string | null
+          fulfilled_at?: string | null
+          fulfillment_attempts?: number
+          fulfillment_claimed_at?: string | null
+          fulfillment_status?: string
+          fulfillment_warehouse?: string | null
           ga_client_id?: string | null
           ga4_mp_sent_at?: string | null
           id?: string
           is_klarna?: boolean
           items?: Json
           order_access_token?: string | null
+          paid_at?: string | null
           payment_method?: string | null
           payment_method_detected_at?: string | null
+          payment_status?: string
+          refund_state?: string
+          refunded_amount_cents?: number
           shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
@@ -73514,6 +73693,54 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_message: string | null
+          event_id: string
+          event_type: string
+          last_attempt_at: string | null
+          lease_expires_at: string | null
+          processed_at: string | null
+          received_at: string
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          event_id: string
+          event_type: string
+          last_attempt_at?: string | null
+          lease_expires_at?: string | null
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_type?: string
+          last_attempt_at?: string | null
+          lease_expires_at?: string | null
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supplier_import_logs: {
         Row: {
           completed_at: string | null
@@ -78401,6 +78628,28 @@ export type Database = {
           validation_report: Json
           vo_script: string
           vo_url: string
+        }[]
+      }
+      claim_order_fulfillment: {
+        Args: { p_order_id: string }
+        Returns: {
+          cj_order_ref: string
+          claimed: boolean
+          fulfillment_state: string
+          reason: string
+        }[]
+      }
+      claim_stripe_webhook_event: {
+        Args: {
+          p_event_id: string
+          p_event_type: string
+          p_lease_seconds?: number
+          p_session_id: string
+        }
+        Returns: {
+          attempts: number
+          claimed: boolean
+          reason: string
         }[]
       }
       classify_channel_v2: {
