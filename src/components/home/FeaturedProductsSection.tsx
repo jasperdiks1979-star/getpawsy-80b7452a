@@ -45,7 +45,7 @@ async function fetchFeatured(): Promise<EligibleProduct[]> {
   const pinned: EligibleProduct[] = [];
   if (PREFERRED_SLUGS.length) {
     const { data } = await supabase
-      .from('products_public')
+      .from('products_shop')
       .select(ELIGIBLE_SELECT)
       .in('slug', PREFERRED_SLUGS)
       .eq('is_active', true)

@@ -140,7 +140,7 @@ export const useRelatedProducts = ({
       if (curated && curated.length > 0) {
         const curatedIds = curated.map(c => c.productId);
         const { data: cp } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('*')
           .in('id', curatedIds)
           .eq('is_active', true)
@@ -153,7 +153,7 @@ export const useRelatedProducts = ({
       
       if (recentlyViewedIds.length > 0) {
         const { data: viewedProducts } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('category')
           .in('id', recentlyViewedIds.slice(0, 10));
 
@@ -166,7 +166,7 @@ export const useRelatedProducts = ({
       
       // Fetch products from same category and potentially related categories
       const { data: categoryProducts, error: catError } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('*')
         .eq('is_active', true)
         .gt('stock', 0)
@@ -199,7 +199,7 @@ export const useRelatedProducts = ({
         const existingIds = new Set(merged.map(p => p.id));
         
         const { data: fallbackProducts } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('*')
           .eq('is_active', true)
           .gt('stock', 0)

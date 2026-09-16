@@ -47,7 +47,7 @@ export function useCategoryPrefetch() {
       if (controller.signal.aborted) return { products: [], total: 0 };
 
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('*')
         .eq('is_active', true)
         .in('category', names)

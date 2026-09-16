@@ -26,7 +26,7 @@ async function fetchManualProducts() {
   const slugs = MANUAL_PRODUCTS.map(p => p.slug);
 
   const { data, error } = await supabase
-    .from('products_public')
+    .from('products_shop')
     .select('id, name, slug, image_url, price, category')
     .in('slug', slugs)
     .eq('is_active', true);
@@ -72,7 +72,7 @@ async function fetchAutoProducts() {
 
   // Try scored winners first (future: a dedicated 'product_scores' table)
   const { data, error } = await supabase
-    .from('products_public')
+    .from('products_shop')
     .select('id, name, slug, image_url, price, category')
     .eq('is_active', true)
     .gte('price', MIN_PRICE)

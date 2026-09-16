@@ -36,7 +36,7 @@ export default function ShopHub() {
     queryKey: ['shop-hub-featured'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, slug, price, image_url, category')
         .eq('is_active', true)
         .not('image_url', 'is', null)

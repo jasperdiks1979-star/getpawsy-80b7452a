@@ -95,7 +95,7 @@ export function ExploreMoreCategory({ category, currentProductId }: ExploreMoreC
     queryFn: async () => {
       if (!category) return [];
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, slug, image_url, price')
         .eq('is_active', true)
         .ilike('category', `%${category}%`)

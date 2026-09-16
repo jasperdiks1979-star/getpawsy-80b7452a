@@ -201,7 +201,7 @@ export const useCompleteTheLook = ({
       
       // Fetch candidate products - optimized query
       const { data: products, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, description, price, compare_at_price, image_url, images, category, stock, is_active, variants')
         .eq('is_active', true)
         .gt('stock', 0)

@@ -38,7 +38,7 @@ export function CustomersAlsoTrainWith({ productId, productName, productCategory
     queryKey: ['also-train-with', productId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, price, compare_at_price, image_url, slug, category')
         .neq('id', productId)
         .eq('is_active', true)

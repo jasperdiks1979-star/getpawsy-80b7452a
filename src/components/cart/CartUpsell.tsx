@@ -99,7 +99,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
       if (baseProductIds.length === 0) return [];
       
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, category')
         .in('id', baseProductIds);
       
@@ -120,7 +120,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
         // If no categories, fetch bestsellers or random active products
         // Fetch active products (products_public already filters duplicates)
         const { data, error } = await supabase
-          .from('products_public')
+          .from('products_shop')
           .select('*')
           .eq('is_active', true)
           .gt('stock', 0)
@@ -138,7 +138,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
       // Fetch products from same categories
       // Fetch products from same categories (products_public filters duplicates)
       const { data, error } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('*')
         .eq('is_active', true)
         .gt('stock', 0)

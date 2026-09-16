@@ -45,7 +45,7 @@ export function HeroProductSpotlight() {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
-        .from('products_public')
+        .from('products_shop')
         .select('id, name, slug, price, image_url, images, stock, category, variants')
         .eq('slug', HERO_SLUG)
         .maybeSingle();

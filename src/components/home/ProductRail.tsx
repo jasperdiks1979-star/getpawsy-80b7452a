@@ -33,7 +33,7 @@ export function ProductRail({
     queryKey: ['home-rail', species ?? 'all', limit],
     queryFn: async () => {
       let q = supabase
-        .from('products_public')
+        .from('products_shop')
         // `variants` is required so quick-add can prove the product has a
         // single purchasable option instead of guessing one.
         .select('id, name, slug, price, compare_at_price, image_url, stock, primary_species, variants')
