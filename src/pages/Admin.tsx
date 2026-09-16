@@ -503,16 +503,13 @@ const Admin = () => {
         // Get realistic shipping time from CJ warehouse data
         let shippingTime = "5–10 business days"; // Default for US warehouse
         try {
-          const shippingResponse = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/audit-warehouse-shipping`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'get-shipping-time', cjProductId: p.pid }),
-            }
+          // audit-warehouse-shipping is admin-gated; invoke() attaches the
+          // signed-in admin's JWT instead of calling the endpoint anonymously.
+          const { data: shippingData } = await supabase.functions.invoke(
+            'audit-warehouse-shipping',
+            { body: { action: 'get-shipping-time', cjProductId: p.pid } }
           );
-          const shippingData = await shippingResponse.json();
-          if (shippingData.success && shippingData.data?.recommendedShippingTime) {
+          if (shippingData?.success && shippingData.data?.recommendedShippingTime) {
             shippingTime = shippingData.data.recommendedShippingTime;
           }
         } catch (shippingErr) {

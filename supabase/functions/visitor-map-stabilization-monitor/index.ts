@@ -3,6 +3,7 @@
 // public.stabilization_runs. Never mutates KPI definitions or map behavior.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 type CheckResult = {
   name: string;
@@ -39,14 +40,44 @@ async function safe<T>(fn: () => Promise<T>): Promise<T | { __error: string }> {
   }
 }
 
+// analytics-canonical request contract: { hours: number, geo: 'US'|'all' }.
+// Response contract: { ok, totals: {...}, diagnostics: { sessions_with_geo } }.
+const WINDOW_HOURS: Record<string, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
+
+type CanonicalSnapshot = {
+  sessions: number | null;
+  atc: number | null;
+  checkout: number | null;
+  purchases: number | null;
+  revenue: number | null;
+  sessions_with_geo: number | null;
+};
+
+function toSnapshot(payload: any): CanonicalSnapshot {
+  const t = payload?.totals ?? {};
+  const num = (v: unknown) => (v == null || Number.isNaN(Number(v)) ? null : Number(v));
+  return {
+    sessions: num(t.sessions),
+    atc: num(t.add_to_cart),
+    checkout: num(t.checkout_started),
+    purchases: num(t.purchases),
+    revenue: num(t.revenue),
+    sessions_with_geo: num(payload?.diagnostics?.sessions_with_geo),
+  };
+}
+
 async function runCanonicalParity(
   timeRange: string,
-): Promise<{ check: CheckResult; canonical: Record<string, unknown> | null }> {
+): Promise<{ check: CheckResult; canonical: CanonicalSnapshot | null }> {
+  const hours = WINDOW_HOURS[timeRange] ?? 24;
   const r = await safe(async () => {
     const { data, error } = await admin.functions.invoke("analytics-canonical", {
-      body: { timeRange },
+      body: { hours, geo: "all" },
     });
     if (error) throw error;
+    if (!data || (data as any).ok === false) {
+      throw new Error((data as any)?.error ?? "analytics-canonical returned not ok");
+    }
     return data as Record<string, unknown>;
   });
   if ("__error" in r) {
@@ -59,19 +90,13 @@ async function runCanonicalParity(
       },
     };
   }
+  const snapshot = toSnapshot(r);
   return {
-    canonical: r,
+    canonical: snapshot,
     check: {
       name: `canonical:${timeRange}`,
       status: "pass",
-      data: {
-        sessions: (r as any).sessions ?? null,
-        atc: (r as any).atc ?? (r as any).addToCarts ?? null,
-        checkout: (r as any).checkout ?? (r as any).checkouts ?? null,
-        purchases: (r as any).purchases ?? null,
-        revenue: (r as any).revenue ?? null,
-        sessions_with_geo: (r as any).sessions_with_geo ?? null,
-      },
+      data: { ...snapshot },
     },
   };
 }
@@ -112,6 +137,11 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Security: service-role monitor with privileged reads/writes — admin JWT or
+  // internal secret only.
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) return denied;
+
   const started = Date.now();
   const checks: CheckResult[] = [];
   const incidents: Incident[] = [];
@@ -119,7 +149,7 @@ Deno.serve(async (req) => {
 
   // 1. analytics-canonical availability across a few reference windows
   const windows = ["24h", "7d", "30d"] as const;
-  const canonicalByWindow: Record<string, Record<string, unknown> | null> = {};
+  const canonicalByWindow: Record<string, CanonicalSnapshot | null> = {};
   for (const w of windows) {
     const { check, canonical } = await runCanonicalParity(w);
     checks.push(check);

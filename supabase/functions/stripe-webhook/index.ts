@@ -165,6 +165,9 @@ async function createCJDropshippingOrder(orderId: string): Promise<void> {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${supabaseServiceKey}`,
+        // create-cj-order is gated by requireInternalOrAdmin; server-to-server
+        // fulfillment authenticates with the shared internal secret.
+        "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
       },
       body: JSON.stringify({ orderId }),
     });

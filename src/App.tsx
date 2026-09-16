@@ -62,6 +62,7 @@ const initDataHealer = () => import("@/lib/data-healer").then((m) => m.initDataH
 const initLegacyLinkGuard = () => import("@/lib/legacy-link-guard").then((m) => m.initLegacyLinkGuard());
 const initLegacyFetchGuard = () => import("@/lib/legacy-link-guard").then((m) => m.initLegacyFetchGuard());
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
+import { AdminOnly } from "@/components/auth/AdminOnly";
 
 // Web Vitals panel — lazy, dev/preview only, tree-shaken in prod
 const WebVitalsPanel =
@@ -978,9 +979,11 @@ const App = () => {
                           <Route
                             path="/dashboard"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <Admin />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <Admin />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
@@ -994,41 +997,51 @@ const App = () => {
                           <Route
                             path="/admin/e2e-verify"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <AdminE2eVerify />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AdminE2eVerify />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/admin/analytics/visitor-world-map-pro"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <VisitorWorldMapProPage />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <VisitorWorldMapProPage />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/admin/analytics/canary-v2"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <AnalyticsCanaryV2Page />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AnalyticsCanaryV2Page />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/admin/analytics/visitor-world-map-pro/stabilization"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <VisitorMapStabilizationPage />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <VisitorMapStabilizationPage />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/admin/stripe-test-checkout"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <StripeTestCheckoutPage />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <StripeTestCheckoutPage />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
@@ -1199,9 +1212,11 @@ const App = () => {
                           <Route
                             path="/live-map"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <LiveMap />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LiveMap />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
@@ -1550,9 +1565,11 @@ const App = () => {
                           <Route
                             path="/debug/perf"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <PerfDebugPage />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PerfDebugPage />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
 
@@ -1570,121 +1587,151 @@ const App = () => {
                           <Route
                             path="/diagnostics/headers"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <HeadersDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <HeadersDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/performance"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <PerformanceDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <PerformanceDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/gsc"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <GscChecklist />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <GscChecklist />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/seo-hosts"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <SeoHostDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SeoHostDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/sitemap-health"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <SitemapHealthDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SitemapHealthDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/crawl-budget"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <CrawlBudgetDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <CrawlBudgetDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/index-control"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <IndexControlDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <IndexControlDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/link-equity"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <LinkEquityDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <LinkEquityDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/serp-war"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <SerpWarDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <SerpWarDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/top3-boost"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <Top3BoostDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <Top3BoostDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/top3-lockdown"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <Top3LockdownDiagnostics />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <Top3LockdownDiagnostics />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/revenue-war-machine"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <RevenueWarMachine />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <RevenueWarMachine />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/niche-monopoly"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <NicheMonopoly />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <NicheMonopoly />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/auto-expansion"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <AutoExpansion />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <AutoExpansion />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
                           <Route
                             path="/diagnostics/market-takeover"
                             element={
-                              <Suspense fallback={<RouteLoader />}>
-                                <MarketTakeover />
-                              </Suspense>
+                              <AdminOnly>
+                                <Suspense fallback={<RouteLoader />}>
+                                  <MarketTakeover />
+                                </Suspense>
+                              </AdminOnly>
                             }
                           />
 
