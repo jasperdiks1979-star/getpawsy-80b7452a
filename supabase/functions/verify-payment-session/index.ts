@@ -113,6 +113,10 @@ serve(async (req) => {
       ? "paid"
       : ((order?.payment_status as PaymentStatus | undefined) ?? paymentStatus);
 
+    // ── N-11: minimum safe success-page payload ────────────────────────────
+    // Knowing a Stripe session id must NOT unlock guest order access or PII.
+    // No access token, no email, no address, no line items — guest tracking
+    // stays a separate capability behind /track-order + its own token.
     return new Response(
       JSON.stringify({
         ok: true,
@@ -123,13 +127,10 @@ serve(async (req) => {
         message: customerPaymentWording(effectivePayment),
         order: order
           ? {
-            id: order.id,
+            // Short human reference only — not the full order id.
+            reference: String(order.id).slice(0, 8).toUpperCase(),
             total_amount: order.total_amount,
             currency: order.currency ?? "usd",
-            customer_email: order.customer_email,
-            items: order.items,
-            // Guest recovery token only, never exposed for account orders.
-            access_token: order.user_id ? null : order.order_access_token,
           }
           : null,
         reconciled,

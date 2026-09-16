@@ -9,6 +9,7 @@ import {
   classifyRefund,
   deriveLegacyStatus,
   refundStateAfter,
+  shouldSettleSession,
   supplierCancellationFor,
   type FulfillmentStatus,
 } from "../_shared/order-state.ts";
@@ -398,6 +399,9 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
+  // Set once this delivery owns the processing lease (see claim below).
+  let claimedEventId: string | null = null;
+
   try {
     const signature = req.headers.get("stripe-signature");
     const body = await req.text();
@@ -444,42 +448,85 @@ serve(async (req) => {
 
     console.log("[STRIPE-WEBHOOK] Event received:", event.type, event.id);
 
-    // ── J: exactly-once processing ───────────────────────────────────────────
-    // A Stripe event id may be delivered many times. The primary key on
-    // stripe_webhook_events makes the FIRST delivery the only one that runs any
-    // order mutation, order creation or supplier fulfillment.
+    // ── N: retry-safe exactly-once processing ───────────────────────────────
+    // Only `processed` is terminal. A row left in `processing` by a crashed
+    // attempt, or marked `failed`, must be recoverable — acknowledging it
+    // would let Stripe stop retrying and drop the work forever.
     {
       const sessionId =
         (event.data.object as { id?: string; object?: string })?.object === "checkout.session"
           ? (event.data.object as { id?: string }).id ?? null
           : null;
-      const { error: claimError } = await supabaseAdmin
-        .from("stripe_webhook_events")
-        .insert({
-          event_id: event.id,
-          event_type: event.type,
-          stripe_session_id: sessionId,
-          status: "processing",
-        });
-
+      const { data: claimRows, error: claimError } = await supabaseAdmin.rpc(
+        "claim_stripe_webhook_event",
+        {
+          p_event_id: event.id,
+          p_event_type: event.type,
+          p_session_id: sessionId,
+          p_lease_seconds: 300,
+        },
+      );
       if (claimError) {
-        // 23505 = duplicate key → already handled (or in flight). Ack, do nothing.
-        console.log(
-          "[STRIPE-WEBHOOK] Duplicate event ignored:",
-          event.id,
-          (claimError as { code?: string }).code ?? claimError.message,
-        );
+        // Cannot prove exactly-once → ask Stripe to retry rather than risk a
+        // double charge of side effects or a silently dropped event.
+        console.error("[STRIPE-WEBHOOK] Event claim failed:", claimError.message);
         return new Response(
-          JSON.stringify({ received: true, duplicate: true }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+          JSON.stringify({ error: "event_claim_unavailable" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
         );
       }
+      const claim = Array.isArray(claimRows) ? claimRows[0] : claimRows;
+      if (!claim?.claimed) {
+        const terminal = claim?.reason === "already_processed";
+        console.log("[STRIPE-WEBHOOK] Event not claimed:", event.id, claim?.reason);
+        return new Response(
+          JSON.stringify({ received: true, duplicate: terminal, reason: claim?.reason }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            // An active lease is NOT terminal: 409 keeps Stripe retrying until
+            // the in-flight attempt either finishes or its lease expires.
+            status: terminal ? 200 : 409,
+          },
+        );
+      }
+      claimedEventId = event.id;
     }
 
     switch (event.type) {
+      // ── ONE shared settlement routine ─────────────────────────────────────
+      // Synchronous card payments and delayed (Klarna/bank) payments settle
+      // through exactly the same code path, and only ever when Stripe reports
+      // an authoritative paid state.
+      case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log("[STRIPE-WEBHOOK] Checkout session completed:", session.id);
+        console.log("[STRIPE-WEBHOOK] Session event:", event.type, session.id);
+
+        const gate = shouldSettleSession(session);
+        if (!gate.settle) {
+          // Session completed but money has NOT moved (delayed payment method
+          // still processing). Record the real state; never fulfil, email,
+          // deduct packaging or fire marketing on an unpaid session.
+          console.log(
+            "[STRIPE-WEBHOOK] Session not settled — payment_status:",
+            session.payment_status,
+          );
+          const { error: pendingError } = await supabaseAdmin
+            .from("orders")
+            .update({
+              payment_status: gate.paymentStatus,
+              status: deriveLegacyStatus({
+                paymentStatus: gate.paymentStatus,
+                refundState: "none",
+              }),
+            })
+            .eq("stripe_session_id", session.id)
+            .neq("payment_status", "paid");
+          if (pendingError) {
+            console.error("[STRIPE-WEBHOOK] Pending state update failed:", pendingError.message);
+          }
+          break;
+        }
 
         // ── Smoke test short-circuit ─────────────────────────────────────
         // For admin-initiated live smoke-test sessions we DO NOT create
@@ -545,12 +592,31 @@ serve(async (req) => {
           console.error("[STRIPE-WEBHOOK] Failed to detect payment method:", pmErr);
         }
 
-        // Check if order already exists and get access token
-        const { data: existingOrder } = await supabaseAdmin
+        // Find the pending order. The session id is the primary binding; the
+        // checkout attempt id is the recovery binding used when create-checkout
+        // could not stamp the session id onto the row (N-10).
+        const attemptId = session.metadata?.checkout_attempt_id || null;
+        let { data: existingOrder } = await supabaseAdmin
           .from("orders")
-          .select("id, order_access_token, user_id")
+          .select("id, order_access_token, user_id, payment_status")
           .eq("stripe_session_id", session.id)
-          .single();
+          .maybeSingle();
+
+        if (!existingOrder && attemptId) {
+          const { data: byAttempt } = await supabaseAdmin
+            .from("orders")
+            .select("id, order_access_token, user_id, payment_status")
+            .eq("checkout_attempt_id", attemptId)
+            .maybeSingle();
+          if (byAttempt) {
+            existingOrder = byAttempt;
+            await supabaseAdmin
+              .from("orders")
+              .update({ stripe_session_id: session.id })
+              .eq("id", byAttempt.id);
+            console.log("[STRIPE-WEBHOOK] Order rebound via checkout_attempt_id:", attemptId);
+          }
+        }
 
         let orderId: string;
         let orderAccessToken: string | null = null;
@@ -559,7 +625,14 @@ serve(async (req) => {
           orderId = existingOrder.id;
           // Only use access token for guest orders (no user_id)
           orderAccessToken = existingOrder.user_id ? null : existingOrder.order_access_token;
-          
+
+          // Already settled by an earlier delivery → acknowledge, never repeat
+          // email / fulfillment / packaging / marketing side effects.
+          if (existingOrder.payment_status === "paid") {
+            console.log("[STRIPE-WEBHOOK] Order already settled, skipping side effects:", orderId);
+            break;
+          }
+
           // Update existing order to paid
           const { error: updateError } = await supabaseAdmin
             .from("orders")
@@ -576,10 +649,12 @@ serve(async (req) => {
             .eq("stripe_session_id", session.id);
 
           if (updateError) {
+            // Do NOT continue to fulfillment on an unrecorded payment — throw so
+            // the event is marked failed and Stripe retries it.
             console.error("[STRIPE-WEBHOOK] Error updating order:", updateError);
-          } else {
-            console.log("[STRIPE-WEBHOOK] Order updated to paid:", existingOrder.id);
+            throw new Error(`order_paid_update_failed: ${updateError.message}`);
           }
+          console.log("[STRIPE-WEBHOOK] Order updated to paid:", existingOrder.id);
         } else {
           // Generate access token for guest orders created via webhook
           const generateAccessToken = () => {
@@ -591,11 +666,13 @@ serve(async (req) => {
           // Guest order (no user_id) - generate access token
           orderAccessToken = generateAccessToken();
           
-          // Create new order from webhook data
+          // Create new order from webhook data (recovery path only — the normal
+          // path has a pending order created by create-checkout).
           const { data: newOrder, error: insertError } = await supabaseAdmin
             .from("orders")
             .insert({
               stripe_session_id: session.id,
+              checkout_attempt_id: attemptId,
               stripe_payment_intent_id: session.payment_intent as string,
               status: "paid",
               payment_status: "paid",
@@ -613,13 +690,18 @@ serve(async (req) => {
             .select("id")
             .single();
 
-          if (insertError) {
+          if (insertError || !newOrder?.id) {
+            // A paid session with no durable order row is an exception, never a
+            // success path. Flag it and fail the event so Stripe retries.
             console.error("[STRIPE-WEBHOOK] Error creating order:", insertError);
-            orderId = session.id; // Fallback to session id
-          } else {
-            console.log("[STRIPE-WEBHOOK] Order created from webhook:", newOrder?.id);
-            orderId = newOrder?.id || session.id;
+            await supabaseAdmin.from("stripe_webhook_events").update({
+              status: "needs_review",
+              error_message: `payment_without_order: ${insertError?.message ?? "no row"}`,
+            }).eq("event_id", event.id);
+            throw new Error("payment_without_order");
           }
+          console.log("[STRIPE-WEBHOOK] Order created from webhook:", newOrder.id);
+          orderId = newOrder.id;
         }
 
         // Send order confirmation email with access token for guest orders
@@ -917,24 +999,9 @@ serve(async (req) => {
         break;
       }
 
-      case "checkout.session.async_payment_succeeded": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        console.log("[STRIPE-WEBHOOK] Async payment succeeded:", session.id);
-        const pi = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
-        const patch: Record<string, unknown> = {
-          status: "paid",
-          payment_status: "paid",
-          paid_at: new Date().toISOString(),
-        };
-        if (pi) patch.stripe_payment_intent_id = pi;
-        const { error } = await supabaseAdmin
-          .from("orders")
-          .update(patch)
-          .eq("stripe_session_id", session.id)
-          .neq("status", "paid");
-        if (error) console.error("[STRIPE-WEBHOOK] async_payment_succeeded update error:", error);
-        break;
-      }
+      // NOTE: `checkout.session.async_payment_succeeded` is handled by the
+      // shared settlement routine at the top of this switch.
+
 
       case "checkout.session.async_payment_failed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -974,6 +1041,21 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[STRIPE-WEBHOOK] Error:", errorMessage);
+    // Release the lease and mark the attempt failed so a Stripe retry can pick
+    // the work up again. `failed` is explicitly NOT terminal.
+    try {
+      if (claimedEventId) {
+        await supabaseAdmin
+          .from("stripe_webhook_events")
+          .update({
+            status: "failed",
+            error_message: errorMessage.slice(0, 500),
+            lease_expires_at: new Date().toISOString(),
+          })
+          .eq("event_id", claimedEventId)
+          .neq("status", "processed");
+      }
+    } catch (_) { /* never block response */ }
     // Fire-and-forget failure alert; throttled in helper.
     try {
       await sendFailureAlert(supabaseAdmin, "Stripe Webhook", errorMessage);

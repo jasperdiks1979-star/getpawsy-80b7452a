@@ -87,11 +87,12 @@ describe("J — payment settlement", () => {
 
   it("webhook dedupes on the Stripe event id before any order mutation", () => {
     const src = read("supabase/functions/stripe-webhook/index.ts");
-    const dedupeAt = src.indexOf('.from("stripe_webhook_events")');
+    // Commerce N: the dedupe is now a leased claim RPC, still before the switch.
+    const dedupeAt = src.indexOf('"claim_stripe_webhook_event"');
     const switchAt = src.indexOf("switch (event.type)");
     expect(dedupeAt).toBeGreaterThan(-1);
     expect(dedupeAt).toBeLessThan(switchAt);
-    expect(src).toContain("duplicate: true");
+    expect(src).toContain("duplicate: terminal");
     expect(src).toContain("payment_status: \"paid\"");
   });
 
@@ -153,8 +154,9 @@ describe("K — variant and price identity", () => {
       reason: "ok",
       chargePrice: 79.13,
     });
-    // Legitimate on-page volume discount stays within tolerance.
-    expect(validateLinePrice({ clientPrice: 71.22, serverPrice: 79.13 }).ok).toBe(true);
+    // Commerce N: line prices must match to the cent — a "reasonably lower"
+    // client price is no longer tolerated (that was the display/charge gap).
+    expect(validateLinePrice({ clientPrice: 71.22, serverPrice: 79.13 }).ok).toBe(false);
     // Tampered price fails closed.
     const bad = validateLinePrice({ clientPrice: 1, serverPrice: 79.13 });
     expect(bad.ok).toBe(false);

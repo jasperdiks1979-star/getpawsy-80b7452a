@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Star, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { quoteForBundle, toCents } from '@/lib/cart-pricing';
 
 interface VolumeDiscountSelectorProps {
   basePrice: number;
@@ -21,12 +22,13 @@ interface VolumeTier {
   isBestValue?: boolean;
 }
 
-// Volume discount tiers — aggressive AOV strategy
-const VOLUME_TIERS: VolumeTier[] = [
-  { quantity: 1, discount: 0, label: 'Buy 1', sublabel: 'Standard price' },
-  { quantity: 2, discount: 15, label: 'Buy 2', sublabel: 'Save 15%', isBestValue: true },
-  { quantity: 3, discount: 25, label: 'Buy 3', sublabel: 'Save 25%' },
-];
+/**
+ * Commerce N: bundle tiles are rendered from the CANONICAL pricing engine.
+ * There is no PDP-only discount table any more — whatever is shown here is
+ * exactly what the cart, checkout and Stripe will charge.
+ */
+const TIER_QUANTITIES = [1, 2, 3] as const;
+
 
 export const VolumeDiscountSelector = ({
   basePrice,
@@ -35,8 +37,36 @@ export const VolumeDiscountSelector = ({
   contextLabel,
   showBestValueBadge = true,
 }: VolumeDiscountSelectorProps) => {
+  // Every tile is priced by the canonical engine (integer cents).
+  const tiersWithPrices = useMemo(() => {
+    const unitCents = toCents(basePrice);
+    return TIER_QUANTITIES.map((quantity) => {
+      const quote = quoteForBundle(unitCents, quantity);
+      const discount = quote.tierPercent;
+      const totalPrice = quote.subtotalCents / 100;
+      const discountedPrice = (quote.subtotalCents - quote.tierDeductionCents) / 100;
+      return {
+        quantity,
+        discount,
+        label: `Buy ${quantity}`,
+        sublabel: discount > 0 ? `Save ${discount}%` : 'Standard price',
+        isBestValue: quantity === 2 && discount > 0,
+        totalPrice,
+        discountedPrice,
+        savings: quote.tierDeductionCents / 100,
+        pricePerItem: discountedPrice / quantity,
+      } satisfies VolumeTier & {
+        totalPrice: number;
+        discountedPrice: number;
+        savings: number;
+        pricePerItem: number;
+      };
+    });
+  }, [basePrice]);
+
   const [selected, setSelected] = useState<VolumeTier>(
-    VOLUME_TIERS.find(t => t.quantity === selectedQuantity) || VOLUME_TIERS[0]
+    () =>
+      tiersWithPrices.find((t) => t.quantity === selectedQuantity) ?? tiersWithPrices[0],
   );
 
   const handleSelect = useCallback((tier: VolumeTier) => {
@@ -45,22 +75,6 @@ export const VolumeDiscountSelector = ({
     onQuantityChange(tier.quantity, tier.discount);
   }, [selected.quantity, onQuantityChange]);
 
-  // Calculate prices for each tier
-  const tiersWithPrices = useMemo(() => {
-    return VOLUME_TIERS.map(tier => {
-      const totalPrice = basePrice * tier.quantity;
-      const discountedPrice = totalPrice * (1 - tier.discount / 100);
-      const savings = totalPrice - discountedPrice;
-      const pricePerItem = discountedPrice / tier.quantity;
-      return {
-        ...tier,
-        totalPrice,
-        discountedPrice,
-        savings,
-        pricePerItem,
-      };
-    });
-  }, [basePrice]);
 
   return (
     <div className="space-y-3">
@@ -150,7 +164,11 @@ export const VolumeDiscountSelector = ({
         >
           <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
           <span className="text-sm font-medium text-green-700 dark:text-green-300">
-            You save ${((basePrice * selected.quantity) * selected.discount / 100).toFixed(2)} with this bundle!
+            You save $
+            {(
+              tiersWithPrices.find((t) => t.quantity === selected.quantity)?.savings ?? 0
+            ).toFixed(2)}{' '}
+            with this bundle!
           </span>
         </motion.div>
       )}

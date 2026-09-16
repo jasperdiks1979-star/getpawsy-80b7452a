@@ -8,19 +8,30 @@
  * Last Updated: 2025-01-31
  */
 
+import {
+  FREE_SHIPPING_THRESHOLD_CENTS,
+  PRICING_TIERS,
+  VOLUME_DISCOUNT_MIN_UNITS as ENGINE_MIN_UNITS,
+  tierPercentFor,
+  toCents,
+} from '@/lib/cart-pricing';
+
 // ============= SHIPPING CONSTANTS =============
 
 /** Free shipping threshold in USD */
-export const FREE_SHIPPING_THRESHOLD = 35;
+export const FREE_SHIPPING_THRESHOLD = FREE_SHIPPING_THRESHOLD_CENTS / 100;
 
 // ============= TIERED INCENTIVE THRESHOLDS =============
+// Derived from the CANONICAL pricing engine (src/lib/cart-pricing.ts) so the
+// cart UI can never drift from the amount charged.
 
 /** Tiered discount configuration – applied automatically in cart */
-export const TIERED_INCENTIVES = [
-  { threshold: 35, label: 'Free Shipping', discountPercent: 0 },
-  { threshold: 65, label: '5% Off Your Order', discountPercent: 5 },
-  { threshold: 99, label: '10% Off Your Order', discountPercent: 10 },
-] as const;
+export const TIERED_INCENTIVES = PRICING_TIERS.map((t) => ({
+  threshold: t.thresholdCents / 100,
+  label: t.label,
+  discountPercent: t.percent,
+}));
+
 
 /** Get the best applicable tier for a given subtotal */
 export const getApplicableTier = (subtotal: number) => {
@@ -52,17 +63,15 @@ export const getNextTier = (subtotal: number) => {
 //                          subtotal >= 65 -> 5%, subtotal >= 99 -> 10%
 
 /** Minimum total unit quantity required for any percentage (volume) discount */
-export const VOLUME_DISCOUNT_MIN_UNITS = 2;
+export const VOLUME_DISCOUNT_MIN_UNITS = ENGINE_MIN_UNITS;
 
 /** True when the cart holds enough units to earn a percentage volume discount */
 export const qualifiesForVolumeDiscount = (unitCount: number): boolean =>
   unitCount >= VOLUME_DISCOUNT_MIN_UNITS;
 
 /** Canonical tier percentage for a cart. Returns 0 when not eligible. */
-export const getTierDiscountPercent = (subtotal: number, unitCount: number): number => {
-  if (!qualifiesForVolumeDiscount(unitCount)) return 0;
-  return getApplicableTier(subtotal)?.discountPercent ?? 0;
-};
+export const getTierDiscountPercent = (subtotal: number, unitCount: number): number =>
+  tierPercentFor(toCents(subtotal), unitCount);
 
 export interface CartIncentiveState {
   volumeEligible: boolean;
