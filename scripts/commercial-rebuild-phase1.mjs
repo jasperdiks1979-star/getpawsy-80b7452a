@@ -178,8 +178,13 @@ const heroFormat = (p) => {
   return 'other';
 };
 
+const supplierOk = (p) => {
+  const a = String(p.supplier_status || '').toLowerCase();
+  const b = String(p.supplier_sync_status || '').toLowerCase();
+  return a !== 'discontinued' && a !== 'unavailable' && b !== 'discontinued' && b !== 'unavailable';
+};
 const heroPool = eligible
-  .filter((p) => p.margin_pct !== null && p.us_stock >= 20 && p.image_count >= 2 && p.delivery_confidence !== 'none')
+  .filter((p) => supplierOk(p) && p.margin_pct !== null && p.us_stock >= 20 && p.image_count >= 2 && p.delivery_confidence !== 'none')
   .sort((a, b) => (b.score_total - a.score_total) || (b.views_90d - a.views_90d) || (b.margin_pct - a.margin_pct));
 
 const heroes = [];
@@ -273,7 +278,8 @@ const fail = (name, offenders, detail) => checks.push({ check: name, pass: offen
 
 fail('hero_count_is_exactly_5', heroes.length === 5 ? [] : [`got ${heroes.length}`], 'exactly five hero products');
 fail('hero_has_us_stock', heroes.filter((h) => h.us_stock <= 0).map((h) => h.slug), 'no sold-out-only hero');
-fail('hero_supplier_not_discontinued', heroes.filter((h) => String(h.supplier_status).toLowerCase() === 'discontinued' || h.supplier_sync_status === 'discontinued').map((h) => h.slug), 'no discontinued hero');
+fail('hero_supplier_active_not_discontinued_or_unavailable', heroes.filter((h) => !supplierOk(h)).map((h) => `${h.slug} (${h.supplier_status}/${h.supplier_sync_status})`), 'no discontinued or unavailable hero');
+fail('core_supplier_not_discontinued', core.filter((p) => String(p.supplier_status).toLowerCase() === 'discontinued').map((p) => p.slug), 'no discontinued product in the core range');
 fail('hero_margin_at_least_35', heroes.filter((h) => (h.margin_pct ?? 0) < 35).map((h) => `${h.slug} (${h.margin_pct}%)`), 'hero margin floor');
 fail('selected_have_variant_identity', pool.filter((p) => p.variant_count > 0 && p.cj_variant_ids.length === 0).map((p) => p.slug), 'every multi-variant product has usable variant ids');
 fail('selected_have_supplier_mapping', pool.filter((p) => !p.cj_product_id).map((p) => p.slug), 'every selected product maps to a supplier product');
