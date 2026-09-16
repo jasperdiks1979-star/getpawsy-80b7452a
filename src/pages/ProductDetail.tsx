@@ -1034,11 +1034,22 @@ const ProductDetail = () => {
     );
   }
 
-  // Use centralized availability logic with variant-aware fallback
-  // Variant stock overrides product stock only when a variant is selected
-  const variantStock = selectedVariant ? (selectedVariant as any).stock : undefined;
-  const availabilityResult = computeAvailability(product, variantStock);
-  const inStock = availabilityResult.isInStock;
+  // Commerce N-6: the EXACT selected variant's stock decides purchasability.
+  // Aggregate product stock may never make a zero-stock variant buyable.
+  const selectedVariantStock = selectedVariant
+    ? ((selectedVariant as { variantStock?: number | null; stock?: number | null }).variantStock
+      ?? (selectedVariant as { stock?: number | null }).stock)
+    : undefined;
+  const availabilityResult = computeAvailability(product, selectedVariantStock ?? undefined);
+  const variantSoldOut =
+    typeof selectedVariantStock === "number" && selectedVariantStock <= 0;
+  const inStock = availabilityResult.isInStock && !variantSoldOut;
+
+  // N-5: a meaningful multi-variant product requires a deliberate choice.
+  // We never order variant #1 on the shopper's behalf.
+  const requiresExplicitVariant = variants.length > 1;
+  const variantChoiceMissing = requiresExplicitVariant && !userHasSelectedVariant;
+
 
   const handleAddToCart = () => {
     // NEVER block ATC on geo. Final shipping eligibility is enforced at
@@ -1075,6 +1086,14 @@ const ProductDetail = () => {
       return;
     }
 
+    // N-5: require a deliberate option choice before anything is added.
+    if (variantChoiceMissing) {
+      toast.error("Please choose an option first");
+      trackCci('add_to_cart_error', { product_id: product?.id, meta: { reason: 'variant_not_selected' } });
+      document.getElementById('pdp-variant-picker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     haptic.success(); // Success haptic on add to cart
 
     // Trigger flying animation
@@ -1082,6 +1101,7 @@ const ProductDetail = () => {
       selectedVariant?.variantImage || product.image_url || "/placeholder.svg",
       addToCartButtonRef.current,
     );
+
 
     // Commerce N: the cart line is ALWAYS the canonical unit price. Volume
     // rewards are cart-level and are applied by the one pricing engine, so the
