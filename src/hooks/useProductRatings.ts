@@ -20,6 +20,10 @@ export const useProductRatings = (productIds: string[]) => {
       const { data, error } = await supabase
         .from('product_reviews')
         .select('product_id, rating')
+        // Only approved reviews count towards a public rating. Pending and
+        // unapproved rows (including the 72 imported placeholder reviews)
+        // must never influence a star average or a review count.
+        .eq('is_approved', true)
         .in('product_id', productIds);
 
       if (error) throw error;
@@ -59,7 +63,8 @@ export const useSingleProductRating = (productId: string) => {
       const { data, error } = await supabase
         .from('product_reviews')
         .select('rating')
-        .eq('product_id', productId);
+        .eq('product_id', productId)
+        .eq('is_approved', true);
 
       if (error) throw error;
       if (!data || data.length === 0) return null;

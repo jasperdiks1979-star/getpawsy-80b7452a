@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Star, Send, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,43 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; content?: string; rating?: string }>({});
+  /**
+   * The paid order this review belongs to, if the signed-in shopper actually
+   * bought this product. It is the only way a review can ever be marked as a
+   * verified purchase — the database recomputes the flag from this order and
+   * ignores anything the client claims.
+   */
+  const [orderId, setOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setOrderId(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('id, items, payment_status, paid_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      const match = (data ?? []).find((order) => {
+        const paid = order.payment_status === 'paid' || !!order.paid_at;
+        if (!paid) return false;
+        const items = Array.isArray(order.items) ? order.items : [];
+        return items.some((item) => {
+          const line = item as { id?: unknown; product_id?: unknown };
+          const id = String(line.id ?? '');
+          return id === productId || id.startsWith(productId) || String(line.product_id ?? '') === productId;
+        });
+      });
+      if (!cancelled) setOrderId(match?.id ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +98,7 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
         rating,
         title: title.trim(),
         content: content.trim() || null,
+        order_id: orderId,
       });
 
       if (error) throw error;
@@ -105,6 +143,11 @@ export const ReviewForm = ({ productId, onReviewSubmitted }: ReviewFormProps) =>
       <h3 className="font-display font-semibold text-lg text-foreground">
         Write a review
       </h3>
+      <p className="text-xs text-muted-foreground">
+        {orderId
+          ? 'We found your order for this product, so your review will show as a verified purchase once it is approved.'
+          : 'Reviews are published after moderation. Only reviews we can match to a paid order are labelled as a verified purchase.'}
+      </p>
 
       {/* Star Rating */}
       <div className="space-y-2">
