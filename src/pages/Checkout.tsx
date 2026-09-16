@@ -190,6 +190,7 @@ CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 
 const Checkout = () => {
   const { items, totalPrice, setAbandonedCartEmail } = useCart();
+  const { issues: variantIssues } = useCartVariantIssues(items);
   const { user } = useAuth();
   const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -664,6 +665,17 @@ const Checkout = () => {
     }
 
     setIsProcessing(true);
+
+    // Hard gate — a cart line for a multi-option product without a chosen
+    // option is rejected by the server (`variant_required`). Send the shopper
+    // to the product page to choose instead of failing at Stripe.
+    if (variantIssues.size > 0) {
+      const first = Array.from(variantIssues.values())[0];
+      toast.error('One item still needs an option. Please choose it to continue.');
+      setIsProcessing(false);
+      navigate(first.url);
+      return;
+    }
 
     // Hard gate — never invoke create-checkout when the destination is
     // unshippable. Show a structured message instead of the generic toast.
