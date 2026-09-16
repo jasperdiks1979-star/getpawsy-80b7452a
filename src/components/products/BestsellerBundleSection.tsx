@@ -274,7 +274,7 @@ export const BestsellerBundleSection = ({
         <div className="p-1.5 rounded-full bg-primary/10">
           <Sparkles className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="text-base font-semibold">Frequently Bought Together</h3>
+        <h3 className="text-base font-semibold">Add to your order</h3>
         {hasUpsell && (
           <Badge variant="secondary" className="ml-auto bg-accent text-accent-foreground text-xs">
             Save {discountPercent}%

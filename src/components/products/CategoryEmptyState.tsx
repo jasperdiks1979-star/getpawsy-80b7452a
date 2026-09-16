@@ -100,17 +100,13 @@ export const CategoryEmptyState = ({
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
-              {bestsellers.length > 0 
-                ? '🔥 Best Sellers' 
-                : categoryName 
-                  ? `Popular with ${categoryName.split(' ')[0]} lovers` 
-                  : 'Popular with Pet Parents'}
+              {categoryName ? `Our picks for ${categoryName.split(' ')[0]} owners` : 'Our picks'}
             </h3>
             <Link 
               to="/bestsellers" 
               className="text-sm text-primary hover:underline flex items-center gap-1"
             >
-              View Best Sellers
+              View our picks
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -128,7 +124,7 @@ export const CategoryEmptyState = ({
           <Link to="/bestsellers">
             <Button size="lg" className="gap-2">
               <Sparkles className="w-4 h-4" />
-              View Best Sellers
+              View our picks
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
