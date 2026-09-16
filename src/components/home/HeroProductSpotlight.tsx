@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, ShoppingCart, Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
-import { useCart } from '@/contexts/CartContext';
+import { useQuickAdd } from '@/hooks/useQuickAdd';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 
 
