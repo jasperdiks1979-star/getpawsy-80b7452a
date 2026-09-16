@@ -66493,6 +66493,7 @@ export type Database = {
           id: string
           is_approved: boolean
           is_verified_buyer: boolean
+          order_id: string | null
           product_id: string
           rating: number
           reviewer_name: string | null
@@ -66507,6 +66508,7 @@ export type Database = {
           id?: string
           is_approved?: boolean
           is_verified_buyer?: boolean
+          order_id?: string | null
           product_id: string
           rating: number
           reviewer_name?: string | null
@@ -66521,6 +66523,7 @@ export type Database = {
           id?: string
           is_approved?: boolean
           is_verified_buyer?: boolean
+          order_id?: string | null
           product_id?: string
           rating?: number
           reviewer_name?: string | null
@@ -66529,6 +66532,27 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "canonical_revenue"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_reviews_product_id_fkey"
             columns: ["product_id"]
@@ -80348,6 +80372,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      review_order_is_eligible: {
+        Args: { _order_id: string; _product_id: string; _user_id: string }
+        Returns: boolean
       }
       roe_compose_scorecard: { Args: { p_date: string }; Returns: Json }
       roe_portfolio_score: {

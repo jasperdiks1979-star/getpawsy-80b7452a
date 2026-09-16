@@ -71,6 +71,7 @@ const footerLinks = {
   collections: [
     { label: 'Cat Trees & Condos', href: '/collections/cat-trees-and-condos' },
     { label: 'Cat Litter Boxes', href: '/collections/cat-litter-boxes' },
+    { label: 'Cat Starter Sets', href: '/bundles' },
     { label: 'Dog Beds', href: '/collections/dog-beds' },
     { label: 'Dog Travel Guide', href: '/guides/dog-travel-essentials-guide' },
   ],

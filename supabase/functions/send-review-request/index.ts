@@ -17,6 +17,18 @@ serve(async (req) => {
   }
 
   try {
+    // SAFETY GATE (Phase 4 D): review-request emails go to real customers.
+    // Sending stays off until the store owner explicitly enables it by setting
+    // REVIEW_REQUEST_EMAILS_ENABLED=true. Until then the function reports what
+    // it would do and sends nothing. Never remove this gate silently.
+    if (Deno.env.get("REVIEW_REQUEST_EMAILS_ENABLED") !== "true") {
+      console.log("[REVIEW-REQUEST] disabled: REVIEW_REQUEST_EMAILS_ENABLED is not 'true'. No email sent.");
+      return new Response(
+        JSON.stringify({ sent: 0, disabled: true, reason: "REVIEW_REQUEST_EMAILS_ENABLED is not set to 'true'" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY")!;

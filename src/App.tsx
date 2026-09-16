@@ -243,6 +243,7 @@ const Products = lazyWithRetry(() => import("./pages/Products"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 const ProductDetail = lazyWithRetry(() => import("./pages/ProductDetail"));
 const Cart = lazyWithRetry(() => import("./pages/Cart"));
+const Bundles = lazyWithRetry(() => import("./pages/Bundles"));
 const Checkout = lazyWithRetry(() => import("./pages/Checkout"));
 const PaymentSuccess = lazyWithRetry(() => import("./pages/PaymentSuccess"));
 const Admin = lazyWithRetry(() => import("./pages/Admin"));
@@ -949,6 +950,14 @@ const App = () => {
                           />
                           {/* Legacy singular path → 302 to canonical plural, preserving UTMs */}
                           <Route path="/product/:slug" element={<ProductRouteRedirect />} />
+                          <Route
+                            path="/bundles"
+                            element={
+                              <Suspense fallback={<RouteLoader />}>
+                                <Bundles />
+                              </Suspense>
+                            }
+                          />
                           <Route
                             path="/cart"
                             element={
