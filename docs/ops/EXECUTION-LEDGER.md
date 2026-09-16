@@ -41,3 +41,18 @@ Global verification at last run: `vitest` 1072 passed / 1 skipped / 0 failed,
 
 NEXT_OPEN_PHASE: none internally actionable — all sequenced phases verified COMPLETE.
 Resume point is whichever OPEN item above receives external input first.
+
+## Run 2026-09-16 18:55–19:00 UTC — claim hygiene sweep (phase 12)
+
+| item | status | evidence |
+|---|---|---|
+| Product FAQ block fabricated per-category answers (infrared sensors, self-cleaning cycles, <50 dB, weight capacities, sisal longevity, airline cabin fit, assembly times, "Most customers …") on live PDPs | FIXED | `src/components/products/ProductFAQAccordion.tsx` now answers store policy + variant/spec provenance only |
+| Same fabrications published as FAQPage JSON-LD to search engines | FIXED | `src/components/seo/FAQSchema.tsx` — category branch removed; "products are tested" answer replaced with the published-specification wording |
+| "Frequently Bought Together" heading on bestseller PDP | FIXED | `src/components/products/BestsellerBundleSection.tsx` → "Add to your order" |
+| "Most customers add these for the full experience" in cart/checkout upsell | FIXED | `src/components/cart/CartUpsell.tsx` |
+| "Best Seller" badge + "Popular in …" heading on SEO collections | FIXED | `src/components/seo/CategoryPopularProducts.tsx` → "Our pick" / "Our picks in …" |
+| "🔥 Best Sellers" / "Popular with … lovers" in category empty state | FIXED | `src/components/products/CategoryEmptyState.tsx` → "Our picks" |
+| Regression coverage | ADDED | `src/test/phase12-claims.test.ts` (7 tests) |
+
+Verification: 1079 passed / 1 skipped / 0 failed, `tsgo --noEmit` clean, build OK,
+production smoke all 200. No database, payment, supplier, email or ad action taken.
