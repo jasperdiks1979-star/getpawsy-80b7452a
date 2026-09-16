@@ -159,6 +159,8 @@ const eligible = enriched.filter((p) =>
   p.status === 'active' &&
   p.us_stock > 0 &&
   p.blocking_gates === 0 &&
+  // cat-first indoor home: no dog/bird/other-species categories in the visible range
+  !/^(dog|bird|fish|reptile|small pet)/i.test(String(p.category || '')) &&
   !retireFromDupes.has(p.id) &&
   p.duplicate_risk !== 'confirmed');
 
@@ -202,10 +204,10 @@ for (const p of eligible.filter((p) => !heroIds.has(p.id)).sort((a, b) => b.scor
   if ((catCount[cat] || 0) >= cap) continue;
   const isAccessory = p.price < 40;
   if (isAccessory) {
-    if (accessories.length >= 18) continue;
+    if (accessories.length >= 15) continue;
     accessories.push(p);
   } else {
-    if (core.length >= 45) continue;
+    if (core.length >= 38) continue;
     core.push(p);
   }
   catCount[cat] = (catCount[cat] || 0) + 1;
