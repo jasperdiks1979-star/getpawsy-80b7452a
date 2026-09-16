@@ -185,3 +185,47 @@ describe('bundle definitions', () => {
     }
   });
 });
+
+describe('warehouse inventory outranks the flat stock field', () => {
+  // Live catalogue reality: 45 supplier variants carry `stock: 0` alongside a
+  // US warehouse record holding hundreds of units. Treating the flat field as
+  // truth blocked checkout on genuinely available products.
+  const withWarehouse = base({
+    slug: 'warehouse',
+    variants: [
+      {
+        vid: 'v-grey',
+        variantNameEn: 'Grey',
+        stock: 0,
+        variantSellPrice: 111.99,
+        inventories: [{ countryCode: 'US', totalInventory: 204, verifiedWarehouse: 1 }],
+      },
+    ],
+  });
+
+  it('treats a US-stocked option as purchasable despite stock: 0', () => {
+    const [component] = componentsFor([withWarehouse]);
+    expect(component.options.map((o) => o.vid)).toEqual(['v-grey']);
+    expect(component.autoVariantId).toBe('v-grey');
+  });
+
+  it('still blocks an option whose US warehouse record is empty', () => {
+    const empty = base({
+      slug: 'empty',
+      variants: [
+        { vid: 'v', variantNameEn: 'Grey', stock: 99, inventories: [{ countryCode: 'US', totalInventory: 0 }] },
+      ],
+    });
+    const def = { slug: 's', name: 'S', intro: '', componentSlugs: ['empty'] };
+    expect(evaluateBundle(def, new Map([['empty', empty]])).active).toBe(false);
+  });
+
+  it('blocks an option stocked only outside the US', () => {
+    const cn = base({
+      slug: 'cn',
+      variants: [{ vid: 'v', variantNameEn: 'Grey', inventories: [{ countryCode: 'CN', totalInventory: 500 }] }],
+    });
+    const def = { slug: 's', name: 'S', intro: '', componentSlugs: ['cn'] };
+    expect(evaluateBundle(def, new Map([['cn', cn]])).active).toBe(false);
+  });
+});
