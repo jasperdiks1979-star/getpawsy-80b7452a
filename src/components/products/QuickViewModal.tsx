@@ -75,9 +75,11 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
     }).filter((v): v is ParsedVariant => v !== null);
   }, [product]);
 
-  // Auto-select first variant when product changes
+  // Only a product with exactly ONE option may be preselected. With more than
+  // one option the shopper must choose explicitly — a silent default produced
+  // cart lines the server rejects at checkout (`variant_required`).
   useMemo(() => {
-    if (variants.length > 0 && !selectedVariant) {
+    if (variants.length === 1 && !selectedVariant) {
       setSelectedVariant(variants[0]);
     }
   }, [variants, selectedVariant]);
@@ -127,7 +129,8 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
     );
 
     const variantSuffix = selectedVariant ? ` - ${selectedVariant.variantKey}` : '';
-    const cartId = selectedVariant ? `${product.id}_${selectedVariant.vid}` : product.id;
+    // `-` separator matches the PDP and the server's variant-id extraction.
+    const cartId = selectedVariant ? `${product.id}-${selectedVariant.vid}` : product.id;
     
     for (let i = 0; i < quantity; i++) {
       addItem({

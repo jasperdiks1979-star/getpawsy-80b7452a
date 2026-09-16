@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
+import { useCartVariantIssues } from '@/hooks/useCartVariantIssues';
 import { useEffect } from 'react';
 import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
 import { getCartSessionId } from '@/lib/cartSession';
@@ -39,6 +40,11 @@ import {
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  // Legacy-cart recovery: lines that reference a multi-option product without a
+  // chosen option. The server rejects them at checkout, so surface a precise
+  // "choose an option" path here instead of a generic checkout failure.
+  const { issues: variantIssues } = useCartVariantIssues(items);
+  const hasVariantIssues = variantIssues.size > 0;
   const premium = getConversionFlag('premiumCheckoutCart');
   const premiumV3 = getConversionFlag('premiumCartV3');
   const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
@@ -235,6 +241,17 @@ const Cart = () => {
                   {item.variant && (
                     <p className="text-sm text-muted-foreground">{safeString(item.variant)}</p>
                   )}
+                  {variantIssues.has(item.id) && (
+                    <p className="mt-1 text-sm text-destructive">
+                      This item needs an option before checkout.{' '}
+                      <Link
+                        to={variantIssues.get(item.id)!.url}
+                        className="underline font-medium"
+                      >
+                        Choose an option
+                      </Link>
+                    </p>
+                  )}
                   <p className={
                     premium
                       ? 'text-[15px] font-semibold text-foreground mt-1 tracking-tight'
@@ -354,10 +371,23 @@ const Cart = () => {
                 </div>
               )}
 
+              {hasVariantIssues && (
+                <p className="mt-4 text-sm text-destructive" data-testid="cart-variant-blocker">
+                  Choose an option for the highlighted item to continue.
+                </p>
+              )}
+
               <Link
-                to="/checkout"
-                className="block mt-4"
-                onClick={() => handleCartCheckoutClick('cart_proceed_button')}
+                to={hasVariantIssues ? '/cart' : '/checkout'}
+                aria-disabled={hasVariantIssues}
+                className={`block mt-4 ${hasVariantIssues ? 'pointer-events-none opacity-60' : ''}`}
+                onClick={(e) => {
+                  if (hasVariantIssues) {
+                    e.preventDefault();
+                    return;
+                  }
+                  handleCartCheckoutClick('cart_proceed_button');
+                }}
               >
                 {/* Mission First Revenue P0.2 — trust strip directly above primary CTA */}
                 <TrustStripAboveATC className="mb-3 justify-center" compact />
@@ -450,9 +480,16 @@ const Cart = () => {
               <p className="text-base font-semibold text-foreground tracking-tight">${total.toFixed(2)}</p>
             </div>
             <Link
-              to="/checkout"
-              className="flex-1"
-              onClick={() => handleCartCheckoutClick('cart_sticky_button')}
+              to={hasVariantIssues ? '/cart' : '/checkout'}
+              aria-disabled={hasVariantIssues}
+              className={`flex-1 ${hasVariantIssues ? 'pointer-events-none opacity-60' : ''}`}
+              onClick={(e) => {
+                if (hasVariantIssues) {
+                  e.preventDefault();
+                  return;
+                }
+                handleCartCheckoutClick('cart_sticky_button');
+              }}
             >
               <Button size="lg" className="w-full gap-2 rounded-full font-semibold h-12">
                 Checkout

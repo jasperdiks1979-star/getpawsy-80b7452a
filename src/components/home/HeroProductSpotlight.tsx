@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, ShoppingCart, Truck, RotateCcw, ShieldCheck } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
-import { useCart } from '@/contexts/CartContext';
+import { useQuickAdd } from '@/hooks/useQuickAdd';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 
 
@@ -39,14 +39,14 @@ const PREFERRED_IMAGE =
 
 
 export function HeroProductSpotlight() {
-  const { addItem } = useCart();
+  const quickAdd = useQuickAdd();
   const { data: product } = useQuery({
     queryKey: ['hero-spotlight', HERO_SLUG],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
-        .select('id, name, slug, price, image_url, images, stock, category')
+        .select('id, name, slug, price, image_url, images, stock, category, variants')
         .eq('slug', HERO_SLUG)
         .maybeSingle();
       return data;
@@ -114,14 +114,18 @@ export function HeroProductSpotlight() {
                 size="lg"
                 className="w-full sm:w-auto min-h-[52px] rounded-full px-8 gap-2"
                 onClick={() => {
-                  addItem({
-                    id: String(product.id),
-                    slug: product.slug ?? undefined,
-                    name: product.name,
-                    price,
-                    image: heroImage,
-                    category: (product as { category?: string }).category,
-                  });
+                  quickAdd(
+                    {
+                      id: String(product.id),
+                      slug: product.slug ?? undefined,
+                      name: product.name,
+                      price,
+                      image_url: heroImage,
+                      category: (product as { category?: string }).category,
+                      variants: (product as { variants?: unknown }).variants ?? [],
+                    },
+                    { displayPrice: price },
+                  );
                   trackEvent('hero_cta_click', {
                     cta_id: 'hero_product_spotlight_atc',
                     destination: '/cart',

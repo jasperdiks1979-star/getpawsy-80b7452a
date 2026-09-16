@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, Lock, Loader2, ShieldCheck, FileText, Home, ShoppingCart, Tag, CheckCircle, X, Truck, RotateCcw, Package } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useCart } from '@/contexts/CartContext';
+import { useCartVariantIssues } from '@/hooks/useCartVariantIssues';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackBeginCheckout } from '@/lib/analytics';
@@ -190,6 +191,8 @@ CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 
 const Checkout = () => {
   const { items, totalPrice, setAbandonedCartEmail } = useCart();
+  const { issues: variantIssues } = useCartVariantIssues(items);
+  const navigate = useNavigate();
   const { user } = useAuth();
   const abTest = useBundleABTest();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -665,6 +668,17 @@ const Checkout = () => {
 
     setIsProcessing(true);
 
+    // Hard gate — a cart line for a multi-option product without a chosen
+    // option is rejected by the server (`variant_required`). Send the shopper
+    // to the product page to choose instead of failing at Stripe.
+    if (variantIssues.size > 0) {
+      const first = Array.from(variantIssues.values())[0];
+      toast.error('One item still needs an option. Please choose it to continue.');
+      setIsProcessing(false);
+      navigate(first.url);
+      return;
+    }
+
     // Hard gate — never invoke create-checkout when the destination is
     // unshippable. Show a structured message instead of the generic toast.
     if (shippingBlocked) {
@@ -798,6 +812,16 @@ const Checkout = () => {
           }
         } catch {
           /* ignore */
+        }
+        // Server fail-closed on an item whose option is missing/invalid: give a
+        // recovery path (product page) instead of a generic checkout failure.
+        if (parsed?.code === 'variant_unavailable') {
+          const productId = (parsed as { product_id?: string }).product_id;
+          const line = items.find((i) => i.id === productId || i.id.startsWith(`${productId}`));
+          toast.error("This item's option is no longer available. Please choose one again.");
+          setIsProcessing(false);
+          navigate(line?.slug ? `/products/${line.slug}` : productId ? `/products/${productId}` : '/cart');
+          return;
         }
         if (parsed?.code === 'cj_shipping_unavailable' || parsed?.code === 'country_not_supported') {
           const destName =
