@@ -155,7 +155,7 @@ const PROBLEM = (p) => {
 };
 
 const eligible = enriched.filter((p) =>
-  p.species === 'cat' &&
+  (p.species === 'cat' || p.species === 'both') &&
   p.status === 'active' &&
   p.us_stock > 0 &&
   p.blocking_gates === 0 &&
@@ -192,7 +192,7 @@ for (const p of heroPool) {
 const heroIds = new Set(heroes.map((h) => h.id));
 
 // Core range: strongest remaining cat products, capped per category for breadth.
-const CATEGORY_CAP = { 'Cat Litter Boxes': 9, 'Cat Trees & Condos': 10, 'Cat Toys': 6, 'Cat Beds': 5, 'Cat Houses': 5, 'Cat Scratching Posts': 5, 'Cat Bowls & Feeders': 4, 'Cat Carriers': 3, 'Cat Grooming': 3, 'Cat Collars & Accessories': 3 };
+const CATEGORY_CAP = { 'Cat Litter Boxes': 12, 'Cat Trees & Condos': 12, 'Cat Toys': 9, 'Cat Beds': 7, 'Cat Houses': 6, 'Cat Scratching Posts': 6, 'Cat Bowls & Feeders': 5, 'Cat Carriers': 4, 'Cat Grooming': 4, 'Cat Collars & Accessories': 4 };
 const catCount = {};
 const core = [];
 const accessories = [];
@@ -202,10 +202,10 @@ for (const p of eligible.filter((p) => !heroIds.has(p.id)).sort((a, b) => b.scor
   if ((catCount[cat] || 0) >= cap) continue;
   const isAccessory = p.price < 40;
   if (isAccessory) {
-    if (accessories.length >= 14) continue;
+    if (accessories.length >= 18) continue;
     accessories.push(p);
   } else {
-    if (core.length >= 32) continue;
+    if (core.length >= 45) continue;
     core.push(p);
   }
   catCount[cat] = (catCount[cat] || 0) + 1;
@@ -251,7 +251,8 @@ for (const [name, a, b] of bundleSpecs) {
   const sameSupplier = p1.supplier_name === p2.supplier_name;
   const bothUsVerified = p1.verified_us_warehouse && p2.verified_us_warehouse;
   const bothStocked = p1.us_stock > 0 && p2.us_stock > 0;
-  const safe = sameSupplier && bothUsVerified && bothStocked;
+  const noConflict = !p1.stock_source_conflict && !p2.stock_source_conflict;
+  const safe = sameSupplier && bothUsVerified && bothStocked && noConflict;
   bundles.push({
     name,
     items: [p1, p2].map((p) => ({ slug: p.slug, title: p.title, price: p.price, us_stock: p.us_stock, warehouse: p.warehouse, supplier: p.supplier_name })),
@@ -259,7 +260,7 @@ for (const [name, a, b] of bundleSpecs) {
     status: safe ? 'FULFILMENT_SAFE' : 'CONCEPTUAL_DO_NOT_ACTIVATE',
     reason: safe
       ? 'same supplier, both US warehouses verified, both in stock — can ship together'
-      : `not activatable: sameSupplier=${sameSupplier}, bothUsVerified=${bothUsVerified}, bothStocked=${bothStocked}`,
+      : `not activatable: sameSupplier=${sameSupplier}, bothUsVerified=${bothUsVerified}, bothStocked=${bothStocked}, noStockConflict=${noConflict}`,
   });
 }
 
