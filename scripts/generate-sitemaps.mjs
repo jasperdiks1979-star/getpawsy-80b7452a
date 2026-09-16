@@ -213,6 +213,8 @@ async function main() {
   // ── COLLECTIONS (locked to 5 active collections only) ──
   const ACTIVE_COLLECTION_SLUGS = new Set([
     "dogs", "cats", "dog-beds", "cat-trees-and-condos", "cat-litter-boxes",
+    // Phase 5 reactivated these cat-first collections (seo_collections.is_active = true).
+    "cat-toys", "cat-beds",
   ]);
 
   let collectionsRaw = await fetchAllPages(
@@ -328,6 +330,7 @@ async function main() {
     { path: "/shop", priority: 0.80, changefreq: "weekly", lastmod: today },
     { path: "/products", priority: 0.80, changefreq: "weekly", lastmod: today },
     { path: "/bestsellers", priority: 0.80, changefreq: "weekly", lastmod: today },
+    { path: "/bundles", priority: 0.70, changefreq: "weekly", lastmod: today },
     // ── Content hubs ──
     { path: "/blog", priority: 0.60, changefreq: "weekly", lastmod: today },
     { path: "/guides", priority: 0.70, changefreq: "weekly", lastmod: today },

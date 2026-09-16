@@ -81,6 +81,7 @@ import { StockNotificationForm } from "@/components/products/StockNotificationFo
 import { RecentlyViewedCarousel } from "@/components/products/RecentlyViewedCarousel";
 import { usePdpBotRenderTrace } from "@/hooks/usePdpBotRenderTrace";
 import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
+import { categoryCollectionHref } from "@/lib/canonical-category-registry";
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
 import { RelatedGuides } from "@/components/guides/RelatedGuides";
@@ -2303,7 +2304,7 @@ const ProductDetail = () => {
         {product.category && (
           <div className="mt-8 text-center">
             <Link
-              to={`/collections/${encodeURIComponent(safeString(product.category).toLowerCase().replace(/\s+/g, "-"))}`}
+              to={categoryCollectionHref(product.category)}
               className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors underline underline-offset-4"
             >
               Browse all {safeString(product.category)} products →
@@ -2317,7 +2318,7 @@ const ProductDetail = () => {
             products={relatedProducts || []}
             isLoading={relatedLoading}
             title="You May Also Like"
-            subtitle="Popular picks from the same category"
+            subtitle="More from the same category"
             listId="related-products"
             listName="Related Products"
             sourceProductId={product.id}
