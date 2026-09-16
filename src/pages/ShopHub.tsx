@@ -15,7 +15,7 @@ const CATEGORY_SECTIONS = [
     title: 'Litter & hygiene',
     categories: [
       { name: 'Cat Litter Boxes', slug: 'cat-litter-boxes', description: 'Covered, top-entry and high-sided boxes' },
-      { name: 'Cat Grooming', slug: 'cat-grooming-tools', description: 'Brushes and de-shedding tools' },
+      { name: 'Cat Grooming', slug: null, href: '/products?category=cat-grooming', description: 'Brushes and de-shedding tools' },
     ],
   },
   {
@@ -29,7 +29,7 @@ const CATEGORY_SECTIONS = [
     title: 'Play & feeding',
     categories: [
       { name: 'Cat Toys', slug: 'cat-toys', description: 'Wands, balls and puzzle enrichment' },
-      { name: 'Bowls & Feeders', slug: 'automatic-cat-feeders', description: 'Slow feeders, bowls and fountains' },
+      { name: 'Bowls & Feeders', slug: null, href: '/products?category=cat-bowls-feeders', description: 'Bowls, feeders and fountains' },
       { name: 'Cat Starter Sets', slug: null, href: '/bundles', description: 'Curated sets that ship together' },
     ],
   },
