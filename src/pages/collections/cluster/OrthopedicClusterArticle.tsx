@@ -74,7 +74,7 @@ const CLUSTERS: Record<string, ClusterData> = {
     slug: 'memory-foam-under-100',
     title: 'Best Memory Foam Dog Beds Under $100 (2026)',
     seoTitle: 'Best Memory Foam Dog Beds Under $100 – Top Budget Picks (2026)',
-    metaDesc: 'Looking for an affordable memory foam dog bed? We compared beds under $100 for foam quality, durability & comfort. These 6 deliver genuine orthopedic support without the premium price.',
+    metaDesc: 'Looking for an affordable memory foam dog bed? Beds under $100 compared on published foam quality, durability and comfort specifications. These 6 deliver genuine orthopedic support without the premium price.',
     h1: 'Best Memory Foam Dog Beds Under $100',
     intro: 'You don\'t need to spend $200+ for genuine orthopedic support. We evaluated 15+ memory foam dog beds priced under $100 to find which ones actually deliver on their promises. The key is knowing what to look for: foam density over 1.5 lb/ft³, proper waterproofing, and washable covers that survive repeated use.',
     sections: [

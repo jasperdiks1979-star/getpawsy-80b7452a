@@ -100,7 +100,7 @@ export default function BestSelfCleaningLitterBox2026() {
             Best Self-Cleaning Litter Boxes for 2026 — Noise, Cost & Multi-Cat Comparison
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            we compared self-cleaning litter boxes across noise level, odor control, waste capacity, and multi-cat durability.
+            this guide compares self-cleaning litter boxes on published noise level, odor control, waste capacity and multi-cat durability specifications.
             This guide cuts through the marketing to show you exactly which type works for your home — and which ones to avoid.
           </p>
         </header>

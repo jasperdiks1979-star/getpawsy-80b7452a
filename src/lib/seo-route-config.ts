@@ -172,7 +172,7 @@ export const SEO_PILLARS: SeoPillar[] = [
         h1: 'Heavy Duty Cat Trees for Large & Heavy Cats',
         primaryKeyword: 'heavy duty cat tree',
         secondaryKeywords: ['sturdy cat tree', 'cat tree won\'t tip', 'reinforced cat tree', 'cat tree for heavy cats', 'stable cat tree', 'cat tree 25 lb cat'],
-        intro: 'A heavy duty cat tree needs to do one thing above all else: not tip over. We compared cat trees on published base dimensions and weight ratings and identified the models that stayed rock-solid. Our picks feature reinforced particle board bases, 4"+ diameter sisal posts, and anchor points for wall mounting. If your cat is over 15 lbs, these are your safest options.',
+        intro: 'A heavy duty cat tree needs to do one thing above all else: not tip over. This guide compares cat trees on their published base dimensions and weight ratings. Our picks feature reinforced particle board bases, 4"+ diameter sisal posts, and anchor points for wall mounting. If your cat is over 15 lbs, these are your safest options.',
         productsCollectionSlug: 'cat-trees-for-large-cats',
         componentKey: 'HeavyDutyCatTree',
         faq: [

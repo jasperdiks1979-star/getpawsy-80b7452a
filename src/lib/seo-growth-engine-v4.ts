@@ -191,7 +191,7 @@ const ZERO_CLICK_MODIFIERS = [
 const EMOTIONAL_META_TEMPLATES = [
   (kw: string) => `Choosing the right ${kw} matters. See our curated picks and learn what experienced pet owners recommend.`,
   (kw: string) => `Find the right ${kw} for your pet. Carefully selected options that save you time and money. US shipping available.`,
-  (kw: string) => `We compared popular ${kw} options so you don't have to. Honest assessments, no sponsored picks.`,
+  (kw: string) => `Popular ${kw} options compared on published specifications. Honest assessments, no sponsored picks.`,
 ];
 
 function humanizeSlug(slug: string): string {

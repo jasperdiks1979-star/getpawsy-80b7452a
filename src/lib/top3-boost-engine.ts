@@ -124,7 +124,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'best interactive dog toys': {
     title: 'Best Interactive Dog Toys (2026) — Tested by Dogs, Ranked by Experts',
-    meta: 'we compared toys for engagement, durability, and mental stimulation. See which keep dogs busy longest. Free shipping available.',
+    meta: 'Toys compared on published engagement, durability and enrichment features. See which keep dogs busy longest. Free shipping available.',
   },
   'how to stop dog pulling on leash': {
     title: 'How to Stop Dog Pulling on Leash — 7-Day Training Plan (2026)',
