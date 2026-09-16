@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,6 +56,11 @@ async function probe(p: Probe) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Security: service-role probe of analytics tables — admin JWT or internal secret only.
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) return denied;
+
   try {
     const rows = await Promise.all(PROBES.map(probe));
     await admin.from("analytics_health_checks").insert(rows);
