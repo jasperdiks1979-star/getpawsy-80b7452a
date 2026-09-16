@@ -559,7 +559,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 <tr className="bg-muted/60">
                   <th className="text-left p-3 font-semibold text-foreground">Rank</th>
                   <th className="text-left p-3 font-semibold text-foreground">Product</th>
-                  <th className="text-left p-3 font-semibold text-foreground">Rating</th>
+                  
                   <th className="text-left p-3 font-semibold text-foreground">Best For</th>
                   <th className="text-left p-3 font-semibold text-foreground">Price</th>
                   <th className="text-left p-3 font-semibold text-foreground">Action</th>
@@ -582,12 +582,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                           ) : p.name}
                         </span>
                       </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        {p.rating}/5
-                      </span>
                     </td>
                     <td className="p-3 text-muted-foreground">{p.bestFor}</td>
                     <td className="p-3 font-medium text-foreground whitespace-nowrap">{p.priceRange}</td>
@@ -628,9 +622,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-sm font-bold text-primary block">{p.priceRange}</span>
-                    <span className="flex items-center gap-0.5 text-xs text-amber-500 justify-end">
-                      <Star className="w-3 h-3 fill-amber-400" /> {p.rating}
-                    </span>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -670,9 +661,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <span className="text-lg font-bold text-primary block">{p.priceRange}</span>
-                    <span className="flex items-center gap-1 text-xs text-amber-500 justify-end">
-                      <Star className="w-3 h-3 fill-amber-400" /> {p.rating}/5
-                    </span>
                   </div>
                 </div>
 
