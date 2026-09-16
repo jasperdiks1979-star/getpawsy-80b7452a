@@ -95,7 +95,8 @@ export default function AnalyticsHealthPage() {
               {r.suggested_fix && <div className="text-muted-foreground italic">Fix: {r.suggested_fix}</div>}
             </div>
           </div>
-        ))}
+          );
+        })}
         {!loading && rows.length === 0 && (
           <div className="col-span-full text-sm text-muted-foreground">No probe data yet. Click <em>Run now</em>.</div>
         )}
