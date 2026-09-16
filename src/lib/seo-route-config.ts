@@ -238,8 +238,8 @@ export const SEO_PILLARS: SeoPillar[] = [
   {
     namespace: 'dog',
     slug: 'dog-car-travel-safety',
-    title: 'Dog Car Travel Safety – Crash-Tested Seats, Harnesses & Gear (2026)',
-    h1: 'Dog Car Travel Safety: Crash-Tested Seats & Harness Guide',
+    title: 'Dog Car Travel Safety – Seats, Harnesses & Gear (2026)',
+    h1: 'Dog Car Travel Safety: Seats & Harness Guide',
     primaryKeyword: 'dog car travel safety',
     secondaryKeywords: ['dog car seat', 'dog booster seat', 'dog car harness', 'crash tested dog seat', 'dog seatbelt', 'pet travel safety', 'dog car restraint', 'dog car anxiety'],
     intro: 'Every year, an unrestrained dog in a car becomes a dangerous projectile in a crash — a 60 lb dog at 35 mph hits with 2,700 lbs of force. Our crash-tested picks for dog car seats, harnesses, and travel systems meet the Center for Pet Safety (CPS) certification standards. We\'ve reviewed impact test data, ease of installation, and comfort ratings to find gear that genuinely protects your dog (and everyone else in the vehicle).',
@@ -256,8 +256,8 @@ export const SEO_PILLARS: SeoPillar[] = [
     intents: [
       {
         slug: 'crash-tested-seat-belts',
-        title: 'Crash-Tested Dog Seat Belts & Harnesses – CPS Certified',
-        h1: 'Crash-Tested Dog Seat Belts & Safety Harnesses',
+        title: 'Dog Seat Belts & Safety Harnesses – What to Look For',
+        h1: 'Dog Seat Belts & Safety Harnesses',
         primaryKeyword: 'crash tested dog seat belt',
         secondaryKeywords: ['dog car harness crash tested', 'CPS certified dog harness', 'dog seatbelt harness', 'safest dog car harness', 'dog car restraint', 'dog crash harness'],
         intro: 'Most dog "seatbelts" sold online are untested and provide zero crash protection — they\'re just comfort leashes. Genuine crash-tested harnesses meet Center for Pet Safety (CPS) standards and use automotive-grade hardware. We\'ve reviewed every CPS-certified option available in 2026, comparing crash test performance, comfort ratings, and ease of use to help you choose real protection, not false security.',
