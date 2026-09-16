@@ -121,6 +121,21 @@ export interface SeoTrafficPageProps {
   customerQuotes?: CustomerQuote[];
 }
 
+/**
+ * Badges in guide data still carry popularity/ranking wording ("Most Popular",
+ * "Best Seller", "#1 Best Overall"). We hold no sales or popularity data for
+ * third-party products, so those labels are rewritten to editorial-opinion
+ * wording before they render. Everything else passes through unchanged.
+ */
+export function neutralBadge(badge: string): string {
+  const b = badge.toLowerCase();
+  if (b.includes('popular') || b.includes('trending') || b.includes('best seller') || b.includes('bestseller')) {
+    return 'Our pick';
+  }
+  if (b.includes('#1')) return badge.replace(/#1\s*/i, '').trim() || 'Our pick';
+  return badge;
+}
+
 // ── Badge color helper ──
 function badgeClasses(badge: string): string {
   const b = badge.toLowerCase();
@@ -210,7 +225,7 @@ function BestOverallHero({ pick, products, categories, species }: { pick: BestOv
         <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">Best Overall Pick</h2>
         {pick.badge && (
           <span className="text-[11px] font-bold bg-primary text-primary-foreground px-3 py-0.5 rounded-full">
-            {pick.badge}
+            {neutralBadge(pick.badge)}
           </span>
         )}
       </div>
@@ -498,7 +513,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                     {/* Badge */}
                     {pick.badge && (
                       <span className={`absolute -top-3 left-4 text-[11px] font-bold px-3 py-0.5 rounded-full ${badgeClasses(pick.badge)}`}>
-                        {pick.badge}
+                        {neutralBadge(pick.badge)}
                       </span>
                     )}
                     <div className="flex items-center gap-2 mb-2 mt-1">
@@ -559,7 +574,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 <tr className="bg-muted/60">
                   <th className="text-left p-3 font-semibold text-foreground">Rank</th>
                   <th className="text-left p-3 font-semibold text-foreground">Product</th>
-                  <th className="text-left p-3 font-semibold text-foreground">Rating</th>
+                  
                   <th className="text-left p-3 font-semibold text-foreground">Best For</th>
                   <th className="text-left p-3 font-semibold text-foreground">Price</th>
                   <th className="text-left p-3 font-semibold text-foreground">Action</th>
@@ -573,7 +588,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                       <div className="flex items-center gap-2">
                         {p.badge && (
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${badgeClasses(p.badge)}`}>
-                            {p.badge}
+                            {neutralBadge(p.badge)}
                           </span>
                         )}
                         <span className="font-medium text-foreground">
@@ -582,12 +597,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                           ) : p.name}
                         </span>
                       </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        {p.rating}/5
-                      </span>
                     </td>
                     <td className="p-3 text-muted-foreground">{p.bestFor}</td>
                     <td className="p-3 font-medium text-foreground whitespace-nowrap">{p.priceRange}</td>
@@ -618,7 +627,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
               <div key={p.rank} className="relative bg-card border border-border rounded-xl p-4">
                 {p.badge && (
                   <span className={`absolute -top-2.5 left-3 text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeClasses(p.badge)}`}>
-                    {p.badge}
+                    {neutralBadge(p.badge)}
                   </span>
                 )}
                 <div className="flex items-start justify-between gap-3 mt-1">
@@ -628,9 +637,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-sm font-bold text-primary block">{p.priceRange}</span>
-                    <span className="flex items-center gap-0.5 text-xs text-amber-500 justify-end">
-                      <Star className="w-3 h-3 fill-amber-400" /> {p.rating}
-                    </span>
                   </div>
                 </div>
                 <div className="mt-3">
@@ -657,7 +663,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 {/* Badge ribbon */}
                 {p.badge && (
                   <span className={`absolute -top-3 left-5 text-[11px] font-bold px-3 py-1 rounded-full shadow-sm ${badgeClasses(p.badge)}`}>
-                    {p.badge}
+                    {neutralBadge(p.badge)}
                   </span>
                 )}
 
@@ -670,9 +676,6 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <span className="text-lg font-bold text-primary block">{p.priceRange}</span>
-                    <span className="flex items-center gap-1 text-xs text-amber-500 justify-end">
-                      <Star className="w-3 h-3 fill-amber-400" /> {p.rating}/5
-                    </span>
                   </div>
                 </div>
 
@@ -974,7 +977,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
                 >
                   {g.badge && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary rounded-full px-2 py-0.5 mb-2">
-                      {g.badge}
+                      {neutralBadge(g.badge)}
                     </span>
                   )}
                   <h3 className="font-semibold text-sm mb-1 text-foreground group-hover:text-primary transition-colors">{g.title}</h3>

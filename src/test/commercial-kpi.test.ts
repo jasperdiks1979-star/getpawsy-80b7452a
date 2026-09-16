@@ -82,3 +82,41 @@ describe('internal order exclusion', () => {
     expect(k.internalOrders).toBe(1);
   });
 });
+
+describe('internal order exclusion cannot regress', () => {
+  it('matches owner addresses regardless of case or padding', () => {
+    const k = computeCommercialKpis([
+      { customer_email: '  JasperDiks@Hotmail.com ', total_amount: 98.99, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+      { customer_email: 'JASPERDIKS1979@GMAIL.COM', total_amount: 118.99, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+    ] as any);
+    expect(k.paidOrders).toBe(0);
+    expect(k.revenue).toBe(0);
+    expect(k.internalOrders).toBe(2);
+  });
+
+  it('treats the live production order set as zero customer revenue', () => {
+    // Exact snapshot of every paid row in production at Phase 10.
+    const production = [
+      ['jasperdiks@hotmail.com', 1],
+      ['jasperdiks@hotmail.com', 0.5],
+      ['jasperdiks@hotmail.com', 0.5],
+      ['jasperdiks1979@gmail.com', 118.99],
+      ['jasperdiks@hotmail.com', 98.99],
+    ].map(([customer_email, total_amount]) => ({
+      customer_email, total_amount, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0,
+    }));
+    const k = computeCommercialKpis(production as any);
+    expect(k.paidOrders).toBe(0);
+    expect(k.revenue).toBe(0);
+    expect(k.aov).toBeNull();
+    expect(k.internalOrders).toBe(5);
+  });
+
+  it('keeps a genuine order at the smoke-test boundary', () => {
+    const k = computeCommercialKpis([
+      { customer_email: 'real@example.com', total_amount: 2.01, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+    ] as any);
+    expect(k.paidOrders).toBe(1);
+    expect(k.internalOrders).toBe(0);
+  });
+});

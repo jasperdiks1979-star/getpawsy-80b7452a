@@ -43,7 +43,7 @@ const MANUAL_CTR_OVERRIDES: Record<string, { title: string; meta: string }> = {
   },
   'best-interactive-dog-toys': {
     title: 'Best Interactive Dog Toys (2026) – Compared & Ranked by Experts',
-    meta: 'we compared interactive dog toys. See which ones keep dogs engaged longest, prevent boredom, and are built to last.',
+    meta: 'this guide compares interactive dog toys. See which ones keep dogs engaged longest, prevent boredom, and are built to last.',
   },
   'best-cat-litter-boxes': {
     title: 'Best Cat Litter Boxes (2026) – Self-Cleaning & Budget Picks',
@@ -51,7 +51,7 @@ const MANUAL_CTR_OVERRIDES: Record<string, { title: string; meta: string }> = {
   },
   'best-slow-feeder-dog-bowls': {
     title: 'Best Slow Feeder Dog Bowls (2026) – Stop Fast Eating Today',
-    meta: 'Prevent bloat and improve digestion with the right slow feeder. We compared and ranked the top options for all breeds.',
+    meta: 'Prevent bloat and improve digestion with the right slow feeder. This guide compares and ranked the top options for all breeds.',
   },
   'best-cat-toys-for-indoor-cats': {
     title: 'Best Cat Toys for Indoor Cats (2026) – Keep Them Active',

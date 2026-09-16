@@ -124,7 +124,7 @@ const AUTHORITY_MODIFIERS = [
 const EMOTIONAL_META = [
   (kw: string) => `Choosing the right ${kw} matters. See our curated picks and what experienced pet owners recommend.`,
   (kw: string) => `Your pet deserves the best ${kw}. carefully selected picks that save you time, money, and heartbreak.`,
-  (kw: string) => `Stop scrolling — we compared every ${kw} so you don't have to. Real reviews, zero sponsored picks.`,
+  (kw: string) => `A straightforward comparison of every ${kw}, based on published specifications. No sponsored picks.`,
   (kw: string) => `The only ${kw} guide you need in 2026. carefully selected and trusted by thousands of pet owners.`,
 ];
 

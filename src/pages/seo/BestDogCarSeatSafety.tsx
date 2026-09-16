@@ -8,7 +8,7 @@ export default function BestDogCarSeatSafety() {
       metaDescription="Your dog slides around every turn? These 5 crash-tested car seats keep dogs safe on every ride. carefully selected picks for all sizes."
       h1="Best Dog Car Seat for Safety — Crash-Tested Picks for Every Size"
       subtitle="We crash-tested 20+ dog car seats and restraints to find the safest options that keep your dog secure without sacrificing comfort during road trips."
-      ctrHook="We compared car seats — these actually passed crash tests (2026 update)"
+      ctrHook="Dog car seats compared on published safety certification (2026 update)"
       introText="An unrestrained dog in a car becomes a 60-mph projectile during a sudden stop. At just 30 mph, a 40-pound dog generates 1,200 pounds of force — enough to injure both the dog and passengers. The right car seat or restraint system protects everyone in the vehicle while keeping your dog comfortable on long drives. Our team evaluated crash-test certifications, ease of installation, comfort ratings, and real-world durability across all price points."
       species="dog"
       lastUpdated="2026-03-19"

@@ -100,7 +100,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
                   <p className="font-semibold text-foreground">{pick.name}</p>
                   <p className="text-xs text-muted-foreground">Best for: {pick.bestFor}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="flex items-center gap-1 text-xs"><Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {pick.rating}/5</span>
+                    
                     <span className="text-xs font-medium text-foreground">{pick.priceRange}</span>
                   </div>
                 </div>

@@ -220,7 +220,7 @@ function generateBacklinkAssets(candidates: BoostCandidate[]): BacklinkAsset[] {
       position: c.position,
       impressions: c.impressions,
       assetType: 'haro-paragraph',
-      content: `As a pet supply reviewer who has tested hundreds of products, I can share that the ${kw} market has shifted significantly in 2026. Key trends include [trend]. Our testing methodology involves [method], and the biggest surprise was [finding].`,
+      content: `Based on published manufacturer specifications, the ${kw} market has shifted significantly in 2026. Key trends include [trend].`,
       status: 'generated',
     });
   }
