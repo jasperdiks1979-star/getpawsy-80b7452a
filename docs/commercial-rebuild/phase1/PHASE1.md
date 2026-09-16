@@ -1,6 +1,6 @@
 # Phase 1 — Cat-first assortment proposal (non-destructive)
 
-Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or published. Every list below is a **recommendation**; the catalog is untouched.
+Generated 2026-09-16T13:26:38.543Z. Nothing was hidden, deleted, repriced or published. Every list below is a **recommendation**; the catalog is untouched.
 
 ## Consistency checks
 
@@ -8,7 +8,8 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 | --- | --- | --- |
 | hero_count_is_exactly_5 | PASS | exactly five hero products |
 | hero_has_us_stock | PASS | no sold-out-only hero |
-| hero_supplier_not_discontinued | PASS | no discontinued hero |
+| hero_supplier_active_not_discontinued_or_unavailable | PASS | no discontinued or unavailable hero |
+| core_supplier_not_discontinued | PASS | no discontinued product in the core range |
 | hero_margin_at_least_35 | PASS | hero margin floor |
 | selected_have_variant_identity | PASS | every multi-variant product has usable variant ids |
 | selected_have_supplier_mapping | PASS | every selected product maps to a supplier product |
@@ -28,25 +29,16 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 - Bundle role: bundle-anchor or add-on · Blocker: none
 - URL: /products/front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-e265
 
-### 2. Adjustable Height 3 Step/4 Step Cat Stairs with Cat Scratching Post, Cat Condo, Toy Ball, for Bed, Sofa, Couch, Gray
-- Category: Cat Houses · Score 84/100 · Price $125.99 · Margin 42.9%
-- Supplier: CJ Dropshipping (unavailable) · Warehouse US · US stock 166 · effective 166
+### 2. Cat Tower – Multi-Level Fun With Sisal Scratching Post
+- Category: Cat Trees & Condos · Score 84/100 · Price $158.99 · Margin 42.8%
+- Supplier: CJ Dropshipping (available) · Warehouse US · US stock 6594 · effective 6594
 - Delivery evidence (high confidence): US warehouse confirmed (verified CJ warehouse + stock columns agree). Delivery window still NOT stored — must be fetched before any on-site promise.
 - Problem solved: Vertical territory and scratching that protects furniture
-- Duplicate status: none-detected · Visual/UGC: 9 images, ugc score 7/7 · Return/logistics risk: 2/5 risk (weight 7900)
+- Duplicate status: none-detected · Visual/UGC: 14 images, ugc score 7/7 · Return/logistics risk: 2/5 risk (weight 14680)
 - Bundle role: bundle-anchor or add-on · Blocker: none
-- URL: /products/adjustable-height-3-step-4-step-cat-stairs-with-cat-scratching-post-cat-condo-toy-ball-for-bed-sofa-
+- URL: /products/54-cat-tree-tower-multi-level-with-sisal-grab-post-indoor-apartment-with-ladder-plush-toys-rest-and-
 
-### 3. GetPawsy Enclosed Cat Litter Box – XL Stainless Steel Flip Top for Large Cats
-- Category: Cat Litter Boxes · Score 78/100 · Price $112.99 · Margin 42.8%
-- Supplier: CJ Dropshipping (unavailable) · Warehouse US · US stock 40 · effective 40
-- Delivery evidence (medium confidence): US stock indicated by one source only (column or CJ payload). Needs re-sync confirmation. No delivery window on record.
-- Problem solved: Litter odour, tracking and mess in a small indoor home
-- Duplicate status: none-detected · Visual/UGC: 9 images, ugc score 7/7 · Return/logistics risk: 2/5 risk (weight 4700)
-- Bundle role: bundle-anchor or add-on · Blocker: none
-- URL: /products/xl-stainless-steel-cat-litter-box-flip-top
-
-### 4. Cat Litter Box with Top Entry & Odor Control
+### 3. Cat Litter Box with Top Entry & Odor Control
 - Category: Cat Litter Boxes · Score 78/100 · Price $89.49 · Margin 42.8%
 - Supplier: CJ Dropshipping (unknown) · Warehouse US · US stock 84 · effective 84
 - Delivery evidence (high confidence): US warehouse confirmed (verified CJ warehouse + stock columns agree). Delivery window still NOT stored — must be fetched before any on-site promise.
@@ -55,7 +47,7 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 - Bundle role: bundle-anchor or add-on · Blocker: none
 - URL: /products/covered-cat-litter-box-with-lid-drawer-scoop-top-entry-deodorizing-bags-odor-control-easy-to-clean-g
 
-### 5. Interactive Cat Puzzle Toy – Treat Dispensing Ball & Spring Wand for Enrichment
+### 4. Interactive Cat Puzzle Toy – Treat Dispensing Ball & Spring Wand for Enrichment
 - Category: Cat Toys · Score 78/100 · Price $45.99 · Margin 59.7%
 - Supplier: CJ Dropshipping (unknown) · Warehouse US · US stock 120 · effective 120
 - Delivery evidence (high confidence): US warehouse confirmed (verified CJ warehouse + stock columns agree). Delivery window still NOT stored — must be fetched before any on-site promise.
@@ -63,6 +55,15 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 - Duplicate status: none-detected · Visual/UGC: 20 images, ugc score 7/7 · Return/logistics risk: 2/5 risk (weight 300)
 - Bundle role: bundle-anchor or add-on · Blocker: none
 - URL: /products/cat-puzzle-toy-with-ball-and-spring-loaded-wand-felt-indoor-cat-toy-box-suction-84be
+
+### 5. Stainless Steel Cat Litter Box With Lid, Large Cat Litter Box For Big Cats, Scoop And Mat Included
+- Category: Cat Litter Boxes · Score 77/100 · Price $96.99 · Margin 49.8%
+- Supplier: CJ Dropshipping (unknown) · Warehouse US · US stock 4658 · effective 4658
+- Delivery evidence (high confidence): US warehouse confirmed (verified CJ warehouse + stock columns agree). Delivery window still NOT stored — must be fetched before any on-site promise.
+- Problem solved: Litter odour, tracking and mess in a small indoor home
+- Duplicate status: none-detected · Visual/UGC: 22 images, ugc score 7/7 · Return/logistics risk: 2/5 risk (weight 3397)
+- Bundle role: bundle-anchor or add-on · Blocker: none
+- URL: /products/stainless-steel-cat-litter-box-with-lid-large-cat-litter-box-for-big-cats-scoop-and-mat-included
 
 ## CORE_RANGE (38)
 
@@ -73,13 +74,14 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 | Fully Enclosed Cat Litter Box with Front Entry and Top Exit, | Cat Litter Boxes | 86 | $96.49 | 49.9% | 154 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Covered Cat Litter Box, Easy Cleaning Kitty Litter Box with  | Cat Litter Boxes | 84 | $98.99 | 42.8% | 147 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Dome Covered Cat Litter Box with Lid, White and Orange | Cat Litter Boxes | 84 | $89.49 | 42.8% | 84 | high | Litter odour, tracking and mess in a small indoor home | — |
-| Cat Tower – Multi-Level Fun With Sisal Scratching Post | Cat Trees & Condos | 84 | $158.99 | 42.8% | 6594 | high | Vertical territory and scratching that protects furniture | — |
+| Adjustable Height 3 Step/4 Step Cat Stairs with Cat Scratchi | Cat Houses | 84 | $125.99 | 42.9% | 166 | high | Vertical territory and scratching that protects furniture | — |
 | Christmas Tree Cat Tower for Festive Cat Play & Rest | Cat Trees & Condos | 83 | $145.99 | 43% | 207 | high | Vertical territory and scratching that protects furniture | — |
 | 6 In Deep Cat Litter Box Odor-Free Litter Box With Filtering | Cat Litter Boxes | 81 | $114.99 | 42.8% | 48 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Hooded Cat Litter Box – Enclosed Design with Litter Mat | Cat Litter Boxes | 80 | $128.99 | 42.8% | 31 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Compact Cat Tree Condo – Sisal Scratching Post for Small Spa | Cat Trees & Condos | 80 | $97.49 | 42.7% | 230 | high | Vertical territory and scratching that protects furniture | — |
 | Cat Tree Condo – Multi-Level with 2 Scratching Pads & Anti-T | Cat Trees & Condos | 79 | $172.99 | 42.7% | 230 | high | Vertical territory and scratching that protects furniture | — |
 | Cat Tree Floor-to-Ceiling Climbing Activity Center Condo | Cat Toys | 78 | $129.99 | 42.7% | 16 | high | Vertical territory and scratching that protects furniture | — |
+| GetPawsy Enclosed Cat Litter Box – XL Stainless Steel Flip T | Cat Litter Boxes | 78 | $112.99 | 42.8% | 40 | medium | Litter odour, tracking and mess in a small indoor home | — |
 | Floor-to-Ceiling Cat Tree – 5-Level Beige Cat Tower | Cat Trees & Condos | 78 | $137.99 | 42.7% | 210 | high | Vertical territory and scratching that protects furniture | — |
 | Indoor Cat Tree: Multi-Level Escape for Endless Fun | Cat Trees & Condos | 78 | $164.99 | 42.9% | 25 | high | Vertical territory and scratching that protects furniture | — |
 | Cat Tree Tower: Floor-to-Ceiling Climbing & Scratching Fun | Cat Trees & Condos | 78 | $135.99 | 43% | 166 | high | Vertical territory and scratching that protects furniture | — |
@@ -87,11 +89,11 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 | Cat Tree Condo – 5-Level Revolving Scratcher & Climbing Towe | Cat Trees & Condos | 77 | $116.18 | 60% | 73 | medium | Vertical territory and scratching that protects furniture | — |
 | Elevated Cat Bed with Rotatable Pod for Cozy Comfort | Cat Beds | 77 | $138.99 | 42.8% | 114 | high | Warm, safe resting spot for an indoor cat | — |
 | Cat Tree Condo – 4-Level Moon & Star Jute Scratching Tower f | Cat Trees & Condos | 77 | $103.99 | 42.8% | 230 | high | Vertical territory and scratching that protects furniture | — |
-| Stainless Steel Cat Litter Box With Lid, Large Cat Litter Bo | Cat Litter Boxes | 77 | $96.99 | 49.8% | 4658 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Cat Tree with Condo, Perches, Toys & Scratching Posts | Cat Trees & Condos | 77 | $96.99 | 42.6% | 48 | high | Vertical territory and scratching that protects furniture | — |
 | Modern Cat Tree Condo – Elevated Sisal Scratching Post with  | Cat Trees & Condos | 77 | $130.99 | 42.7% | 41 | medium | Vertical territory and scratching that protects furniture | — |
 | Cat Litter Box with Lid with Scoop and Filter, Pink | Cat Litter Boxes | 77 | $121.99 | 42.7% | 261 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Fully Enclosed Cat Litter Box with Lid & Drawer Design, Cove | Cat Litter Boxes | 76 | $118.99 | 42.6% | 244 | high | Litter odour, tracking and mess in a small indoor home | — |
+| GetPawsy Elevated Cat Tree – Sisal Scratching Post with Bed  | Cat Trees & Condos | 76 | $130.99 | 42.7% | 168 | high | Vertical territory and scratching that protects furniture | — |
 | Hooded Cat Litter Box w/ Litter Mat, Litter Particle Catchin | Cat Litter Boxes | 75 | $124.99 | 43% | 256 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Dome Covered Cat Litter Box with Lid, White and Gray | Cat Litter Boxes | 75 | $98.99 | 50% | 186 | high | Litter odour, tracking and mess in a small indoor home | — |
 | Cat Bed – Fluffy Plush Round Faux Fur Anti-Slip Bed for Cats | Cat Beds | 74 | $51.49 | 49.8% | 25431 | high | Warm, safe resting spot for an indoor cat | — |
@@ -105,7 +107,6 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 | 4 Levels Cat Steps with Scratching Posts for High Bed, Sofa, | Cat Toys | 65 | $126.99 | 42.9% | 144 | high | Redirects scratching away from sofas and carpets | — |
 | Cat Steam Grooming Brush – 3-in-1 Spray Hair Removal Comb fo | Cat Grooming | 63 | $41.95 | 50% | 5 | high | Shedding and hairball control | — |
 | Pet Gate: Extra Wide Freestanding Barrier For House | Cat Toys | 63 | $159.99 | 42.9% | 26 | high | Indoor-home furniture that fits the cat into the living space | — |
-| GetPawsy Automatic Pet Water Fountain - Wired Sensing Dispen | Pet Fountains | 62 | $72.49 | 50% | 100 | high | Clean, controlled feeding and hydration | — |
 
 ## ACCESSORIES (9)
 
@@ -130,10 +131,10 @@ Generated 2026-09-16T13:25:17.606Z. Nothing was hidden, deleted, repriced or pub
 | Extra Large Stainless Steel Litter Box, Enclosed Cat Litter  | Cat Litter Boxes | 74 | $134.99 | 42.9% | 396 | medium | Litter odour, tracking and mess in a small indoor home | — |
 | Interactive Cat Windmill Toy – Suction Cup with LED Light Ba | Cat Toys | 62 | $37.99 | 59.8% | 127 | high | Indoor enrichment and exercise | — |
 | Wall-Mounted Cat Scratching Post – 4-Layer Cat Tree with Cus | Cat Trees & Condos | 62 | $148.99 | 43% | 5 | medium | Vertical territory and scratching that protects furniture | — |
-| GetPawsy Elevated Cat Tree – Sisal Scratching Post with Bed  | Cat Trees & Condos | 76 | $130.99 | 42.7% | 168 | high | Vertical territory and scratching that protects furniture | — |
 | Elevated Pet Bowl – Non-Slip Food & Water Dish for Cats & Do | Dog Food & Treats | 70 | $36.99 | 59.8% | 10 | medium | Clean, controlled feeding and hydration | — |
 | GetPawsy Soft Dog Bed – Warm Fleece Nest Cushion | Dog Beds | 71 | $99.49 | 49.9% | 460 | high | Warm, safe resting spot for an indoor cat | — |
 | Interactive Squeaky Ball Toy – Sound Enrichment for Dogs & C | Dog Toys | 68 | $45.49 | 59.8% | 690 | high | Indoor enrichment and exercise | — |
+| GetPawsy Automatic Pet Water Fountain - Wired Sensing Dispen | Pet Fountains | 62 | $72.49 | 50% | 100 | high | Clean, controlled feeding and hydration | — |
 | 1Pc Cat Toys Ball Fast Rolling In Pouch Rechargeable Motion  | Cat Toys | 61 | $42.99 | 50% | 8 | high | Indoor enrichment and exercise | — |
 | Dog Potty Training Pad – Artificial Grass Pet Toilet Mat for | Dog Training | 67 | $98.99 | 42.7% | 230 | high | General indoor-cat comfort | — |
 | Cat Tree Condo – Multi-Level 57-Inch with 2 Condos, Hammock  | Cat Trees & Condos | 74 | $147.99 | 42.7% | 230 | high | Vertical territory and scratching that protects furniture | — |
@@ -207,32 +208,31 @@ Good products held back by a fixable defect. Repair the gate, then promote.
 | Category | Products |
 | --- | --- |
 | Cat Litter Boxes | 15 |
-| Cat Trees & Condos | 12 |
+| Cat Trees & Condos | 13 |
 | Cat Toys | 10 |
 | Cat Beds | 4 |
 | Cat Bowls & Feeders | 3 |
 | Cat Grooming | 3 |
 | Cat Houses | 1 |
-| Pet Fountains | 1 |
 | Pet Collars | 1 |
 | Cat Collars & Accessories | 1 |
 | Pet Grooming | 1 |
 
 ## BUNDLE_PROPOSALS
 
-Fulfilment safety = same supplier, both US warehouses verified, both in stock, no stock-source conflict.
+Fulfilment safety = same supplier, both US warehouses verified, both in stock, no stock-source conflict. Nothing is activated.
 
 | Bundle | Items | Combined | Status | Reason |
 | --- | --- | --- | --- | --- |
-| Complete Litter Station | Enclosed Cat Litter Box – Dual Opening + Covered Cat Litter Box, Easy Cleaning  | $178.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Litter Box + Odour Control | Enclosed Cat Litter Box – Dual Opening + 6 In Deep Cat Litter Box Odor-Free Lit | $194.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Vertical Territory Starter | Adjustable Height 3 Step/4 Step Cat St + Cat Tower – Multi-Level Fun With Sisal | $284.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Scratch-Free Living Room | Adjustable Height 3 Step/4 Step Cat St + Interactive Cat Puzzle Toy – Treat Dis | $171.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Complete Litter Station | Enclosed Cat Litter Box – Dual Opening + Stainless Steel Cat Litter Box With Li | $176.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Litter Box + Odour Control | Enclosed Cat Litter Box – Dual Opening + Stainless Steel Cat Litter Box With Li | $176.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Vertical Territory Starter | Cat Tower – Multi-Level Fun With Sisal + Adjustable Height 3 Step/4 Step Cat St | $284.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Scratch-Free Living Room | Cat Tower – Multi-Level Fun With Sisal + Interactive Cat Puzzle Toy – Treat Dis | $204.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
 | Cosy Corner | Adjustable Height 3 Step/4 Step Cat St + Interactive Cat Puzzle Toy – Treat Dis | $171.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Indoor Enrichment Pack | Adjustable Height 3 Step/4 Step Cat St + Interactive Cat Puzzle Toy – Treat Dis | $171.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Feeding Corner | GetPawsy 3-in-1 Slow Feeder Bowl - Ant + Hooded Cat Litter Box – Enclosed Desig | $185.48 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| New Kitten Home Set | Enclosed Cat Litter Box – Dual Opening + Adjustable Height 3 Step/4 Step Cat St | $205.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
-| Grooming & Shedding Kit | Cat Steam Grooming Brush – 3-in-1 Spra + Adjustable Height 3 Step/4 Step Cat St | $167.94 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Indoor Enrichment Pack | Interactive Cat Puzzle Toy – Treat Dis + Adjustable Height 3 Step/4 Step Cat St | $171.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Feeding Corner | GetPawsy 3-in-1 Slow Feeder Bowl - Ant + Stainless Steel Cat Litter Box With Li | $153.48 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| New Kitten Home Set | Enclosed Cat Litter Box – Dual Opening + Interactive Cat Puzzle Toy – Treat Dis | $125.12 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
+| Grooming & Shedding Kit | Cat Steam Grooming Brush – 3-in-1 Spra + Interactive Cat Puzzle Toy – Treat Dis | $87.94 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
 | Small Apartment Cat Set | Adjustable Height 3 Step/4 Step Cat St + Cat Tower – Multi-Level Fun With Sisal | $284.98 | FULFILMENT_SAFE | same supplier, both US warehouses verified, both in stock — can ship together |
 
 ## DUPLICATE_RESOLUTION (72 clusters)
@@ -316,6 +316,6 @@ Deterministic keeper rule: US stock → zero blocking gates → score → 90-day
 
 ## RETIRE_CANDIDATES
 
-**653** products fall outside the proposed range (dog/bird ranges, no stock, discontinued supplier, duplicates, low margin, thin copy). The full list with reasons is in `phase1-proposal.json` under `RETIRE_CANDIDATES`.
+**653** products fall outside the proposed range. Full list with reasons in `phase1-proposal.json`; redirect/index analysis in `redirect-analysis.md`.
 
-> Retiring is **not** executed in this phase. Many of these URLs are indexed, so Phase 2 must start with a redirect/index analysis before anything is hidden.
+> Retiring is **not** executed in this phase. 308 of these URLs are indexable and 184 carry real traffic, so Phase 2 must follow the redirect plan batch by batch.
