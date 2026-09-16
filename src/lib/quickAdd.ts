@@ -72,7 +72,31 @@ export function parseQuickAddVariants(raw: unknown): QuickAddVariant[] {
  * A variant is purchasable unless it carries its own stock figure that is <= 0.
  * Missing stock data means product-level stock governs (same as the server).
  */
+/**
+ * Supplier per-warehouse inventory for a variant (mirrors the server's
+ * `variantWarehouseStockOf`). It outranks the flat `stock` field, which the
+ * supplier feed frequently leaves at 0 next to a warehouse record holding
+ * hundreds of units.
+ */
+export function variantWarehouseStock(variant: QuickAddVariant, countryCode = 'US'): number | null {
+  const inventories = (variant as { inventories?: unknown }).inventories;
+  if (!Array.isArray(inventories)) return null;
+  let best: number | null = null;
+  for (const entry of inventories) {
+    if (!entry || typeof entry !== 'object') continue;
+    const rec = entry as Record<string, unknown>;
+    if (String(rec.countryCode ?? '').toUpperCase() !== countryCode.toUpperCase()) continue;
+    for (const key of ['totalInventory', 'cjInventory', 'inventoryNum', 'storageNum']) {
+      const n = Number(rec[key]);
+      if (Number.isFinite(n)) best = best === null ? n : Math.max(best, n);
+    }
+  }
+  return best;
+}
+
 export function isVariantPurchasable(variant: QuickAddVariant): boolean {
+  const warehouse = variantWarehouseStock(variant);
+  if (warehouse !== null) return warehouse > 0;
   const raw = variant.variantStock ?? variant.stock;
   if (raw === null || raw === undefined) return true;
   const n = Number(raw);

@@ -32,6 +32,7 @@ import {
   parseQuickAddVariants,
   quickAddUnitPrice,
   variantLabel,
+  variantWarehouseStock,
   type QuickAddItem,
   type QuickAddVariant,
 } from '@/lib/quickAdd';
@@ -103,15 +104,8 @@ export function isBundleOptionPurchasable(variant: QuickAddVariant): boolean {
   if (!isVariantPurchasable(variant)) return false;
   const inventories = (variant as { inventories?: unknown }).inventories;
   if (!Array.isArray(inventories) || inventories.length === 0) return true;
-  const us = inventories.filter(
-    (inv): inv is { countryCode?: string; storageNum?: unknown } =>
-      !!inv && typeof inv === 'object' && String((inv as { countryCode?: string }).countryCode ?? '').toUpperCase() === 'US',
-  );
-  if (us.length === 0) return false;
-  return us.some((inv) => {
-    const n = Number(inv.storageNum);
-    return !Number.isFinite(n) ? true : n > 0;
-  });
+  const us = variantWarehouseStock(variant, 'US');
+  return us !== null && us > 0;
 }
 
 export interface BundleCatalogProduct {
