@@ -120,7 +120,7 @@ export function ProductRail({
                         name: p.name || 'Product',
                         price,
                         image_url: p.image_url,
-                        variants: (p as { variants?: unknown }).variants ?? null,
+                        variants: (p as { variants?: unknown }).variants ?? [],
                       },
                       { displayPrice: price },
                     )
