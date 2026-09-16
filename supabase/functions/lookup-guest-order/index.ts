@@ -124,7 +124,7 @@ serve(async (req) => {
     // Then validate the request is legitimate
     const { data: order, error } = await supabaseAdmin
       .from("orders")
-      .select("id, status, created_at, tracking_number, tracking_carrier, customer_email, total_amount, order_access_token, user_id")
+      .select("id, status, payment_status, fulfillment_status, refund_state, created_at, tracking_number, tracking_carrier, customer_email, total_amount, order_access_token, user_id")
       .eq("id", orderId.trim())
       .single();
 
@@ -146,17 +146,35 @@ serve(async (req) => {
       );
     }
 
-    // 2. For guest orders (no user_id), we ALWAYS require the access token
-    // This prevents order enumeration attacks where an attacker with just an email
-    // could discover order IDs and view order information
-    if (!order.user_id && order.order_access_token) {
-      if (!accessToken || accessToken !== order.order_access_token) {
-        console.log("[LOOKUP-GUEST-ORDER] Access token missing or invalid for guest order:", orderId);
-        // Return generic error - don't confirm order exists without valid token
-        return new Response(
-          JSON.stringify({ error: "Order not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+    // 2. Ownership. Email alone is NEVER sufficient.
+    //    - Account orders: the caller must present that account's JWT.
+    //    - Guest orders: the caller must present the order access token.
+    //      An order with no stored token cannot be opened by anyone (fail
+    //      closed) — support handles those through the admin tooling.
+    const genericNotFound = () =>
+      new Response(
+        JSON.stringify({ error: "Order not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+
+    if (order.user_id) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!jwt) {
+        console.log("[LOOKUP-GUEST-ORDER] Account order requires sign-in:", orderId);
+        return genericNotFound();
+      }
+      const { data: claims, error: claimsError } = await supabaseAdmin.auth.getClaims(jwt);
+      const callerId = claims?.claims?.sub ?? null;
+      if (claimsError || callerId !== order.user_id) {
+        console.log("[LOOKUP-GUEST-ORDER] Account order ownership mismatch:", orderId);
+        return genericNotFound();
+      }
+    } else {
+      const expected = order.order_access_token;
+      if (!expected || !accessToken || accessToken !== expected) {
+        console.log("[LOOKUP-GUEST-ORDER] Guest order token missing or invalid:", orderId);
+        return genericNotFound();
       }
     }
 
@@ -164,6 +182,9 @@ serve(async (req) => {
     const safeOrder = {
       id: order.id,
       status: order.status,
+      payment_status: order.payment_status ?? null,
+      fulfillment_status: order.fulfillment_status ?? null,
+      refund_state: order.refund_state ?? null,
       created_at: order.created_at,
       tracking_number: order.tracking_number,
       tracking_carrier: order.tracking_carrier,
