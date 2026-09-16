@@ -121,6 +121,21 @@ export interface SeoTrafficPageProps {
   customerQuotes?: CustomerQuote[];
 }
 
+/**
+ * Badges in guide data still carry popularity/ranking wording ("Most Popular",
+ * "Best Seller", "#1 Best Overall"). We hold no sales or popularity data for
+ * third-party products, so those labels are rewritten to editorial-opinion
+ * wording before they render. Everything else passes through unchanged.
+ */
+export function neutralBadge(badge: string): string {
+  const b = badge.toLowerCase();
+  if (b.includes('popular') || b.includes('trending') || b.includes('best seller') || b.includes('bestseller')) {
+    return 'Our pick';
+  }
+  if (b.includes('#1')) return badge.replace(/#1\s*/i, '').trim() || 'Our pick';
+  return badge;
+}
+
 // ── Badge color helper ──
 function badgeClasses(badge: string): string {
   const b = badge.toLowerCase();
