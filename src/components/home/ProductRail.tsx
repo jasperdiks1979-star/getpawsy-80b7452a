@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useCart } from '@/contexts/CartContext';
+import { useQuickAdd } from '@/hooks/useQuickAdd';
 
 interface Props {
   title: string;
@@ -27,14 +27,16 @@ export function ProductRail({
   viewAllHref,
   viewAllLabel = 'View all',
 }: Props) {
-  const { addItem } = useCart();
+  const quickAdd = useQuickAdd();
 
   const { data: products } = useQuery({
     queryKey: ['home-rail', species ?? 'all', limit],
     queryFn: async () => {
       let q = supabase
         .from('products_public')
-        .select('id, name, slug, price, compare_at_price, image_url, stock, primary_species')
+        // `variants` is required so quick-add can prove the product has a
+        // single purchasable option instead of guessing one.
+        .select('id, name, slug, price, compare_at_price, image_url, stock, primary_species, variants')
         .eq('is_active', true)
         .gt('stock', 0)
         .gte('price', 15)
@@ -111,13 +113,17 @@ export function ProductRail({
                 <button
                   type="button"
                   onClick={() =>
-                    addItem({
-                      id: p.id,
-                      slug: p.slug ?? undefined,
-                      name: p.name || 'Product',
-                      price,
-                      image: p.image_url || '/placeholder.svg',
-                    })
+                    quickAdd(
+                      {
+                        id: p.id,
+                        slug: p.slug ?? undefined,
+                        name: p.name || 'Product',
+                        price,
+                        image_url: p.image_url,
+                        variants: (p as { variants?: unknown }).variants ?? null,
+                      },
+                      { displayPrice: price },
+                    )
                   }
                   className="w-full mt-2 py-2.5 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
