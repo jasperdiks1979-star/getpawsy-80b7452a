@@ -1753,115 +1753,47 @@ const ProductDetail = () => {
               </motion.div>
             )}
 
-            {/* Benefit Bullets — problem→outcome based for cold traffic */}
-            <div className="space-y-2">
-              <ul className="space-y-2">
-                {(() => {
-                  const cat = (product.category || "").toLowerCase();
-                  const n = (product.name || "").toLowerCase();
-                  const bullets: string[] = [];
-                  const hay = `${n} ${cat}`;
+            {/*
+              Key points — VERIFIED facts only.
 
-                  // Per-SKU verified overrides always win over generic
-                  // category copy (prevents automation claims leaking onto
-                  // manual products).
-                  if (productContentOverride?.benefits?.length) {
-                    bullets.push(...productContentOverride.benefits);
-                  }
+              The previous implementation guessed bullets from the product
+              name/category and asserted things no source documents: automatic
+              cleaning and "built-in sensors" on manual litter boxes, "supports
+              cats up to 25+ lbs", "non-toxic, pet-safe materials", airline fit,
+              dishwasher-safe parts. All removed. A product now shows either its
+              per-SKU verified override copy or bullets derived from the
+              supplier specification block — and nothing at all when neither
+              source documents anything.
+            */}
+            {(() => {
+              const bullets = productContentOverride?.benefits?.length
+                ? productContentOverride.benefits.slice(0, 5)
+                : evidenceBenefitBullets(
+                    buildProductEvidence({
+                      id: product.id,
+                      name: product.name,
+                      description: product.description,
+                      variants: (product as any).variants,
+                      weight: (product as any).weight,
+                      supplier_warehouse: (product as any).supplier_warehouse,
+                    }),
+                  );
 
-                  // P0-4 (conversion sprint): grooming / supplement / dispenser
-                  // branches MUST run before the toy branch — otherwise a
-                  // "Dog Paw Cleaner" or "Grooming Brush" filed under
-                  // "Dog Toys" picks up chew-toy copy ("aggressive chewers"),
-                  // which is the category-copy leak flagged in the PDP audit.
-                  const isGrooming = /paw\s*cleaner|brush|comb|groom|shampoo|nail|deshed|wipe/.test(hay);
-                  const isSupplement = /supplement|vitamin|calming\s*chew|probiotic|joint\s*chew|treat\s*chew/.test(hay);
-                  const isFeeder = /feeder|dispenser|water\s*fountain|automatic\s*food/.test(hay);
+              if (!bullets.length) return null;
 
-                  // Category-aware benefit bullets (problem → outcome)
-                  if (bullets.length) {
-                    // verified override copy already set
-                  } else if (isGrooming) {
-                    bullets.push(
-                      "Gently cleans paws, coat, or nails without stress",
-                      "Skin-safe materials designed for sensitive pets",
-                      "Easy to rinse and store between uses",
-                      "Compact size — works at home or on the go",
-                    );
-                  } else if (isSupplement) {
-                    bullets.push(
-                      "Formulated for daily routine support",
-                      "Made with pet-friendly, palatable ingredients",
-                      "Clear dosing guidance on every label",
-                      "Trusted by US pet parents — ships from the United States",
-                    );
-                  } else if (isFeeder) {
-                    bullets.push(
-                      "Portion-controlled meals keep feeding consistent",
-                      "Quiet motor — won't startle anxious pets",
-                      "Easy to clean: dishwasher-safe parts",
-                      "Backup power option protects scheduled meals",
-                    );
-                  } else if (n.includes("bed") || cat.includes("bed")) {
-                    bullets.push(
-                      "Designed to support joint comfort and recovery",
-                      "May help improve sleep quality for your pet",
-                      "Suitable for older, recovering, and active dogs",
-                      "Soft, breathable cover helps regulate temperature",
-                    );
-                  } else if (n.includes("harness") || cat.includes("harness")) {
-                    bullets.push(
-                      "Stops pulling without choking or neck strain",
-                      "Padded straps prevent rubbing and chafing",
-                      "Reflective trim for safe evening walks",
-                      "Quick-snap buckle for easy on/off",
-                    );
-                  } else if (/cat\s*tree|cat\s*condo|scratching/i.test(n + " " + cat)) {
-                    bullets.push(
-                      "Saves your furniture with dedicated scratching posts",
-                      "Multi-level design keeps cats mentally stimulated",
-                      "Supports cats up to 25+ lbs safely",
-                      "Sturdy base prevents tipping during play",
-                    );
-                  } else if (/litter/i.test(n + " " + cat)) {
-                    bullets.push(
-                      "Automatic cleaning helps reduce daily scooping",
-                      "Designed to help manage litter box odors",
-                      "Built-in sensors for pet safety",
-                      "Designed for multi-cat households",
-                    );
-                  } else if (n.includes("toy") || cat.includes("toy")) {
-                    bullets.push(
-                      "Channels energy away from furniture destruction",
-                      "Durable build withstands aggressive chewers",
-                      "Non-toxic, pet-safe materials throughout",
-                      "Engages natural problem-solving instincts",
-                    );
-                  } else if (n.includes("carrier") || cat.includes("carrier")) {
-                    bullets.push(
-                      "Reduces travel anxiety with ventilated comfort",
-                      "Fits under most airline cabin seats",
-                      "Secure zippers prevent escape attempts",
-                      "Padded base cushions bumpy rides",
-                    );
-                  } else {
-                    bullets.push(
-                      "Premium materials built for daily pet life",
-                      "Designed for comfort and ease of use",
-                      "Shipping to the United States in 5–10 business days",
-                      "30-day return policy included",
-                    );
-                  }
-
-                  return bullets.slice(0, 5).map((b, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                      <span className="text-primary mt-0.5 flex-shrink-0">✓</span>
-                      <span>{b}</span>
-                    </li>
-                  ));
-                })()}
-              </ul>
-            </div>
+              return (
+                <div className="space-y-2">
+                  <ul className="space-y-2">
+                    {bullets.map((b, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                        <span className="text-primary mt-0.5 flex-shrink-0">✓</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
 
             {/* Short description moved to subline under title */}
 
