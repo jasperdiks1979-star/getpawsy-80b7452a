@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertTriangle, Shield, RefreshCw, FileText, Play, ExternalLink, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { RiskyActionButton } from "@/components/admin/RiskyActionButton";
 
 type SafetyJob = {
   id: string;
@@ -100,7 +101,6 @@ export default function CinematicAdsSafetyPanel() {
     load();
   }
   async function publishPin(jobId: string) {
-    if (!confirm("Publish this pin to Pinterest? Only safe-to-publish jobs are allowed.")) return;
     setBusyId(jobId);
     const { data, error } = await supabase.functions.invoke("cinematic-ad-push-pinterest", { body: { job_id: jobId } });
     setBusyId(null);
@@ -164,15 +164,22 @@ export default function CinematicAdsSafetyPanel() {
         <Button size="sm" variant="outline" disabled={busyId === j.id} onClick={() => generatePlan(j.id)}>
           <FileText className="h-3 w-3 mr-1" />Generate Script Only
         </Button>
-        <Button
+        <RiskyActionButton
           size="sm"
           variant={j.is_safe_to_publish ? "default" : "outline"}
           disabled={!j.is_safe_to_publish || busyId === j.id}
-          onClick={() => publishPin(j.id)}
+          risk="external"
+          actionLabel="Publish Pin"
+          impact={[
+            "Publishes this pin to the live Pinterest account.",
+            "Pinterest users can see it immediately; removal is a separate manual action.",
+          ]}
+          preconditions={[{ label: "Job marked safe to publish", satisfied: j.is_safe_to_publish }]}
+          onConfirm={() => publishPin(j.id)}
           title={!j.is_safe_to_publish ? "Blocked: not safe to publish" : "Publish to Pinterest"}
         >
           <Play className="h-3 w-3 mr-1" />Publish Pin
-        </Button>
+        </RiskyActionButton>
         {j.output_mp4_url && (
           <a href={j.output_mp4_url} target="_blank" rel="noreferrer" className="inline-flex items-center text-xs underline text-muted-foreground">
             <ExternalLink className="h-3 w-3 mr-1" />mp4

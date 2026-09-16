@@ -1,99 +1,12 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import {
-  LayoutDashboard,
-  TrendingUp,
-  FileText,
-  Target,
-  Brain,
-  Stethoscope,
-  Globe,
-  BarChart3,
-  ShieldAlert,
-  Link,
-  LineChart,
-  Pin,
-  Zap,
-  BookOpen,
-  Activity,
-  Apple,
-  Menu,
-  X,
-  History,
-  Wrench,
-  Gauge,
-  Video,
-  Sparkles,
-  MessageSquare,
-} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BUILD_ID } from '@/lib/boot-diagnostics';
 import { useState, useEffect } from 'react';
 import { AiBalanceBanner } from '@/components/admin/AiBalanceBanner';
-
-const navItems = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/admin/revenue-command-center', label: '★ Revenue Command Center', icon: Gauge },
-  { to: '/admin/growth-execution', label: 'SEO Growth V4', icon: TrendingUp },
-  { to: '/admin/seo-command-center', label: 'SEO Command', icon: Target },
-  { to: '/admin/autonomous-seo', label: 'Autonomous SEO', icon: Brain },
-  { to: '/admin/seo-agent-auto', label: 'SEO Agent AI', icon: Activity },
-  { to: '/admin/seo-engine', label: 'SEO Engine Auto', icon: Zap },
-  { to: '/admin/seo-dashboard', label: 'SEO Engine', icon: Zap },
-  { to: '/admin/seo-intelligence', label: 'SEO Intelligence', icon: LineChart },
-  { to: '/admin/commerce-intelligence', label: 'Commerce Intel', icon: BarChart3 },
-  { to: '/admin/reports', label: 'Reports', icon: FileText },
-  { to: '/admin/page-changelog', label: 'Page Changelog', icon: History },
-  { to: '/admin/guides', label: 'Guides SEO', icon: BookOpen },
-  { to: '/admin/internal-link-log', label: 'Internal Links', icon: Link },
-  { to: '/admin/degraded-events', label: 'Degraded Events', icon: ShieldAlert },
-  { to: '/admin/funnel', label: 'Funnel & Revenue', icon: TrendingUp },
-  { to: '/admin/products-performance', label: 'Products Performance', icon: BarChart3 },
-  { to: '/admin/traffic-performance', label: 'Traffic Performance', icon: TrendingUp },
-  { to: '/admin/tracking-health', label: 'Tracking Health', icon: Activity },
-  { to: '/admin/diagnostics', label: 'Diagnostics', icon: Stethoscope },
-  { to: '/admin/domain-health', label: 'Domain Health', icon: Globe },
-  { to: '/admin/perf-audit', label: 'Performance', icon: Activity },
-  { to: '/admin/security-credentials', label: 'Security', icon: ShieldAlert },
-  { to: '/admin/sms-alerts', label: 'SMS Alerts', icon: MessageSquare },
-  { to: '/admin/pinterest-health', label: 'Pinterest Health', icon: Activity },
-  { to: '/admin/pinterest-revenue-control', label: '★ Pinterest Revenue Control', icon: Pin },
-  { to: '/admin/winner-discovery', label: '★ Winner Discovery', icon: Pin },
-  { to: '/admin/pinterest-scaling', label: '★ Pinterest Scaling v2', icon: Pin },
-  { to: '/admin/integrations/merchant', label: 'Merchant Center', icon: Globe },
-  { to: '/admin/integrations/merchant/readiness', label: 'Merchant Readiness', icon: ShieldAlert },
-  { to: '/admin/integrations/merchant/health', label: 'Merchant Health', icon: ShieldAlert },
-  { to: '/admin/integrations/stripe/apple-pay', label: 'Apple Pay Domain', icon: Apple },
-  { to: '/admin/product-optimizer', label: 'AI Product Optimizer', icon: Zap },
-  { to: '/admin/pinterest-automation', label: 'Pinterest Auto', icon: Pin },
-  { to: '/admin/pinterest-ad-studio', label: '★ Pinterest Ad Studio', icon: Pin },
-  { to: '/admin/pinterest-products', label: 'Pinterest Top 25', icon: Pin },
-  { to: '/admin/pinterest-scheduler', label: 'Pinterest Scheduler', icon: Pin },
-  { to: '/admin/pinterest-trends', label: 'Pinterest Trends', icon: Pin },
-  { to: '/admin/pinterest-revenue', label: 'Pinterest Revenue', icon: Pin },
-  { to: '/admin/pinterest-commerce-intel', label: 'Pinterest Commerce Intel', icon: Pin },
-  { to: '/admin/pinterest-pin-status', label: 'Pinterest Pin Status', icon: Pin },
-  { to: '/admin/pinterest-backdrop-preview', label: 'Pinterest Backdrops', icon: Pin },
-  { to: '/admin/tiktok-automation', label: 'TikTok Auto', icon: Activity },
-  { to: '/admin/tiktok-ads-performance', label: 'TikTok Ads Perf', icon: TrendingUp },
-  { to: '/admin/tiktok-funnel-debug', label: 'TikTok Funnel Debug', icon: Activity },
-  { to: '/admin/tiktok-excluded-sessions', label: 'TikTok Excluded Sessions', icon: ShieldAlert },
-  { to: '/admin/tiktok-session-decision-log', label: 'TikTok Decision Log', icon: ShieldAlert },
-  { to: '/admin/tiktok-funnel-report', label: 'TikTok Funnel Report', icon: TrendingUp },
-  { to: '/admin/tiktok-cta-ctr', label: 'TikTok CTA CTR', icon: TrendingUp },
-  { to: '/admin/cinematic-ads', label: 'Cinematic Ads', icon: Video },
-  { to: '/admin/cinematic-v3', label: 'Cinematic V3 (QA)', icon: Video },
-  { to: '/admin/pinterest-recovery', label: 'Pinterest Recovery', icon: ShieldAlert },
-  { to: '/admin/cinematic-performance', label: 'Cinematic Perf', icon: Gauge },
-  { to: '/admin/pinterest-cleanup', label: 'Pinterest Cleanup', icon: Sparkles },
-  { to: '/admin/placement-overview', label: 'Placement Overview', icon: Gauge },
-  { to: '/admin/job-retry-policies', label: 'Job Retry Policies', icon: Wrench },
-  { to: '/admin/job-retry-metrics', label: 'Job Retry Metrics', icon: Activity },
-  { to: '/admin/cj-inventory-sync', label: 'CJ Inventory Sync', icon: Video },
-  { to: '/admin/cj-video-diagnostic', label: 'CJ Video Diagnostic', icon: Video },
-  { to: '/admin/cj-health-check', label: 'CJ Health Check', icon: Activity },
-];
+import { ADMIN_NAV_SECTIONS } from '@/components/admin/admin-nav';
 
 /**
  * Admin shell — sidebar nav (desktop) + hamburger (mobile) + <Outlet />.
@@ -124,24 +37,31 @@ export function AdminLayout() {
             </NavLink>
           </div>
           <ScrollArea className="flex-1 py-2">
-            <nav className="space-y-0.5 px-2">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                    )
-                  }
-                >
-                  <item.icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </NavLink>
+            <nav className="space-y-3 px-2">
+              {ADMIN_NAV_SECTIONS.map((section) => (
+                <div key={section.id} className="space-y-0.5">
+                  <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                    {section.title}
+                  </p>
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
+                          isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )
+                      }
+                    >
+                      <item.icon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
               ))}
             </nav>
           </ScrollArea>
@@ -185,24 +105,31 @@ export function AdminLayout() {
                   </button>
                 </div>
                 <ScrollArea className="flex-1 py-2 h-[calc(100vh-60px)]">
-                  <nav className="space-y-0.5 px-2">
-                    {navItems.map((item) => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        end={item.end}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
-                            isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                          )
-                        }
-                      >
-                        <item.icon className="h-3.5 w-3.5 shrink-0" />
-                        <span>{item.label}</span>
-                      </NavLink>
+                  <nav className="space-y-3 px-2">
+                    {ADMIN_NAV_SECTIONS.map((section) => (
+                      <div key={section.id} className="space-y-0.5">
+                        <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                          {section.title}
+                        </p>
+                        {section.items.map((item) => (
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            className={({ isActive }) =>
+                              cn(
+                                'flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors',
+                                isActive
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                              )
+                            }
+                          >
+                            <item.icon className="h-3.5 w-3.5 shrink-0" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        ))}
+                      </div>
                     ))}
                   </nav>
                 </ScrollArea>

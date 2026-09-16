@@ -211,22 +211,22 @@ export default function FunnelHealth() {
   const latest = useMemo(() => {
     type Entry = { id: string; created_at: string; kind: 'lp' | 'ck'; label: string; source: string | null; classification: string | null; qa: boolean | null; is_bot: boolean | null; device: string | null; geo: string | null };
     const entries: Entry[] = [];
-    for (const r of lpRows.slice(0, 60)) {
+    lpRows.slice(0, 60).forEach((r, i) => {
       entries.push({
-        id: String(r.id ?? Math.random()), created_at: r.created_at ?? '',
+        id: String(r.id ?? `lp-${i}`), created_at: r.created_at ?? '',
         kind: 'lp', label: r.event_name, source: r.source_component,
         classification: r.classification, qa: r.qa, is_bot: r.is_bot,
         device: r.device, geo: r.geo_tier,
       });
-    }
-    for (const r of ckRows.slice(0, 30)) {
+    });
+    ckRows.slice(0, 30).forEach((r, i) => {
       entries.push({
-        id: String(r.id ?? Math.random()), created_at: r.created_at ?? '',
+        id: String(r.id ?? `ck-${i}`), created_at: r.created_at ?? '',
         kind: 'ck', label: r.step, source: r.source_component,
         classification: r.classification, qa: r.qa, is_bot: r.is_bot,
         device: r.device, geo: r.geo_tier,
       });
-    }
+    });
     return entries.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 40);
   }, [lpRows, ckRows]);
 

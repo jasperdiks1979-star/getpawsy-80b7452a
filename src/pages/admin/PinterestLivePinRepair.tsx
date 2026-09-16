@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCcw, Rocket, Download } from "lucide-react";
+import { RiskyActionButton } from "@/components/admin/RiskyActionButton";
 
 type RepairRow = {
   id: string;
@@ -108,7 +109,6 @@ export default function PinterestLivePinRepair() {
   }
 
   async function runExecute() {
-    if (!confirm("Publish 25 replacement pins, verify them, then DELETE the 25 mismatched live pins? This is live Pinterest activity.")) return;
     setExecuting(true);
     setExecReport(null);
     try {
@@ -194,10 +194,21 @@ export default function PinterestLivePinRepair() {
             {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
             Generate Drafts
           </Button>
-          <Button onClick={runExecute} disabled={executing || running}>
+          <RiskyActionButton
+            disabled={executing || running}
+            risk="external"
+            actionLabel="Execute First 25 (Publish + Delete)"
+            impact={[
+              "Publishes 25 replacement pins to the live Pinterest account.",
+              "Verifies them, then permanently deletes the 25 mismatched live pins.",
+              "Both steps are visible on Pinterest and cannot be undone here.",
+            ]}
+            preconditions={[{ label: "Replacement drafts generated", satisfied: rows.length > 0 }]}
+            onConfirm={runExecute}
+          >
             {executing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
             Execute First 25 (Publish + Delete)
-          </Button>
+          </RiskyActionButton>
           <Button variant="outline" onClick={downloadPreviewCsv} disabled={loading || rows.length === 0}>
             <Download className="w-4 h-4 mr-2" />
             Download Preview CSV

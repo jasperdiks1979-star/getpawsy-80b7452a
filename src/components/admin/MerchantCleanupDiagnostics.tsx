@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RiskyActionButton } from '@/components/admin/RiskyActionButton';
 
 interface CleanupReport {
   ok: boolean;
@@ -96,20 +97,39 @@ export function MerchantCleanupDiagnostics() {
 
   const ActionButton = ({ action, label, icon: Icon, variant = 'outline', destructive = false, extra = {} }: {
     action: string; label: string; icon: any; variant?: 'outline' | 'default' | 'destructive'; destructive?: boolean; extra?: Record<string, unknown>;
-  }) => (
-    <Button
-      variant={variant}
-      size="sm"
-      disabled={loading}
-      onClick={() => {
-        if (destructive && !confirm(`Are you sure you want to run ${label}? This will modify data.`)) return;
-        callCleanup(action, extra);
-      }}
-    >
-      {isRunning(action) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Icon className="h-4 w-4 mr-1" />}
-      {label}
-    </Button>
-  );
+  }) => {
+    const content = (
+      <>
+        {isRunning(action) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Icon className="h-4 w-4 mr-1" />}
+        {label}
+      </>
+    );
+
+    if (destructive) {
+      return (
+        <RiskyActionButton
+          size="sm"
+          variant={variant}
+          disabled={loading}
+          risk="destructive"
+          actionLabel={label}
+          impact={[
+            `Runs the "${label}" cleanup against stored merchant data.`,
+            'Rows are modified or removed and cannot be restored from this screen.',
+          ]}
+          onConfirm={() => callCleanup(action, extra)}
+        >
+          {content}
+        </RiskyActionButton>
+      );
+    }
+
+    return (
+      <Button variant={variant} size="sm" disabled={loading} onClick={() => callCleanup(action, extra)}>
+        {content}
+      </Button>
+    );
+  };
 
   // Typed accessors for diagnose report
   const diag = report?.action === 'diagnose' ? report : null;
