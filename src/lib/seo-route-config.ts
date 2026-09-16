@@ -83,7 +83,7 @@ export const SEO_PILLARS: SeoPillar[] = [
         h1: 'Best Orthopedic Dog Beds for Large Dogs',
         primaryKeyword: 'orthopedic dog bed large dogs',
         secondaryKeywords: ['large breed dog bed', 'XL orthopedic dog bed', 'dog bed for Great Dane', 'dog bed for German Shepherd', 'heavy dog bed', 'extra large memory foam dog bed'],
-        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our carefully selected picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes. We\'ve load-tested every bed in our selection to verify they maintain support over 12+ months of daily use.',
+        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our carefully selected picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes.',
         productsCollectionSlug: 'best-dog-beds-for-large-dogs',
         componentKey: 'OrthopedicLargeDogs',
         faq: [
@@ -154,7 +154,7 @@ export const SEO_PILLARS: SeoPillar[] = [
     h1: 'Best Cat Trees for Large Cats — Sturdy, Safe & Built to Last',
     primaryKeyword: 'cat trees for large cats',
     secondaryKeywords: ['heavy duty cat tree', 'cat tree maine coon', 'large cat condo', 'sturdy cat tree', 'extra tall cat tree', 'cat tree for big cats', 'cat tower for large cats', 'cat tree 20 lb cat'],
-    intro: 'Standard cat trees wobble, tip, and break under cats weighing 15+ pounds. Our curated selection of large cat trees uses reinforced bases (24×24" minimum), thicker sisal posts (4"+ diameter), and weight-rated platforms to safely support Maine Coons, Ragdolls, and other large breeds. We\'ve stability-tested every cat tree with 25 lb loads to verify they won\'t tip.',
+    intro: 'Standard cat trees wobble, tip, and break under cats weighing 15+ pounds. Our curated selection of large cat trees uses reinforced bases (24×24" minimum), thicker sisal posts (4"+ diameter), and weight-rated platforms to safely support Maine Coons, Ragdolls, and other large breeds.',
     productsCollectionSlug: 'cat-trees-for-large-cats',
     componentKey: 'CatTreesForLargeCats',
     crossClusterPillar: { namespace: 'dog', pillarSlug: 'orthopedic-dog-beds', anchor: 'Orthopedic Dog Beds Guide' },
@@ -168,7 +168,7 @@ export const SEO_PILLARS: SeoPillar[] = [
     intents: [
       {
         slug: 'heavy-duty',
-        title: 'Heavy Duty Cat Trees That Won\'t Tip – Tested for 25+ lbs',
+        title: 'Heavy Duty Cat Trees With Reinforced Bases',
         h1: 'Heavy Duty Cat Trees for Large & Heavy Cats',
         primaryKeyword: 'heavy duty cat tree',
         secondaryKeywords: ['sturdy cat tree', 'cat tree won\'t tip', 'reinforced cat tree', 'cat tree for heavy cats', 'stable cat tree', 'cat tree 25 lb cat'],

@@ -154,7 +154,7 @@ export default function CatCondoVsCatTree2026() {
               ))}
             </ul>
             <p className="text-muted-foreground leading-relaxed">
-              Browse our full <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> for stability-tested options, or explore <Link to="/collections/all" className="text-primary underline">cat trees for large cats</Link> rated for 40+ lbs.
+              Browse our full <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> for stable, heavy-duty options, or explore <Link to="/collections/all" className="text-primary underline">cat trees for large cats</Link>.
             </p>
           </section>
 
