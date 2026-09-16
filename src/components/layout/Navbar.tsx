@@ -54,13 +54,16 @@ function emitCartOpen(source: 'cart_icon_desktop' | 'cart_icon_mobile', itemCoun
   }
 }
 
+// Primary navigation is cat-first: it mirrors the categories that actually
+// hold merchandised stock. The dog/outdoor legacy range stays live and
+// indexable and is reachable from the footer and the sitemap — it is simply
+// not part of the primary browse path.
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/collections/dogs', label: 'Dogs' },
-  { href: '/collections/dog-beds', label: 'Dog Beds' },
   { href: '/collections/cats', label: 'Cats' },
-  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
   { href: '/collections/cat-litter-boxes', label: 'Litter Boxes' },
+  { href: '/collections/cat-trees-and-condos', label: 'Cat Trees' },
+  { href: '/collections/cat-toys', label: 'Cat Toys' },
   { href: '/bundles', label: 'Sets' },
   { href: '/guides', label: 'Guides' },
   { href: '/contact', label: 'Contact' },
