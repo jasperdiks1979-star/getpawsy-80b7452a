@@ -153,8 +153,9 @@ describe("K — variant and price identity", () => {
       reason: "ok",
       chargePrice: 79.13,
     });
-    // Legitimate on-page volume discount stays within tolerance.
-    expect(validateLinePrice({ clientPrice: 71.22, serverPrice: 79.13 }).ok).toBe(true);
+    // Commerce N: line prices must match to the cent — a "reasonably lower"
+    // client price is no longer tolerated (that was the display/charge gap).
+    expect(validateLinePrice({ clientPrice: 71.22, serverPrice: 79.13 }).ok).toBe(false);
     // Tampered price fails closed.
     const bad = validateLinePrice({ clientPrice: 1, serverPrice: 79.13 });
     expect(bad.ok).toBe(false);
