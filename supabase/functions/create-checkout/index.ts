@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendGa4BeginCheckoutMp } from "../_shared/ga4-measurement-protocol.ts";
 import { getStripeKey } from "../_shared/stripe-key.ts";
+import { resolveExactVariant, validateLinePrice } from "../_shared/order-state.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,10 @@ interface CartItem {
   price: number;
   quantity: number;
   image?: string;
+  variant?: string;
+  /** K: exact supplier variant identity, derived from the cart line id. */
+  cj_variant_id?: string | null;
+  sku?: string | null;
 }
 
 interface CheckoutRequest {
@@ -182,7 +187,11 @@ serve(async (req) => {
         console.error("[CREATE-CHECKOUT] Invalid item id:", it?.id);
         throw new Error("Invalid item id");
       }
-      // Normalize: downstream lookup + Stripe metadata use the canonical UUID
+      // Normalize: downstream lookup + Stripe metadata use the canonical UUID,
+      // but the EXACT supplier variant id is preserved on the line (K).
+      const rawId = String(it.id);
+      const suffix = rawId.slice(productId.length).replace(/^[_-]/, "");
+      it.cj_variant_id = suffix.length > 0 ? suffix : null;
       it.id = productId;
       if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 100) {
         throw new Error("Invalid item quantity");
@@ -191,18 +200,77 @@ serve(async (req) => {
     const productIds = Array.from(new Set(items.map((i) => i.id)));
     const { data: dbProducts, error: dbErr } = await supabaseAdmin
       .from("products")
-      .select("id, name, price, image_url, is_active, supplier_warehouse")
+      .select("id, name, price, image_url, is_active, supplier_warehouse, variants, stock, us_stock, eu_stock, cn_stock")
       .in("id", productIds);
     if (dbErr) throw new Error(`Product lookup failed: ${dbErr.message}`);
-    const productMap = new Map<string, { id: string; name: string; price: number; image_url: string | null; is_active: boolean; supplier_warehouse: string | null }>();
+    const productMap = new Map<string, any>();
     for (const p of dbProducts || []) productMap.set(p.id, p as any);
     for (const it of items) {
       const p = productMap.get(it.id);
       if (!p) throw new Error(`Product not found: ${it.id}`);
       if (p.is_active === false) throw new Error(`Product not available: ${it.id}`);
       if (typeof p.price !== "number" || !(p.price > 0)) throw new Error(`Invalid product price: ${it.id}`);
+
+      // ── K: exact variant identity, never a substitute ────────────────────
+      const resolved = resolveExactVariant(p.variants, it.cj_variant_id ?? null);
+      if (!resolved.ok) {
+        console.error("[CREATE-CHECKOUT] Variant identity rejected", {
+          product: it.id,
+          variant: it.cj_variant_id,
+          reason: resolved.reason,
+        });
+        return new Response(
+          JSON.stringify({
+            error: "This item's option is no longer available. Please reselect it.",
+            code: "variant_unavailable",
+            product_id: it.id,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+      const variant = resolved.variant;
+      it.cj_variant_id = variant?.vid ? String(variant.vid) : null;
+      it.sku = variant?.variantSku ? String(variant.variantSku) : null;
+      it.variant = variant?.variantNameEn ?? variant?.variantKey ?? it.variant;
+
+      // ── K: server-authoritative price, fail closed on a stale/tampered one ─
+      const priceCheck = validateLinePrice({ clientPrice: it.price, serverPrice: p.price });
+      if (!priceCheck.ok) {
+        console.error("[CREATE-CHECKOUT] Price mismatch rejected", {
+          product: it.id,
+          reason: priceCheck.reason,
+        });
+        return new Response(
+          JSON.stringify({
+            error: "Prices changed while you were shopping. Please refresh your cart.",
+            code: "price_mismatch",
+            product_id: it.id,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+
+      // ── L: inventory truth, fail closed on a confirmed-empty product ──────
+      const hasWarehouseData =
+        p.us_stock !== null && p.us_stock !== undefined ||
+        p.eu_stock !== null && p.eu_stock !== undefined ||
+        p.cn_stock !== null && p.cn_stock !== undefined;
+      const warehouseTotal =
+        Number(p.us_stock ?? 0) + Number(p.eu_stock ?? 0) + Number(p.cn_stock ?? 0);
+      const soldOut = hasWarehouseData ? warehouseTotal <= 0 : p.stock === 0;
+      if (soldOut) {
+        return new Response(
+          JSON.stringify({
+            error: "One of your items just sold out. Please remove it to continue.",
+            code: "inventory_unavailable",
+            product_id: it.id,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+
       // Overwrite client-supplied values with DB canonical values.
-      it.price = p.price;
+      it.price = priceCheck.chargePrice;
       it.name = p.name;
       it.image = p.image_url || it.image;
     }
@@ -275,6 +343,7 @@ serve(async (req) => {
           images: item.image ? [item.image] : undefined,
           metadata: {
             product_id: item.id,
+            cj_variant_id: item.cj_variant_id ?? "",
           },
         },
         unit_amount: Math.round(item.price * 100), // Convert to cents
@@ -322,7 +391,7 @@ serve(async (req) => {
 
     // Order metadata for analytics + reconciliation
     const orderMetadata = {
-      items: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity }))),
+      items: JSON.stringify(items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, cj_variant_id: i.cj_variant_id ?? null }))),
       total_items: totalItems.toString(),
       subtotal: (subtotalCents / 100).toFixed(2),
       tier_percent: String(tierPercent),
@@ -605,7 +674,17 @@ serve(async (req) => {
         total_amount: totalAmount,
         currency: "usd",
         customer_email: userEmail,
-        items: items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
+        items: items.map(i => ({
+          id: i.id,
+          product_id: i.id,
+          cj_variant_id: i.cj_variant_id ?? null,
+          sku: i.sku ?? null,
+          variant: i.variant ?? null,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          image: i.image,
+        })),
         order_access_token: orderAccessToken,
       });
 
