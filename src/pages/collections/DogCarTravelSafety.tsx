@@ -12,7 +12,7 @@ import { ConversionTrustBlock } from "@/components/seo/ConversionTrustBlock";
 
 const CANONICAL = 'https://getpawsy.pet/collections/all';
 const PAGE_TITLE = 'Dog Car Seats & Travel Safety Gear (2026)';
-const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop crash-tested car seats & harnesses. 30-day return policy + free US shipping.';
+const META_DESC = 'Your dog rides unrestrained? A 60-lb dog at 35 mph = 2,700 lbs of force. Shop dog car seats & harnesses. 30-day return policy + free US shipping.';
 
 const FAQ_DATA = [
   { question: 'Are dog car seats actually safe?', answer: 'Yes, when properly designed and installed. Crash-tested dog car seats from reputable brands (tested at CPS-certified facilities) reduce injury risk by up to 80% compared to unrestrained dogs. Always look for "crash tested" certification — many budget seats only restrain, they don\'t protect during impact.' },
@@ -68,7 +68,7 @@ export default function DogCarTravelSafety() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     '@id': `${CANONICAL}#collection`,
-    name: 'Crash-Tested Dog Car Seats & Travel Safety Gear',
+    name: 'Dog Car Seats & Travel Safety Gear',
     description: META_DESC,
     url: CANONICAL,
     mainEntity: {
@@ -139,14 +139,14 @@ export default function DogCarTravelSafety() {
         {/* ─── HERO ─── */}
         <section className="mb-12">
           <h1 className="text-3xl md:text-4xl font-display font-bold leading-tight mb-4">
-            Crash-Tested Dog Car Seats &amp; Travel Safety Gear
+            Dog Car Seats &amp; Travel Safety Gear
           </h1>
           <p className="text-lg text-muted-foreground max-w-3xl mb-6">
             Crash-tested car seats, harnesses, and booster seats designed to keep your dog safe on every ride. From quick errands to cross-country road trips.
           </p>
           <div className="flex flex-wrap gap-4 mb-6">
             <Link to="/collections/best-dog-car-seats">
-              <Button size="lg" className="gap-2">Shop Crash-Tested Gear <ArrowRight className="w-4 h-4" /></Button>
+              <Button size="lg" className="gap-2">Shop Travel Safety Gear <ArrowRight className="w-4 h-4" /></Button>
             </Link>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
