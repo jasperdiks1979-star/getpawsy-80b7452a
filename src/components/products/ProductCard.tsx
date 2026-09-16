@@ -1,7 +1,7 @@
 import React, { useState, memo, forwardRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingCart, Heart, Eye } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { useQuickAdd } from "@/hooks/useQuickAdd";
 import { useCartAnimation } from "@/contexts/CartAnimationContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -74,7 +74,7 @@ export const ProductCard = memo(
     },
     ref,
   ) {
-    const { addItem } = useCart();
+    const quickAdd = useQuickAdd();
     const { triggerAddToCart } = useCartAnimation();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { success: hapticSuccess, selection: hapticSelection } = useHaptic();
