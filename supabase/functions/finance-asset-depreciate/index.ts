@@ -3,7 +3,7 @@
 // using linear depreciation with salvage floor.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +16,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const guard = await requireInternalOrAdmin(req);
+  const guard = await requireMonitorCaller(req);
   if (guard) return guard;
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);

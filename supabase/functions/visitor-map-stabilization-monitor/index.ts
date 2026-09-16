@@ -3,7 +3,7 @@
 // public.stabilization_runs. Never mutates KPI definitions or map behavior.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 
 type CheckResult = {
   name: string;
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
 
   // Security: service-role monitor with privileged reads/writes — admin JWT or
   // internal secret only.
-  const denied = await requireInternalOrAdmin(req);
+  const denied = await requireMonitorCaller(req);
   if (denied) return denied;
 
   const started = Date.now();

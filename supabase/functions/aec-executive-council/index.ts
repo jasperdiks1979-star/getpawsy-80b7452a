@@ -16,7 +16,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { emitXaiDecision } from "../_shared/xai-decision.ts";
-import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
 import {
   EVIDENCE_SOURCE_WEIGHT,
   classifyGate,
@@ -618,7 +618,7 @@ async function snapshot(sb: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const __gate = await requireInternalOrAdmin(req);
+  const __gate = await requireMonitorCaller(req);
   if (__gate) return __gate;
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
   const url = new URL(req.url);
