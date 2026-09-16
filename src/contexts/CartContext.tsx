@@ -112,15 +112,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const abandonedCartEmail = useRef<string | null>(localStorage.getItem('pawsy-cart-email'));
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync cart to abandoned_carts table
+  // Sync cart to abandoned_carts table.
+  // All writes go through the serialized, idempotent helper so a single cart
+  // session can never create more than one active row (no historic deletes).
   const syncAbandonedCart = useCallback(async (cartItems: CartItem[], email?: string | null) => {
     if (cartItems.length === 0) return;
-    
+
     const sessionId = getCartSessionId();
     const customerEmail = email || abandonedCartEmail.current;
     const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-    // Simplify items to JSON-compatible format
+
     const simplifiedItems = cartItems.map(item => ({
       id: item.id,
       name: item.name,
@@ -129,41 +130,55 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       quantity: item.quantity,
       variant: item.variant || null,
     }));
-    
-    try {
-      const supabase = await getSupabase();
-      // Check if cart already exists for this session
-      const { data: existingCart } = await supabase
-        .from('abandoned_carts')
-        .select('id')
-        .eq('session_id', sessionId)
-        .is('recovered_at', null)
-        .maybeSingle();
 
-      if (existingCart) {
+    const store: AbandonedCartStore = {
+      async findActive(sid) {
+        const supabase = await getSupabase();
+        const { data } = await supabase
+          .from('abandoned_carts')
+          .select('id')
+          .eq('session_id', sid)
+          .is('recovered_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return data ? { id: (data as { id: string }).id } : null;
+      },
+      async update(id, payload) {
+        const supabase = await getSupabase();
         const { error } = await supabase
           .from('abandoned_carts')
           .update({
-            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
-            cart_total: cartTotal,
-            customer_email: customerEmail,
+            cart_items: JSON.parse(JSON.stringify(payload.items)),
+            cart_total: payload.cartTotal,
+            customer_email: payload.customerEmail ?? null,
           })
-          .eq('id', existingCart.id);
+          .eq('id', id);
         if (error) console.error('Error updating abandoned cart:', error);
-      } else {
-        const { error } = await supabase
+      },
+      async insert(payload) {
+        const supabase = await getSupabase();
+        const { data, error } = await supabase
           .from('abandoned_carts')
           .insert([{
-            session_id: sessionId,
-            customer_email: customerEmail,
-            cart_items: JSON.parse(JSON.stringify(simplifiedItems)),
-            cart_total: cartTotal,
-          }]);
+            session_id: payload.sessionId,
+            customer_email: payload.customerEmail ?? null,
+            cart_items: JSON.parse(JSON.stringify(payload.items)),
+            cart_total: payload.cartTotal,
+          }])
+          .select('id')
+          .maybeSingle();
         if (error) console.error('Error inserting abandoned cart:', error);
-      }
-    } catch (error) {
-      console.error('Error syncing abandoned cart:', error);
-    }
+        return data ? { id: (data as { id: string }).id } : null;
+      },
+    };
+
+    await syncAbandonedCartRow(store, {
+      sessionId,
+      customerEmail,
+      items: simplifiedItems,
+      cartTotal,
+    });
   }, []);
 
   // Debounced sync - wait 2 seconds after last cart change
