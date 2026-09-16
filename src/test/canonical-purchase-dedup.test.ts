@@ -12,7 +12,7 @@ import { semanticDedupKey } from "../../supabase/functions/_shared/canonicalDedu
  * (dedup_key)` could not collapse them and revenue was counted twice.
  */
 
-const MIGRATION = "supabase/migrations/20260916112617_a41d5eed-c0e1-4a07-8aba-e73e0c8cbb2c.sql";
+const MIGRATION = "supabase/migrations/20260916112347_af15c6c0-8266-4d00-a713-eed481f63864.sql";
 
 /** Mirror of the SQL purchase key, used to prove both writers agree. */
 function sqlPurchaseKey(source: string, stripeSessionId: string | null, sessionId: string | null) {
