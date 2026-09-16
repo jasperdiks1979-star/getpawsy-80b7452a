@@ -13,11 +13,11 @@ const heroDesktop = '/hero/cat-litter-box-hero.webp';
 const heroMobile = '/hero/cat-litter-box-hero-mobile.webp';
 
 const HERO_PRODUCT_IDS = [
-  '2022147992715550722',
-  '1898265961711509505',
-  '2003462558293204994',
-  '1993160057093906434',
-  '1976569563728994306',
+  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0',
+  'b9c0f448-162b-4464-bf36-7697e6fe4852',
+  '1b218ab0-19b5-4ae5-a227-8099f2e2f00c',
+  '84be6648-7fd6-4b18-bdd7-ff9df7907892',
+  '1daefaa0-7892-4760-87a9-0aa34c49c767',
 ] as const;
 
 const CATEGORIES = [
