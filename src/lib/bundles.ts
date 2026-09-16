@@ -94,6 +94,26 @@ export const BUNDLE_DEFINITIONS: BundleDefinition[] = [
   },
 ];
 
+/**
+ * Stricter than the PDP check: a bundle option also has to have US inventory
+ * when the supplier payload records it, because a set must ship as one parcel
+ * from one warehouse.
+ */
+export function isBundleOptionPurchasable(variant: QuickAddVariant): boolean {
+  if (!isVariantPurchasable(variant)) return false;
+  const inventories = (variant as { inventories?: unknown }).inventories;
+  if (!Array.isArray(inventories) || inventories.length === 0) return true;
+  const us = inventories.filter(
+    (inv): inv is { countryCode?: string; storageNum?: unknown } =>
+      !!inv && typeof inv === 'object' && String((inv as { countryCode?: string }).countryCode ?? '').toUpperCase() === 'US',
+  );
+  if (us.length === 0) return false;
+  return us.some((inv) => {
+    const n = Number(inv.storageNum);
+    return !Number.isFinite(n) ? true : n > 0;
+  });
+}
+
 export interface BundleCatalogProduct {
   id: string;
   slug: string;
@@ -142,7 +162,7 @@ function componentBlockReason(p: BundleCatalogProduct | undefined): ComponentBlo
   if (!(Number(p.stock ?? 0) > 0)) return 'out_of_stock';
   if (!(Number(p.price ?? 0) > 0)) return 'no_price';
   const variants = parseQuickAddVariants(p.variants);
-  if (variants.length > 0 && variants.filter(isVariantPurchasable).length === 0) return 'no_purchasable_option';
+  if (variants.length > 0 && variants.filter(isBundleOptionPurchasable).length === 0) return 'no_purchasable_option';
   return null;
 }
 
@@ -162,7 +182,7 @@ export function evaluateBundle(
       continue;
     }
     const allOptions = parseQuickAddVariants(product.variants);
-    const options = allOptions.filter(isVariantPurchasable).filter((v) => String(v.vid ?? '').trim().length > 0);
+    const options = allOptions.filter(isBundleOptionPurchasable).filter((v) => String(v.vid ?? '').trim().length > 0);
     // A product whose options carry no supplier id cannot produce an exact line.
     if (allOptions.length > 0 && options.length === 0) {
       reasons.push({ slug, reason: 'no_purchasable_option' });
