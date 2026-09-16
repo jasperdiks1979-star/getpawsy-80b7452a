@@ -254,7 +254,7 @@ const CTR_REWRITES: Record<string, { before: string; after: string; meta: string
   'best self cleaning litter box': {
     before: 'Best Self Cleaning Litter Box | GetPawsy',
     after: 'Never Scoop Again – Best Self-Cleaning Litter Box (2026 Tested)',
-    meta: 'we compared self-cleaning litter boxes for odor, reliability, and noise. Honest rankings, no sponsorships. Free shipping available.',
+    meta: 'Self-cleaning litter boxes compared on published odor, reliability and noise specifications. No sponsorships. Free shipping available.',
   },
   'best dog car seat': {
     before: 'Best Dog Car Seat | GetPawsy',

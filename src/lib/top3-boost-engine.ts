@@ -108,7 +108,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
   },
   'cat tree for large cats': {
     title: 'Cat Trees for Large Cats (2026) — Heavy-Duty & Tested to 25 lbs',
-    meta: 'Stop flimsy cat trees from tipping. We compared models for cats over 15 lbs. Solid wood, carpet-free options, wide platforms. Free shipping available.',
+    meta: 'Stop flimsy cat trees from tipping. Compare models for cats over 15 lbs. Solid wood, carpet-free options, wide platforms. Free shipping available.',
   },
   'best harness for large dogs that pull': {
     title: 'Best Harness for Large Dogs That Pull — Heavy-Duty Picks (2026)',

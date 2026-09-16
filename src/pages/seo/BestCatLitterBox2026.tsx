@@ -5,11 +5,11 @@ export default function BestCatLitterBox2026() {
     <SeoTrafficPage
       slug="best-cat-litter-box-2026"
       title="Best Cat Litter Box 2026 (What Actually Works)"
-      metaDescription="Still fighting litter box odor every day? We compared options and found the 5 that actually control smell, tracking, and mess."
+      metaDescription="Still fighting litter box odor every day? Compare 5 options on published odor, tracking and cleaning specifications."
       h1="Best Cat Litter Box 2026 — carefully selected Picks for Every Home"
-      subtitle="We compared 30+ litter boxes to find the cleanest, most odor-resistant options for single and multi-cat households in the US."
-      ctrHook="We compared litter boxes over 4 weeks — avoid these common mistakes (2026 update)"
-      introText="Choosing the right litter box can transform your daily routine and keep your home smelling fresh. Whether you have one cat or five, live in a studio apartment or a house, the right litter box reduces tracking, controls odor, and makes scooping faster (or eliminates it entirely). We compared each option on published specifications, evaluating odor control, ease of cleaning, litter tracking, and cat acceptance rates."
+      subtitle="A comparison of litter boxes on published specifications for single and multi-cat households in the US."
+      ctrHook="Litter boxes compared on published specifications (2026 update)"
+      introText="Choosing the right litter box can transform your daily routine and keep your home smelling fresh. Whether you have one cat or five, live in a studio apartment or a house, the right litter box reduces tracking, controls odor, and makes scooping faster (or eliminates it entirely). This guide compares each option on its published specifications for odor control, ease of cleaning and litter tracking. GetPawsy does not test products in-house."
       species="cat"
       lastUpdated="2026-03-19"
       productCategories={['cat-litter-boxes', 'cat-litter', 'cat-supplies']}

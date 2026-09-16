@@ -73,7 +73,7 @@ const AboutTheAuthor = () => {
                   All product evaluations and recommendations are made independently. GetPawsy may earn a commission when you purchase through our links, but this never influences our rankings or recommendations.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our testing methodology and editorial guidelines are transparent and publicly available. We believe trust is earned through honesty, not hidden agendas.
+                  Our selection method and editorial guidelines are transparent and publicly available — GetPawsy does not test products in-house. We believe trust is earned through honesty, not hidden agendas.
                 </p>
               </div>
             </div>
