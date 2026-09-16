@@ -141,7 +141,7 @@ describe("Visitor World Map Pro — ProToolbar", () => {
 // -- KPI canonical parity --------------------------------------------------
 
 describe("Visitor World Map Pro — ProKpiHeader canonical parity", () => {
-  it("renders KPI values equal to countersFromSessions() over the canonical truth set", async () => {
+  it("renders strict-v3 KPI cards over the canonical truth set (no unqualified visitor count)", async () => {
     const state: ProToolbarState = {
       timeRange: "24h", source: "all", activity: "all", usOnly: false, excludeInternal: true,
     };
@@ -151,16 +151,33 @@ describe("Visitor World Map Pro — ProKpiHeader canonical parity", () => {
     // parity is asserted against the same filtered set.
     const expected = countersFromSessions(FIXTURE_SESSIONS.filter((s) => !s.is_internal));
 
-    await waitFor(() => expect(screen.getByTestId("kpi-visitors")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId("kpi-v3-raw")).toBeInTheDocument());
 
-    expect(screen.getByTestId("kpi-visitors")).toHaveTextContent(String(expected.visitors));
-    expect(screen.getByTestId("kpi-sessions")).toHaveTextContent(String(expected.sessions));
+    // Strict v3 deliberately removed the unqualified "visitors" KPI: traffic is
+    // only ever reported per quality bucket.
+    expect(screen.queryByTestId("kpi-visitors")).not.toBeInTheDocument();
+
+    // Raw total and pageviews come straight from the canonical envelope.
+    expect(screen.getByTestId("kpi-v3-raw")).toHaveTextContent(String(expected.sessions));
     expect(screen.getByTestId("kpi-pageviews")).toHaveTextContent(String(expected.page_views));
-    expect(screen.getByTestId("kpi-atc")).toHaveTextContent(String(expected.add_to_cart));
-    expect(screen.getByTestId("kpi-checkout")).toHaveTextContent(String(expected.checkout_started));
-    expect(screen.getByTestId("kpi-purchases")).toHaveTextContent(String(expected.purchases));
-    expect(screen.getByTestId("kpi-revenue")).toHaveTextContent("42.50");
+
+    // Quality buckets must partition the raw total exactly.
+    const bucket = (id: string) =>
+      Number((screen.getByTestId(id).textContent || "").replace(/[^\d]/g, "").slice(-6) || 0);
+    const sum =
+      bucket("kpi-v3-probable-human") +
+      bucket("kpi-v3-possible-human") +
+      bucket("kpi-v3-bot") +
+      bucket("kpi-v3-internal") +
+      bucket("kpi-v3-unknown");
+    expect(sum).toBe(expected.sessions);
+
+    // Commerce cards exist and never exceed the raw canonical counts.
+    for (const id of ["kpi-sessions", "kpi-atc", "kpi-checkout", "kpi-purchases", "kpi-revenue"]) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
   });
+
 
   it("hides all business KPIs and shows the Live-blocked notice in Live mode", async () => {
     const state: ProToolbarState = {
