@@ -352,13 +352,13 @@ export const FrequentlyBoughtTogether = ({
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-bold">
-            {isDogBed ? "Complete Your Dog's Comfort Setup" : 'Frequently Bought Together'}
-          </h3>
+          {/* Headings state only what we can prove: the multi-item discount is
+              applied server-side in create-checkout (BUNDLE10/15/18/20). We have
+              no purchase-frequency data, so no "frequently bought" or
+              "most customers" claim is made. */}
+          <h3 className="text-lg font-bold">Complete the setup</h3>
           <p className="text-sm text-muted-foreground">
-            {isDogBed
-              ? 'Most customers add these for better comfort'
-              : 'Buy 2+ items together and save up to 20%'}
+            Add 2 or more items together and the discount is applied at checkout — up to 20% off.
           </p>
         </div>
       </div>
