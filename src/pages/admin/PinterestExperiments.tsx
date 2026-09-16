@@ -334,8 +334,8 @@ export default function PinterestExperiments() {
                       </tr>
                     </thead>
                     <tbody>
-                      {variants.map((v) => (
-                        <tr key={v.variant_id ?? v.variant_label ?? Math.random()} className="border-t border-border/60">
+                      {variants.map((v, vIdx) => (
+                        <tr key={v.variant_id ?? v.variant_label ?? `variant-${vIdx}`} className="border-t border-border/60">
                           <td className="px-3 py-2">
                             {v.variant_label}
                             {v.is_control && <Badge variant="outline" className="ml-2 text-[9px]">control</Badge>}
