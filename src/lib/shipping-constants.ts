@@ -14,13 +14,16 @@
 export const FREE_SHIPPING_THRESHOLD = 35;
 
 // ============= TIERED INCENTIVE THRESHOLDS =============
+// Derived from the CANONICAL pricing engine (src/lib/cart-pricing.ts) so the
+// cart UI can never drift from the amount charged.
 
 /** Tiered discount configuration – applied automatically in cart */
-export const TIERED_INCENTIVES = [
-  { threshold: 35, label: 'Free Shipping', discountPercent: 0 },
-  { threshold: 65, label: '5% Off Your Order', discountPercent: 5 },
-  { threshold: 99, label: '10% Off Your Order', discountPercent: 10 },
-] as const;
+export const TIERED_INCENTIVES = PRICING_TIERS.map((t) => ({
+  threshold: t.thresholdCents / 100,
+  label: t.label,
+  discountPercent: t.percent,
+}));
+
 
 /** Get the best applicable tier for a given subtotal */
 export const getApplicableTier = (subtotal: number) => {
