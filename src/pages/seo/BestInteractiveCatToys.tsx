@@ -200,7 +200,7 @@ export default function BestInteractiveCatToys() {
       relatedGuides={[
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026', badge: '🔥 Trending' },
         { title: 'Indoor Cat Furniture Guide', description: 'Complete guide to cat trees, shelves, and enrichment furniture.', href: '/indoor-cat-furniture', badge: '⭐ Expert Pick' },
-        { title: 'Best Cat Trees for Large Cats', description: 'Stable, heavy-duty cat trees tested for Maine Coons and large breeds.', href: '/guides/best-cat-trees-large-cats-2026' },
+        { title: 'Best Cat Trees for Large Cats', description: 'Stable, heavy-duty cat trees for Maine Coons and large breeds.', href: '/guides/best-cat-trees-large-cats-2026' },
       ]}
       crossLinks={[
         { title: 'Best Cat Litter Box 2026', description: 'Top-rated litter boxes for odor control, large cats, and multi-cat homes.', href: '/best-cat-litter-box-2026' },

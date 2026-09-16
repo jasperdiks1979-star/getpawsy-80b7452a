@@ -87,9 +87,9 @@ export const CAT_SILO: SiloConfig = {
     desc: 'Airline-approved carriers & travel gear',
   },
   subCollections: [
-    { href: '/collections/all', label: 'Cat Trees for Large Cats', desc: 'Stability-tested for 25+ lbs' },
+    { href: '/collections/all', label: 'Cat Trees for Large Cats', desc: 'Reinforced bases for large cats' },
     { href: '/guides/best-cat-litter-box-2026', label: 'Best Litter Boxes 2026', desc: 'Odor control & self-cleaning' },
-    { href: '/guides/best-cat-trees-large-cats-2026', label: 'Best Cat Trees 2026', desc: '9 trees tested for stability' },
+    { href: '/guides/best-cat-trees-large-cats-2026', label: 'Best Cat Trees 2026', desc: 'How to judge cat tree stability' },
   ],
   blogPath: '/blog?category=cats',
   categories: ['Cat Trees & Condos', 'Cat Carriers', 'Cat Toys', 'Cat Scratching Posts', 'Cat Furniture', 'Cat Houses', 'Cat Beds', 'Cat Bowls'],

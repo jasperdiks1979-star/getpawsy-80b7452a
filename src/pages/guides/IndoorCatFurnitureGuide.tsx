@@ -189,7 +189,7 @@ export default function IndoorCatFurnitureGuide() {
         {/* CTA Block 1 */}
         <div className="rounded-xl bg-accent/50 border p-6 mb-12 text-center">
           <p className="font-semibold mb-2">Browse Our Indoor Cat Furniture Collection</p>
-          <p className="text-sm text-muted-foreground mb-4">Cat trees, wall shelves, condos, and scratching solutions — all tested for stability and durability.</p>
+          <p className="text-sm text-muted-foreground mb-4">Cat trees, wall shelves, condos, and scratching solutions — chosen for stability and durability.</p>
           <Link to="/collections/cats" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
             Shop Indoor Cat Furniture <ArrowRight className="h-4 w-4" />
           </Link>

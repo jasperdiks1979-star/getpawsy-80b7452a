@@ -308,3 +308,31 @@ export function shopperSpecRows(evidence: ProductEvidence): Array<{ label: strin
     .filter((f) => f.key !== 'origin' && f.key !== 'variant_identities')
     .map((f) => ({ label: f.label, value: f.value! }));
 }
+
+/**
+ * Key-point bullets built ONLY from VERIFIED supplier facts.
+ *
+ * Replaces the old category-guessed bullet copy, which asserted automation,
+ * sensors, materials, safety and weight limits that no source documents. A
+ * product with no verified spec facts gets no bullets at all — an empty list
+ * is the correct output, never a generic filler claim.
+ */
+const BULLET_KEYS: Array<{ key: EvidenceKey; prefix: string }> = [
+  { key: 'product_dimensions', prefix: 'Dimensions' },
+  { key: 'materials', prefix: 'Material' },
+  { key: 'capacity', prefix: 'Suitable for' },
+  { key: 'assembly', prefix: 'Assembly' },
+  { key: 'cleaning', prefix: 'Care' },
+  { key: 'included_items', prefix: 'In the box' },
+];
+
+export function evidenceBenefitBullets(evidence: ProductEvidence, limit = 5): string[] {
+  return BULLET_KEYS.filter(({ key }) => evidence.byKey[key]?.status === 'VERIFIED')
+    .map(({ key, prefix }) => {
+      const value = evidence.byKey[key].value!.trim();
+      const lower = value.toLowerCase();
+      // Avoid "Suitable for suitable for ..." when the source already says it.
+      return lower.startsWith(prefix.toLowerCase()) ? value : `${prefix}: ${value}`;
+    })
+    .slice(0, limit);
+}

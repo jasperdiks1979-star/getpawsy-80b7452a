@@ -15,6 +15,26 @@ import { Loader2 } from 'lucide-react';
 /** Below this many paid orders, rates are noise rather than signal. */
 export const MIN_ORDERS_FOR_RATES = 10;
 
+/**
+ * Store-owner addresses used for live payment smoke tests. Their orders are
+ * real Stripe charges, so they sit in `orders` with payment_status 'paid' —
+ * but they are not customer revenue and must never inflate the KPIs.
+ */
+export const INTERNAL_ORDER_EMAILS = [
+  'jasperdiks@hotmail.com',
+  'jasperdiks1979@gmail.com',
+];
+
+/** Live smoke tests are charged at token amounts; treat them as internal too. */
+export const SMOKE_TEST_MAX_AMOUNT = 2;
+
+export function isInternalOrder(row: { customer_email: string | null; total_amount: number | string | null }): boolean {
+  const email = (row.customer_email || '').trim().toLowerCase();
+  if (INTERNAL_ORDER_EMAILS.includes(email)) return true;
+  const amount = Number(row.total_amount || 0);
+  return amount > 0 && amount <= SMOKE_TEST_MAX_AMOUNT;
+}
+
 export interface CommercialKpis {
   paidOrders: number;
   revenue: number;
@@ -26,6 +46,8 @@ export interface CommercialKpis {
   repeatRate: number | null;
   /** True when the sample is large enough for the rates to be meaningful. */
   sufficient: boolean;
+  /** Paid orders excluded as owner/smoke-test traffic. */
+  internalOrders: number;
 }
 
 interface OrderRow {
@@ -37,7 +59,9 @@ interface OrderRow {
 }
 
 export function computeCommercialKpis(rows: OrderRow[]): CommercialKpis {
-  const paid = rows.filter((r) => r.payment_status === 'paid');
+  const allPaid = rows.filter((r) => r.payment_status === 'paid');
+  const paid = allPaid.filter((r) => !isInternalOrder(r));
+  const internalOrders = allPaid.length - paid.length;
   const revenue = paid.reduce((a, r) => a + Number(r.total_amount || 0), 0);
   const refunded = paid.filter(
     (r) => (r.refund_state && r.refund_state !== 'none') || (r.refunded_amount_cents ?? 0) > 0,
@@ -63,6 +87,7 @@ export function computeCommercialKpis(rows: OrderRow[]): CommercialKpis {
     repeatBuyers,
     repeatRate: sufficient && buyers ? (repeatBuyers / buyers) * 100 : null,
     sufficient,
+    internalOrders,
   };
 }
 
@@ -106,7 +131,8 @@ export function CommercialKpiCard({ hours }: { hours: number }) {
           {k && !k.sufficient && <Badge variant="secondary">Not enough data</Badge>}
         </CardTitle>
         <CardDescription>
-          Paid orders in the selected window. Rates are hidden until there are at least{' '}
+          Customer paid orders in the selected window. Owner test purchases and live payment
+          smoke tests are excluded. Rates are hidden until there are at least{' '}
           {MIN_ORDERS_FOR_RATES} paid orders, because below that they describe noise.
         </CardDescription>
       </CardHeader>
@@ -119,7 +145,15 @@ export function CommercialKpiCard({ hours }: { hours: number }) {
         )}
         {k && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Metric label="Paid orders" value={String(k.paidOrders)} note="Counted from order payment status" />
+            <Metric
+              label="Paid orders"
+              value={String(k.paidOrders)}
+              note={
+                k.internalOrders
+                  ? `Customer orders only — ${k.internalOrders} owner/test order${k.internalOrders === 1 ? '' : 's'} excluded`
+                  : 'Counted from order payment status'
+              }
+            />
             <Metric
               label="Revenue"
               value={`$${k.revenue.toFixed(2)}`}

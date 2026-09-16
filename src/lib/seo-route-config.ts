@@ -83,7 +83,7 @@ export const SEO_PILLARS: SeoPillar[] = [
         h1: 'Best Orthopedic Dog Beds for Large Dogs',
         primaryKeyword: 'orthopedic dog bed large dogs',
         secondaryKeywords: ['large breed dog bed', 'XL orthopedic dog bed', 'dog bed for Great Dane', 'dog bed for German Shepherd', 'heavy dog bed', 'extra large memory foam dog bed'],
-        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our carefully selected picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes. We\'ve load-tested every bed in our selection to verify they maintain support over 12+ months of daily use.',
+        intro: 'Large and giant breed dogs need beds that can handle 70–150+ pounds without bottoming out. Our carefully selected picks feature high-density memory foam (3+ lb/ft³), reinforced bolsters, and oversized dimensions specifically designed for breeds like Labradors, German Shepherds, and Great Danes.',
         productsCollectionSlug: 'best-dog-beds-for-large-dogs',
         componentKey: 'OrthopedicLargeDogs',
         faq: [
@@ -154,7 +154,7 @@ export const SEO_PILLARS: SeoPillar[] = [
     h1: 'Best Cat Trees for Large Cats — Sturdy, Safe & Built to Last',
     primaryKeyword: 'cat trees for large cats',
     secondaryKeywords: ['heavy duty cat tree', 'cat tree maine coon', 'large cat condo', 'sturdy cat tree', 'extra tall cat tree', 'cat tree for big cats', 'cat tower for large cats', 'cat tree 20 lb cat'],
-    intro: 'Standard cat trees wobble, tip, and break under cats weighing 15+ pounds. Our curated selection of large cat trees uses reinforced bases (24×24" minimum), thicker sisal posts (4"+ diameter), and weight-rated platforms to safely support Maine Coons, Ragdolls, and other large breeds. We\'ve stability-tested every cat tree with 25 lb loads to verify they won\'t tip.',
+    intro: 'Standard cat trees wobble, tip, and break under cats weighing 15+ pounds. Our curated selection of large cat trees uses reinforced bases (24×24" minimum), thicker sisal posts (4"+ diameter), and weight-rated platforms to safely support Maine Coons, Ragdolls, and other large breeds.',
     productsCollectionSlug: 'cat-trees-for-large-cats',
     componentKey: 'CatTreesForLargeCats',
     crossClusterPillar: { namespace: 'dog', pillarSlug: 'orthopedic-dog-beds', anchor: 'Orthopedic Dog Beds Guide' },
@@ -168,7 +168,7 @@ export const SEO_PILLARS: SeoPillar[] = [
     intents: [
       {
         slug: 'heavy-duty',
-        title: 'Heavy Duty Cat Trees That Won\'t Tip – Tested for 25+ lbs',
+        title: 'Heavy Duty Cat Trees With Reinforced Bases',
         h1: 'Heavy Duty Cat Trees for Large & Heavy Cats',
         primaryKeyword: 'heavy duty cat tree',
         secondaryKeywords: ['sturdy cat tree', 'cat tree won\'t tip', 'reinforced cat tree', 'cat tree for heavy cats', 'stable cat tree', 'cat tree 25 lb cat'],
@@ -238,8 +238,8 @@ export const SEO_PILLARS: SeoPillar[] = [
   {
     namespace: 'dog',
     slug: 'dog-car-travel-safety',
-    title: 'Dog Car Travel Safety – Crash-Tested Seats, Harnesses & Gear (2026)',
-    h1: 'Dog Car Travel Safety: Crash-Tested Seats & Harness Guide',
+    title: 'Dog Car Travel Safety – Seats, Harnesses & Gear (2026)',
+    h1: 'Dog Car Travel Safety: Seats & Harness Guide',
     primaryKeyword: 'dog car travel safety',
     secondaryKeywords: ['dog car seat', 'dog booster seat', 'dog car harness', 'crash tested dog seat', 'dog seatbelt', 'pet travel safety', 'dog car restraint', 'dog car anxiety'],
     intro: 'Every year, an unrestrained dog in a car becomes a dangerous projectile in a crash — a 60 lb dog at 35 mph hits with 2,700 lbs of force. Our crash-tested picks for dog car seats, harnesses, and travel systems meet the Center for Pet Safety (CPS) certification standards. We\'ve reviewed impact test data, ease of installation, and comfort ratings to find gear that genuinely protects your dog (and everyone else in the vehicle).',
@@ -256,8 +256,8 @@ export const SEO_PILLARS: SeoPillar[] = [
     intents: [
       {
         slug: 'crash-tested-seat-belts',
-        title: 'Crash-Tested Dog Seat Belts & Harnesses – CPS Certified',
-        h1: 'Crash-Tested Dog Seat Belts & Safety Harnesses',
+        title: 'Dog Seat Belts & Safety Harnesses – What to Look For',
+        h1: 'Dog Seat Belts & Safety Harnesses',
         primaryKeyword: 'crash tested dog seat belt',
         secondaryKeywords: ['dog car harness crash tested', 'CPS certified dog harness', 'dog seatbelt harness', 'safest dog car harness', 'dog car restraint', 'dog crash harness'],
         intro: 'Most dog "seatbelts" sold online are untested and provide zero crash protection — they\'re just comfort leashes. Genuine crash-tested harnesses meet Center for Pet Safety (CPS) standards and use automotive-grade hardware. We\'ve reviewed every CPS-certified option available in 2026, comparing crash test performance, comfort ratings, and ease of use to help you choose real protection, not false security.',

@@ -151,7 +151,7 @@ function IntentContent({ pillar, intent, namespace }: { pillar: SeoPillar; inten
           <h2 className="text-xl font-display font-bold mb-4">How to Choose</h2>
           <div className="text-sm text-muted-foreground leading-relaxed max-w-3xl space-y-3">
             <p>When shopping for products related to <strong>{intent.primaryKeyword}</strong>, focus on quality materials, verified reviews, and your pet's specific needs.</p>
-            <p>Consider factors like your pet's size, age, and any special health requirements. Our curated selections above represent the best options we've tested and reviewed.</p>
+            <p>Consider factors like your pet's size, age, and any special health requirements. Our curated selections above are chosen from the range we stock; GetPawsy does not physically test products.</p>
           </div>
         </section>
 

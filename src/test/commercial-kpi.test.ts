@@ -62,3 +62,23 @@ describe('commercial KPIs', () => {
     expect(k.repeatRate).toBeNull();
   });
 });
+
+describe('internal order exclusion', () => {
+  it('excludes store-owner orders from revenue and counts them separately', () => {
+    const k = computeCommercialKpis([
+      { customer_email: 'jasperdiks@hotmail.com', total_amount: 98.99, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+      { customer_email: 'real@example.com', total_amount: 50, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+    ] as any);
+    expect(k.paidOrders).toBe(1);
+    expect(k.revenue).toBe(50);
+    expect(k.internalOrders).toBe(1);
+  });
+
+  it('excludes token-amount live payment smoke tests', () => {
+    const k = computeCommercialKpis([
+      { customer_email: 'someone@example.com', total_amount: 1, payment_status: 'paid', refund_state: null, refunded_amount_cents: 0 },
+    ] as any);
+    expect(k.paidOrders).toBe(0);
+    expect(k.internalOrders).toBe(1);
+  });
+});
