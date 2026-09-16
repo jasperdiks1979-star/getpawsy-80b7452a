@@ -2035,12 +2035,6 @@ const ProductDetail = () => {
                 Specifications
               </TabsTrigger>
               <TabsTrigger
-                value="size-guide"
-                className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
-              >
-                Size Guide
-              </TabsTrigger>
-              <TabsTrigger
                 value="shipping"
                 className="px-6 py-3 data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none font-medium"
               >
@@ -2070,145 +2064,12 @@ const ProductDetail = () => {
             {/* Specifications Tab */}
             <TabsContent value="specifications" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Product Specifications */}
-                  <div className="space-y-4">
-                    <h3 className="font-display font-semibold text-lg text-foreground flex items-center gap-2">
-                      <Box className="w-5 h-5 text-primary" />
-                      Product Details
-                    </h3>
-                    <div className="space-y-3">
-                      {/* SKU hidden from customers - only visible in admin */}
-                      {product.category && (
-                        <div className="flex justify-between items-center py-2 border-b border-border/50">
-                          <span className="text-muted-foreground">Category</span>
-                          <span className="font-medium text-foreground">{product.category}</span>
-                        </div>
-                      )}
-                      {product.weight && (
-                        <div className="flex justify-between items-center py-2 border-b border-border/50">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Weight className="w-4 h-4" />
-                            Weight
-                          </span>
-                          <span className="font-medium text-foreground">{Number(product.weight).toFixed(2)} lbs</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Availability</span>
-                        <span className={`font-medium ${inStock ? "text-success" : "text-destructive"}`}>
-                          {inStock ? "In Stock" : "Out of Stock"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border/50">
-                        <span className="text-muted-foreground">Sold by</span>
-                        <span className="font-medium text-foreground">GetPawsy</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Features & Benefits */}
-                  <div className="space-y-4">
-                    <h3 className="font-display font-semibold text-lg text-foreground flex items-center gap-2">
-                      <Info className="w-5 h-5 text-primary" />
-                      Features & Benefits
-                    </h3>
-                    <ul className="space-y-3">
-                      {[
-                        "Premium quality materials",
-                        "Safe for all pets",
-                        "Easy to clean and maintain",
-                        "Durable construction",
-                        "Carefully packaged for safe delivery",
-                      ].map((feature, idx) => (
-                        <motion.li
-                          key={idx}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.05 * idx }}
-                          className="flex items-center gap-2 text-muted-foreground"
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          {feature}
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+                <VerifiedSpecs product={product as never} inStock={inStock} />
               </div>
             </TabsContent>
 
-            {/* Size Guide Tab */}
-            <TabsContent value="size-guide" className="mt-6">
-              <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-foreground">
-                    <Ruler className="w-5 h-5 text-primary" />
-                    <h3 className="font-display font-semibold text-lg">Pet Size Guide</h3>
-                  </div>
-
-                  <p className="text-muted-foreground">
-                    Use this guide to find the perfect size for your pet. Measure your pet and compare with the chart
-                    below.
-                  </p>
-
-                  {/* Size Chart Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="py-3 px-4 text-left font-semibold text-foreground">Size</th>
-                          <th className="py-3 px-4 text-left font-semibold text-foreground">Pet Weight</th>
-                          <th className="py-3 px-4 text-left font-semibold text-foreground">Neck</th>
-                          <th className="py-3 px-4 text-left font-semibold text-foreground">Chest</th>
-                          <th className="py-3 px-4 text-left font-semibold text-foreground">Back Length</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { size: "XS", weight: "Up to 5 lbs", neck: '6-8"', chest: '10-12"', back: '8-10"' },
-                          { size: "S", weight: "5-10 lbs", neck: '8-10"', chest: '12-15"', back: '10-12"' },
-                          { size: "M", weight: "10-25 lbs", neck: '10-14"', chest: '15-20"', back: '12-16"' },
-                          { size: "L", weight: "25-50 lbs", neck: '14-18"', chest: '20-26"', back: '16-20"' },
-                          { size: "XL", weight: "50-80 lbs", neck: '18-22"', chest: '26-32"', back: '20-24"' },
-                          { size: "XXL", weight: "80+ lbs", neck: '22-26"', chest: '32-38"', back: '24-28"' },
-                        ].map((row, idx) => (
-                          <motion.tr
-                            key={row.size}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.05 * idx }}
-                            className="border-b border-border/50 hover:bg-muted/50 transition-colors"
-                          >
-                            <td className="py-3 px-4 font-medium text-primary">{row.size}</td>
-                            <td className="py-3 px-4 text-muted-foreground">{row.weight}</td>
-                            <td className="py-3 px-4 text-muted-foreground">{row.neck}</td>
-                            <td className="py-3 px-4 text-muted-foreground">{row.chest}</td>
-                            <td className="py-3 px-4 text-muted-foreground">{row.back}</td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Measuring Tips */}
-                  <div className="bg-secondary/30 rounded-xl p-4 mt-4">
-                    <h4 className="font-semibold text-foreground mb-2">📏 How to Measure Your Pet</h4>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>
-                        <strong>Neck:</strong> Measure around the base of the neck where the collar sits
-                      </li>
-                      <li>
-                        <strong>Chest:</strong> Measure the widest part of the chest, behind the front legs
-                      </li>
-                      <li>
-                        <strong>Back Length:</strong> Measure from the base of the neck to the base of the tail
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
+            {/* Size Guide tab removed: the chart was a generic dog-harness
+                table with no source, shown on cat products. */}
 
             <TabsContent value="shipping" className="mt-6">
               <div className="bg-muted/30 rounded-2xl p-6 md:p-8">
