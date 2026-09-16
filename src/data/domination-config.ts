@@ -396,6 +396,13 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
 
 /** Get domination config for a given slug (checks multiple slug variants) */
 export function getDominationConfig(slug: string): DominationPageConfig | null {
+  // This legacy configuration contains generic comparison claims that are not
+  // tied to product or manufacturer evidence. Keep the source for audit
+  // history, but never publish it on storefront or structured-data surfaces.
+  void slug;
+  return null;
+
+  /* istanbul ignore next -- retained only as non-rendered historical mapping */
   // Direct match
   if (DOMINATION_PAGES[slug]) return DOMINATION_PAGES[slug];
   

@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { neutralBadge } from '@/pages/seo/SeoTrafficPage';
+import { getDominationConfig } from '@/data/domination-config';
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -41,6 +42,21 @@ describe('guide templates render no fabricated star ratings', () => {
     for (const f of ['src/pages/seo/SeoTrafficPage.tsx', 'src/pages/seo/SeoClusterPage.tsx']) {
       const src = readFileSync(f, 'utf8');
       expect(src).not.toMatch(/\{p\.rating\}|\{pick\.rating\}/);
+    }
+  });
+});
+
+describe('legacy unsupported comparison copy remains unpublished', () => {
+  it('does not expose the historical domination configuration to live pages or schema', () => {
+    for (const slug of [
+      'orthopedic-dog-beds',
+      'cat-trees-for-large-cats',
+      'best-dog-car-seats',
+      'best-elevated-dog-bed',
+      'self-cleaning-litter-box-guide',
+      'best-interactive-dog-toys',
+    ]) {
+      expect(getDominationConfig(slug)).toBeNull();
     }
   });
 });
