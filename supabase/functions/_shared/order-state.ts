@@ -305,6 +305,7 @@ export function validateLinePrice(input: {
   if (client < server * MAX_DISPLAY_UNDERCHARGE_RATIO) {
     return { ok: false, reason: "price_mismatch", chargePrice: server };
   }
-  // Server price is always authoritative, and never above what was displayed.
-  return { ok: true, reason: "ok", chargePrice: Math.min(server, client) };
+  // The server (catalog) price stays authoritative — the client price is only
+  // ever used as a tamper/staleness signal, never as the amount charged.
+  return { ok: true, reason: "ok", chargePrice: server };
 }
