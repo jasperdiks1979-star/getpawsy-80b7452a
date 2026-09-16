@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { FreshnessBadge } from "@/components/admin/FreshnessBadge";
+import { CADENCES, evaluateFreshness } from "@/lib/freshness";
 
 type Row = {
   probe_key: string;
