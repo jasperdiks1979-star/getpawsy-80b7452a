@@ -176,6 +176,20 @@ function similarityScore(product: CollectionProduct, keywords: string[]): number
   return score;
 }
 
+/**
+ * Primary cat-first collections. These are linked from the main navigation and
+ * the shop hub, so they must only show the curated merchandised range —
+ * merch_hidden products (the protected legacy layer) stay reachable on their own
+ * URLs but must not leak back into primary merchandising.
+ */
+const PRIMARY_MERCHANDISED_COLLECTIONS = new Set([
+  'cats',
+  'cat-litter-boxes',
+  'cat-trees-and-condos',
+  'cat-toys',
+  'cat-beds',
+]);
+
 export async function resolveCollectionProducts(
   collection: SeoCollectionLike,
   config?: CollectionMapEntry,
@@ -227,14 +241,21 @@ export async function resolveCollectionProducts(
     'exact collection key OR normalized slug OR category OR keyword/tag match',
   ];
 
-  const { data: pool, error } = await supabase
+  const restrictToMerchandised = PRIMARY_MERCHANDISED_COLLECTIONS.has(collection.slug);
+  let poolQuery = supabase
     .from('products_public')
     .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent')
     .eq('is_active', true)
     .eq('is_duplicate', false)
     .gt('price', 0)
-    .not('image_url', 'is', null)
-    .limit(900);
+    .not('image_url', 'is', null);
+
+  if (restrictToMerchandised) {
+    poolQuery = poolQuery.eq('merch_hidden', false);
+    appliedFilters.push('merch_hidden = false (primary merchandised collection)');
+  }
+
+  const { data: pool, error } = await poolQuery.limit(900);
 
   if (error || !pool) {
     if (import.meta.env.DEV) {
