@@ -99,10 +99,12 @@ export default function TikTokPdpVariant({ product, reviews }: Props) {
     || (Array.isArray(product.images) && product.images[0])
     || '/placeholder.svg';
 
+  // Phase 8 truth fix: no fabricated rating or review-count fallback. When no
+  // approved reviews exist the rating row is not rendered at all.
   const reviewCount = reviews.length;
   const avgRating = reviewCount > 0
-    ? reviews.reduce((s, r) => s + Number(r.rating || 5), 0) / reviewCount
-    : 4.8;
+    ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviewCount
+    : 0;
 
   const { percent: discount } = getProductDiscount(product.price, product.compare_at_price ?? null);
   const compareAt = product.compare_at_price && Number(product.compare_at_price) > Number(product.price)
@@ -219,9 +221,11 @@ export default function TikTokPdpVariant({ product, reviews }: Props) {
         </h1>
 
         {/* Rating */}
-        <div className="mt-1.5">
-          <StarRating count={reviewCount || 247} avg={avgRating} />
-        </div>
+        {reviewCount > 0 && (
+          <div className="mt-1.5">
+            <StarRating count={reviewCount} avg={avgRating} />
+          </div>
+        )}
 
         {/* Price */}
         <div className="mt-2 flex items-baseline gap-2">
