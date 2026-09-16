@@ -1083,13 +1083,14 @@ const ProductDetail = () => {
       addToCartButtonRef.current,
     );
 
-    // Cart uses variant price if user explicitly selected one, else base price
-    const basePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
-      ? Number(selectedVariant.variantSellPrice)
+    // Commerce N: the cart line is ALWAYS the canonical unit price. Volume
+    // rewards are cart-level and are applied by the one pricing engine, so the
+    // line price shown here equals the line price the server charges.
+    const cartPrice = requiresExplicitVariant || userHasSelectedVariant
+      ? (selectedVariant?.variantSellPrice
+        ? Number(selectedVariant.variantSellPrice)
+        : Number(product.price))
       : Number(product.price);
-
-    // Apply volume discount
-    const cartPrice = volumeDiscount > 0 ? basePrice * (1 - volumeDiscount / 100) : basePrice;
 
     // Suppress meaningless supplier variant labels ("option", "default", "-")
     // so the cart never shows "Product name - option" to a buyer.

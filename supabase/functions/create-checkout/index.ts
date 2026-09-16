@@ -3,7 +3,14 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendGa4BeginCheckoutMp } from "../_shared/ga4-measurement-protocol.ts";
 import { getStripeKey } from "../_shared/stripe-key.ts";
-import { resolveExactVariant, validateLinePrice } from "../_shared/order-state.ts";
+import {
+  canonicalUnitPrice,
+  lockFulfillmentWarehouse,
+  resolveExactVariant,
+  validateLinePrice,
+  variantIsPurchasable,
+} from "../_shared/order-state.ts";
+import { computeCartQuote, toCents } from "../_shared/pricing-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +27,8 @@ interface CartItem {
   /** K: exact supplier variant identity, derived from the cart line id. */
   cj_variant_id?: string | null;
   sku?: string | null;
+  /** N: the single warehouse lane validated for this line at checkout. */
+  locked_warehouse?: string | null;
 }
 
 interface CheckoutRequest {
@@ -73,45 +82,28 @@ const COUPON_CODE_PERCENT: Record<string, number> = {
   SLOWFEEDER25: 25,
 };
 
-// ---- CJ shipping matrix (mirror of src/lib/cj-shipping-matrix.ts) -------
-// Keep in sync. Edge functions can't import from `src/`.
-type WarehouseCode = "US" | "CN" | "DE" | "UNKNOWN";
+// ---- Destinations we sell to -------------------------------------------
+// The warehouse→destination lane matrix itself lives in
+// ../_shared/order-state.ts (lockFulfillmentWarehouse) so checkout validation
+// and fulfillment can never disagree about which warehouse ships a line.
 const CJ_SHIP_SUPPORTED_COUNTRIES = new Set<string>([
   "US", "CA", "GB", "NL", "BE", "DE", "FR", "AU",
 ]);
-const CJ_MATRIX: Record<WarehouseCode, Record<string, boolean>> = {
-  US:      { US: true, CA: true },
-  DE:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true },
-  CN:      { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
-  UNKNOWN: { US: true, CA: true, GB: true, NL: true, BE: true, DE: true, FR: true, AU: true },
-};
-function normWarehouse(raw: string | null | undefined): WarehouseCode {
-  const v = (raw || "").trim().toUpperCase();
-  if (v === "US") return "US";
-  if (v === "CN") return "CN";
-  if (v === "DE") return "DE";
-  return "UNKNOWN";
-}
-function cjCanShip(warehouse: string | null | undefined, country: string): boolean {
-  return CJ_MATRIX[normWarehouse(warehouse)][country] === true;
+
+// Pricing is owned entirely by ../_shared/pricing-engine.ts (mirror of
+// src/lib/cart-pricing.ts). No local tier table may exist here — a second
+// table is exactly how display and charge drifted apart.
+
+/** Stable checkout attempt id: same cart + same quote → same id. */
+async function checkoutAttemptId(payload: unknown): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(payload));
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 48);
 }
 
-// Shipping mirrors src/lib/shipping-constants.ts. Kept inline because edge
-// functions cannot import from `src/`.
-const FREE_SHIPPING_THRESHOLD = 35;
-const FLAT_SHIPPING_RATE_CENTS = 599; // $5.99
-const TIERED_INCENTIVES = [
-  { threshold: 35, discountPercent: 0 },
-  { threshold: 65, discountPercent: 5 },
-  { threshold: 99, discountPercent: 10 },
-] as const;
-
-function getTierPercent(subtotal: number): number {
-  for (let i = TIERED_INCENTIVES.length - 1; i >= 0; i--) {
-    if (subtotal >= TIERED_INCENTIVES[i].threshold) return TIERED_INCENTIVES[i].discountPercent;
-  }
-  return 0;
-}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -163,6 +155,28 @@ serve(async (req) => {
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
     }
+
+    // ── N-8: destination is MANDATORY before a payment is authorised ────────
+    // Without it we cannot lock a warehouse or prove we can fulfil the order.
+    if (!destinationCountry || !/^[A-Z]{2}$/.test(destinationCountry)) {
+      return new Response(
+        JSON.stringify({
+          error: "Please choose your delivery country before checking out.",
+          code: "destination_required",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+    if (!CJ_SHIP_SUPPORTED_COUNTRIES.has(destinationCountry)) {
+      return new Response(
+        JSON.stringify({
+          error: `We don't ship to ${destinationCountry} yet.`,
+          code: "country_not_supported",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+
 
     // ---- SECURITY: never trust client-supplied prices --------------------
     // Validate shape, then re-fetch the canonical price/name/image from the
@@ -233,8 +247,15 @@ serve(async (req) => {
       it.sku = variant?.variantSku ? String(variant.variantSku) : null;
       it.variant = variant?.variantNameEn ?? variant?.variantKey ?? it.variant;
 
-      // ── K: server-authoritative price, fail closed on a stale/tampered one ─
-      const priceCheck = validateLinePrice({ clientPrice: it.price, serverPrice: p.price });
+      // ── N-4: canonical price of the EXACT variant, base price only when the
+      // variant has no distinct price of its own.
+      const serverUnitPrice = canonicalUnitPrice(Number(p.price), variant);
+
+      // ── K/N-3: one pricing contract — the client price must match to the cent.
+      const priceCheck = validateLinePrice({
+        clientPrice: it.price,
+        serverPrice: serverUnitPrice,
+      });
       if (!priceCheck.ok) {
         console.error("[CREATE-CHECKOUT] Price mismatch rejected", {
           product: it.id,
@@ -250,63 +271,72 @@ serve(async (req) => {
         );
       }
 
-      // ── L: inventory truth, fail closed on a confirmed-empty product ──────
+      // ── L/N-6: exact selected variant stock wins over aggregate product stock
       const hasWarehouseData =
         p.us_stock !== null && p.us_stock !== undefined ||
         p.eu_stock !== null && p.eu_stock !== undefined ||
         p.cn_stock !== null && p.cn_stock !== undefined;
-      const warehouseTotal =
-        Number(p.us_stock ?? 0) + Number(p.eu_stock ?? 0) + Number(p.cn_stock ?? 0);
-      const soldOut = hasWarehouseData ? warehouseTotal <= 0 : p.stock === 0;
-      if (soldOut) {
+      const productStockTotal = hasWarehouseData
+        ? Number(p.us_stock ?? 0) + Number(p.eu_stock ?? 0) + Number(p.cn_stock ?? 0)
+        : (typeof p.stock === "number" ? p.stock : null);
+      const stockCheck = variantIsPurchasable({
+        variant,
+        productStockTotal,
+        quantity: it.quantity,
+      });
+      if (!stockCheck.ok) {
+        console.warn("[CREATE-CHECKOUT] Inventory rejected", {
+          product: it.id,
+          variant: it.cj_variant_id,
+          reason: stockCheck.reason,
+        });
         return new Response(
           JSON.stringify({
             error: "One of your items just sold out. Please remove it to continue.",
             code: "inventory_unavailable",
+            reason: stockCheck.reason,
             product_id: it.id,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
         );
       }
 
+      // ── N-7: lock ONE concrete fulfillment warehouse per line. UNKNOWN is
+      // never treated as globally shippable.
+      const lock = lockFulfillmentWarehouse({
+        supplierWarehouse: p.supplier_warehouse,
+        destinationCountry,
+      });
+      if (!lock.ok) {
+        console.warn("[CREATE-CHECKOUT] Warehouse lock failed", {
+          product: it.id,
+          warehouse: p.supplier_warehouse,
+          destinationCountry,
+          reason: lock.reason,
+        });
+        return new Response(
+          JSON.stringify({
+            error: `Some items can't ship to ${destinationCountry}.`,
+            code: "cj_shipping_unavailable",
+            reason: lock.reason,
+            blocked: [{ id: p.id, name: p.name, warehouse: p.supplier_warehouse ?? null }],
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
+      it.locked_warehouse = lock.warehouse;
+
       // Overwrite client-supplied values with DB canonical values.
       it.price = priceCheck.chargePrice;
       it.name = p.name;
       it.image = p.image_url || it.image;
     }
-    // ---- CJ shipping pre-check ------------------------------------------
-    // If the caller declared a destination, every cart product must be
-    // fulfillable from its CJ warehouse to that country.
-    if (destinationCountry) {
-      if (!CJ_SHIP_SUPPORTED_COUNTRIES.has(destinationCountry)) {
-        return new Response(
-          JSON.stringify({
-            error: `We don't ship to ${destinationCountry} yet.`,
-            code: "country_not_supported",
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-        );
-      }
-      const blocked: { id: string; name: string; warehouse: string | null }[] = [];
-      for (const it of items) {
-        const p = productMap.get(it.id)!;
-        if (!cjCanShip(p.supplier_warehouse, destinationCountry)) {
-          blocked.push({ id: p.id, name: p.name, warehouse: p.supplier_warehouse });
-        }
-      }
-      if (blocked.length > 0) {
-        console.warn("[CREATE-CHECKOUT] CJ shipping blocked", { destinationCountry, blocked });
-        return new Response(
-          JSON.stringify({
-            error: `Some items can't ship to ${destinationCountry}.`,
-            code: "cj_shipping_unavailable",
-            blocked,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-        );
-      }
-    }
+    // Every line now carries a proven warehouse lane for this destination.
+    const lockedWarehouses = Array.from(
+      new Set(items.map((i) => i.locked_warehouse).filter(Boolean)),
+    ) as string[];
     // ----------------------------------------------------------------------
+
 
     // Try to get authenticated user (optional for guest checkout)
     let userEmail = customerEmail;
@@ -359,35 +389,39 @@ serve(async (req) => {
     //   shipping       = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT
     //   total          = subtotal − tierAmount − couponAmount + shipping
     // Stripe must charge the same `total`.
-    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const subtotalCents = items.reduce(
-      (sum, i) => sum + Math.round(i.price * 100) * i.quantity,
-      0,
-    );
-    const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-
     const normalizedCode = discountCode ? discountCode.toUpperCase().trim() : "";
     const couponPercent = normalizedCode && COUPON_CODE_PERCENT[normalizedCode]
       ? COUPON_CODE_PERCENT[normalizedCode]
       : 0;
-    // Guard: tiered incentive is a VOLUME discount. It must never apply
-    // when the shopper has only a single unit in the cart, regardless of
-    // subtotal. Fixes the qty=1 / $268.99 / 10% off leak observed in
-    // session cs_live_a1jDugDcHJDz5udTQgKuYk3dwt0GLipTCPkfhuXpoJXDNn1ZfpVs1kbXrA.
-    const tierPercent = totalItems >= 2 ? getTierPercent(subtotal) : 0;
 
-    // Combined deduction in cents — applied as ONE Stripe coupon so Stripe
-    // can render both lines while charging the exact displayed total.
-    const tierDeductionCents = Math.round((subtotalCents * tierPercent) / 100);
-    const couponDeductionCents = Math.round((subtotalCents * couponPercent) / 100);
-    const totalDeductionCents = Math.min(
-      subtotalCents,
-      tierDeductionCents + couponDeductionCents,
+    // ── N-3: the ONE pricing engine decides every cent ─────────────────────
+    // Identical code path (mirrored module) to the cart/PDP, so the amount the
+    // shopper saw IS the amount Stripe is asked for.
+    const quote = computeCartQuote(
+      items.map((i) => ({ unitPriceCents: toCents(i.price), quantity: i.quantity })),
+      { couponPercent },
     );
-
-    const shippingCents = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE_CENTS;
-    const expectedTotalCents = subtotalCents - totalDeductionCents + shippingCents;
+    const totalItems = quote.unitCount;
+    const subtotalCents = quote.subtotalCents;
+    const tierPercent = quote.tierPercent;
+    const tierDeductionCents = quote.tierDeductionCents;
+    const couponDeductionCents = quote.couponDeductionCents;
+    const totalDeductionCents = quote.totalDeductionCents;
+    const shippingCents = quote.shippingCents;
+    const expectedTotalCents = quote.totalCents;
     const totalAmount = expectedTotalCents / 100;
+
+    // N-9: stable attempt id — same cart + same quote + same destination gives
+    // the same id, so a retry or a double tap cannot create a second session.
+    const attemptId = await checkoutAttemptId({
+      items: items
+        .map((i) => `${i.id}:${i.cj_variant_id ?? ""}:${toCents(i.price)}x${i.quantity}`)
+        .sort(),
+      email: (userEmail || "").toLowerCase(),
+      country: destinationCountry,
+      coupon: normalizedCode,
+      total: expectedTotalCents,
+    });
 
     // Order metadata for analytics + reconciliation
     const orderMetadata = {
@@ -401,6 +435,9 @@ serve(async (req) => {
       coupon_amount: (couponDeductionCents / 100).toFixed(2),
       shipping_amount: (shippingCents / 100).toFixed(2),
       total_value: totalAmount.toFixed(2),
+      checkout_attempt_id: attemptId,
+      destination_country: destinationCountry,
+      locked_warehouses: lockedWarehouses.join(","),
       // ── Conversion Reality / GA4 server-side fallback ──
       ga_client_id: (gaClientId || "").slice(0, 100),
       ga_session_id: (gaSessionId || "").slice(0, 100),
@@ -507,35 +544,11 @@ serve(async (req) => {
       // Stripe dashboard (Apple Pay, Google Pay, Link, Klarna, Afterpay,
       // Cash App Pay, …) when `payment_method_types` is omitted.
       shipping_address_collection: {
-        // When the frontend pre-check selected a single destination, lock
-        // Stripe to just that country so the shopper can't pick an
-        // unfulfillable address on the hosted page. Otherwise fall back to
-        // the curated CJ-supported list. Sanctioned/high-risk countries
-        // (Iran, North Korea, Syria, Cuba, Russia, Belarus, Crimea/Donetsk
-        // /Luhansk, Venezuela, Myanmar, etc.) are excluded.
-        allowed_countries: destinationCountry
-          ? [destinationCountry as any]
-          : [
-          // North America
-          "US", "CA", "MX",
-          // United Kingdom & Ireland
-          "GB", "IE",
-          // EU / EEA
-          "NL", "BE", "LU", "DE", "FR", "ES", "IT", "AT", "PT",
-          "SE", "DK", "NO", "FI", "IS", "PL", "CZ", "SK", "HU",
-          "SI", "EE", "LV", "LT", "GR", "RO", "BG", "HR",
-          // Switzerland & other Europe
-          "CH", "LI",
-          // Asia-Pacific
-          "JP", "KR", "SG", "HK", "TW", "MY", "TH", "PH", "ID", "IN",
-          "AU", "NZ",
-          // Middle East
-          "AE", "SA", "IL", "QA", "KW", "BH", "OM",
-          // LATAM (Stripe-supported)
-          "BR", "CL", "CO", "PE", "UY", "CR",
-          // Africa (Stripe-supported)
-          "ZA",
-        ],
+        // N-8: the destination was validated against the warehouse lane before
+        // this session existed, so Stripe is locked to exactly that country.
+        // There is deliberately NO broad fallback list — a country the matrix
+        // never approved must not be selectable on the hosted page.
+        allowed_countries: [destinationCountry as any],
       },
       // Show shipping line in Stripe's order summary so the customer sees
       // the same breakdown as the site (subtotal − discount + shipping).
@@ -623,15 +636,99 @@ serve(async (req) => {
       sessionConfig.allow_promotion_codes = false;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // ── N-10: order FIRST, then the payment session ────────────────────────
+    // A Stripe session must never exist without a durable order row to bind a
+    // payment to. The order is written first, keyed by the stable attempt id,
+    // so a retry re-uses the same row instead of creating a second order.
+    const generateAccessToken = () => {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    };
+    const orderAccessToken = userId ? null : generateAccessToken();
+
+    const orderRow = {
+      user_id: userId,
+      checkout_attempt_id: attemptId,
+      status: "pending",
+      payment_status: "unpaid",
+      total_amount: totalAmount,
+      currency: "usd",
+      customer_email: userEmail,
+      fulfillment_warehouse: lockedWarehouses.length === 1 ? lockedWarehouses[0] : null,
+      items: items.map(i => ({
+        id: i.id,
+        product_id: i.id,
+        cj_variant_id: i.cj_variant_id ?? null,
+        sku: i.sku ?? null,
+        variant: i.variant ?? null,
+        locked_warehouse: i.locked_warehouse ?? null,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        image: i.image,
+      })),
+      order_access_token: orderAccessToken,
+    };
+
+    const { data: pendingOrder, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .upsert(orderRow, { onConflict: "checkout_attempt_id" })
+      .select("id")
+      .maybeSingle();
+
+    if (orderError || !pendingOrder?.id) {
+      // FAIL CLOSED: no payment session is created when we cannot record the
+      // order, so "paid without an order" can never be a normal success path.
+      console.error("[CREATE-CHECKOUT] Pending order write failed:", orderError);
+      return new Response(
+        JSON.stringify({
+          error: "checkout_unavailable",
+          message: "We couldn't start your checkout just now. Please try again in a moment.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 },
+      );
+    }
+
+    sessionConfig.metadata = { ...orderMetadata, order_id: pendingOrder.id };
+
+    // N-9: Stripe idempotency key tied to the cart/quote/attempt. A duplicate
+    // request (network retry, double tap) returns the SAME session.
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      idempotencyKey: `checkout_${attemptId}`,
+    });
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
 
+    // Bind the session to the order. One bounded retry; the webhook can still
+    // recover through `checkout_attempt_id` if this never lands.
+    let bound = false;
+    for (let attempt = 0; attempt < 2 && !bound; attempt++) {
+      const { error: bindError } = await supabaseAdmin
+        .from("orders")
+        .update({ stripe_session_id: session.id })
+        .eq("id", pendingOrder.id);
+      bound = !bindError;
+      if (!bound) {
+        console.error("[CREATE-CHECKOUT] Session binding failed:", bindError?.message);
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
+    if (!bound) {
+      await supabaseAdmin.from("order_exceptions").upsert(
+        {
+          order_id: pendingOrder.id,
+          code: "session_binding_failed",
+          detail: `session ${session.id} attempt ${attemptId}`,
+          state: "open",
+        },
+        { onConflict: "order_id,code" },
+      );
+    }
+
     // ── Server-side GA4 mirror of `begin_checkout` ─────────────────────
     // Fires to the canonical GA4 stream via Measurement Protocol so the
-    // funnel reconciles even when the client gtag event is blocked. Uses
-    // the Stripe session id as the deterministic event id so GA4 dedupes
-    // client + server events when they share client_id/session_id.
+    // funnel reconciles even when the client gtag event is blocked.
     try {
       const mp = await sendGa4BeginCheckoutMp({
         clientId: gaClientId || null,
@@ -654,46 +751,6 @@ serve(async (req) => {
       console.warn("[CREATE-CHECKOUT] GA4 MP begin_checkout threw", e);
     }
 
-    // Generate access token for guest orders (when no userId)
-    const generateAccessToken = () => {
-      const array = new Uint8Array(32);
-      crypto.getRandomValues(array);
-      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    };
-
-    // Only generate access token for guest orders (no authenticated user)
-    const orderAccessToken = userId ? null : generateAccessToken();
-
-    // Create pending order in database using service role
-    const { error: orderError } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        user_id: userId,
-        stripe_session_id: session.id,
-        status: "pending",
-        total_amount: totalAmount,
-        currency: "usd",
-        customer_email: userEmail,
-        items: items.map(i => ({
-          id: i.id,
-          product_id: i.id,
-          cj_variant_id: i.cj_variant_id ?? null,
-          sku: i.sku ?? null,
-          variant: i.variant ?? null,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image,
-        })),
-        order_access_token: orderAccessToken,
-      });
-
-    if (orderError) {
-      console.error("[CREATE-CHECKOUT] Error creating order:", orderError);
-      // Don't fail the checkout, just log the error
-    } else {
-      console.log("[CREATE-CHECKOUT] Pending order created for session:", session.id);
-    }
 
     return new Response(
       JSON.stringify({ 

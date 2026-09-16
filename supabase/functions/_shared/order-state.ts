@@ -285,12 +285,26 @@ export function resolveExactVariant(
 }
 
 /**
- * Maximum legitimate gap between the price the shopper saw and the catalog
- * price (PDP volume discounts legitimately show up to 25 % less).
- * Anything larger means the client price is stale/tampered → fail closed so we
- * never charge materially more than was displayed.
+ * Commerce N: there is ONE pricing engine. A cart line is priced at the
+ * canonical unit price of the EXACT variant (or the product base price when
+ * the product has no variant-level price). Volume rewards are cart-level and
+ * are applied by the pricing engine — never baked into a line price.
+ *
+ * Therefore the client line price must equal the server line price to the
+ * cent. Tolerating a "reasonably lower" client price is what allowed a 25 %
+ * display/charge divergence, so it is gone.
  */
-export const MAX_DISPLAY_UNDERCHARGE_RATIO = 0.75;
+export const PRICE_TOLERANCE_CENTS = 1;
+
+/** Canonical unit price for an exact variant, falling back to base price. */
+export function canonicalUnitPrice(
+  basePrice: number,
+  variant: CatalogVariant | null | undefined,
+): number {
+  const vp = variant?.variantSellPrice;
+  if (typeof vp === "number" && Number.isFinite(vp) && vp > 0) return vp;
+  return basePrice;
+}
 
 export function validateLinePrice(input: {
   clientPrice: number | null | undefined;
@@ -302,10 +316,125 @@ export function validateLinePrice(input: {
     return { ok: false, reason: "server_price_unavailable", chargePrice: 0 };
   }
   if (client === null) return { ok: true, reason: "no_client_price", chargePrice: server };
-  if (client < server * MAX_DISPLAY_UNDERCHARGE_RATIO) {
+  const deltaCents = Math.abs(Math.round(client * 100) - Math.round(server * 100));
+  if (deltaCents > PRICE_TOLERANCE_CENTS) {
     return { ok: false, reason: "price_mismatch", chargePrice: server };
   }
   // The server (catalog) price stays authoritative — the client price is only
   // ever used as a tamper/staleness signal, never as the amount charged.
   return { ok: true, reason: "ok", chargePrice: server };
 }
+
+// ── L (Commerce N): exact variant stock + locked fulfillment warehouse ──────
+
+/** Exact stock for a variant. `null` = supplier reports no per-variant stock. */
+export function variantStockOf(variant: CatalogVariant | null | undefined): number | null {
+  if (!variant) return null;
+  const v = variant as Record<string, unknown>;
+  for (const key of ["variantStock", "stock", "quantity", "inventory"]) {
+    const raw = v[key];
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    if (typeof raw === "string" && raw.trim() !== "" && Number.isFinite(Number(raw))) {
+      return Number(raw);
+    }
+  }
+  return null;
+}
+
+/**
+ * Exact-variant purchasability. Aggregate product stock may NEVER make a
+ * zero-stock variant purchasable, so when the variant reports its own stock
+ * that number wins.
+ */
+export function variantIsPurchasable(input: {
+  variant: CatalogVariant | null | undefined;
+  productStockTotal: number | null;
+  quantity: number;
+}): { ok: boolean; reason: string } {
+  const vStock = variantStockOf(input.variant);
+  if (vStock !== null) {
+    if (vStock <= 0) return { ok: false, reason: "variant_sold_out" };
+    if (vStock < input.quantity) return { ok: false, reason: "variant_insufficient_stock" };
+    return { ok: true, reason: "variant_stock_ok" };
+  }
+  if (input.productStockTotal === null) return { ok: true, reason: "stock_unknown_product_level" };
+  if (input.productStockTotal <= 0) return { ok: false, reason: "product_sold_out" };
+  return { ok: true, reason: "product_stock_ok" };
+}
+
+export type LockedWarehouse = "US" | "CN" | "DE";
+
+/** Destinations each concrete warehouse can actually fulfil. */
+const WAREHOUSE_LANES: Record<LockedWarehouse, readonly string[]> = {
+  US: ["US", "CA"],
+  DE: ["US", "CA", "GB", "NL", "BE", "DE", "FR"],
+  CN: ["US", "CA", "GB", "NL", "BE", "DE", "FR", "AU"],
+};
+
+/**
+ * Resolves the ONE warehouse a line will actually ship from. An unknown or
+ * missing supplier warehouse is NOT globally shippable — authorising a payment
+ * we cannot fulfil is worse than losing the order, so it fails closed.
+ */
+export function lockFulfillmentWarehouse(input: {
+  supplierWarehouse: string | null | undefined;
+  destinationCountry: string;
+}): { ok: true; warehouse: LockedWarehouse } | { ok: false; reason: string } {
+  const raw = (input.supplierWarehouse ?? "").trim().toUpperCase();
+  const country = (input.destinationCountry ?? "").trim().toUpperCase();
+  if (!country) return { ok: false, reason: "destination_required" };
+  if (raw !== "US" && raw !== "CN" && raw !== "DE") {
+    return { ok: false, reason: "warehouse_unknown" };
+  }
+  const warehouse = raw as LockedWarehouse;
+  if (!WAREHOUSE_LANES[warehouse].includes(country)) {
+    return { ok: false, reason: "lane_not_supported" };
+  }
+  return { ok: true, warehouse };
+}
+
+// ── N: settlement gating ────────────────────────────────────────────────────
+
+/**
+ * A `checkout.session.completed` event does NOT mean money moved: delayed
+ * methods complete the session while the payment is still `unpaid`. Only an
+ * authoritative paid state may trigger settlement (order paid, email,
+ * fulfillment, packaging, marketing).
+ */
+export function shouldSettleSession(session: {
+  payment_status?: string | null;
+  status?: string | null;
+}): { settle: boolean; paymentStatus: PaymentStatus } {
+  if (session.payment_status === "paid") return { settle: true, paymentStatus: "paid" };
+  if (session.payment_status === "no_payment_required") {
+    return { settle: true, paymentStatus: "paid" };
+  }
+  if (session.status === "expired") return { settle: false, paymentStatus: "expired" };
+  return { settle: false, paymentStatus: "pending" };
+}
+
+// ── N: webhook lease semantics ──────────────────────────────────────────────
+
+export type WebhookEventStatus = "processing" | "processed" | "failed" | "needs_review";
+
+/**
+ * Only `processed` is terminal. A retry that meets a stale `processing` lease
+ * or a `failed` row must be allowed to run again — acknowledging it would drop
+ * the work permanently.
+ */
+export function webhookRetryDecision(input: {
+  existingStatus: WebhookEventStatus | string | null | undefined;
+  leaseAgeSeconds: number;
+  leaseTimeoutSeconds?: number;
+}): { action: "skip_duplicate" | "wait_in_flight" | "take_over"; reason: string } {
+  const timeout = input.leaseTimeoutSeconds ?? 300;
+  const status = input.existingStatus ?? "processing";
+  if (status === "processed") return { action: "skip_duplicate", reason: "already_processed" };
+  if (status === "failed" || status === "needs_review") {
+    return { action: "take_over", reason: "previous_attempt_failed" };
+  }
+  return input.leaseAgeSeconds >= timeout
+    ? { action: "take_over", reason: "stale_lease" }
+    : { action: "wait_in_flight", reason: "lease_active" };
+}
+

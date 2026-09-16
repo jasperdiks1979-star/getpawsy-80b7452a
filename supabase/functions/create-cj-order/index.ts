@@ -639,14 +639,66 @@ serve(async (req) => {
       throw new Error("No valid CJ products found in order");
     }
 
-    // Use multi-warehouse optimization to find the best warehouse
-    console.log("[CREATE-CJ-ORDER] Starting multi-warehouse optimization...");
-    const optimalWarehouse = await findOptimalWarehouse(
-      accessToken,
-      cjProducts,
-      countryCode,
-      address.postal_code
-    );
+    // ── N-7: honour the warehouse locked at checkout ────────────────────────
+    // The lane validated before the shopper paid is the lane we ship from. No
+    // silent substitution: if that warehouse cannot ship, the order becomes an
+    // explicit exception instead of quietly changing the fulfillment contract.
+    const lockedWarehouse: string | null =
+      (order as { fulfillment_warehouse?: string | null }).fulfillment_warehouse ||
+      (Array.isArray(order.items)
+        ? ((order.items as Array<{ locked_warehouse?: string | null }>)
+          .map((i) => i?.locked_warehouse)
+          .filter(Boolean)[0] ?? null)
+        : null);
+
+    let optimalWarehouse: WarehouseOption | null = null;
+
+    if (lockedWarehouse) {
+      console.log("[CREATE-CJ-ORDER] Locked warehouse from checkout:", lockedWarehouse);
+      const lockedFreight = await calculateFreight(
+        accessToken,
+        cjProducts,
+        lockedWarehouse,
+        countryCode,
+        address.postal_code,
+      );
+      if (!lockedFreight) {
+        await recordOrderException(
+          supabaseAdmin,
+          orderId,
+          EXCEPTION_CODES.FULFILLMENT_FAILED,
+          `Locked warehouse ${lockedWarehouse} has no shipping method to ${countryCode}`,
+        );
+        await releaseFulfillmentClaim(supabaseAdmin, orderId);
+        return new Response(
+          JSON.stringify({
+            error: "locked_warehouse_unavailable",
+            orderId,
+            warehouse: lockedWarehouse,
+            message: "The warehouse validated at checkout cannot ship this order; manual review required.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+      optimalWarehouse = {
+        warehouseCode: lockedWarehouse,
+        warehouseName: lockedWarehouse,
+        logisticName: lockedFreight.logisticName,
+        logisticPrice: lockedFreight.logisticPrice,
+        logisticAging: lockedFreight.logisticAging,
+        estimatedDays: parseShippingDays(lockedFreight.logisticAging),
+        score: 0,
+      };
+    } else {
+      // Legacy orders placed before the warehouse lock existed.
+      console.log("[CREATE-CJ-ORDER] No locked warehouse (legacy order) — optimizing");
+      optimalWarehouse = await findOptimalWarehouse(
+        accessToken,
+        cjProducts,
+        countryCode,
+        address.postal_code,
+      );
+    }
 
     if (!optimalWarehouse) {
       // Fallback to legacy single-warehouse approach
