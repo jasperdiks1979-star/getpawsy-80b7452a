@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useCart } from '@/contexts/CartContext';
+import { useCartVariantIssues } from '@/hooks/useCartVariantIssues';
 import { useEffect } from 'react';
 import { fireCartOpen, fireCheckoutClick } from '@/lib/funnelEvents';
 import { getCartSessionId } from '@/lib/cartSession';
@@ -39,6 +40,11 @@ import {
 
 const Cart = () => {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  // Legacy-cart recovery: lines that reference a multi-option product without a
+  // chosen option. The server rejects them at checkout, so surface a precise
+  // "choose an option" path here instead of a generic checkout failure.
+  const { issues: variantIssues } = useCartVariantIssues(items);
+  const hasVariantIssues = variantIssues.size > 0;
   const premium = getConversionFlag('premiumCheckoutCart');
   const premiumV3 = getConversionFlag('premiumCartV3');
   const premiumV4 = getConversionFlag('premiumCartCheckoutV4');
