@@ -1,9 +1,17 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+// Security B: this orchestrator writes aci_runs / aci_run_steps / aci_audit_log
+// with the service role and fans out to other internal functions, so it must
+// never be reachable anonymously. Callers (mapped in docs/ops/EXECUTION-LEDGER.md):
+//   - src/pages/admin/AutonomousCommercePage.tsx  → supabase.functions.invoke (admin JWT)
+//   - no cron job; cmdr-orchestrator only *plans* it, it does not invoke it.
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -34,7 +42,13 @@ async function invoke(fn: string): Promise<Step> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Fail closed: internal secret OR admin JWT only. Runs before any DB write.
+  const guard = await requireInternalOrAdmin(req);
+  if (guard) return guard;
+
   const url = new URL(req.url);
+
   const trigger = url.searchParams.get("trigger") ?? "manual";
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
