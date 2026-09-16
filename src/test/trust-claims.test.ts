@@ -71,4 +71,18 @@ describe('trust claims', () => {
     expect(code(src)).not.toMatch(/RECENT_REVIEWS/);
     expect(code(src)).not.toMatch(/StarRating/);
   });
+
+  it('product badges make no sales-ranking claim', () => {
+    const card = readFileSync(resolve('src/components/products/ProductCard.tsx'), 'utf8');
+    const winners = readFileSync(resolve('src/config/top-winners.ts'), 'utf8');
+    for (const src of [card, winners]) {
+      expect(code(src)).not.toMatch(/'(?:Best Seller|Top Rated|Popular|Most Popular|Top Pick)'/i);
+    }
+  });
+
+  it('primary cat collections only list merchandised products', () => {
+    const src = readFileSync(resolve('src/lib/collection-matching-engine.ts'), 'utf8');
+    expect(src).toContain('PRIMARY_MERCHANDISED_COLLECTIONS');
+    expect(src).toContain("poolQuery.eq('merch_hidden', false)");
+  });
 });
