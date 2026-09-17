@@ -2,6 +2,12 @@
 // Orchestrates: event ingest, task scheduling, health scoring, daily strategy, digital twin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
+import {
+  ARIE_INCIDENT_COLUMNS,
+  incidentCategory,
+  incidentTitle,
+  type ArieIncidentRow,
+} from "../_shared/arieIncidents.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -115,7 +121,9 @@ async function computeHealth() {
   const [errRes, agalRes, arieRes, ordRes, pinRes, gaRes, resRes] = await Promise.all([
     supabase.from("frontend_error_logs").select("id", { count: "exact", head: true }).gte("created_at", since),
     supabase.from("agal_trust_scores").select("overall_trust").gte("created_at", since),
-    supabase.from("arie_incidents").select("severity,status").eq("status", "open"),
+    // SCHEMA CONTRACT: arie_incidents has no `title` / `status` columns.
+    // An incident is open while `resolved_at IS NULL`; its kind is `type`.
+    supabase.from("arie_incidents").select("id,type,severity,opened_at").is("resolved_at", null),
     supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", since),
     supabase.from("pinterest_pipeline_failures").select("id", { count: "exact", head: true }).gte("created_at", since).then((r: any) => r).catch(() => ({ count: 0 })),
     supabase.from("ga4_daily_snapshots").select("sessions,users,conversions").order("snapshot_date", { ascending: false }).limit(1).maybeSingle().then((r: any) => r).catch(() => ({ data: null })),
@@ -124,6 +132,7 @@ async function computeHealth() {
 
   const errCnt = (errRes as any).count ?? 0;
   const agalTrust = (agalRes as any).data ?? [];
+  const arieErr = (arieRes as any).error ?? null;
   const arieInc = (arieRes as any).data ?? [];
   const ordersCnt = (ordRes as any).count ?? 0;
   const pinFails = (pinRes as any).count ?? 0;
@@ -132,7 +141,9 @@ async function computeHealth() {
 
   const infra = clamp01(1 - Math.min(1, errCnt / 200));
   const ai = clamp01((agalTrust.reduce((s: number, r: any) => s + Number(r.overall_trust ?? 0), 0) / Math.max(1, agalTrust.length)) || 0.7);
-  const tracking = clamp01(1 - Math.min(1, arieInc.length / 5));
+  // A failed incident read is NOT "zero incidents". Treat it as degraded so a
+  // schema drift or outage can never be reported as perfect tracking health.
+  const tracking = arieErr ? 0.5 : clamp01(1 - Math.min(1, arieInc.length / 5));
   const revenue = clamp01(Math.min(1, ordersCnt / 20));
   const creative = clamp01(1 - Math.min(1, pinFails / 50));
   const sessions = Number(ga?.sessions ?? 0);
@@ -159,17 +170,27 @@ async function computeHealth() {
 }
 
 async function scheduleFromOpenIncidents(runId: string) {
-  const { data: inc } = await supabase
-    .from("arie_incidents").select("id,title,severity").eq("status", "open").limit(20);
+  const { data: inc, error } = await supabase
+    .from("arie_incidents")
+    .select(ARIE_INCIDENT_COLUMNS)
+    .is("resolved_at", null)
+    .order("opened_at", { ascending: false })
+    .limit(20);
+  if (error) {
+    // Surface the failure instead of silently reporting "no incidents".
+    console.error("[aos] open-incident read failed:", error.message);
+    throw error;
+  }
   let n = 0;
-  for (const i of inc ?? []) {
-    const cat = /checkout/i.test(i.title) ? "checkout_broken" : /track|attrib/i.test(i.title) ? "tracking_failure" : "revenue_drop";
+  for (const i of (inc ?? []) as ArieIncidentRow[]) {
+    const title = incidentTitle(i);
+    const cat = incidentCategory(i);
     const evt = await publishEvent({
       event_type: `incident.${cat}`, source_engine: "arie", subject: i.id,
-      payload: { title: i.title, severity: i.severity }, severity: i.severity,
+      payload: { title, type: i.type, severity: i.severity }, severity: i.severity ?? "warn",
     });
     await scheduleTask({
-      title: `Resolve incident: ${i.title}`, category: cat,
+      title: `Resolve incident: ${title}`, category: cat,
       owner_engine: "agd", payload: { incident_id: i.id }, related_event_id: evt.id,
     });
     n++;

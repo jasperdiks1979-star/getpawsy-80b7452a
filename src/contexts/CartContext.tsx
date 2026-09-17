@@ -21,6 +21,12 @@ import {
   forgetAbandonedCartRow,
   type AbandonedCartStore,
 } from '@/lib/abandonedCartSync';
+import {
+  cartLineHasVariant,
+  cartLineNeedsVariantChoice,
+  cartLineProductId,
+  quickAddProductUrl,
+} from '@/lib/quickAdd';
 // ⚡ CRITICAL FIX: sonner, marketingClient, and useVisitorTracking were sync-imported,
 // pulling ~160KB (sonner + supabase SDK via trackVisitorEvent) into the main bundle.
 // Now all three are lazily imported — only loaded when actually called.
@@ -306,6 +312,48 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  /**
+   * CENTRAL VARIANT SAFETY GUARD (issues 2 + 4).
+   *
+   * Any entry point (shop grid, homepage rail, collection card, bundle,
+   * upsell popup, wishlist, landing page) can call `addItem`. Some of them
+   * historically added the bare product id for a product with several
+   * options, which the server rejects at checkout (`variant_required`) and
+   * which left the shopper with a dead cart.
+   *
+   * The guard runs centrally, after the optimistic add, so no caller can
+   * bypass it: a bare line on a multi-option product is removed again and the
+   * shopper is taken to the product page to pick an exact option. Products
+   * with 0 or 1 sellable option are untouched. Failure to verify fails OPEN
+   * here (the cart's "Choose option" recovery UI and the server both still
+   * fail closed), so a network blip never deletes a valid line.
+   */
+  const enforceVariantSafety = useCallback(async (item: Omit<CartItem, 'quantity'>) => {
+    if (cartLineHasVariant(item.id)) return;
+    const productId = cartLineProductId(item.id);
+    if (!productId) return;
+    try {
+      const supabase = await getSupabase();
+      const { data, error } = await supabase
+        .from('products_public')
+        .select('id, slug, variants')
+        .eq('id', productId)
+        .maybeSingle();
+      if (error || !data) return;
+      const row = data as { slug?: string | null; variants?: unknown };
+      if (!cartLineNeedsVariantChoice(item.id, row.variants)) return;
+
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      showErrorToast('Choose an option to continue');
+      const url = quickAddProductUrl({ id: productId, slug: row.slug ?? null });
+      if (typeof window !== 'undefined' && window.location.pathname !== url) {
+        window.location.assign(url);
+      }
+    } catch {
+      // Fail open — cart recovery UI and the server stay authoritative.
+    }
+  }, []);
+
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
     // Single shared event_id — links GA4, Pinterest browser tag and Pinterest CAPI
     // so server-side & browser-side hits dedupe to the same conversion.
@@ -313,6 +361,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
         ? crypto.randomUUID()
         : `atc_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    void enforceVariantSafety(newItem);
+
 
     setItems(prev => {
       const existing = prev.find(item => item.id === newItem.id);
