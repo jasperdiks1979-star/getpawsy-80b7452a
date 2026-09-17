@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchProductOptionMetadata } from '@/lib/productOptionMetadata';
 import {
   cartLineNeedsVariantChoice,
   cartLineProductId,
   cartLineHasVariant,
   quickAddProductUrl,
 } from '@/lib/quickAdd';
+
 
 export interface CartVariantIssue {
   lineId: string;
@@ -70,15 +71,10 @@ export function useCartVariantIssues(items: MinimalCartLine[]): {
     setChecked(false);
     (async () => {
       try {
-        const { data } = await supabase
-          .from('products_public')
-          .select('id, slug, variants')
-          .in('id', productIds);
+        const rows = await fetchProductOptionMetadata(productIds);
         if (cancelled) return;
         const next: Record<string, unknown> = {};
-        for (const row of data ?? []) {
-          next[(row as { id: string }).id] = row;
-        }
+        for (const [id, row] of rows) next[id] = row;
         setVariantCounts(next);
       } catch {
         // Unknown => no false "choose an option" prompt; the server stays
@@ -87,6 +83,7 @@ export function useCartVariantIssues(items: MinimalCartLine[]): {
         if (!cancelled) setChecked(true);
       }
     })();
+
     return () => {
       cancelled = true;
     };

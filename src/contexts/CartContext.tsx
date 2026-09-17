@@ -334,14 +334,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!productId) return;
     try {
       const supabase = await getSupabase();
-      const { data, error } = await supabase
-        .from('products_public')
-        .select('id, slug, variants')
-        .eq('id', productId)
-        .maybeSingle();
-      if (error || !data) return;
-      const row = data as { slug?: string | null; variants?: unknown };
+      // `product_option_metadata` is the id-scoped option RPC: unlike
+      // `products_public` it also covers active products the catalog hides
+      // (e.g. stock = 0), so the option-required state is always knowable
+      // before checkout. It returns option descriptors only.
+      const { data, error } = await supabase.rpc('product_option_metadata', {
+        p_ids: [productId],
+      });
+      const row = Array.isArray(data)
+        ? (data[0] as { slug?: string | null; variants?: unknown } | undefined)
+        : undefined;
+      if (error || !row) return;
       if (!cartLineNeedsVariantChoice(item.id, row.variants)) return;
+
 
       setItems(prev => prev.filter(i => i.id !== item.id));
       showErrorToast('Choose an option to continue');

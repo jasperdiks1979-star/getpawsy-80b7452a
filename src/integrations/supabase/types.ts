@@ -80059,6 +80059,16 @@ export type Database = {
         Returns: number
       }
       prie_kick: { Args: { p_trigger: string }; Returns: undefined }
+      product_option_metadata: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          is_active: boolean
+          slug: string
+          stock: number
+          variants: Json
+        }[]
+      }
       prune_pinterest_video_function_logs: { Args: never; Returns: undefined }
       purge_expired_ai_cache: { Args: never; Returns: number }
       purge_old_monitoring_runs: { Args: never; Returns: number }
