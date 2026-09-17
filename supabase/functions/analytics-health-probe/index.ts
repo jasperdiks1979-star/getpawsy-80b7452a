@@ -31,9 +31,13 @@ const PROBES: Probe[] = [
 async function probe(p: Probe) {
   const started = Date.now();
   try {
+    // NOTE: never request `{ count: "exact" }` here. On visitor_activity /
+    // canonical event tables an exact count is a full scan that took tens of
+    // seconds per probe and competed with auth traffic for connections. The
+    // probe only needs the newest row's timestamp.
     const { data, error } = await admin
       .from(p.query)
-      .select("created_at", { count: "exact", head: false })
+      .select("created_at")
       .order("created_at", { ascending: false })
       .limit(1);
     const latency = Date.now() - started;

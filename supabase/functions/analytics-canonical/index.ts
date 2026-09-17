@@ -199,6 +199,19 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const timings: Record<string, number> = {};
     const mark = (label: string) => { timings[label] = Date.now() - t0; };
 
+    // ── DB load-shedding budget ────────────────────────────────
+    // Auth/session traffic shares the same connection pool. A rebuild that
+    // holds 6 concurrent scans for minutes starved sign-in during the Sep 16
+    // incident. Scans now run at lower concurrency and every paging loop
+    // yields once the compute budget is spent; the caller still gets a
+    // (possibly truncated) envelope instead of a 504, and the stale cache
+    // stays available.
+    const COMPUTE_BUDGET_MS = 90_000;
+    const SCAN_WAVE = 3; // concurrent page reads per table (was 6)
+    const budgetSpent = () => Date.now() - t0 > COMPUTE_BUDGET_MS;
+    let truncatedScans: string[] = [];
+
+
     // ── canonical_events ───────────────────────────────────────
     const events: any[] = [];
     const PAGE = 1000;
@@ -215,10 +228,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
       "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
       "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
-    const PAGE_WAVE = 6; // pages fetched concurrently
+    const PAGE_WAVE = SCAN_WAVE; // pages fetched concurrently
     let from = 0;
     let pagingDone = false;
     while (!pagingDone) {
+      if (budgetSpent()) { truncatedScans.push("canonical_events"); break; }
       const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
       const wave = await Promise.all(
         offsets.map((off) =>
@@ -238,8 +252,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         if (data.length < PAGE) pagingDone = true;
       }
       from += PAGE_WAVE * PAGE;
-      if (from > 200_000) break;
+      if (from > 200_000) { truncatedScans.push("canonical_events"); break; }
     }
+
     mark("events");
 
     // ── orders (paid) ──────────────────────────────────────────
@@ -455,10 +470,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const vaRows: any[] = [];
     {
       const VA_PAGE = 1000;
-      const VA_WAVE = 6;
+      const VA_WAVE = SCAN_WAVE;
       let vaFrom = 0;
       let vaDone = false;
       while (!vaDone) {
+        if (budgetSpent()) { truncatedScans.push("visitor_activity"); break; }
         const offsets = Array.from({ length: VA_WAVE }, (_, i) => vaFrom + i * VA_PAGE);
         const wave = await Promise.all(
           offsets.map((off) =>
@@ -478,8 +494,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           if (data.length < VA_PAGE) vaDone = true;
         }
         vaFrom += VA_WAVE * VA_PAGE;
-        if (vaFrom > 200_000) break;
+        if (vaFrom > 200_000) { truncatedScans.push("visitor_activity"); break; }
       }
+
     }
     {
       for (const row of vaRows) {
@@ -568,10 +585,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     let flagsScanError: string | null = null;
     {
       const CS_PAGE = 1000;
-      const CS_WAVE = 6;
+      const CS_WAVE = SCAN_WAVE;
       let csFrom = 0;
       let csDone = false;
       while (!csDone) {
+        if (budgetSpent()) { truncatedScans.push("canonical_sessions"); break; }
         const offsets = Array.from({ length: CS_WAVE }, (_, i) => csFrom + i * CS_PAGE);
         const wave = await Promise.all(
           offsets.map((off) =>
@@ -605,7 +623,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           if (data.length < CS_PAGE) csDone = true;
         }
         csFrom += CS_WAVE * CS_PAGE;
-        if (csFrom > 200_000) break;
+        if (csFrom > 200_000) { truncatedScans.push("canonical_sessions"); break; }
       }
     }
     // Any session whose flag row was not found in the window scan is looked
@@ -957,6 +975,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       sample_event: sample,
       diagnostics,
       timings,
+      load_shedding: {
+        budget_ms: COMPUTE_BUDGET_MS,
+        scan_wave: SCAN_WAVE,
+        truncated_scans: Array.from(new Set(truncatedScans)),
+      },
       flags_coverage: {
         sessions: sidsForFlags.length,
         with_flag_row: flagsMap.size,

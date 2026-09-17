@@ -3,6 +3,12 @@
 // event bus and shared knowledge graph. Also stamps heartbeats so failover knows
 // which engines are live without modifying their code.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ARIE_INCIDENT_COLUMNS,
+  incidentTitle,
+  isOpenIncident,
+  type ArieIncidentRow,
+} from "../_shared/arieIncidents.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,8 +43,15 @@ async function publishKnowledge(topic: string, key: string, publisher: string, k
   });
 }
 
-async function safe<T>(fn: () => Promise<T>): Promise<T | null> {
-  try { return await fn(); } catch { return null; }
+/** Failures are recorded (degraded), never silently treated as "no data". */
+const degraded: Record<string, string> = {};
+async function safe<T>(fn: () => Promise<T>, label?: string): Promise<T | null> {
+  try { return await fn(); } catch (e) {
+    const msg = String((e as Error)?.message ?? e);
+    if (label) degraded[label] = msg;
+    console.error(`[aos-integrator] ${label ?? "step"} failed:`, msg);
+    return null;
+  }
 }
 
 async function run() {
@@ -76,16 +89,22 @@ async function run() {
 
   // === ARIE incidents ===
   await safe(async () => {
-    const { data } = await supabase.from("arie_incidents")
-      .select("id,title,severity,status,opened_at")
+    const { data, error } = await supabase.from("arie_incidents")
+      .select(ARIE_INCIDENT_COLUMNS)
       .gte("opened_at", since);
+    if (error) throw error; // `safe()` records the degraded state
     summary.arie = data?.length ?? 0;
-    for (const r of data ?? []) {
+    for (const r of (data ?? []) as ArieIncidentRow[]) {
       await publishEvent("incident.opened", "arie",
-        { title: r.title, severity: r.severity, status: r.status }, r.severity ?? "warn", r.id);
+        {
+          title: incidentTitle(r),
+          type: r.type,
+          severity: r.severity,
+          status: isOpenIncident(r) ? "open" : "resolved",
+        }, r.severity ?? "warn", r.id);
     }
     await heartbeat("arie");
-  });
+  }, "arie");
 
   // === Revenue Intelligence: latest snapshots ===
   await safe(async () => {
@@ -143,7 +162,12 @@ async function run() {
     if ((count ?? 0) > 0) await heartbeat("mil");
   });
 
-  return { ok: true, summary };
+  return {
+    ok: Object.keys(degraded).length === 0,
+    status: Object.keys(degraded).length === 0 ? "healthy" : "degraded",
+    summary,
+    degraded,
+  };
 }
 
 Deno.serve(async (req) => {
