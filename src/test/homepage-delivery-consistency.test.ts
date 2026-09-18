@@ -10,7 +10,7 @@ const nav = read('src/components/v2/storefront/nav-config.ts');
 const compatibilityHome = read('src/components/home/HomePage.tsx');
 
 const HERO_IDS = [
-  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0',
+  '128e0207-8a94-4d71-b428-5b7f5002528f',
   'b9c0f448-162b-4464-bf36-7697e6fe4852',
   '1b218ab0-19b5-4ae5-a227-8099f2e2f00c',
   '84be6648-7fd6-4b18-bdd7-ff9df7907892',
