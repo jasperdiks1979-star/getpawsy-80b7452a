@@ -52,7 +52,9 @@ export const BUNDLE_DEFINITIONS: BundleDefinition[] = [
     name: 'New Cat Starter Set',
     intro: 'The three things a cat needs on day one indoors: a litter box, a feeding bowl and something to work for their food.',
     componentSlugs: [
-      'front-flip-door-dual-opening-anti-splashing-anti-tracking-odor-locking-cat-e265',
+      // Litter box swapped 2026-09-18: previous component (CJ CJTC276169401AZ)
+      // was discontinued by the supplier.
+      'automatic-cat-litter-box-self-cleaning-app-control',
       'pet-slow-food-bowl-anti-choking-cat-bowl-3in1-interactive-dog-feeder-puzzle-29d9',
       'cat-puzzle-toy-with-ball-and-spring-loaded-wand-felt-indoor-cat-toy-box-suction-84be',
     ],

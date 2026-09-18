@@ -85,7 +85,8 @@ const MERCHANT_TOP80_IDS = new Set([
   // Cat Litter Boxes +5
   '128e0207-8a94-4d71-b428-5b7f5002528f',
   'e4474637-f447-4503-a342-5667c4c546a8',
-  'e265e7fe-af60-4efc-b927-5c4f79fc1bf0',
+  // 'e265e7fe-af60-4efc-b927-5c4f79fc1bf0' removed 2026-09-18 — CJ SKU
+  // CJTC276169401AZ discontinued by the supplier.
   '156ed3db-e926-482c-951a-4c1fcb61779d',
   'dd22e0bb-2e11-4508-b56c-79221fc13bd0',
   // Cat Trees & Condos +8
