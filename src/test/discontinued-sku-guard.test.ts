@@ -57,4 +57,9 @@ describe('discontinued CJ SKU CJTC276169401AZ', () => {
       expect(read(file)).not.toContain(DISCONTINUED_ID);
     }
   });
+
+  it('is not advertised in the product sitemap snapshot', () => {
+    expect(read('public/sitemap-products-1.xml')).not.toContain(DISCONTINUED_SLUG);
+  });
+
 });
