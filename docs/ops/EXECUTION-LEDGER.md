@@ -159,3 +159,29 @@ Verification: full suite 1129 passed / 1 skipped; `tsgo --noEmit` clean; build O
 - **Tests:** full suite 1144 passed / 1 skipped; tsgo clean; build OK.
 - **Readback:** homepage renders exactly five hero products, none of them the discontinued SKU; the discontinued PDP is not anon-readable (RLS `stock > 0`) and resolves to the catalog instead of a sellable page; starter set no longer references the retired slug; live feed exporter already filters `stock > 0`.
 - **Blocker:** none. No CJ message, order, refund, email or ad spend performed.
+
+## Supplier co-marketing outreach — CJ (2026-09-19, approved)
+
+Channel: CJ ticket API `POST /api2.0/v1/ticket/create`, type **Business Promotion Consultation → Other**
+(`1472841872740323328` / `0`). Approved request text sent verbatim (884 chars, CJ limit 1000); product
+name, CJ PID, SKU and the exact GetPawsy product URL sent in the expected-result field. One request per
+product, serial. Selection: active, non-duplicate, US stock > 100, live PDP 200, CJ-mapped.
+
+| Ticket no | Product | SKU | URL | Status |
+|---|---|---|---|---|
+| T202609190309440531 | Automatic Cat Litter Box (self-cleaning) | CJFT239819001AZ | /products/automatic-cat-litter-box-self-cleaning-app-control | AWAITING_CJ_REPLY |
+| T202609190309533581 | 54" Cat Tree Tower | CJHC231911801AZ | /products/54-cat-tree-tower-multi-level-with-sisal-grab-post-indoor-apartment-with-ladder-plush-toys-rest-and- | AWAITING_CJ_REPLY |
+| T202609190310005571 | Stainless Steel Cat Litter Box With Lid | CJFT255460101AZ | /products/stainless-steel-cat-litter-box-with-lid-large-cat-litter-box-for-big-cats-scoop-and-mat-included | AWAITING_CJ_REPLY |
+| T202609190310076391 | Interactive Cat Puzzle Toy | CJTE261988601AZ | /products/cat-puzzle-toy-with-ball-and-spring-loaded-wand-felt-indoor-cat-toy-box-suction-84be | AWAITING_CJ_REPLY |
+| T202609190310596331 | 69" Cat Tree (2 condos, 3 hammocks) | CJTC26802290001 | /products/69-cat-tree-multi-level-cat-tower-with-2-condos-and-3-hammocks-8-scratching-posts-for-multiple-cats- | AWAITING_CJ_REPLY |
+| T202609190311069511 | Cat Litter Box Enclosure with Drawers | CJFT26802550001 | /products/cat-litter-box-enclosure-with-drawers-storage-anti-tip-kit-39-x-18-x-31-5-white | AWAITING_CJ_REPLY |
+| T202609190311137941 | 41" Water Hyacinth Cat Tree | CJPT27469220001 | /products/41-inch-hand-woven-water-hyacinth-cat-tree-3-sisal-scratching-posts-multi-level-41e1 | AWAITING_CJ_REPLY |
+| T202609190311206841 | 2-in-1 Stainless Steel Cat Litter Box | CJFT26802590001 | /products/2-in-1-stainless-steel-cat-litter-box-with-removable-lid-scoop-filter-bags-for-small-to-large-cats-w | AWAITING_CJ_REPLY |
+
+Duplicate note: a shell timeout re-ran the 69" cat tree item, creating T202609190310143841 as a second
+copy; it was immediately marked COMPLETED via `/ticket/complete` so CJ handles only T202609190310596331.
+
+Not contacted: discontinued CJTC276169401AZ. The two open spec tickets (T202609161615210411,
+T202609161615272491) were left untouched — the marketing requests for those two products are separate
+new tickets of a different type. No paid ads, orders, refunds, samples purchased or customer emails.
+No storefront code changed; all eight product pages returned 200 before sending.
