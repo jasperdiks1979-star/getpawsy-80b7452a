@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, RefreshCw, AlertTriangle, Download, ChevronDown } from 'lucide-react';
 import { LiveVisitorsWorld, type LiveHealth } from '@/components/admin/live-world/LiveVisitorsWorld';
+import { HumanFirstAnalyticsPanel } from '@/components/admin/HumanFirstAnalyticsPanel';
 
 type Range = '24h' | '7d' | '30d' | '90d';
 const RANGE_HOURS: Record<Range, number> = { '24h': 24, '7d': 168, '30d': 720, '90d': 2160 };
@@ -415,6 +416,8 @@ export default function UnifiedAnalyticsDashboard() {
           </div>
         </div>
       </header>
+
+      <HumanFirstAnalyticsPanel hours={RANGE_HOURS[range]} />
 
       <LiveVisitorsWorld onHealth={setLiveHealth} />
 
