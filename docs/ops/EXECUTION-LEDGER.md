@@ -185,3 +185,40 @@ Not contacted: discontinued CJTC276169401AZ. The two open spec tickets (T2026091
 T202609161615272491) were left untouched — the marketing requests for those two products are separate
 new tickets of a different type. No paid ads, orders, refunds, samples purchased or customer emails.
 No storefront code changed; all eight product pages returned 200 before sending.
+
+## Human-First Analytics Dashboard (2026-09-21) — COMPLETE
+
+Goal: commercial KPIs default to human-like traffic; raw stays available for diagnostics.
+
+Files changed
+- `src/lib/humanFirstAnalytics.ts` (new) — single eligibility rule + quality summary + aggregation
+- `src/hooks/useHumanFirstAnalytics.ts` (new) — mode state (`gp_traffic_mode_v1`), reuses `useAnalyticsTruth` (zero extra DB work)
+- `src/components/admin/HumanFirstAnalyticsPanel.tsx` (new) — Human / Expanded human / Raw panel
+- `src/pages/admin/UnifiedAnalyticsDashboard.tsx`, `src/pages/admin/VisitorWorldMapProPage.tsx` — mount panel
+- `src/test/human-first-analytics.test.ts` (new, 11 tests)
+
+Classifier fields (existing `src/lib/trafficQualityClassifier.ts`, no new classifier)
+- `traffic_quality_class` ∈ PROBABLE_HUMAN | POSSIBLE_HUMAN | UNKNOWN | PROBABLE_BOT_OR_AUTOMATION | INTERNAL_OR_TEST
+- `confidence`, `source_class`, `commercial_intent_score`, `reasons[]`, stored `classification_reason`
+- Eligibility: human = PROBABLE_HUMAN only; expanded = + POSSIBLE_HUMAN; raw = all. UNKNOWN never enters
+  strict or expanded; INTERNAL_OR_TEST never enters either.
+
+Validation
+- Focused 11/11; full suite 1156 passed / 1 skipped (114 files); typecheck clean; production build clean;
+  security scan 3 warns, all pre-existing `ignored_by_user`.
+- DB: up, PgBouncer up, 0 restarts, 30/60 connections. No new queries introduced (panel + hook make zero
+  Supabase calls); analytics-canonical throttling untouched.
+
+Production readback (https://getpawsy.pet/admin/analytics, admin session, 720h window)
+- Default mode = Human. Quality summary: Human 1,076 · Possible/unknown 726 · Bot/automation 24,919 ·
+  Internal 362 · Bot share 92.0% of 27,083 ingested sessions (informational, not an error banner).
+- Sessions by mode: Human 1,076 → Expanded 1,292 (+216 POSSIBLE_HUMAN; 510 UNKNOWN stay excluded) →
+  Raw 27,083. Same denominator across metrics, funnel, channels, countries, devices, landing pages and
+  guide traffic.
+- Channels separated: Direct, Other search, Organic search (Google), Pinterest organic, Pinterest paid,
+  Referral, TikTok, Unknown. Purchases 0 / revenue $0.00 in every mode — matches production truth.
+- Drill-down shows class, confidence, source class, landing page and reasons per session.
+- Admin sign-in boundary healthy; raw history untouched.
+
+Remaining ambiguity: UNKNOWN is deliberately never merged into strict or expanded human; POSSIBLE_HUMAN
+appears only in Expanded and is never labelled verified human.
