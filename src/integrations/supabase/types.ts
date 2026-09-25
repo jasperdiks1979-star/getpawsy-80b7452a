@@ -44356,6 +44356,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_cron_schedule_backup: {
+        Row: {
+          changed_at: string | null
+          jobid: number | null
+          jobname: string | null
+          new_active: boolean | null
+          new_schedule: string | null
+          old_active: boolean | null
+          old_schedule: string | null
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          new_active?: boolean | null
+          new_schedule?: string | null
+          old_active?: boolean | null
+          old_schedule?: string | null
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          new_active?: boolean | null
+          new_schedule?: string | null
+          old_active?: boolean | null
+          old_schedule?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       optimizer_run_items: {
         Row: {
           after_snapshot: Json | null
@@ -79976,6 +80009,7 @@ export type Database = {
           }
       module_is_active: { Args: { _module_key: string }; Returns: boolean }
       normalize_country: { Args: { p: string }; Returns: string }
+      ops_log_retention_tick: { Args: never; Returns: string }
       pcie2_claim_creative_jobs: {
         Args: { p_limit?: number; p_token?: string }
         Returns: {
