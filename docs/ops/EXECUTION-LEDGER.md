@@ -232,3 +232,11 @@ appears only in Expanded and is never labelled verified human.
 - Peak same-minute starts: 84 → 18. Runs/day 6570 → 6535.
 - Pending: disk reclaim needs VACUUM FULL after drain (DELETE frees space for reuse, not the OS); re-enable acw-30d/90d after stabilization.
 - 2026-09-25 11:38 UTC: "stall" was a misread — job 358 `ops-log-retention-batch` ran every minute since 10:52, all succeeded (between-tick snapshot showed no active query). Added `public.ops_log_retention_progress` (admin-read, per-tick status/rows/duration/error) and hardened tick: skips when >15 active, >3 lock waiters or >2 tx >60s; errors logged not raised; self-unschedule unchanged. Verified 4 consecutive ok ticks (25k/25k each, 14–21s); products/auth 0.09–0.15s; 0 lock waiters, 0 long tx; mem 72%, 11/60 conns.
+
+## Pinterest organic first_sale_push (2026-09-25 12:18 UTC) — COMPLETE
+- 4 organic pins via `getpawsy-pin-batch-publish`; no ads/boosts/spend. Original chat creatives not accessible → rebuilt in-project (AI cat-only scenes + real in-stock product photos), 1000×1500.
+- A 1117103882606571966 GetPawsy Products → / (indoor_cat_essentials)
+- B 1117103882606571969 Indoor Cat Setup → /collections/cat-litter-boxes (litter_boxes_cleaner_spaces)
+- C 1117103882606571971 Best Cat Trees 2026 → /collections/cat-trees-and-condos (cat_trees_perch_play)
+- D 1117103882606571974 Pet Parent Hacks → /collections/cat-toys (cat_toys_curiosity)
+- Verify: API 200 + media for all 4; public pin URLs 200; destinations 200.
