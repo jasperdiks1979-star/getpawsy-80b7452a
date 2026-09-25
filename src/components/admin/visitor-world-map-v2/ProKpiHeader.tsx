@@ -1,3 +1,4 @@
+import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 import { useMemo } from "react";
 import {
   useAnalyticsTruth,
@@ -123,6 +124,11 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
       className="rounded-lg border bg-card p-3"
     >
       <div className="mb-2 flex items-center justify-between">
+        <CacheFreshnessBadge
+          hours={proHoursForRange(state.timeRange)}
+          generatedAt={truth?.cache_generated_at ?? truth?.generated_at}
+          clientFallback={truth?.served_from_client_cache}
+        />
         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Business KPIs · analytics-canonical
           <span

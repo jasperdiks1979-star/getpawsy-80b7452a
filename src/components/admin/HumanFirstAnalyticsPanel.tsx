@@ -1,3 +1,4 @@
+import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 /**
  * Human-first commercial KPIs.
  *
@@ -86,7 +87,7 @@ function DimTable({ title, rows, keyLabel }: { title: string; rows: DimensionRow
 export function HumanFirstAnalyticsPanel({ hours = 24, geo = "all", enabled = true }: Props) {
   const [mode, setMode] = useTrafficMode();
   const [showDrilldown, setShowDrilldown] = useState(false);
-  const { view, isLoading, error, envelopeTotals } = useHumanFirstAnalytics({ hours, geo, mode, enabled });
+  const { view, isLoading, error, envelopeTotals, truth } = useHumanFirstAnalytics({ hours, geo, mode, enabled });
   const m = view.metrics;
   const q = view.quality;
   const modeMeta = TRAFFIC_MODES.find((t) => t.value === mode)!;
@@ -100,6 +101,12 @@ export function HumanFirstAnalyticsPanel({ hours = 24, geo = "all", enabled = tr
             <CardDescription>
               {modeMeta.help} Raw sessions are never deleted or altered.
             </CardDescription>
+            <CacheFreshnessBadge
+              className="mt-2"
+              hours={hours}
+              generatedAt={truth.data?.cache_generated_at ?? truth.data?.generated_at}
+              clientFallback={truth.data?.served_from_client_cache}
+            />
           </div>
           <div
             role="group"

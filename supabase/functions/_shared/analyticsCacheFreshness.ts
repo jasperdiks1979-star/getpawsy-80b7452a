@@ -27,10 +27,12 @@ export const LOCK_MS = 240_000;
  * threshold must track that cadence.
  */
 export function freshMsFor(hours: number): number {
-  if (hours >= 2160) return 1_800_000; // 90d — 30 min
-  if (hours >= 720) return 900_000;    // 30d — 15 min
-  if (hours >= 336) return 600_000;    // 14d — 10 min
-  return 300_000;                      // hot tiers — 5 min
+  // Cron cadence + one missed-run grace (see analytics-canonical-warmer).
+  if (hours >= 2160) return 93_600_000; // 90d — daily cron → 26 h
+  if (hours >= 720) return 7_200_000;   // 30d — hourly chunked cron → 2 h
+  if (hours >= 336) return 3_600_000;   // 14d — every 30 min → 60 min
+  if (hours >= 168) return 1_200_000;   // 7d — every 10 min → 20 min
+  return 600_000;                       // 1h/24h — every 5 min → 10 min
 }
 
 /** Beyond this age a snapshot is a labelled fallback, never "current". */
