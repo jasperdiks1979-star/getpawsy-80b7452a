@@ -22,6 +22,13 @@
       "when": 1790343812428,
       "tag": "0002_ops_health_probe",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790344888855,
+      "tag": "0003_safe_overnight_log_retention_controller",
+      "breakpoints": true
     }
   ]
 }
