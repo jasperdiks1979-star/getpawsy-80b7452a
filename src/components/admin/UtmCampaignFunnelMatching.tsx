@@ -33,7 +33,7 @@ type Props = {
 const STEPS = ['lp_view', 'pdp_view', 'begin_checkout', 'purchase'] as const;
 type Step = (typeof STEPS)[number];
 const STEP_LABEL: Record<Step, string> = {
-  lp_view: 'Landing',
+  lp_view: 'Landing (/go only)',
   pdp_view: 'PDP',
   begin_checkout: 'Checkout',
   purchase: 'Purchase',
