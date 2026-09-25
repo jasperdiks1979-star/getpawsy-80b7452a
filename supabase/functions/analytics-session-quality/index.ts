@@ -3,14 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // navigator.sendBeacon always sends credentials mode "include"; browsers reject
 // a wildcard ACAO for those preflights. Reflect only our own storefront origins.
 const ALLOWED_ORIGIN = /^https:\/\/((www\.)?getpawsy\.pet|[a-z0-9-]+\.lovable\.app|[a-z0-9-]+\.lovableproject\.com)$/;
-let corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-function setCors(req: Request) {
+function corsFor(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") ?? "";
-  corsHeaders = ALLOWED_ORIGIN.test(origin)
+  return ALLOWED_ORIGIN.test(origin)
     ? {
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Credentials": "true",
@@ -62,6 +57,7 @@ function score(s: any): { score: number; cls: string } {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json();
