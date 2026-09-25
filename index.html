@@ -63,6 +63,8 @@
           window.__BOOT_FATAL_ERRORS__.push({ type: 'rejection', msg: msg, ts: Date.now() });
         }
         console.warn('[BOOT] Unhandled rejection:', msg);
+        // Dynamic import() failures surface as rejections, not error events.
+        if (isChunkFailure(msg)) doChunkReload();
       });
 
       // ── UNIFIED RELOAD GUARD ──────────────────────────────────────
