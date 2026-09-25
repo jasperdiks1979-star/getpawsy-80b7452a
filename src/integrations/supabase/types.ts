@@ -7343,6 +7343,9 @@ export type Database = {
           generated_at: string
           geo: string
           hours: number
+          last_refresh_attempt_at: string | null
+          last_refresh_finished_at: string | null
+          last_refresh_status: string | null
           locked_until: string | null
           payload: Json
           refresh_error: string | null
@@ -7355,6 +7358,9 @@ export type Database = {
           generated_at?: string
           geo: string
           hours: number
+          last_refresh_attempt_at?: string | null
+          last_refresh_finished_at?: string | null
+          last_refresh_status?: string | null
           locked_until?: string | null
           payload: Json
           refresh_error?: string | null
@@ -7367,6 +7373,9 @@ export type Database = {
           generated_at?: string
           geo?: string
           hours?: number
+          last_refresh_attempt_at?: string | null
+          last_refresh_finished_at?: string | null
+          last_refresh_status?: string | null
           locked_until?: string | null
           payload?: Json
           refresh_error?: string | null
