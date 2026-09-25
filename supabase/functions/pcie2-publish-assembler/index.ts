@@ -59,6 +59,12 @@ Deno.serve(async (req) => {
   const productFilter: string | null = typeof body.product_id === 'string' && body.product_id.length > 0
     ? body.product_id
     : null;
+  const creativeIds: string[] | null = Array.isArray(body.creative_ids)
+    ? body.creative_ids.filter((id: unknown) => typeof id === 'string').slice(0, 3)
+    : null;
+  if (creativeIds && (!creativeIds.length || !productFilter)) {
+    return new Response(JSON.stringify({ ok: false, error: 'creative_ids_requires_product_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
   const audienceTag: string = typeof body.audience === 'string' && body.audience.length > 0
     ? String(body.audience)
     : (productFilter ? 'us_buyers' : '');
@@ -82,6 +88,7 @@ Deno.serve(async (req) => {
     .eq('status', 'draft')
     .not('headline', 'is', null);
   if (productFilter) draftsQuery.eq('product_id', productFilter);
+  if (creativeIds) draftsQuery.in('id', creativeIds);
   const { data: drafts } = await draftsQuery.limit(limit);
 
   for (const d of drafts || []) {
@@ -149,7 +156,9 @@ Deno.serve(async (req) => {
       `campaign_id=${encodeURIComponent(campaign)}`,
     ].filter(Boolean).join('&');
     const audienceParam = audienceTag ? `&audience=${encodeURIComponent(audienceTag)}` : '';
-    const destination = `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${utmContent}${audienceParam}&${attrParams}`;
+    const destination = campaign === 'us_organic_relaunch_20260926'
+      ? `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${campaign}&utm_content=${encodeURIComponent(p.slug + '-' + d.id.slice(0,8))}`
+      : `${SITE}/products/${p.slug}?utm_source=pinterest&utm_medium=organic&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${utmContent}${audienceParam}&${attrParams}`;
     const description = (d.body_text || d.hook || p.name || '').slice(0, 480);
     const key = `${p.id}|${boardId}|${imageUrl}`;
     if (existingKeys.has(key)) { skipped++; bump('duplicate'); results.push({ run_id: runId, creative_id: d.id, product_id: p.id, verdict: 'SKIPPED', reason: 'duplicate' }); continue; }

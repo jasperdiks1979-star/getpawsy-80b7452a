@@ -1,5 +1,7 @@
 # GETPAWSY revenue-critical repair roadmap
 
+- [ ] Authorized three-pin US organic Pinterest relaunch — prepare three product-faithful creatives, preflight, publish each once through PCIE2, and verify public pins; no other publishing.
+
 - [x] P0 — volume discount parity, fake tax removed, discount fail-closed, Pinterest bot classification, tiered incentive UI
 - [x] P1 — Stripe key unification, payment-method claims, stable cart_id on funnel events, abandoned-cart idempotency, 5–10 day ETA
 - [x] P2 — closed as not-applicable: no P2 scope exists in project history; the intended work was absorbed by Security A / Commerce J–N
