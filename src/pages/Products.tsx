@@ -484,9 +484,16 @@ const Products = () => {
               productCategoryAlt === selectedNormalized) {
             return true;
           }
-          
-          // Check if selected is a parent category - if so, include products from its subcategories
+
+          // Short nav slugs (e.g. "cat-trees") must match their full category
+          // ("Cat Trees & Condos" -> "cat-trees-and-condos"), mirroring the
+          // server-side fast path so the full catalog doesn't filter to 0.
           const selectedSlug = toSlug(selected);
+          if (selectedSlug && toSlug(p.category).startsWith(`${selectedSlug}-`)) {
+            return true;
+          }
+
+          // Check if selected is a parent category - if so, include products from its subcategories
           const subcategorySet = categoryToDescendants[selectedSlug] || 
                                    categoryToDescendants[selected.toLowerCase()] || 
                                    categoryToDescendants[selectedNormalized] ||
