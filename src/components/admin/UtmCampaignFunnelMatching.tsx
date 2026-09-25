@@ -33,7 +33,7 @@ type Props = {
 const STEPS = ['lp_view', 'pdp_view', 'begin_checkout', 'purchase'] as const;
 type Step = (typeof STEPS)[number];
 const STEP_LABEL: Record<Step, string> = {
-  lp_view: 'Landing',
+  lp_view: 'Landing (/go only)',
   pdp_view: 'PDP',
   begin_checkout: 'Checkout',
   purchase: 'Purchase',
@@ -124,8 +124,11 @@ export function UtmCampaignFunnelMatching({
         const total = STEPS.reduce((s, k) => s + counts[k], 0);
         const flags: CampaignRow['flags'] = [];
 
-        // Impossible sequence: any downstream > upstream
-        for (let i = 1; i < STEPS.length; i++) {
+        // Impossible sequence: any downstream > upstream.
+        // lp_view is only recorded on the /go link-in-bio page, so it is NOT a
+        // prerequisite for pdp_view (direct PDP landings are valid). Start at
+        // i = 2 so Landing -> PDP is never flagged.
+        for (let i = 2; i < STEPS.length; i++) {
           const upstream = counts[STEPS[i - 1]];
           const downstream = counts[STEPS[i]];
           if (downstream > upstream && upstream + downstream >= 5) {
@@ -137,12 +140,12 @@ export function UtmCampaignFunnelMatching({
           }
         }
 
-        // Critical gap: purchases without any landing
-        if (counts.purchase > 0 && counts.lp_view === 0) {
+        // Critical gap: purchases with no recorded entry (neither /go landing nor PDP view)
+        if (counts.purchase > 0 && counts.lp_view === 0 && counts.pdp_view === 0) {
           flags.push({
             severity: 'error',
             label: 'Lost attribution',
-            detail: `${counts.purchase} purchase(s) with 0 landing views`,
+            detail: `${counts.purchase} purchase(s) with 0 landing or product views`,
           });
         }
 
