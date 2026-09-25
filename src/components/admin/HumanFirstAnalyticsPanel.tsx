@@ -9,6 +9,7 @@
  * No extra database work: reads the same cached `analytics-canonical`
  * envelope the rest of the dashboard already fetched.
  */
+import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ function DimTable({ title, rows, keyLabel }: { title: string; rows: DimensionRow
 export function HumanFirstAnalyticsPanel({ hours = 24, geo = "all", enabled = true }: Props) {
   const [mode, setMode] = useTrafficMode();
   const [showDrilldown, setShowDrilldown] = useState(false);
-  const { view, isLoading, error, envelopeTotals } = useHumanFirstAnalytics({ hours, geo, mode, enabled });
+  const { view, isLoading, error, envelopeTotals, truth } = useHumanFirstAnalytics({ hours, geo, mode, enabled });
   const m = view.metrics;
   const q = view.quality;
   const modeMeta = TRAFFIC_MODES.find((t) => t.value === mode)!;
