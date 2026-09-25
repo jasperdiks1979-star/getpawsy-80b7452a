@@ -1,3 +1,4 @@
+import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 /**
  * Human-first commercial KPIs.
  *
@@ -9,7 +10,6 @@
  * No extra database work: reads the same cached `analytics-canonical`
  * envelope the rest of the dashboard already fetched.
  */
-import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,12 +98,15 @@ export function HumanFirstAnalyticsPanel({ hours = 24, geo = "all", enabled = tr
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base">Commercial KPIs · last {hours}h</CardTitle>
-            <div className="mt-1">
-              <CacheFreshnessBadge truth={truth.data} hours={hours} testId="human-first-freshness" />
-            </div>
             <CardDescription>
               {modeMeta.help} Raw sessions are never deleted or altered.
             </CardDescription>
+            <CacheFreshnessBadge
+              className="mt-2"
+              hours={hours}
+              generatedAt={truth.data?.cache_generated_at ?? truth.data?.generated_at}
+              clientFallback={truth.data?.served_from_client_cache}
+            />
           </div>
           <div
             role="group"

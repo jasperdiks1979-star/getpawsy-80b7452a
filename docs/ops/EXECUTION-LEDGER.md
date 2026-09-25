@@ -222,11 +222,3 @@ Production readback (https://getpawsy.pet/admin/analytics, admin session, 720h w
 
 Remaining ambiguity: UNKNOWN is deliberately never merged into strict or expanded human; POSSIBLE_HUMAN
 appears only in Expanded and is never labelled verified human.
-
-## Stale Analytics Cache Fix (2026-09-25) — PARTIAL (labeling/observability COMPLETE; 30d-all rebuild still CPU-killed)
-- Shared freshness contract wired into analytics-canonical + CacheFreshnessBadge (/admin/analytics, VWM Pro).
-- Migration 0002: last_refresh_attempt_at / last_refresh_status / last_refresh_finished_at.
-- Warmer refresh returns compact ack (duplicate full-payload encode removed); 30-min abandoned-rebuild cooldown.
-- Tests: focused 15/15; full 1181 passed / 1 skipped; typecheck + build clean; scan unchanged (24 pre-existing).
-- Production readback: /admin/analytics 30d = NOT CURRENT (generated 2026-09-11 17:53 UTC); VWM Pro 24h FRESH/STALE labeled.
-- Open: 720|all compute itself exceeds worker CPU (~18s) before serialization; needs compute split.

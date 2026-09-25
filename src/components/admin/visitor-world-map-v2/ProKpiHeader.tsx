@@ -124,6 +124,11 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
       className="rounded-lg border bg-card p-3"
     >
       <div className="mb-2 flex items-center justify-between">
+        <CacheFreshnessBadge
+          hours={proHoursForRange(state.timeRange)}
+          generatedAt={truth?.cache_generated_at ?? truth?.generated_at}
+          clientFallback={truth?.served_from_client_cache}
+        />
         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Business KPIs · analytics-canonical
           <span
@@ -144,8 +149,22 @@ export function ProKpiHeader({ state }: ProKpiHeaderProps) {
           )}
 
           {!isLive && truth && (
-            <span className="ml-2" data-testid="vwm-pro-cache-age" data-cache-status={truth.cache_status ?? "unknown"}>
-              <CacheFreshnessBadge truth={truth} hours={truth.cache_source_window_hours ?? truth.window?.hours ?? 24} testId="vwm-pro-freshness" />
+            <span
+              data-testid="vwm-pro-cache-age"
+              data-cache-status={truth.cache_status ?? "unknown"}
+              className={`ml-2 rounded px-1.5 py-0.5 text-[10px] font-medium normal-case ${
+                truth.cache_stale
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                  : "bg-muted text-muted-foreground"
+              }`}
+              title={
+                truth.cache_generated_at
+                  ? `Precomputed at ${new Date(truth.cache_generated_at).toLocaleString()}`
+                  : "Computed on request"
+              }
+            >
+              Data {fmtAge(truth.cache_age_seconds)}
+              {truth.cache_stale ? " · refreshing" : ""}
             </span>
           )}
         </div>

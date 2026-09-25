@@ -35,14 +35,26 @@
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
-import { evaluateCacheFreshness, freshMsFor, maxStaleMsFor, LOCK_MS } from "../_shared/analyticsCacheFreshness.ts";
 import { checkCanonicalV2Gate } from "../_shared/canonicalV2Flag.ts";
 import {
-  aggregateBuckets,
   classificationCoverage,
   totalsFromAggregate,
-  type ClassifiableRow,
 } from "../_shared/canonicalV2Buckets.ts";
+import {
+  bucketAggregateFromPartial,
+  CHUNKED_MIN_HOURS,
+  emptyPartial,
+  enrichedSessions,
+  foldEvents,
+  foldVisitorActivity,
+  mergePartials,
+  productViewKeyCount,
+  sliceCountFor,
+  sliceWindow,
+  type IngestPartial,
+  type SessionPartial,
+} from "../_shared/canonicalIngest.ts";
+import { freshMsFor, maxStaleMsFor, LOCK_MS as SHARED_LOCK_MS } from "../_shared/analyticsCacheFreshness.ts";
 // PRODUCTION GATE (v3): business KPI eligibility is decided at read time by the
 // validated strict-v3 shadow layer, NOT by stored `exclude_from_commercial`.
 import { buildShadowEligibility } from "../_shared/commercial-eligibility-v3.ts";
@@ -178,6 +190,81 @@ interface ComputeOpts {
   envParam: string;
   deepDiagnostics: boolean;
   internalTrusted: boolean;
+  /** Pre-merged ingest (chunked long-window build). */
+  prebuilt?: IngestPartial;
+  /** Explicit window (chunked build pins since/until across slices). */
+  window?: { since: string; until: string };
+}
+
+const EVENT_COLUMNS =
+  "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
+  "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
+  "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
+
+async function loadAtcMap(supabase: any, sids: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const chunks = await mapChunksParallel(sids, 200, 6, (batch) =>
+    supabase.from("analytics_traffic_classification").select("session_id,traffic_type").in("session_id", batch)
+  );
+  for (const { data, error } of chunks as any[]) {
+    if (error) continue;
+    for (const r of data ?? []) if (r.session_id && r.traffic_type) out[r.session_id] = r.traffic_type as string;
+  }
+  return out;
+}
+
+/**
+ * Bounded window ingest: pages canonical_events and visitor_activity in
+ * waves of `scanWave`, folding each page immediately (rows are not retained),
+ * stopping at `rowCap` rows per table or when the time budget is spent.
+ * `closed` = include rows exactly at `until` (only the newest slice).
+ */
+async function ingestWindow(
+  supabase: any,
+  since: string,
+  until: string,
+  closed: boolean,
+  o: { budgetSpent: () => boolean; scanWave: number; rowCap: number; loadAtc: boolean },
+): Promise<IngestPartial> {
+  const p = emptyPartial(since, until);
+  const PAGE = 1000;
+  const scan = async (
+    table: string, cols: string, tsCol: string, fold: (rows: any[]) => void, failSoft: boolean,
+  ) => {
+    let from = 0;
+    let done = false;
+    while (!done) {
+      if (o.budgetSpent()) { p.truncated.push(table); break; }
+      const offsets = Array.from({ length: o.scanWave }, (_, i) => from + i * PAGE);
+      const wave = await Promise.all(offsets.map((off) => {
+        let q = supabase.from(table).select(cols).gte(tsCol, since);
+        q = closed ? q.lte(tsCol, until) : q.lt(tsCol, until);
+        return q.order(tsCol, { ascending: false }).range(off, off + PAGE - 1);
+      }));
+      for (const { data, error } of wave as any[]) {
+        if (error) { if (failSoft) { done = true; continue; } throw error; }
+        if (!data || data.length === 0) { done = true; continue; }
+        fold(data);
+        if (data.length < PAGE) done = true;
+      }
+      from += o.scanWave * PAGE;
+      if (from >= o.rowCap) { p.truncated.push(table); break; }
+    }
+  };
+  // Do NOT filter canonical_events by country here: writers store mixed
+  // values and many rows are country-null until visitor_activity enrichment.
+  // Geo filtering is applied after enrichment on the per-session truth set.
+  await scan("canonical_events", EVENT_COLUMNS, "occurred_at", (rows) => foldEvents(p, rows, classifySource), false);
+  // Enrichment failure must never break truth (fail-soft, as before).
+  await scan(
+    "visitor_activity",
+    "session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value",
+    "created_at",
+    (rows) => foldVisitorActivity(p, rows),
+    true,
+  );
+  if (o.loadAtc) p.atc = await loadAtcMap(supabase, Object.keys(p.sessions));
+  return p;
 }
 
 async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknown>> {
@@ -192,8 +279,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const since = new Date(now - hours * 3600_000).toISOString();
-    const until = new Date(now).toISOString();
+    const since = opts.window?.since ?? new Date(now - hours * 3600_000).toISOString();
+    const until = opts.window?.until ?? new Date(now).toISOString();
 
     // ── phase profiler ────────────────────────────────────────
     const t0 = Date.now();
@@ -213,49 +300,16 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     let truncatedScans: string[] = [];
 
 
-    // ── canonical_events ───────────────────────────────────────
-    const events: any[] = [];
-    const PAGE = 1000;
-    // PERF: one single pass over the window. The column list is the UNION of
-    // what the v1 envelope and the v2 bucket classifier need, so the v2 block
-    // below reuses these rows instead of re-paging the whole window a second
-    // time (that duplicate scan doubled the request cost).
-    //
-    // Do NOT filter canonical_events by `country = 'US'` here. The writer
-    // stores mixed values (`US`, `USA`, `United States`) and many rows are
-    // country-null until the visitor_activity geo enrichment below runs.
-    // Geo filtering is applied after enrichment on the per-session truth set.
-    const EVENT_COLUMNS =
-      "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
-      "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
-      "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
-    const PAGE_WAVE = SCAN_WAVE; // pages fetched concurrently
-    let from = 0;
-    let pagingDone = false;
-    while (!pagingDone) {
-      if (budgetSpent()) { truncatedScans.push("canonical_events"); break; }
-      const offsets = Array.from({ length: PAGE_WAVE }, (_, i) => from + i * PAGE);
-      const wave = await Promise.all(
-        offsets.map((off) =>
-          supabase
-            .from("canonical_events")
-            .select(EVENT_COLUMNS)
-            .gte("occurred_at", since)
-            .lte("occurred_at", until)
-            .order("occurred_at", { ascending: false })
-            .range(off, off + PAGE - 1)
-        ),
-      );
-      for (const { data, error } of wave) {
-        if (error) throw error;
-        if (!data || data.length === 0) { pagingDone = true; continue; }
-        events.push(...data);
-        if (data.length < PAGE) pagingDone = true;
-      }
-      from += PAGE_WAVE * PAGE;
-      if (from > 200_000) { truncatedScans.push("canonical_events"); break; }
-    }
-
+    // ── ingest (canonical_events + visitor_activity) ───────────
+    // Rows are folded page-by-page into a compact per-session partial (see
+    // _shared/canonicalIngest.ts) instead of being retained as one giant
+    // array. Long windows arrive here PREBUILT: the 30d rebuild is ingested
+    // as ~5-day slices in separate invocations (own CPU budget each) and
+    // merged newest-first, which reproduces this single pass exactly.
+    const partial: IngestPartial = opts.prebuilt ?? await ingestWindow(supabase, since, until, true, {
+      budgetSpent, scanWave: SCAN_WAVE, rowCap: 200_000, loadAtc: false,
+    });
+    truncatedScans.push(...partial.truncated);
     mark("events");
 
     // ── orders (paid) ──────────────────────────────────────────
@@ -312,45 +366,6 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
     const testOrderAmount = testOrders.reduce((s, o: any) => s + Number(o.total_amount || 0), 0);
     const currency = (genuineOrders[0] as any)?.currency ?? (purchases[0] as any)?.currency ?? "eur";
 
-    // ── aggregate ──────────────────────────────────────────────
-    const visitors = new Set<string>();
-    const sessions = new Set<string>();
-    let page_views_raw = 0;
-    const perStage: Record<Stage, Set<string>> = {
-      CANONICAL_PAGE_VIEW: new Set(),
-      CANONICAL_PRODUCT_VIEW: new Set(),
-      CANONICAL_ADD_TO_CART: new Set(),
-      CANONICAL_CART: new Set(),
-      CANONICAL_CHECKOUT: new Set(),
-      CANONICAL_PURCHASE: new Set(),
-    };
-    const perCountry = new Map<string, { visitors: Set<string>; sessions: Set<string>; pv: number; atc: Set<string>; co: Set<string>; pur: Set<string> }>();
-    const perSource = new Map<string, Set<string>>();
-
-    for (const r of events) {
-      const vkey = r.visitor_id || r.session_id;
-      if (!vkey) continue;
-      visitors.add(vkey);
-      if (r.session_id) sessions.add(r.session_id);
-
-      const stage = r.canonical_name as Stage;
-      if (stage === "CANONICAL_PAGE_VIEW") page_views_raw++;
-      if (stage in perStage) perStage[stage].add(String(r.session_id || r.visitor_id));
-
-      const ck = r.country || "Unknown";
-      let c = perCountry.get(ck);
-      if (!c) { c = { visitors: new Set(), sessions: new Set(), pv: 0, atc: new Set(), co: new Set(), pur: new Set() }; perCountry.set(ck, c); }
-      c.visitors.add(vkey);
-      if (r.session_id) c.sessions.add(r.session_id);
-      if (stage === "CANONICAL_PAGE_VIEW") c.pv++;
-      if (stage === "CANONICAL_ADD_TO_CART") c.atc.add(String(vkey));
-      if (stage === "CANONICAL_CHECKOUT") c.co.add(String(vkey));
-      if (stage === "CANONICAL_PURCHASE" && r.order_id) c.pur.add(r.order_id);
-
-      const src = classifySource(r);
-      if (!perSource.has(src)) perSource.set(src, new Set());
-      if (r.session_id) perSource.get(src)!.add(r.session_id);
-    }
 
     // Primary purchase counter is GENUINE only. Test and cancelled are
     // reported separately so admins can audit without polluting revenue.
@@ -361,190 +376,13 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
 
     // funnel is built AFTER totals below (needs the reconciled per-session set).
 
-    // ── per-session aggregation (truth envelope) ─────────────
-    // One row per session, derived from the SAME canonical_events array
-    // used for totals. This is what map markers, CSV and Summary consume.
-    type SessionAgg = {
-      session_id: string;
-      visitor_id: string | null;
-      country: string | null;
-      city: string | null;
-      latitude: number | null;
-      longitude: number | null;
-      first_seen_at: string;
-      last_seen_at: string;
-      page_views: number;
-      source: string;
-      device: string | null;
-      utm_source: string | null;
-      utm_medium: string | null;
-      utm_campaign: string | null;
-      utm_content: string | null;
-      referrer: string | null;
-      page_path: string | null;
-      /** First-touch full landing URL incl. query string (paid click evidence). */
-      landing_page: string | null;
-      landing_page_at: string | null;
-      has_product_view: boolean;
-      has_add_to_cart: boolean;
-      has_view_cart: boolean;
-      has_checkout: boolean;
-      has_purchase: boolean;
-      order_value: number;
-      is_internal: boolean;
-      /** DIAGNOSTIC ONLY — visitor_activity.is_internal (geo heuristic: NL).
-       *  Never an input to the strict-v3 traffic-quality classifier. */
-      va_is_internal: boolean;
-    };
-    const sessionAgg = new Map<string, SessionAgg>();
-    for (const r of events) {
-      const sid = r.session_id;
-      if (!sid) continue;
-      const stage = r.canonical_name as Stage;
-      let s = sessionAgg.get(sid);
-      if (!s) {
-        s = {
-          session_id: sid,
-          visitor_id: r.visitor_id ?? null,
-          country: r.country ?? null,
-          city: r.city ?? null,
-          latitude: null,
-          longitude: null,
-          first_seen_at: r.occurred_at,
-          last_seen_at: r.occurred_at,
-          page_views: 0,
-          source: classifySource(r),
-          device: r.device ?? null,
-          utm_source: r.utm_source ?? null,
-          utm_medium: r.utm_medium ?? null,
-          utm_campaign: r.utm_campaign ?? null,
-          utm_content: r.utm_content ?? null,
-          referrer: r.referrer ?? null,
-          page_path: r.page_path ?? null,
-          landing_page: r.landing_page ?? null,
-          landing_page_at: r.landing_page ? r.occurred_at : null,
-          has_product_view: false,
-          has_add_to_cart: false,
-          has_view_cart: false,
-          has_checkout: false,
-          has_purchase: false,
-          order_value: 0,
-          is_internal: false,
-          va_is_internal: false,
-        };
-        sessionAgg.set(sid, s);
-      }
-      if (r.occurred_at < s.first_seen_at) s.first_seen_at = r.occurred_at;
-      if (r.occurred_at > s.last_seen_at) s.last_seen_at = r.occurred_at;
-      // First-touch landing URL (full path + query) — keeps paid click
-      // evidence (`pins_campaign_id`, `epik`) alive for the classifier.
-      if (r.landing_page && (!s.landing_page || !s.landing_page_at || r.occurred_at < s.landing_page_at)) {
-        s.landing_page = r.landing_page;
-        s.landing_page_at = r.occurred_at;
-      }
-      if (stage === "CANONICAL_PAGE_VIEW") s.page_views += 1;
-      if (stage === "CANONICAL_PRODUCT_VIEW") s.has_product_view = true;
-      if (stage === "CANONICAL_ADD_TO_CART") s.has_add_to_cart = true;
-      if (stage === "CANONICAL_CART") s.has_view_cart = true;
-      if (stage === "CANONICAL_CHECKOUT") s.has_checkout = true;
-      if (stage === "CANONICAL_PURCHASE") s.has_purchase = true;
-      if (!s.visitor_id && r.visitor_id) s.visitor_id = r.visitor_id;
-      if (!s.country && r.country) s.country = r.country;
-      if (!s.city && r.city) s.city = r.city;
-      if (!s.utm_content && r.utm_content) s.utm_content = r.utm_content;
-    }
-
-    // Enrich with lat/lng + is_internal from visitor_activity for the same
-    // session_ids. This is READ-ONLY and never contributes to counts — only
-    // adds map-display fields. Chunked to keep the `.in()` list manageable.
-    //
-    // REGRESSION-FIX: writers on canonical_events and visitor_activity use
-    // different session_id namespaces (UUID vs `<epoch>-<rand>`). When the
-    // session_id join yields nothing, fall back to visitor_id so the truth
-    // envelope still carries geo/is_internal and the map can render markers.
+    type SessionAgg = SessionPartial;
+    // Per-session truth envelope: derived from the SAME ingest partial as
+    // totals, enriched with visitor_activity geo/internal signals (by
+    // session_id, then visitor_id for sessions still missing geo). The
+    // enrichment rows are window-bounded (monotonicity guarantee).
+    const sessionAgg: Map<string, SessionAgg> = enrichedSessions(partial);
     const CONCURRENCY = 6;
-    // PERF: instead of N chunked `.in(session_id, …)` lookups (each one a
-    // separate round trip against a saturated DB), scan visitor_activity ONCE
-    // over the same time window — the exact rows the two enrichment passes
-    // could ever match — and join in memory. Same monotonicity guarantee
-    // (window-bounded), a fraction of the round trips.
-    const vaRows: any[] = [];
-    {
-      const VA_PAGE = 1000;
-      const VA_WAVE = SCAN_WAVE;
-      let vaFrom = 0;
-      let vaDone = false;
-      while (!vaDone) {
-        if (budgetSpent()) { truncatedScans.push("visitor_activity"); break; }
-        const offsets = Array.from({ length: VA_WAVE }, (_, i) => vaFrom + i * VA_PAGE);
-        const wave = await Promise.all(
-          offsets.map((off) =>
-            supabase
-              .from("visitor_activity")
-              .select("session_id,visitor_id,latitude,longitude,country,city,is_internal,utm_campaign,order_value")
-              .gte("created_at", since)
-              .lte("created_at", until)
-              .order("created_at", { ascending: false })
-              .range(off, off + VA_PAGE - 1)
-          ),
-        );
-        for (const { data, error } of wave) {
-          if (error) { vaDone = true; continue; } // enrichment failure must not break truth
-          if (!data || data.length === 0) { vaDone = true; continue; }
-          vaRows.push(...data);
-          if (data.length < VA_PAGE) vaDone = true;
-        }
-        vaFrom += VA_WAVE * VA_PAGE;
-        if (vaFrom > 200_000) { truncatedScans.push("visitor_activity"); break; }
-      }
-
-    }
-    {
-      for (const row of vaRows) {
-        const s = sessionAgg.get(row.session_id as string);
-        if (!s) continue;
-        if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
-        if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
-        if (!s.country && row.country) s.country = row.country;
-        if (!s.city && row.city) s.city = row.city;
-        if (row.is_internal === true) s.va_is_internal = true; // diagnostic only
-        if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
-        const ov = Number(row.order_value || 0);
-        if (ov > s.order_value) s.order_value = ov;
-      }
-    }
-
-    mark("va_by_session");
-    // Fallback enrichment by visitor_id for sessions still missing geo.
-    // Guarantees map markers cannot go to zero just because a session_id
-    // namespace mismatch exists between the two writers.
-    const byVisitor = new Map<string, SessionAgg[]>();
-    for (const s of sessionAgg.values()) {
-      if (s.latitude != null && s.longitude != null) continue;
-      if (!s.visitor_id) continue;
-      const arr = byVisitor.get(s.visitor_id) ?? [];
-      arr.push(s);
-      byVisitor.set(s.visitor_id, arr);
-    }
-    {
-      // Same window-scanned rows, joined by visitor_id this time. No extra
-      // network cost at all.
-      for (const row of vaRows) {
-        const targets = byVisitor.get(row.visitor_id as string);
-        if (!targets) continue;
-        for (const s of targets) {
-          if (s.latitude == null && row.latitude != null) s.latitude = Number(row.latitude);
-          if (s.longitude == null && row.longitude != null) s.longitude = Number(row.longitude);
-          if (!s.country && row.country) s.country = row.country;
-          if (!s.city && row.city) s.city = row.city;
-          if (row.is_internal === true) s.va_is_internal = true; // diagnostic only
-          if (!s.utm_campaign && row.utm_campaign) s.utm_campaign = row.utm_campaign;
-          const ov = Number(row.order_value || 0);
-          if (ov > s.order_value) s.order_value = ov;
-        }
-      }
-    }
-
     mark("va_by_visitor");
     const allSessionsArr = Array.from(sessionAgg.values()).sort(
       (a, b) => (a.last_seen_at < b.last_seen_at ? 1 : -1),
@@ -921,10 +759,10 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
         stage === "CANONICAL_ADD_TO_CART" ? atc :
         stage === "CANONICAL_CART" ? viewCart :
         stage === "CANONICAL_CHECKOUT" ? checkout :
-        perStage[stage].size,
+        productViewKeyCount(partial),
     }));
 
-    const sample = events[0] ?? null;
+    const sample = partial.sample_event ?? null;
 
     const respBody: Record<string, unknown> = {
       ok: true,
@@ -1022,47 +860,15 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           // PERF: reuse the single canonical_events pass from above — the
           // v1 select already carries every classifier column. This removes
           // a full duplicate scan of the window per request.
-          const rows: ClassifiableRow[] = events.map((r) => ({
-            session_id: r.session_id ?? null,
-            visitor_id: r.visitor_id ?? null,
-            occurred_at: r.occurred_at,
-            ingested_at: r.ingested_at ?? null,
-            is_internal: r.is_internal ?? null,
-            technical_path: r.technical_path ?? null,
-            is_bot: r.is_bot ?? null,
-            bot_confidence: r.bot_confidence ?? null,
-            traffic_quality: r.traffic_quality ?? null,
-            classification_version: r.classification_version ?? null,
-          })) as ClassifiableRow[];
-          // Authoritative session-level classification lives in
-          // analytics_traffic_classification (ATC). canonical_events only
-          // carries a schema DEFAULT of 'uncertain' — no classifier has
-          // written classification_version there yet. Join ATC in per
-          // session_id and stamp `atc_traffic_type` on every event before
-          // aggregation.
-          const uniqSids = Array.from(new Set(
-            rows.map((r) => r.session_id).filter((s): s is string => !!s),
-          ));
-          const atcMap = new Map<string, string>();
-          const CHUNK_ATC = 200;
-          const atcChunks = await mapChunksParallel(uniqSids, CHUNK_ATC, 6, (batch) =>
-            supabase
-              .from("analytics_traffic_classification")
-              .select("session_id,traffic_type")
-              .in("session_id", batch)
-          );
-          for (const { data: atc, error: atcErr } of atcChunks) {
-            if (atcErr) continue;
-            for (const r of atc ?? []) {
-              if (r.session_id && r.traffic_type) atcMap.set(r.session_id, r.traffic_type as string);
-            }
-          }
-          for (const r of rows) {
-            if (r.session_id && atcMap.has(r.session_id)) {
-              (r as ClassifiableRow).atc_traffic_type = atcMap.get(r.session_id) || null;
-            }
-          }
-          const agg = aggregateBuckets(rows, gate.phase4aCutoffIso);
+          // PERF: the v2 bucket state was folded during ingest (no second
+          // pass over raw events). ATC verdicts come from the slices when the
+          // window was chunked; otherwise they are looked up here exactly as
+          // before.
+          const uniqSids = Object.keys(partial.sessions);
+          let atcMap: Record<string, string> = {};
+          if (partial.atc) atcMap = partial.atc;
+          else atcMap = await loadAtcMap(supabase, uniqSids);
+          const agg = bucketAggregateFromPartial(partial, atcMap);
           const v2totals = totalsFromAggregate(agg);
           const coverage = classificationCoverage(agg);
           // Historical join estimate.
@@ -1113,7 +919,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
             genuine_revenue: Number(revenue.toFixed(2)),
             test_order_amount: Number(testOrderAmount.toFixed(2)),
             checkout_started: totals.checkout_started,
-            atc_sessions_matched: atcMap.size,
+            atc_sessions_matched: Object.keys(atcMap).length,
             atc_sessions_scanned: uniqSids.length,
           };
         }
@@ -1139,11 +945,9 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
 // refresh runs. Beyond that the request computes inline rather than serving
 // indefinitely stale data. Zeros are never fabricated and there is no silent
 // V1 downgrade: on failure the caller gets a real error.
-// Thresholds come from the shared freshness contract (mirrored in
-// src/lib/analyticsCacheFreshness.ts): hot 5 min, 14d 10 min, 30d 15 min,
-// 90d 30 min; fallback (NOT CURRENT) beyond max(30 min, 4x cadence).
-
-const ABANDONED_COOLDOWN_MS = 1_800_000; // 30 min
+// Thresholds live in the shared freshness contract (same numbers the admin
+// badge uses) and track each window's warmer cadence.
+const LOCK_MS = SHARED_LOCK_MS;
 
 // Cache key is (hours, geo) ONLY. The envelope is NOT part of the key: the
 // warmer requests `envelope: "v2"` while the browser sends no envelope at
@@ -1163,7 +967,7 @@ function svc() {
 async function readCacheRow(key: string) {
   const { data } = await svc()
     .from("analytics_canonical_cache")
-    .select("cache_key,payload,generated_at,compute_ms,locked_until,refresh_error,last_refresh_attempt_at,last_refresh_status")
+    .select("cache_key,payload,generated_at,compute_ms,locked_until,refresh_error")
     .eq("cache_key", key)
     .maybeSingle();
   return data ?? null;
@@ -1188,8 +992,8 @@ async function writeCacheRow(
     updated_at: new Date().toISOString(),
     locked_until: null,
     refresh_error: null,
-    last_refresh_status: "ok",
     last_refresh_finished_at: new Date().toISOString(),
+    last_refresh_status: "ok",
   }, { onConflict: "cache_key" });
 }
 
@@ -1199,10 +1003,6 @@ async function acquireLock(key: string): Promise<boolean> {
   const until = new Date(Date.now() + LOCK_MS).toISOString();
   const { data, error } = await svc()
     .from("analytics_canonical_cache")
-    // Attempt is recorded atomically with the lock. A worker killed by the
-    // platform (CPU limit / wall clock) never reaches releaseLock, so the row
-    // keeps last_refresh_status='running' with an expired lease — durable
-    // evidence of the abandoned rebuild.
     .update({ locked_until: until, last_refresh_attempt_at: nowIso, last_refresh_status: "running" })
     .eq("cache_key", key)
     .or(`locked_until.is.null,locked_until.lt.${nowIso}`)
@@ -1217,8 +1017,8 @@ async function releaseLock(key: string, err?: string) {
     .update({
       locked_until: null,
       refresh_error: err ?? null,
-      last_refresh_status: err ? "error" : "ok",
       last_refresh_finished_at: new Date().toISOString(),
+      last_refresh_status: err ? "error" : "ok",
     })
     .eq("cache_key", key);
 }
@@ -1230,13 +1030,54 @@ function acLog(event: string, key: string, extra: Record<string, unknown> = {}) 
   } catch { /* logging must never break a request */ }
 }
 
+const INTERNAL_SECRET_FOR_SLICES = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
+
+/**
+ * Chunked long-window build. The window is split into ~5-day slices; each
+ * slice is ingested by a SEPARATE invocation of this function (mode=slice)
+ * so it gets its own CPU budget. Slices run strictly sequentially (no DB
+ * load multiplication) under the caller's single-flight lock; partials are
+ * merged newest-first and finalized by the unchanged envelope code.
+ */
+async function computeChunked(opts: ComputeOpts): Promise<Record<string, unknown>> {
+  const untilMs = Date.now();
+  const sinceMs = untilMs - opts.hours * 3600_000;
+  const slices = sliceWindow(sinceMs, untilMs, sliceCountFor(opts.hours));
+  const partials: IngestPartial[] = [];
+  const key = cacheKeyFor(opts.hours, opts.geo);
+  for (const [i, sl] of slices.entries()) {
+    const t = Date.now();
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/analytics-canonical`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-internal-secret": INTERNAL_SECRET_FOR_SLICES },
+      body: JSON.stringify({ mode: "slice", since: sl.since, until: sl.until, closed: sl.closed }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`slice ${i + 1}/${slices.length} failed [${res.status}]: ${txt.slice(0, 200)}`);
+    }
+    partials.push(await res.json() as IngestPartial);
+    acLog("slice_done", key, { slice: i + 1, of: slices.length, ms: Date.now() - t });
+  }
+  const merged = mergePartials(partials);
+  const env = await computeEnvelope({
+    ...opts,
+    prebuilt: merged,
+    window: { since: new Date(sinceMs).toISOString(), until: new Date(untilMs).toISOString() },
+  });
+  env.build = { mode: "chunked", slices: slices.length };
+  return env;
+}
+
 export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unknown>> {
   const key = cacheKeyFor(opts.hours, opts.geo);
   const started = Date.now();
   acLog("recompute_start", key, { hours: opts.hours, geo: opts.geo });
   let payload: Record<string, unknown>;
   try {
-    payload = await computeEnvelope(opts);
+    payload = opts.hours >= CHUNKED_MIN_HOURS && INTERNAL_SECRET_FOR_SLICES
+      ? await computeChunked(opts)
+      : await computeEnvelope(opts);
   } catch (e) {
     acLog("recompute_failure", key, { duration_ms: Date.now() - started, error: (e as Error).message });
     throw e;
@@ -1253,22 +1094,6 @@ export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unkn
   return payload;
 }
 
-/** Compact warmer acknowledgement — O(1) size regardless of window. */
-export function refreshAck(payload: Record<string, unknown>, hours: number, geo: string) {
-  const sessions = (payload as any)?.sessions;
-  return {
-    ok: true,
-    refreshed: true,
-    cache_key: cacheKeyFor(hours, geo),
-    hours,
-    geo,
-    generated_at: (payload as any)?.generated_at ?? new Date().toISOString(),
-    session_count: Array.isArray(sessions) ? sessions.length : null,
-    totals: (payload as any)?.totals ?? null,
-    cache_freshness_state: "fresh",
-  };
-}
-
 function withCacheMeta(
   payload: Record<string, unknown>,
   meta: {
@@ -1277,32 +1102,15 @@ function withCacheMeta(
     ageSeconds: number | null;
     hours: number;
     requestedHours?: number;
-    row?: Record<string, unknown> | null;
   },
 ) {
-  const v = evaluateCacheFreshness({
-    hours: meta.hours,
-    generatedAt: meta.generatedAt,
-    refreshError: (meta.row?.refresh_error as string) ?? null,
-    lockedUntil: (meta.row?.locked_until as string) ?? null,
-    lastRefreshAttemptAt: (meta.row?.last_refresh_attempt_at as string) ?? null,
-  });
   return {
-    cache_freshness_state: v.state,
-    cache_freshness_label: v.label,
-    cache_is_current: v.isCurrent,
-    cache_refresh_failing: v.refreshFailing,
-    cache_refresh_in_progress: v.refreshInProgress,
-    cache_fallback_after_seconds: v.fallbackAfterSeconds,
-    last_refresh_attempt_at: (meta.row?.last_refresh_attempt_at as string) ?? null,
-    last_refresh_status: (meta.row?.last_refresh_status as string) ?? null,
     ...payload,
     cached: meta.cache !== "miss",
     cache_status: meta.cache,
     cache_generated_at: meta.generatedAt,
     cache_age_seconds: meta.ageSeconds,
-    // Never "not stale" unless the contract says the snapshot is current.
-    cache_stale: meta.cache === "stale" || !v.isCurrent,
+    cache_stale: meta.cache === "stale",
     cache_max_lag_seconds: freshMsFor(meta.hours) / 1000,
     cache_source_window_hours: meta.hours,
     // Truth labelling: when the caller asked for a longer window than the
@@ -1334,6 +1142,21 @@ Deno.serve(async (req) => {
       body?.deep_diagnostics === true || url.searchParams.get("deep_diagnostics") === "true";
     const internalTrusted = !!req.headers.get("x-internal-secret");
     const forceRefresh = body?.refresh === true || url.searchParams.get("refresh") === "true";
+    // Slice ingest (internal only): one bounded piece of a chunked build.
+    if (body?.mode === "slice") {
+      if (!internalTrusted) return json({ ok: false, error: "forbidden" }, 403);
+      const sMs = Date.parse(String(body?.since ?? ""));
+      const uMs = Date.parse(String(body?.until ?? ""));
+      if (!Number.isFinite(sMs) || !Number.isFinite(uMs) || uMs <= sMs || uMs - sMs > 7 * 86400_000) {
+        return json({ ok: false, error: "invalid slice window (max 7 days)" }, 400);
+      }
+      const t0 = Date.now();
+      const partial = await ingestWindow(svc(), new Date(sMs).toISOString(), new Date(uMs).toISOString(), body?.closed === true, {
+        budgetSpent: () => Date.now() - t0 > 90_000, scanWave: 3, rowCap: 100_000, loadAtc: true,
+      });
+      return json(partial);
+    }
+    const compactAck = body?.ack === "compact" && internalTrusted;
     const key = cacheKeyFor(hours, geo);
     const opts: ComputeOpts = { req, hours, geo, envParam, deepDiagnostics, internalTrusted };
 
@@ -1353,13 +1176,17 @@ Deno.serve(async (req) => {
         // rebuild hit the 150s idle timeout (504). A locked key means another
         // worker is already producing exactly this payload: serve the last
         // known-good instead of racing it.
+        if (compactAck) {
+          acLog("recompute_skipped_locked", key, { hours, geo });
+          return json({ ok: true, skipped: "rebuild_in_progress", hours, geo }, 202);
+        }
         const locked = await readCacheRow(key);
         if (locked?.payload) {
           const ageSeconds = Math.round(
             (Date.now() - new Date(locked.generated_at as string).getTime()) / 1000,
           );
           return json(withCacheMeta(locked.payload as Record<string, unknown>, {
-            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours, requestedHours, row: locked,
+            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours, requestedHours,
           }));
         }
         return json({
@@ -1372,14 +1199,16 @@ Deno.serve(async (req) => {
         }, 202);
       }
       try {
-        // CPU FIX: the warmer never reads the success body, yet this path used
-        // to JSON-encode the full multi-MB payload a SECOND time (after the
-        // cache upsert already serialized it). For 720|all (~27k sessions)
-        // that duplicate encode pushed the worker over its CPU limit. Return a
-        // compact ack; `?full=true` keeps the old behaviour for manual debug.
+        const t0 = Date.now();
         const payload = await refreshKey(opts);
-        const wantFull = body?.full === true || url.searchParams.get("full") === "true";
-        if (!wantFull) return json(refreshAck(payload, hours, geo));
+        // Warmer only needs an ack: skip re-serialising a multi-MB payload.
+        if (compactAck) {
+          return json({
+            ok: true, cache_status: "miss", hours, geo, compute_ms: Date.now() - t0,
+            sessions: Array.isArray((payload as any).sessions) ? (payload as any).sessions.length : null,
+            build: (payload as any).build ?? { mode: "single" },
+          });
+        }
         return json(withCacheMeta(payload, {
           cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours, requestedHours,
         }));
@@ -1404,18 +1233,10 @@ Deno.serve(async (req) => {
         acLog("cache_hit", key, { hours, geo, age_seconds: ageSeconds });
         cache.set(key, { at: Date.now(), body: row.payload });
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours, row,
+          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
         }));
       }
       const staleServable = ageMs <= maxStaleMsFor(hours) || (!internalTrusted && hours >= 24);
-      // Abandoned-rebuild cooldown: a worker killed by the platform leaves
-      // status 'running' with an expired lease. Retrying from every browser
-      // read would just burn another worker each lease cycle, so back off
-      // for ABANDONED_COOLDOWN_MS; the warmer tier still retries on cadence.
-      const attemptMs = row.last_refresh_attempt_at ? Date.parse(row.last_refresh_attempt_at as string) : NaN;
-      const abandonedRecently = row.last_refresh_status === "running" &&
-        !(row.locked_until && Date.parse(row.locked_until as string) > Date.now()) &&
-        Number.isFinite(attemptMs) && Date.now() - attemptMs < ABANDONED_COOLDOWN_MS;
       if (staleServable) {
         // Serve last-known-good immediately, rebuild in the background under
         // a single-flight lock so concurrent admin loads cannot stampede.
@@ -1425,16 +1246,15 @@ Deno.serve(async (req) => {
         // a phone. Age is always surfaced via `cache_age_seconds`/`cache_stale`
         // so no number is ever presented as fresher than it is, and the warmer
         // owns the actual rebuild.
-        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds, abandoned_recently: abandonedRecently });
+        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds });
         const bg = (async () => {
-          if (abandonedRecently) { acLog("recompute_skipped_cooldown", key, { hours, geo }); return; }
           if (!(await acquireLock(key))) { acLog("recompute_skipped_locked", key, { hours, geo }); return; }
           try { await refreshKey(opts); }
           catch (e) { await releaseLock(key, (e as Error).message); }
         })();
         try { (globalThis as any).EdgeRuntime?.waitUntil?.(bg); } catch { /* noop */ }
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours, row,
+          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
         }));
       }
     }

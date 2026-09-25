@@ -11,9 +11,10 @@ describe('analytics DB load shedding', () => {
   it('runs every scheduled table scan under a compute budget', () => {
     expect(canonical).toContain('const COMPUTE_BUDGET_MS');
     expect(canonical).toContain('const budgetSpent =');
-    // one guard per paging loop (events, visitor_activity, canonical_sessions)
+    // shared ingest scanner (events + visitor_activity) and canonical_sessions loop
+    expect(canonical).toMatch(/if \(o\.budgetSpent\(\)\)/);
     const guards = canonical.match(/if \(budgetSpent\(\)\)/g) ?? [];
-    expect(guards.length).toBeGreaterThanOrEqual(3);
+    expect(guards.length).toBeGreaterThanOrEqual(1);
   });
 
   it('caps scan concurrency so analytics cannot monopolise the pool', () => {
@@ -22,11 +23,14 @@ describe('analytics DB load shedding', () => {
   });
 
   it('every heavy scan stays bounded by the requested window', () => {
-    for (const table of ['canonical_events', 'visitor_activity', 'canonical_sessions']) {
-      const idx = canonical.indexOf(`.from("${table}")`);
-      expect(idx, table).toBeGreaterThan(-1);
-      expect(canonical.slice(idx, idx + 400)).toMatch(/\.gte\(/);
-    }
+    const idx = canonical.indexOf('.from("canonical_sessions")');
+    expect(idx).toBeGreaterThan(-1);
+    expect(canonical.slice(idx, idx + 400)).toMatch(/\.gte\(/);
+    // chunkable ingest scanner: every page is window-bounded on both sides
+    expect(canonical).toMatch(/supabase\.from\(table\)\.select\(cols\)\.gte\(tsCol, since\)/);
+    expect(canonical).toMatch(/closed \? q\.lte\(tsCol, until\) : q\.lt\(tsCol, until\)/);
+    expect(canonical).toContain('await scan("canonical_events"');
+    expect(canonical).toContain('"visitor_activity",');
   });
 
   it('reports truncated scans instead of silently shrinking the window', () => {

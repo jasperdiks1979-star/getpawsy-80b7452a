@@ -4,10 +4,11 @@
 // has its own cron schedule so a slow/failing long window can never delay or
 // block the hot (1h/24h/7d) refreshes:
 //
-//   hot (1h, 24h, 7d)  — every  5 min
-//   d14 (14d)          — every 10 min
-//   d30 (30d)          — every 15 min
-//   d90 (90d)          — every 30 min
+//   1h, 24h  — every  5 min   (per geo, staggered minutes)
+//   7d       — every 10 min
+//   14d      — every 30 min
+//   30d      — every 60 min  (chunked: sequential ~5-day slices)
+//   90d      — daily (clamped onto the 30d key; single-flight skips duplicates)
 //
 // Cadence is inversely proportional to compute cost: long windows scan far
 // more rows, and their numbers move proportionally slower, so a longer lag is
@@ -103,7 +104,7 @@ Deno.serve(async (req) => {
         const res = await fetch(`${SUPABASE_URL}/functions/v1/analytics-canonical`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-internal-secret": INTERNAL_SECRET },
-          body: JSON.stringify({ ...combo, envelope: "v2", refresh: true }),
+          body: JSON.stringify({ ...combo, envelope: "v2", refresh: true, ack: "compact" }),
         });
         const ok = res.ok;
         const bodyText = ok ? "" : await res.text();
