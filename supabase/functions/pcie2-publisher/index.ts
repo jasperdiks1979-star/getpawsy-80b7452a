@@ -318,6 +318,7 @@ Deno.serve(async (req) => {
       productCap: Number(body?.product_cap ?? 3),
       boardCap: Number(body?.board_cap ?? 10),
       minCiScore: Number(body?.min_ci_score ?? 75),
+      queueIds: Array.isArray(body?.queue_ids) ? body.queue_ids.filter((id: unknown) => typeof id === "string").slice(0, 3) : null,
     });
   }
 
@@ -355,6 +356,7 @@ interface DrainOpts {
   productCap: number;
   boardCap: number;
   minCiScore: number;
+  queueIds: string[] | null;
 }
 
 async function queueDrain(sb: any, opts: DrainOpts) {
@@ -415,6 +417,14 @@ async function queueDrain(sb: any, opts: DrainOpts) {
     .order("created_at", { ascending: true })
     .limit(500);
   if (rowsErr) return json({ ok: false, mode: "queue_drain", error: rowsErr.message }, 500);
+  // An explicit wave can only touch its named rows; reject missing IDs rather than
+  // silently draining other READY pins when a row was concurrently removed.
+  if (opts.queueIds) {
+    if (!opts.queueIds.length || opts.queueIds.length > opts.limit ||
+        opts.queueIds.some(id => !(rows ?? []).some((r: any) => r.id === id))) {
+      return json({ ok: false, mode: "queue_drain", blocker: "requested_queue_ids_not_ready" }, 412);
+    }
+  }
 
   // 4. Gate + cap
   const selected: any[] = [];
@@ -422,6 +432,7 @@ async function queueDrain(sb: any, opts: DrainOpts) {
   const productCount = new Map<string, number>();
   const boardCount = new Map<string, number>();
   for (const r of rows ?? []) {
+    if (opts.queueIds && !opts.queueIds.includes(r.id)) continue;
     if (selected.length >= opts.limit) break;
     const reasons: string[] = [];
     if (!whitelist.has(r.board_id)) reasons.push("board_not_whitelisted");
