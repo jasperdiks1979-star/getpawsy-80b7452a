@@ -1143,6 +1143,8 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
 // src/lib/analyticsCacheFreshness.ts): hot 5 min, 14d 10 min, 30d 15 min,
 // 90d 30 min; fallback (NOT CURRENT) beyond max(30 min, 4x cadence).
 
+const ABANDONED_COOLDOWN_MS = 1_800_000; // 30 min
+
 // Cache key is (hours, geo) ONLY. The envelope is NOT part of the key: the
 // warmer requests `envelope: "v2"` while the browser sends no envelope at
 // all, and keying on it produced two disjoint caches — warmed rows the UI
@@ -1406,6 +1408,14 @@ Deno.serve(async (req) => {
         }));
       }
       const staleServable = ageMs <= maxStaleMsFor(hours) || (!internalTrusted && hours >= 24);
+      // Abandoned-rebuild cooldown: a worker killed by the platform leaves
+      // status 'running' with an expired lease. Retrying from every browser
+      // read would just burn another worker each lease cycle, so back off
+      // for ABANDONED_COOLDOWN_MS; the warmer tier still retries on cadence.
+      const attemptMs = row.last_refresh_attempt_at ? Date.parse(row.last_refresh_attempt_at as string) : NaN;
+      const abandonedRecently = row.last_refresh_status === "running" &&
+        !(row.locked_until && Date.parse(row.locked_until as string) > Date.now()) &&
+        Number.isFinite(attemptMs) && Date.now() - attemptMs < ABANDONED_COOLDOWN_MS;
       if (staleServable) {
         // Serve last-known-good immediately, rebuild in the background under
         // a single-flight lock so concurrent admin loads cannot stampede.
@@ -1415,8 +1425,9 @@ Deno.serve(async (req) => {
         // a phone. Age is always surfaced via `cache_age_seconds`/`cache_stale`
         // so no number is ever presented as fresher than it is, and the warmer
         // owns the actual rebuild.
-        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds });
+        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds, abandoned_recently: abandonedRecently });
         const bg = (async () => {
+          if (abandonedRecently) { acLog("recompute_skipped_cooldown", key, { hours, geo }); return; }
           if (!(await acquireLock(key))) { acLog("recompute_skipped_locked", key, { hours, geo }); return; }
           try { await refreshKey(opts); }
           catch (e) { await releaseLock(key, (e as Error).message); }
