@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-09-21T04:59:52.962Z" total_products="309">
+<merchant_diagnostics generated="2026-09-25T08:20:21.407Z" total_products="310">
   <summary>
     <missing_gtin>22</missing_gtin>
     <missing_image>0</missing_image>
@@ -15,7 +15,6 @@
     <issue type="missing_compare_at_price" product_id="07ad844f-3a96-4fef-b8cd-8a6309d3bee4" name="Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="missing_compare_at_price" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
-    <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
     <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
@@ -38,6 +37,7 @@
     <issue type="overlength_title" product_id="8eea41d7-2e96-43fb-b7c7-da9f6f1318b6" name=" 6&quot; Height Small Puppy Dog Feeding Station for Messy Pets, Stainless Steel El..." length="161" />
     <issue type="missing_gtin" product_id="908bb847-5058-4219-bebc-0d77bb2beede" name="Cat Tree Condo – 5-Level Revolving Scratcher &amp; Climbing Tower with Perch for ..." />
     <issue type="missing_gtin" product_id="b194c6a0-7dcd-4842-93d4-14933d500a1d" name="Wooden Bird Cage Aviary, Flight Cage With 4 Perches, Nest And Slide-Out Tray ..." />
+    <issue type="short_title" product_id="b7820153-07c6-4f8e-a0be-be7540ee72cb" name="Smart Laser Cat Teaser Toy USB Charging" length="39" />
     <issue type="overlength_title" product_id="b7e7c3af-2ea9-4483-91e2-bc974b1d3b01" name=" Floor-to-Ceiling Cat Tree Cat Climbing Tower with Sisal-Covered Scratching P..." length="159" />
     <issue type="overlength_title" product_id="c48e0e44-e340-45e6-851d-c7727138c1fd" name="Modern Indoor Cat Tree Wooden Cat Tower Suitable For Cats, Includes Hammock, ..." length="152" />
     <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
