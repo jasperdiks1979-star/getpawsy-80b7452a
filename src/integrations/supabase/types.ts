@@ -44458,6 +44458,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_log_retention_state: {
+        Row: {
+          armed: boolean
+          id: number
+          last_batch_ms: number | null
+          last_skip_at: string | null
+          last_skip_reason: string | null
+          paused_until: string | null
+          skip_count: number
+          updated_at: string
+        }
+        Insert: {
+          armed?: boolean
+          id?: number
+          last_batch_ms?: number | null
+          last_skip_at?: string | null
+          last_skip_reason?: string | null
+          paused_until?: string | null
+          skip_count?: number
+          updated_at?: string
+        }
+        Update: {
+          armed?: boolean
+          id?: number
+          last_batch_ms?: number | null
+          last_skip_at?: string | null
+          last_skip_reason?: string | null
+          paused_until?: string | null
+          skip_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       optimizer_run_items: {
         Row: {
           after_snapshot: Json | null
@@ -80080,6 +80113,10 @@ export type Database = {
       normalize_country: { Args: { p: string }; Returns: string }
       ops_health_probe_tick: { Args: never; Returns: undefined }
       ops_log_retention_tick: { Args: never; Returns: string }
+      ops_log_retention_tick_v2: {
+        Args: { p_dry_run?: boolean }
+        Returns: string
+      }
       pcie2_claim_creative_jobs: {
         Args: { p_limit?: number; p_token?: string }
         Returns: {
