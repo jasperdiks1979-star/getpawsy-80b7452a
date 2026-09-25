@@ -5,6 +5,14 @@
     <meta name="google-site-verification" content="Pp4BHyXkNv5r7qOOeud543fTe2Iyb8gLXlrgRwRUydg" />
     <!-- Boot resilience: handles chunk load failures and version mismatches -->
     <script>
+      // Browser-internal ResizeObserver notice is harmless; swallow it before any
+      // error overlay/reporter can treat it as a crash.
+      window.addEventListener('error', function(e) {
+        if (e && typeof e.message === 'string' && e.message.indexOf('ResizeObserver loop') !== -1) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
       window.__BOOT_OK__ = false;
       window.__BOOT_ERRORS__ = [];
       window.__BOOT_FATAL_ERRORS__ = [];
