@@ -41,7 +41,7 @@ const VARIANT_DESCRIPTION: Record<ConversionCampaign, string> = {
   conv_direct: 'Hook: straight product pitch',
 };
 
-const TRACKED_EVENTS = ['lp_view', 'lp_cta_click', 'lp_pdp_view', 'add_to_cart'] as const;
+const TRACKED_EVENTS = ['lp_view', 'lp_cta_click', 'pdp_view', 'add_to_cart'] as const;
 type TrackedEvent = (typeof TRACKED_EVENTS)[number];
 
 type RawRow = {
@@ -126,7 +126,7 @@ export function ConversionVariantHeatmapCompare({ startIso, endIso, windowLabel 
   const variants: VariantStats[] = useMemo(() => {
     return CONVERSION_CAMPAIGNS.map((campaign) => {
       const empty: Record<TrackedEvent, number> = {
-        lp_view: 0, lp_cta_click: 0, lp_pdp_view: 0, add_to_cart: 0,
+        lp_view: 0, lp_cta_click: 0, pdp_view: 0, add_to_cart: 0,
       };
       const counts = { ...empty };
       const placementClicks = new Map<string, number>();
@@ -144,7 +144,7 @@ export function ConversionVariantHeatmapCompare({ startIso, endIso, windowLabel 
         campaign,
         counts,
         ctr: pct(counts.lp_cta_click, counts.lp_view),
-        clickToPdp: pct(counts.lp_pdp_view, counts.lp_cta_click),
+        clickToPdp: pct(counts.pdp_view, counts.lp_cta_click),
         endToEnd: pct(counts.add_to_cart, counts.lp_view),
         topPlacement: top ? { placement: top[0], clicks: top[1] } : null,
       };
@@ -209,7 +209,7 @@ export function ConversionVariantHeatmapCompare({ startIso, endIso, windowLabel 
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <Stat icon={<Eye className="h-3 w-3" />} label="Landings" value={v.counts.lp_view} />
                       <Stat icon={<MousePointerClick className="h-3 w-3" />} label="CTA clicks" value={v.counts.lp_cta_click} />
-                      <Stat icon={<Eye className="h-3 w-3" />} label="PDP views" value={v.counts.lp_pdp_view} />
+                      <Stat icon={<Eye className="h-3 w-3" />} label="PDP views" value={v.counts.pdp_view} />
                       <Stat icon={<ShoppingCart className="h-3 w-3" />} label="Add-to-cart" value={v.counts.add_to_cart} />
                     </div>
 
