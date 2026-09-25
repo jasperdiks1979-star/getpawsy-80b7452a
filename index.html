@@ -107,6 +107,11 @@
 
       function showChunkRecovery() {
         if (document.getElementById('chunk-recovery')) return;
+        if (!document.body) {
+          // Body not parsed yet (entry script failed during head parsing) — retry shortly
+          setTimeout(showChunkRecovery, 250);
+          return;
+        }
         var d = document.createElement('div');
         d.id = 'chunk-recovery';
         d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#fef3c7;border-bottom:1px solid #fbbf24;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,sans-serif;font-size:13px;color:#92400e;';
@@ -119,10 +124,23 @@
       window.__RELOAD_GUARD_KEY__ = RELOAD_GUARD_KEY;
       window.__getReloadCount__ = getReloadCount;
 
-      // Catch chunk failures via error event
+      // Catch chunk failures via error event (message-based)
       window.addEventListener('error', function(e) {
         if (isChunkFailure(e.message)) doChunkReload();
       });
+
+      // Catch script/stylesheet FILE load failures (capture phase). These fire
+      // on the element with an EMPTY message, so the message-based check above
+      // never sees them — this was the blank-screen gap for entry-chunk 404s.
+      window.addEventListener('error', function(e) {
+        var t = e && e.target;
+        if (!t || t === window) return;
+        var tag = t.tagName;
+        if (tag === 'SCRIPT' || tag === 'LINK') {
+          console.warn('[BOOT] Resource load failed:', t.src || t.href || tag);
+          doChunkReload();
+        }
+      }, true);
 
       // Blank screen fallback after 4s — only if no reload already attempted
       setTimeout(function() {
