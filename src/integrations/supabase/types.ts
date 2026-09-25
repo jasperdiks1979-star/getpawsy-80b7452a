@@ -44462,6 +44462,7 @@ export type Database = {
         Row: {
           armed: boolean
           id: number
+          jrd_cursor: number | null
           last_batch_ms: number | null
           last_skip_at: string | null
           last_skip_reason: string | null
@@ -44472,6 +44473,7 @@ export type Database = {
         Insert: {
           armed?: boolean
           id?: number
+          jrd_cursor?: number | null
           last_batch_ms?: number | null
           last_skip_at?: string | null
           last_skip_reason?: string | null
@@ -44482,6 +44484,7 @@ export type Database = {
         Update: {
           armed?: boolean
           id?: number
+          jrd_cursor?: number | null
           last_batch_ms?: number | null
           last_skip_at?: string | null
           last_skip_reason?: string | null
@@ -80142,6 +80145,7 @@ export type Database = {
       module_is_active: { Args: { _module_key: string }; Returns: boolean }
       normalize_country: { Args: { p: string }; Returns: string }
       ops_health_probe_tick: { Args: never; Returns: undefined }
+      ops_jrd_retention_tick: { Args: { p_dry_run?: boolean }; Returns: Json }
       ops_log_retention_tick: { Args: never; Returns: string }
       ops_log_retention_tick_v2: {
         Args: { p_dry_run?: boolean }
