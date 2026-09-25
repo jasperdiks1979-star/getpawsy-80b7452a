@@ -44389,6 +44389,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_health_probe_log: {
+        Row: {
+          alerts: string[]
+          checked_at: string
+          connections: number | null
+          gap_minutes: number | null
+          id: number
+          lock_waiters: number | null
+          long_tx: number | null
+          page_views_2h: number | null
+          postmaster_start: string | null
+          session_quality_6h: number | null
+        }
+        Insert: {
+          alerts?: string[]
+          checked_at?: string
+          connections?: number | null
+          gap_minutes?: number | null
+          id?: number
+          lock_waiters?: number | null
+          long_tx?: number | null
+          page_views_2h?: number | null
+          postmaster_start?: string | null
+          session_quality_6h?: number | null
+        }
+        Update: {
+          alerts?: string[]
+          checked_at?: string
+          connections?: number | null
+          gap_minutes?: number | null
+          id?: number
+          lock_waiters?: number | null
+          long_tx?: number | null
+          page_views_2h?: number | null
+          postmaster_start?: string | null
+          session_quality_6h?: number | null
+        }
+        Relationships: []
+      }
       ops_log_retention_progress: {
         Row: {
           cj_deleted: number
@@ -80039,6 +80078,7 @@ export type Database = {
           }
       module_is_active: { Args: { _module_key: string }; Returns: boolean }
       normalize_country: { Args: { p: string }; Returns: string }
+      ops_health_probe_tick: { Args: never; Returns: undefined }
       ops_log_retention_tick: { Args: never; Returns: string }
       pcie2_claim_creative_jobs: {
         Args: { p_limit?: number; p_token?: string }
