@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Wave3BProgressPanel from "@/components/admin/Wave3BProgressPanel";
 import GoldenBatchMonitorPanel from "@/components/admin/GoldenBatchMonitorPanel";
+import PinterestAccountVsPinCoveragePanel from "@/components/admin/PinterestAccountVsPinCoveragePanel";
 
 type Snapshot = {
   credits: { today: number; month: number; events: number };
@@ -122,6 +123,8 @@ export default function PinterestControlCenterPage() {
 
       {err && <Card><CardContent className="pt-6 text-destructive">{err}</CardContent></Card>}
 
+      <PinterestAccountVsPinCoveragePanel />
+
       <Wave3BProgressPanel />
 
       <GoldenBatchMonitorPanel />
@@ -138,8 +141,8 @@ export default function PinterestControlCenterPage() {
           <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Metric label="Avg quality (7d)" value={snap.quality.avg} sub={`${snap.quality.pass99}/${snap.quality.samples} ≥99`} />
             <Metric label="Golden Batch" value={`${snap.golden.winners}/${snap.golden.total}`} sub="winners / variants" />
-            <Metric label="CTR (7d)" value={`${snap.perf.ctr_7d}%`} />
-            <Metric label="Revenue (30d)" value={`$${snap.perf.revenue_30d}`} sub={`${snap.perf.saves_7d} saves · ${snap.perf.outbound_7d} outbound (7d)`} />
+            <Metric label="CTR (7d, tracked pins only)" value={`${snap.perf.ctr_7d}%`} />
+            <Metric label="Revenue (30d)" value={`$${snap.perf.revenue_30d}`} sub={`${snap.perf.saves_7d} saves · ${snap.perf.outbound_7d} outbound (7d, tracked pins only)`} />
           </section>
 
           <Card>
