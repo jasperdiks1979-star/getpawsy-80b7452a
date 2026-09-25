@@ -251,6 +251,9 @@ async function ingestWindow(
       if (from >= o.rowCap) { p.truncated.push(table); break; }
     }
   };
+  // Do NOT filter canonical_events by country here: writers store mixed
+  // values and many rows are country-null until visitor_activity enrichment.
+  // Geo filtering is applied after enrichment on the per-session truth set.
   await scan("canonical_events", EVENT_COLUMNS, "occurred_at", (rows) => foldEvents(p, rows, classifySource), false);
   // Enrichment failure must never break truth (fail-soft, as before).
   await scan(
