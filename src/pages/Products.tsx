@@ -26,6 +26,7 @@ import { CategoryFilter } from '@/components/products/CategoryFilter';
 import { supabase } from '@/integrations/supabase/client';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { toSlug, normalizeCategory, normalizeCategoryAlt, categoryDirectMatch } from '@/lib/categoryMatching';
 
 import { CategorySchema } from '@/components/seo/CategorySchema';
 import { CategorySeoContent } from '@/components/seo/CategorySeoContent';
@@ -82,41 +83,8 @@ const Products = () => {
   const recentlyViewedIds = getRecentlyViewedIds();
   const hasTrackedImpressions = useRef(false);
 
-  // Helper function to convert display name to slug
-  // IMPORTANT: This must match exactly how category slugs are stored in database
-  const toSlug = (str: string): string => {
-    return str
-      .toLowerCase()
-      .trim()
-      .replace(/&/g, '') // Remove ampersand entirely to match database slugs
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
-  };
-  
-  // Normalize category for comparison - handles both "Dog Collars & Leashes" and "dog-collars-leashes"
-  // Also handles spaces vs hyphens and case differences
-  const normalizeCategory = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/&/g, 'and')     // Normalize ampersand to 'and'
-      .replace(/\s+/g, '-')     // Convert spaces to hyphens
-      .replace(/[^\w-]/g, '')   // Remove other special chars
-      .replace(/-+/g, '-')      // Collapse multiple hyphens
-      .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
-  };
-
-  // Alternative normalization that removes 'and' for matching variations
-  const normalizeCategoryAlt = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/&/g, '')        // Remove ampersand
-      .replace(/\band\b/g, '')  // Remove word 'and'
-      .replace(/\s+/g, '-')     // Convert spaces to hyphens
-      .replace(/[^\w-]/g, '')   // Remove other special chars
-      .replace(/-+/g, '-')      // Collapse multiple hyphens
-      .replace(/^-|-$/g, '');   // Remove leading/trailing hyphens
-  };
+  // Category matching helpers live in src/lib/categoryMatching.ts (imported
+  // above) so the exact production logic is covered by regression tests.
 
   // Check if category param needs redirect to slug format
   // Redirect URLs with spaces/special chars to SEO-friendly slug format
@@ -473,25 +441,14 @@ const Products = () => {
         const productCategoryAlt = normalizeCategoryAlt(p.category);
         
         const matches = selectedCategories.some(selected => {
-          // Normalize the selected filter (both methods)
-          const selectedNormalized = normalizeCategory(selected);
-          const selectedAlt = normalizeCategoryAlt(selected);
-          
-          // Direct match using either normalization method
-          if (productCategoryNormalized === selectedNormalized ||
-              productCategoryAlt === selectedAlt ||
-              productCategoryNormalized === selectedAlt ||
-              productCategoryAlt === selectedNormalized) {
+          // Direct match + short-slug prefix rule (shared, regression-tested)
+          if (categoryDirectMatch(p.category, selected)) {
             return true;
           }
 
-          // Short nav slugs (e.g. "cat-trees") must match their full category
-          // ("Cat Trees & Condos" -> "cat-trees-and-condos"), mirroring the
-          // server-side fast path so the full catalog doesn't filter to 0.
+          // Normalize the selected filter (both methods)
+          const selectedNormalized = normalizeCategory(selected);
           const selectedSlug = toSlug(selected);
-          if (selectedSlug && toSlug(p.category).startsWith(`${selectedSlug}-`)) {
-            return true;
-          }
 
           // Check if selected is a parent category - if so, include products from its subcategories
           const subcategorySet = categoryToDescendants[selectedSlug] || 
