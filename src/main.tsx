@@ -7,6 +7,29 @@ import App from "./App.tsx";
 import "./index.css";
 import { initTapDebug } from "./lib/tap-debug";
 
+// Stale-chunk recovery: after a deploy/HMR rebuild, a lazily imported module
+// URL can vanish ("Importing a module script failed" on Safari, "Failed to
+// fetch dynamically imported module" on Chromium). Reload once (per 30s)
+// instead of leaving a blank screen.
+if (typeof window !== "undefined") {
+  const isChunkError = (m: unknown) =>
+    /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i.test(String(m ?? ""));
+  const recover = () => {
+    const k = "gp_chunk_reload_at";
+    const last = Number(sessionStorage.getItem(k) || 0);
+    if (Date.now() - last < 30_000) return false;
+    sessionStorage.setItem(k, String(Date.now()));
+    window.location.reload();
+    return true;
+  };
+  window.addEventListener("vite:preloadError", (e) => { if (recover()) e.preventDefault(); });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = (e as PromiseRejectionEvent).reason;
+    if (isChunkError(r?.message ?? r) && recover()) e.preventDefault();
+  });
+  window.addEventListener("error", (e) => { if (isChunkError(e.message) && recover()) e.preventDefault(); });
+}
+
 // v9 - Fix: removed charts manualChunks entirely (d3 TDZ crash on iOS Safari 18)
 // BUILD_MARKER: 2026-02-19T-v9-no-charts-chunk
 

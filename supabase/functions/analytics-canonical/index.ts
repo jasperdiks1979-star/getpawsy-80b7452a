@@ -35,6 +35,7 @@
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { evaluateCacheFreshness, freshMsFor, maxStaleMsFor, LOCK_MS } from "../_shared/analyticsCacheFreshness.ts";
 import { checkCanonicalV2Gate } from "../_shared/canonicalV2Flag.ts";
 import {
   aggregateBuckets,
@@ -1138,25 +1139,11 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
 // refresh runs. Beyond that the request computes inline rather than serving
 // indefinitely stale data. Zeros are never fabricated and there is no silent
 // V1 downgrade: on failure the caller gets a real error.
-const FRESH_MS = 300_000;      // 5 min — hot-tier warmer cadence
-const MAX_STALE_MS = 1_800_000; // 30 min — bounded stale-serve window (hot)
-const LOCK_MS = 240_000;        // single-flight lock lease
+// Thresholds come from the shared freshness contract (mirrored in
+// src/lib/analyticsCacheFreshness.ts): hot 5 min, 14d 10 min, 30d 15 min,
+// 90d 30 min; fallback (NOT CURRENT) beyond max(30 min, 4x cadence).
 
-// Long windows are warmed on a slower tier (14d/10 min, 30d/15 min,
-// 90d/30 min) because they are far more expensive and move far more slowly.
-// Freshness thresholds must track that cadence, otherwise every dashboard
-// load would consider a perfectly current 90d payload "stale" and kick off a
-// needless rebuild.
-function freshMsFor(hours: number): number {
-  if (hours >= 2160) return 1_800_000; // 90d — 30 min
-  if (hours >= 720) return 900_000;    // 30d — 15 min
-  if (hours >= 336) return 600_000;    // 14d — 10 min
-  return FRESH_MS;
-}
-
-function maxStaleMsFor(hours: number): number {
-  return Math.max(MAX_STALE_MS, freshMsFor(hours) * 4);
-}
+const ABANDONED_COOLDOWN_MS = 1_800_000; // 30 min
 
 // Cache key is (hours, geo) ONLY. The envelope is NOT part of the key: the
 // warmer requests `envelope: "v2"` while the browser sends no envelope at
@@ -1176,7 +1163,7 @@ function svc() {
 async function readCacheRow(key: string) {
   const { data } = await svc()
     .from("analytics_canonical_cache")
-    .select("cache_key,payload,generated_at,compute_ms,locked_until,refresh_error")
+    .select("cache_key,payload,generated_at,compute_ms,locked_until,refresh_error,last_refresh_attempt_at,last_refresh_status")
     .eq("cache_key", key)
     .maybeSingle();
   return data ?? null;
@@ -1201,6 +1188,8 @@ async function writeCacheRow(
     updated_at: new Date().toISOString(),
     locked_until: null,
     refresh_error: null,
+    last_refresh_status: "ok",
+    last_refresh_finished_at: new Date().toISOString(),
   }, { onConflict: "cache_key" });
 }
 
@@ -1210,7 +1199,11 @@ async function acquireLock(key: string): Promise<boolean> {
   const until = new Date(Date.now() + LOCK_MS).toISOString();
   const { data, error } = await svc()
     .from("analytics_canonical_cache")
-    .update({ locked_until: until })
+    // Attempt is recorded atomically with the lock. A worker killed by the
+    // platform (CPU limit / wall clock) never reaches releaseLock, so the row
+    // keeps last_refresh_status='running' with an expired lease — durable
+    // evidence of the abandoned rebuild.
+    .update({ locked_until: until, last_refresh_attempt_at: nowIso, last_refresh_status: "running" })
     .eq("cache_key", key)
     .or(`locked_until.is.null,locked_until.lt.${nowIso}`)
     .select("cache_key");
@@ -1221,7 +1214,12 @@ async function acquireLock(key: string): Promise<boolean> {
 async function releaseLock(key: string, err?: string) {
   await svc()
     .from("analytics_canonical_cache")
-    .update({ locked_until: null, refresh_error: err ?? null })
+    .update({
+      locked_until: null,
+      refresh_error: err ?? null,
+      last_refresh_status: err ? "error" : "ok",
+      last_refresh_finished_at: new Date().toISOString(),
+    })
     .eq("cache_key", key);
 }
 
@@ -1255,6 +1253,22 @@ export async function refreshKey(opts: ComputeOpts): Promise<Record<string, unkn
   return payload;
 }
 
+/** Compact warmer acknowledgement — O(1) size regardless of window. */
+export function refreshAck(payload: Record<string, unknown>, hours: number, geo: string) {
+  const sessions = (payload as any)?.sessions;
+  return {
+    ok: true,
+    refreshed: true,
+    cache_key: cacheKeyFor(hours, geo),
+    hours,
+    geo,
+    generated_at: (payload as any)?.generated_at ?? new Date().toISOString(),
+    session_count: Array.isArray(sessions) ? sessions.length : null,
+    totals: (payload as any)?.totals ?? null,
+    cache_freshness_state: "fresh",
+  };
+}
+
 function withCacheMeta(
   payload: Record<string, unknown>,
   meta: {
@@ -1263,15 +1277,32 @@ function withCacheMeta(
     ageSeconds: number | null;
     hours: number;
     requestedHours?: number;
+    row?: Record<string, unknown> | null;
   },
 ) {
+  const v = evaluateCacheFreshness({
+    hours: meta.hours,
+    generatedAt: meta.generatedAt,
+    refreshError: (meta.row?.refresh_error as string) ?? null,
+    lockedUntil: (meta.row?.locked_until as string) ?? null,
+    lastRefreshAttemptAt: (meta.row?.last_refresh_attempt_at as string) ?? null,
+  });
   return {
+    cache_freshness_state: v.state,
+    cache_freshness_label: v.label,
+    cache_is_current: v.isCurrent,
+    cache_refresh_failing: v.refreshFailing,
+    cache_refresh_in_progress: v.refreshInProgress,
+    cache_fallback_after_seconds: v.fallbackAfterSeconds,
+    last_refresh_attempt_at: (meta.row?.last_refresh_attempt_at as string) ?? null,
+    last_refresh_status: (meta.row?.last_refresh_status as string) ?? null,
     ...payload,
     cached: meta.cache !== "miss",
     cache_status: meta.cache,
     cache_generated_at: meta.generatedAt,
     cache_age_seconds: meta.ageSeconds,
-    cache_stale: meta.cache === "stale",
+    // Never "not stale" unless the contract says the snapshot is current.
+    cache_stale: meta.cache === "stale" || !v.isCurrent,
     cache_max_lag_seconds: freshMsFor(meta.hours) / 1000,
     cache_source_window_hours: meta.hours,
     // Truth labelling: when the caller asked for a longer window than the
@@ -1328,7 +1359,7 @@ Deno.serve(async (req) => {
             (Date.now() - new Date(locked.generated_at as string).getTime()) / 1000,
           );
           return json(withCacheMeta(locked.payload as Record<string, unknown>, {
-            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours, requestedHours,
+            cache: "stale", generatedAt: locked.generated_at as string, ageSeconds, hours, requestedHours, row: locked,
           }));
         }
         return json({
@@ -1341,7 +1372,14 @@ Deno.serve(async (req) => {
         }, 202);
       }
       try {
+        // CPU FIX: the warmer never reads the success body, yet this path used
+        // to JSON-encode the full multi-MB payload a SECOND time (after the
+        // cache upsert already serialized it). For 720|all (~27k sessions)
+        // that duplicate encode pushed the worker over its CPU limit. Return a
+        // compact ack; `?full=true` keeps the old behaviour for manual debug.
         const payload = await refreshKey(opts);
+        const wantFull = body?.full === true || url.searchParams.get("full") === "true";
+        if (!wantFull) return json(refreshAck(payload, hours, geo));
         return json(withCacheMeta(payload, {
           cache: "miss", generatedAt: new Date().toISOString(), ageSeconds: 0, hours, requestedHours,
         }));
@@ -1366,10 +1404,18 @@ Deno.serve(async (req) => {
         acLog("cache_hit", key, { hours, geo, age_seconds: ageSeconds });
         cache.set(key, { at: Date.now(), body: row.payload });
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
+          cache: "hit", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours, row,
         }));
       }
       const staleServable = ageMs <= maxStaleMsFor(hours) || (!internalTrusted && hours >= 24);
+      // Abandoned-rebuild cooldown: a worker killed by the platform leaves
+      // status 'running' with an expired lease. Retrying from every browser
+      // read would just burn another worker each lease cycle, so back off
+      // for ABANDONED_COOLDOWN_MS; the warmer tier still retries on cadence.
+      const attemptMs = row.last_refresh_attempt_at ? Date.parse(row.last_refresh_attempt_at as string) : NaN;
+      const abandonedRecently = row.last_refresh_status === "running" &&
+        !(row.locked_until && Date.parse(row.locked_until as string) > Date.now()) &&
+        Number.isFinite(attemptMs) && Date.now() - attemptMs < ABANDONED_COOLDOWN_MS;
       if (staleServable) {
         // Serve last-known-good immediately, rebuild in the background under
         // a single-flight lock so concurrent admin loads cannot stampede.
@@ -1379,15 +1425,16 @@ Deno.serve(async (req) => {
         // a phone. Age is always surfaced via `cache_age_seconds`/`cache_stale`
         // so no number is ever presented as fresher than it is, and the warmer
         // owns the actual rebuild.
-        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds });
+        acLog("cache_stale", key, { hours, geo, age_seconds: ageSeconds, abandoned_recently: abandonedRecently });
         const bg = (async () => {
+          if (abandonedRecently) { acLog("recompute_skipped_cooldown", key, { hours, geo }); return; }
           if (!(await acquireLock(key))) { acLog("recompute_skipped_locked", key, { hours, geo }); return; }
           try { await refreshKey(opts); }
           catch (e) { await releaseLock(key, (e as Error).message); }
         })();
         try { (globalThis as any).EdgeRuntime?.waitUntil?.(bg); } catch { /* noop */ }
         return json(withCacheMeta(row.payload as Record<string, unknown>, {
-          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours,
+          cache: "stale", generatedAt: row.generated_at as string, ageSeconds, hours, requestedHours, row,
         }));
       }
     }
