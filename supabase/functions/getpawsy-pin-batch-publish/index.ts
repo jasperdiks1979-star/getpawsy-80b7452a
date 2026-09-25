@@ -112,6 +112,18 @@ Deno.serve(async (req) => {
       return json({ ok: true, results: out });
     }
 
+    if (mode === "remove_standins") {
+      // Owner-approved removal of the four first_sale_push stand-in pins only.
+      const ALLOW = new Set(["1117103882606571966", "1117103882606571969", "1117103882606571971", "1117103882606571974"]);
+      const ids: string[] = (body.pin_ids ?? []).filter((id: string) => ALLOW.has(id));
+      const out: any[] = [];
+      for (const id of ids) {
+        const r = await fetch(`${PIN_API}/pins/${id}`, { method: "DELETE", headers: auth });
+        out.push({ id, status: r.status, ok: r.ok || r.status === 404, body: r.ok ? null : await r.text() });
+      }
+      return json({ ok: true, results: out });
+    }
+
     if (mode === "publish") {
       const pins: any[] = body.pins ?? [];
       if (!pins.length) return json({ ok: false, error: "no_pins" }, 400);
@@ -127,7 +139,7 @@ Deno.serve(async (req) => {
           description: p.description,
           alt_text: p.alt_text ?? p.title,
           link: p.link,
-          media_source: { source_type: "image_base64", content_type: "image/jpeg", data: p.image_b64 },
+          media_source: { source_type: "image_base64", content_type: p.content_type === "image/png" ? "image/png" : "image/jpeg", data: p.image_b64 },
         };
         const r = await fetch(`${PIN_API}/pins`, { method: "POST", headers: auth, body: JSON.stringify(pinBody) });
         const t = await r.text();
