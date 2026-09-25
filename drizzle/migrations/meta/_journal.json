@@ -29,6 +29,13 @@
       "when": 1790344888855,
       "tag": "0003_safe_overnight_log_retention_controller",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790369429384,
+      "tag": "0004_pinterest_account_analytics_daily",
+      "breakpoints": true
     }
   ]
 }

@@ -35,6 +35,43 @@ Deno.serve(async (req) => {
     }
     const base = await getApiBase(sb);
 
+    // Account-wide daily totals (authoritative). One API call, ≤31 rows upsert.
+    let accountSync: Record<string, unknown> = { ok: false };
+    try {
+      const end = isoDay(new Date());
+      const start = isoDay(new Date(Date.now() - 30 * 86400000));
+      const r = await fetch(
+        `${base}/v5/user_account/analytics?start_date=${start}&end_date=${end}&metric_types=IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!r.ok) {
+        accountSync = { ok: false, status: r.status, body: (await r.text()).slice(0, 300) };
+      } else {
+        const j = await r.json() as { all?: { daily_metrics?: Array<{ date: string; data_status?: string; metrics?: Record<string, number> }> } };
+        const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v) : null);
+        const rows = (j.all?.daily_metrics ?? []).map((d) => ({
+          day: d.date,
+          impressions: num(d.metrics?.IMPRESSION),
+          pin_clicks: num(d.metrics?.PIN_CLICK),
+          outbound_clicks: num(d.metrics?.OUTBOUND_CLICK),
+          saves: num(d.metrics?.SAVE),
+          data_status: d.data_status ?? null,
+          fetched_at: new Date().toISOString(),
+        }));
+        const { error } = rows.length
+          ? await sb.from("pinterest_account_analytics_daily").upsert(rows, { onConflict: "day" })
+          : { error: null };
+        accountSync = { ok: !error, rows: rows.length, error: error?.message ?? null };
+      }
+    } catch (e) {
+      accountSync = { ok: false, error: (e as Error).message };
+    }
+    if ((await req.clone().json().catch(() => ({})))?.account_only === true) {
+      return new Response(JSON.stringify({ ok: true, traceId, accountSync }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Refresh dimensions from video queue + pin queue
     // pinterest_video_queue has no product_slug/published_at — the slug lives on
     // pinterest_video_assets (queue.asset_id -> assets.id, NOT NULL, unique per row).

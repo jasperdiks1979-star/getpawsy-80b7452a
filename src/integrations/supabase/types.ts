@@ -52939,6 +52939,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pinterest_account_analytics_daily: {
+        Row: {
+          data_status: string | null
+          day: string
+          fetched_at: string
+          impressions: number | null
+          outbound_clicks: number | null
+          pin_clicks: number | null
+          saves: number | null
+        }
+        Insert: {
+          data_status?: string | null
+          day: string
+          fetched_at?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          pin_clicks?: number | null
+          saves?: number | null
+        }
+        Update: {
+          data_status?: string | null
+          day?: string
+          fetched_at?: string
+          impressions?: number | null
+          outbound_clicks?: number | null
+          pin_clicks?: number | null
+          saves?: number | null
+        }
+        Relationships: []
+      }
       pinterest_ai_backdrops: {
         Row: {
           created_at: string
