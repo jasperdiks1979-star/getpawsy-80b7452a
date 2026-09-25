@@ -44389,6 +44389,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_log_retention_progress: {
+        Row: {
+          cj_deleted: number
+          detail: string | null
+          duration_ms: number | null
+          id: number
+          jrd_deleted: number
+          ran_at: string
+          status: string
+        }
+        Insert: {
+          cj_deleted?: number
+          detail?: string | null
+          duration_ms?: number | null
+          id?: number
+          jrd_deleted?: number
+          ran_at?: string
+          status: string
+        }
+        Update: {
+          cj_deleted?: number
+          detail?: string | null
+          duration_ms?: number | null
+          id?: number
+          jrd_deleted?: number
+          ran_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       optimizer_run_items: {
         Row: {
           after_snapshot: Json | null
