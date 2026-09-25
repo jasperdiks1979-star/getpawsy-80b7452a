@@ -8,6 +8,13 @@
       "when": 1789645066821,
       "tag": "0000_product_option_metadata_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790321817108,
+      "tag": "0001_restrict_catalog_classification_and_product_media",
+      "breakpoints": true
     }
   ]
 }
