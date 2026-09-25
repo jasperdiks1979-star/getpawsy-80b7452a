@@ -136,10 +136,14 @@
         var t = e && e.target;
         if (!t || t === window) return;
         var tag = t.tagName;
-        if (tag === 'SCRIPT' || tag === 'LINK') {
-          console.warn('[BOOT] Resource load failed:', t.src || t.href || tag);
-          doChunkReload();
-        }
+        if (tag !== 'SCRIPT' && tag !== 'LINK') return;
+        var url = t.src || t.href || '';
+        // Only same-origin app files count as chunk failures — third-party
+        // scripts (analytics, ads) may be blocked by the browser and must
+        // never trigger a reload.
+        if (url && url.indexOf(window.location.origin) !== 0) return;
+        console.warn('[BOOT] App resource load failed:', url || tag);
+        doChunkReload();
       }, true);
 
       // Blank screen fallback after 4s — only if no reload already attempted
