@@ -1,3 +1,4 @@
+import { CacheFreshnessBadge } from "@/components/admin/CacheFreshnessBadge";
 import { useMemo } from "react";
 import {
   useAnalyticsTruth,

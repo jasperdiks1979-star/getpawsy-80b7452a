@@ -107,6 +107,13 @@ export interface TruthResponse {
   cache_age_seconds?: number | null;
   cache_stale?: boolean;
   cache_max_lag_seconds?: number;
+  cache_source_window_hours?: number;
+  /** Shared freshness contract verdict (server-side). */
+  cache_freshness_state?: "fresh" | "stale" | "fallback" | "missing";
+  cache_freshness_label?: string;
+  cache_refresh_failing?: boolean;
+  last_refresh_attempt_at?: string | null;
+  last_refresh_status?: string | null;
   /** True when this payload came from the browser's last-known-good cache. */
   served_from_client_cache?: boolean;
 }

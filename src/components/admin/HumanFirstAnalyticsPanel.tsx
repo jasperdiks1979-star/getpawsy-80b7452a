@@ -97,6 +97,9 @@ export function HumanFirstAnalyticsPanel({ hours = 24, geo = "all", enabled = tr
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base">Commercial KPIs · last {hours}h</CardTitle>
+            <div className="mt-1">
+              <CacheFreshnessBadge truth={truth.data} hours={hours} testId="human-first-freshness" />
+            </div>
             <CardDescription>
               {modeMeta.help} Raw sessions are never deleted or altered.
             </CardDescription>
