@@ -222,3 +222,12 @@ Production readback (https://getpawsy.pet/admin/analytics, admin session, 720h w
 
 Remaining ambiguity: UNKNOWN is deliberately never merged into strict or expanded human; POSSIBLE_HUMAN
 appears only in Expanded and is never labelled verified human.
+
+## DB Cleanup + Job Staggering (2026-09-25) — IN PROGRESS (background retention running)
+- Before: DB 16.17 GB; cj_webhook_logs 9.24 GB (~9.6M rows, STOCK/VARIANT/PRODUCT only, 2026-01-25 → 2026-06-23, no writes since; no FKs, no ticket/order data); cron.job_run_details 2.98 GB (~2.1M rows since 2026-01-26; ~1.7M older than 30d).
+- Retention: cj_webhook_logs delete processed rows > 90d (unprocessed kept); job_run_details delete succeeded/failed > 30d.
+- Mechanism: public.ops_log_retention_tick() via cron `ops-log-retention-batch` (every minute, 25k+25k rows/tick, 50s statement cap, skips if >15 active queries, self-unschedules when both drained). ~15s/tick.
+- Index: cron.job_run_details(start_time) NOT possible (table owned by platform, "must be owner"). cj_webhook_logs already has created_at index.
+- Jobs: backup of every change in public.ops_cron_schedule_backup (service_role only). Disabled: job 15 (target function scrape-competitor-products missing), job 34 (duplicate of job 3 abandoned-cart hourly), acw-30d-all/us + acw-90d-all/us (paused during stabilization). Staggered 186 jobs (same frequency).
+- Peak same-minute starts: 84 → 18. Runs/day 6570 → 6535.
+- Pending: disk reclaim needs VACUUM FULL after drain (DELETE frees space for reuse, not the OS); re-enable acw-30d/90d after stabilization.
