@@ -30,11 +30,11 @@ type Props = {
   cliffMinVolume?: number;
 };
 
-const STEPS = ['lp_landing_view', 'lp_pdp_view', 'begin_checkout', 'purchase'] as const;
+const STEPS = ['lp_view', 'pdp_view', 'begin_checkout', 'purchase'] as const;
 type Step = (typeof STEPS)[number];
 const STEP_LABEL: Record<Step, string> = {
-  lp_landing_view: 'Landing',
-  lp_pdp_view: 'PDP',
+  lp_view: 'Landing',
+  pdp_view: 'PDP',
   begin_checkout: 'Checkout',
   purchase: 'Purchase',
 };
@@ -100,7 +100,7 @@ export function UtmCampaignFunnelMatching({
   const { matched, unmatched, totals } = useMemo(() => {
     const map = new Map<string, Record<Step, number>>();
     const orphan: Record<Step, number> = {
-      lp_landing_view: 0, lp_pdp_view: 0, begin_checkout: 0, purchase: 0,
+      lp_view: 0, pdp_view: 0, begin_checkout: 0, purchase: 0,
     };
     let totalEvents = 0;
     for (const r of rows) {
@@ -113,7 +113,7 @@ export function UtmCampaignFunnelMatching({
       }
       let entry = map.get(r.utm_campaign);
       if (!entry) {
-        entry = { lp_landing_view: 0, lp_pdp_view: 0, begin_checkout: 0, purchase: 0 };
+        entry = { lp_view: 0, pdp_view: 0, begin_checkout: 0, purchase: 0 };
         map.set(r.utm_campaign, entry);
       }
       entry[step]++;
@@ -138,7 +138,7 @@ export function UtmCampaignFunnelMatching({
         }
 
         // Critical gap: purchases without any landing
-        if (counts.purchase > 0 && counts.lp_landing_view === 0) {
+        if (counts.purchase > 0 && counts.lp_view === 0) {
           flags.push({
             severity: 'error',
             label: 'Lost attribution',
