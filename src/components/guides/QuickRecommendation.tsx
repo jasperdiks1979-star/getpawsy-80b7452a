@@ -2,9 +2,11 @@ import { Link } from 'react-router-dom';
 import { Award, ArrowRight } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import type { QuickRecommendation as QRType } from '@/types/guide';
+import { trackEvent } from '@/lib/analytics';
 
 interface Props {
   data: QRType;
+  guideSlug?: string;
 }
 
 const picks = [
@@ -21,7 +23,7 @@ function isValidPick(pick: { name: string; link: string; image?: string }): bool
   return true;
 }
 
-export function QuickRecommendation({ data }: Props) {
+export function QuickRecommendation({ data, guideSlug }: Props) {
   if (!data) return null;
   
   const validPicks = picks.filter(({ key }) => {
@@ -53,6 +55,9 @@ export function QuickRecommendation({ data }: Props) {
             <Link
               key={key}
               to={pick.link}
+              onClick={() => {
+                if (guideSlug) trackEvent('guide_product_click', { guide_slug: guideSlug, product_slug: pick.link.split('/products/')[1], placement: 'quick_recommendation' });
+              }}
               className="group relative bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30"
             >
               <div className="relative w-full aspect-[4/3] bg-muted overflow-hidden">

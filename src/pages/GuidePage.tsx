@@ -663,6 +663,7 @@ const GuidePage = () => {
             };
             return (
               <QuickRecommendation
+                guideSlug={['best-cat-toys', 'best-interactive-cat-toys-that-work'].includes(guide.slug) ? guide.slug : undefined}
                 data={{
                   ...qr,
                   bestOverall: enrichPick(qr.bestOverall) || qr.bestOverall,
