@@ -1,5 +1,6 @@
 # GETPAWSY revenue-critical repair roadmap
 
+- [ ] Verify and improve live cat-toy guide picks and guide-card click tracking; publish only below 75% DB memory.
 - [ ] Authorized three-pin US organic Pinterest relaunch — prepare three product-faithful creatives, preflight, publish each once through PCIE2, and verify public pins; no other publishing.
 
 - [x] P0 — volume discount parity, fake tax removed, discount fail-closed, Pinterest bot classification, tiered incentive UI
