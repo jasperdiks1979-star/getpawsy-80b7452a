@@ -305,7 +305,7 @@ Deno.serve(async (req) => {
     if (pass) {
       passed++;
       if (didRewrite && !dryRun) {
-        recentList.unshift(current);
+        recentRows.unshift({ id: row.id, headline: current });
         await sb.from("pcie2_publish_queue").update({
           headline: current,
           quality_score: score.overall,
