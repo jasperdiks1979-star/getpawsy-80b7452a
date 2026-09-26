@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { recentExcludingSelf, type RecentRow } from "./recent.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -190,14 +191,17 @@ function scoreCreative(headline: string, product: Product, banned: string[], rec
   };
 }
 
-async function fetchRecent(sb: any): Promise<string[]> {
+async function fetchRecentRows(sb: any): Promise<RecentRow[]> {
   const { data } = await sb
     .from("pcie2_publish_queue")
-    .select("headline")
+    .select("id,headline")
     .in("status", ["queued","publishing","ready"])
     .order("created_at", { ascending: false })
     .limit(DIVERSITY_WINDOW);
-  return (data ?? []).map((r: any) => r.headline).filter(Boolean);
+  return (data ?? []) as RecentRow[];
+}
+async function fetchRecent(sb: any): Promise<string[]> {
+  return recentExcludingSelf(await fetchRecentRows(sb), null);
 }
 
 Deno.serve(async (req) => {
@@ -218,6 +222,25 @@ Deno.serve(async (req) => {
     const recent = await fetchRecent(sb);
     const s = scoreCreative(headline, product, banned, recent);
     return jsonResp({ ok: true, score: s, pass: s.overall >= PASS_THRESHOLD && s.banned.length === 0 });
+  }
+
+  // evaluate_ids: read-only scoring of explicit queue IDs (any status). Writes nothing.
+  if (action === "evaluate_ids") {
+    const ids: string[] = Array.isArray(body.queue_ids) ? body.queue_ids.filter((x: unknown) => typeof x === "string").slice(0, 10) : [];
+    if (!ids.length) return jsonResp({ ok: false, error: "queue_ids required" }, 400);
+    const { data: qr } = await sb.from("pcie2_publish_queue").select("id,product_id,headline,status").in("id", ids);
+    const pids = [...new Set((qr ?? []).map((q: any) => q.product_id))];
+    const { data: ps } = await sb.from("products").select("id,name,category,description,primary_species").in("id", pids);
+    const pm = new Map<string, Product>(); (ps ?? []).forEach((p: any) => pm.set(p.id, p));
+    const recentRows = await fetchRecentRows(sb);
+    const results = (qr ?? []).map((q: any) => {
+      const p = pm.get(q.product_id);
+      if (!p || !q.headline) return { id: q.id, status: q.status, pass: false, reasons: ["missing_product_or_headline"] };
+      const s = scoreCreative(q.headline, p, banned, recentExcludingSelf(recentRows, q.id));
+      return { id: q.id, status: q.status, pass: s.overall >= PASS_THRESHOLD && s.banned.length === 0,
+        overall: s.overall, duplicate_similarity: s.duplicate_similarity, novelty: s.novelty, reasons: s.reasons };
+    });
+    return jsonResp({ ok: true, dry_run: true, results });
   }
 
   // rescore_ready (default)
@@ -242,13 +265,14 @@ Deno.serve(async (req) => {
   const pMap = new Map<string, Product>();
   (products ?? []).forEach((p: any) => pMap.set(p.id, p));
 
-  const recentList = await fetchRecent(sb);
+  const recentRows = await fetchRecentRows(sb);
 
   let passed = 0, rewritten = 0, rejected = 0;
   const scoresAcc: any[] = [];
   const sumScores: number[] = [];
 
   for (const row of queue) {
+    const recentList = recentExcludingSelf(recentRows, row.id);
     const product = pMap.get(row.product_id);
     if (!product || !row.headline) {
       rejected++;
@@ -281,7 +305,7 @@ Deno.serve(async (req) => {
     if (pass) {
       passed++;
       if (didRewrite && !dryRun) {
-        recentList.unshift(current);
+        recentRows.unshift({ id: row.id, headline: current });
         await sb.from("pcie2_publish_queue").update({
           headline: current,
           quality_score: score.overall,
