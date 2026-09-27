@@ -50,6 +50,13 @@
       "when": 1790373557539,
       "tag": "0006_ops_jrd_retention_tick_runid_bounded",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790545056825,
+      "tag": "0007_restrict_ai_credit_recovery_log_insert_to_service_role",
+      "breakpoints": true
     }
   ]
 }
