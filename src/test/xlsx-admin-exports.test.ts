@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
 
-describe('xlsx admin export patterns (0.20.x)', () => {
-  it('resolves the patched SheetJS version', () => {
-    expect(XLSX.version).toBe('0.20.2');
+describe('xlsx admin export patterns', () => {
+  it('resolves the pinned SheetJS version', () => {
+    expect(XLSX.version).toBe('0.18.5');
   });
 
   it('TikTokCtaCtrPage pattern: aoa_to_sheet + book_append_sheet + serialize', () => {
