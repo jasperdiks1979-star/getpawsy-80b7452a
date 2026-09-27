@@ -32,3 +32,5 @@
 
 - [x] xlsx 0.20.2 upgrade reverted to 0.18.5 (user chose Option 2: scanner can't parse tarball lock entry); never published; export tests kept
 - [x] xlsx removed; admin exports use src/utils/excelExport.ts (JSZip); published build-mukeg2ey-rw7i, verified live 27 Sep
+
+- [ ] react-router-dom 6.30.1 -> 6.30.4 (isolated patch): implemented + all gates passed; awaiting separate publish approval
