@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, XCircle, RefreshCw, ChevronDown, ChevronRight, ExternalLink, Loader2, AlertTriangle, FileSpreadsheet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
+import { createWorkbook, addSheet, jsonToAoa, aoaToCsv, writeFile as writeXlsxFile, type SheetLink } from '@/utils/excelExport';
 
 const EXPECTED_STEPS = [
   'checkout_click',
@@ -134,7 +134,7 @@ export default function AdminSmokeTestEventsPage() {
 
   useEffect(() => { void fetchAll(); }, [fetchAll]);
 
-  const generateReport = useCallback(() => {
+  const generateReport = useCallback(async () => {
     setGenerating(true);
     try {
       // Filter metadata sheet — captures the active filter context.
@@ -215,41 +215,31 @@ export default function AdminSmokeTestEventsPage() {
         }
       }
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filterRows), 'Filters');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Summary');
-      const dupSheet = XLSX.utils.json_to_sheet(
+      const wb = createWorkbook();
+      addSheet(wb, 'Filters', jsonToAoa(filterRows), undefined, { headerRow: false });
+      addSheet(wb, 'Summary', jsonToAoa(summaryRows), undefined, { headerRow: false });
+      const dupAoa = jsonToAoa(
         dupRows.length > 0 ? dupRows : [{ note: 'No duplicates detected' }],
       );
       // Turn the deep_link column into clickable Excel hyperlinks
+      const links: SheetLink[] = [];
       if (dupRows.length > 0) {
-        const range = XLSX.utils.decode_range(dupSheet['!ref'] ?? 'A1');
-        // Find the deep_link column index from the header row
-        let linkCol = -1;
-        for (let c = range.s.c; c <= range.e.c; c++) {
-          const headerCell = dupSheet[XLSX.utils.encode_cell({ r: 0, c })];
-          if (headerCell && String(headerCell.v) === 'deep_link') {
-            linkCol = c;
-            break;
-          }
-        }
+        const linkCol = (dupAoa[0] ?? []).findIndex((h) => String(h) === 'deep_link');
         if (linkCol >= 0) {
-          for (let r = 1; r <= range.e.r; r++) {
-            const addr = XLSX.utils.encode_cell({ r, c: linkCol });
-            const cell = dupSheet[addr];
-            if (cell && typeof cell.v === 'string' && cell.v) {
-              cell.l = { Target: cell.v, Tooltip: 'Open in admin: session + idempotency key' };
-              cell.v = 'Open in admin →';
-              cell.s = { font: { color: { rgb: '1E3A8A' }, underline: true } };
+          for (let r = 1; r < dupAoa.length; r++) {
+            const v = dupAoa[r][linkCol];
+            if (typeof v === 'string' && v) {
+              links.push({ r, c: linkCol, target: v, tooltip: 'Open in admin: session + idempotency key' });
+              dupAoa[r][linkCol] = 'Open in admin →';
             }
           }
         }
       }
-      XLSX.utils.book_append_sheet(wb, dupSheet, 'Duplicates');
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allEvents), 'All Events');
+      addSheet(wb, 'Duplicates', dupAoa, undefined, { headerRow: false, links });
+      addSheet(wb, 'All Events', jsonToAoa(allEvents), undefined, { headerRow: false });
 
       const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      XLSX.writeFile(wb, `smoke-test-duplicates-${stamp}.xlsx`);
+      await writeXlsxFile(wb, `smoke-test-duplicates-${stamp}.xlsx`);
 
       toast({
         title: 'Rapport gegenereerd',
@@ -297,8 +287,7 @@ export default function AdminSmokeTestEventsPage() {
         };
       });
 
-      const ws = XLSX.utils.json_to_sheet(summaryRows);
-      const csv = XLSX.utils.sheet_to_csv(ws);
+      const csv = aoaToCsv(jsonToAoa(summaryRows));
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Loader2, Trophy, MousePointerClick, ShoppingCart, Eye, Download, SlidersHorizontal, FileSpreadsheet, CalendarIcon, Users, UserCheck, UserPlus } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { createWorkbook, addSheet, writeFile as writeXlsxFile } from '@/utils/excelExport';
 import type { DateRange } from 'react-day-picker';
 import { TikTokVariantKpis } from '@/components/admin/TikTokVariantKpis';
 import { UtmCampaignFunnelMatching } from '@/components/admin/UtmCampaignFunnelMatching';
@@ -329,7 +329,7 @@ export default function TikTokCtaCtrPage() {
   /** Build a multi-sheet XLSX workbook: a Summary sheet that compares all
    *  selected placements, plus one dedicated tab per placement containing both
    *  the aggregate totals and the per-campaign breakdown. */
-  function handleExportXlsx() {
+  async function handleExportXlsx() {
     const round2 = (n: number) => (Number.isFinite(n) ? Number(n.toFixed(2)) : '');
     const placementsToExport = aggregated.filter((a) => exportPlacements.has(a.placement));
     const campaignFilter = (utm: string | null): boolean => {
@@ -337,7 +337,7 @@ export default function TikTokCtaCtrPage() {
       return exportCampaigns.has(utm ?? '');
     };
 
-    const wb = XLSX.utils.book_new();
+    const wb = createWorkbook();
 
     // ---------- Summary sheet ----------
     const windowLabel = rangeMode === 'custom' && customRange?.from && customRange?.to
@@ -367,12 +367,7 @@ export default function TikTokCtaCtrPage() {
         round2(a.end_to_end),
       ]);
     });
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryAoa);
-    summarySheet['!cols'] = [
-      { wch: 16 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
-      { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
-    ];
-    XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+    addSheet(wb, 'Summary', summaryAoa, [16, 28, 12, 10, 10, 12, 12, 14, 14, 18], { headerRow: false });
 
     // ---------- One tab per placement ----------
     placementsToExport.forEach((agg) => {
@@ -415,21 +410,16 @@ export default function TikTokCtaCtrPage() {
           ]);
         });
       }
-      const sheet = XLSX.utils.aoa_to_sheet(aoa);
-      sheet['!cols'] = [
-        { wch: 28 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
-        { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 },
-      ];
       // Excel sheet names: max 31 chars, no special chars
       const sheetName = agg.placement.replace(/[\\/?*[\]:]/g, '_').slice(0, 31);
-      XLSX.utils.book_append_sheet(wb, sheet, sheetName);
+      addSheet(wb, sheetName, aoa, [28, 14, 12, 10, 12, 12, 14, 14, 18], { headerRow: false });
     });
 
     const stamp = new Date().toISOString().slice(0, 10);
     const placementSummary = Array.from(exportPlacements).join('+') || 'none';
     const campaignSummary = exportCampaigns === null ? 'all' : (Array.from(exportCampaigns).join('+') || 'none');
     const slug = `${placementSummary}_${campaignSummary}`.replace(/[^a-z0-9_+-]+/gi, '-').slice(0, 60);
-    XLSX.writeFile(wb, `tiktok-cta-ctr_${stamp}_${days}d_${slug}.xlsx`);
+    await writeXlsxFile(wb, `tiktok-cta-ctr_${stamp}_${days}d_${slug}.xlsx`);
   }
 
   const canExport =
