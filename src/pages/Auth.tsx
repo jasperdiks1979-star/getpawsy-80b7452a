@@ -31,10 +31,7 @@ const Auth = () => {
   const premium = getConversionFlag('premiumAuth');
   const premiumV2 = getConversionFlag('premiumAuthV2');
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-  const nextPath = useMemo(() => {
-    const next = searchParams.get('next');
-    return next && next.startsWith('/') ? next : '/';
-  }, [searchParams]);
+  const nextPath = useMemo(() => safeNextPath(searchParams.get('next')), [searchParams]);
   
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
