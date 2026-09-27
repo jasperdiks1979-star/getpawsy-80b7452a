@@ -1,0 +1,1 @@
+ALTER POLICY "service inserts recovery log" ON public.ai_credit_recovery_log TO service_role;
