@@ -19,6 +19,7 @@ import { GoogleButton } from '@/components/auth/GoogleButton';
 import logoIcon from '@/assets/logo-getpawsy.png';
 import { trackLogin, trackSignUp } from '@/lib/analytics';
 import { getConversionFlag } from '@/lib/conversionFlags';
+import { safeNextPath } from '@/lib/safeNextPath';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
