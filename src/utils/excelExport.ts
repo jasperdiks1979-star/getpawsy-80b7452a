@@ -15,6 +15,17 @@ export interface WorkSheet {
   data: (string | number | boolean | null | undefined)[][];
   name: string;
   columnWidths?: number[];
+  /** Bold/grey first row (default true). */
+  headerRow?: boolean;
+  /** External hyperlinks; r/c are 0-based. */
+  links?: SheetLink[];
+}
+
+export interface SheetLink {
+  r: number;
+  c: number;
+  target: string;
+  tooltip?: string;
 }
 
 export interface WorkBook {
@@ -153,6 +164,8 @@ function generateStyles(): string {
  */
 function generateWorksheet(sheet: WorkSheet, sharedStrings: Map<string, number>): string {
   const { data, columnWidths } = sheet;
+  const headerRow = sheet.headerRow !== false;
+  const links = sheet.links ?? [];
   const rows: string[] = [];
 
   // Calculate dimensions
@@ -177,7 +190,7 @@ function generateWorksheet(sheet: WorkSheet, sharedStrings: Map<string, number>)
     
     rowData.forEach((cellValue, colIndex) => {
       const cellRef = `${getColumnLetter(colIndex)}${rowIndex + 1}`;
-      const styleId = rowIndex === 0 ? '1' : '0'; // Header style for first row
+      const styleId = headerRow && rowIndex === 0 ? '1' : '0'; // Header style for first row
       
       if (cellValue === null || cellValue === undefined || cellValue === '') {
         cells.push(`<c r="${cellRef}" s="${styleId}"/>`);
@@ -201,12 +214,15 @@ function generateWorksheet(sheet: WorkSheet, sharedStrings: Map<string, number>)
   });
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <dimension ref="${dimension}"/>
   ${colsXml}
   <sheetData>
     ${rows.join('\n    ')}
   </sheetData>
+  ${links.length > 0 ? `<hyperlinks>${links.map((l, i) =>
+    `<hyperlink ref="${getColumnLetter(l.c)}${l.r + 1}" r:id="rId${i + 1}"${l.tooltip ? ` tooltip="${escapeXml(l.tooltip)}"` : ''}/>`
+  ).join('')}</hyperlinks>` : ''}
 </worksheet>`;
 }
 
@@ -235,8 +251,61 @@ export function createWorkbook(): WorkBook {
 /**
  * Add a sheet to the workbook
  */
-export function addSheet(workbook: WorkBook, name: string, data: (string | number | boolean | null | undefined)[][], columnWidths?: number[]): void {
-  workbook.sheets.push({ name, data, columnWidths });
+export function addSheet(
+  workbook: WorkBook,
+  name: string,
+  data: (string | number | boolean | null | undefined)[][],
+  columnWidths?: number[],
+  options?: { headerRow?: boolean; links?: SheetLink[] },
+): void {
+  workbook.sheets.push({ name, data, columnWidths, ...options });
+}
+
+/**
+ * Like jsonToSheet, but headers are the union of keys across ALL rows in
+ * first-seen order (matches xlsx json_to_sheet). Missing values become null.
+ */
+export function jsonToAoa(data: Record<string, unknown>[]): (string | number | boolean | null | undefined)[][] {
+  const headers: string[] = [];
+  const seen = new Set<string>();
+  for (const item of data) for (const k of Object.keys(item)) if (!seen.has(k)) { seen.add(k); headers.push(k); }
+  if (headers.length === 0) return [];
+  const rows: (string | number | boolean | null | undefined)[][] = [headers];
+  for (const item of data) {
+    rows.push(headers.map((h) => {
+      const v = item[h];
+      if (v === null || v === undefined) return null;
+      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
+      return String(v);
+    }));
+  }
+  return rows;
+}
+
+/**
+ * Serialize a 2D array to CSV matching xlsx 0.18.5 sheet_to_csv output:
+ * comma separator, \n line endings, quote only when needed, TRUE/FALSE for
+ * booleans, empty for null, rows padded to the widest row.
+ */
+export function aoaToCsv(data: (string | number | boolean | null | undefined)[][]): string {
+  const width = Math.max(0, ...data.map((r) => r.length));
+  return data.map((row) => {
+    const out: string[] = [];
+    for (let i = 0; i < width; i++) {
+      const v = row[i];
+      let s = v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v);
+      if (/[",\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+      out.push(s);
+    }
+    return out.join(',');
+  }).join('\n');
+}
+
+function generateSheetRels(links: SheetLink[]): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${links.map((l, i) =>
+    `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(l.target)}" TargetMode="External"/>`
+  ).join('')}</Relationships>`;
 }
 
 /**
@@ -266,7 +335,7 @@ export function jsonToSheet<T extends Record<string, unknown>>(data: T[]): (stri
 /**
  * Generate and download an Excel file
  */
-export async function writeFile(workbook: WorkBook, filename: string): Promise<void> {
+export async function buildZip(workbook: WorkBook): Promise<JSZip> {
   const zip = new JSZip();
   const sharedStrings = new Map<string, number>();
 
@@ -294,7 +363,16 @@ export async function writeFile(workbook: WorkBook, filename: string): Promise<v
   // Generate worksheet files
   workbook.sheets.forEach((sheet, index) => {
     zip.file(`xl/worksheets/sheet${index + 1}.xml`, generateWorksheet(sheet, sharedStrings));
+    if (sheet.links && sheet.links.length > 0) {
+      zip.file(`xl/worksheets/_rels/sheet${index + 1}.xml.rels`, generateSheetRels(sheet.links));
+    }
   });
+
+  return zip;
+}
+
+export async function writeFile(workbook: WorkBook, filename: string): Promise<void> {
+  const zip = await buildZip(workbook);
 
   // Generate the blob and trigger download
   const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
