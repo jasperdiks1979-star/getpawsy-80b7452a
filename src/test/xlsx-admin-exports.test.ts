@@ -1,60 +1,67 @@
 import { describe, it, expect } from 'vitest';
-import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { createWorkbook, addSheet, jsonToAoa, aoaToCsv, buildZip, type SheetLink } from '@/utils/excelExport';
 
-describe('xlsx admin export patterns', () => {
-  it('resolves the pinned SheetJS version', () => {
-    expect(XLSX.version).toBe('0.18.5');
+async function open(wb: ReturnType<typeof createWorkbook>) {
+  const buf = await (await buildZip(wb)).generateAsync({ type: 'uint8array' });
+  return JSZip.loadAsync(buf);
+}
+const text = (z: JSZip, p: string) => z.file(p)!.async('string');
+
+describe('admin spreadsheet exports (JSZip writer, replaces xlsx)', () => {
+  it('TikTok pattern: sheet names, widths, typed cells, no bold title row', async () => {
+    const wb = createWorkbook();
+    addSheet(wb, 'Summary', [['TikTok CTA CTR Export'], [], ['Placement', 'CTR %'], ['hero', 12.34]], [16, 28], { headerRow: false });
+    const long = 'a/b?c*d[e]f:g\\h-very-long-placement-name-xyz'.replace(/[\\/?*[\]:]/g, '_').slice(0, 31);
+    addSheet(wb, long, [['Metric', 'Value'], ['Clicks', 7]], [28, 14], { headerRow: false });
+    const z = await open(wb);
+    const book = await text(z, 'xl/workbook.xml');
+    expect(book).toContain('name="Summary"');
+    expect(book).toContain(`name="${long}"`);
+    expect(long.length).toBe(31);
+    const s1 = await text(z, 'xl/worksheets/sheet1.xml');
+    expect(s1).toContain('<col min="1" max="1" width="16" customWidth="1"/>');
+    expect(s1).toContain('<c r="B4" s="0"><v>12.34</v></c>');
+    expect(s1).not.toContain('s="1"');
+    expect(await text(z, 'xl/sharedStrings.xml')).toContain('TikTok CTA CTR Export');
   });
 
-  it('TikTokCtaCtrPage pattern: aoa_to_sheet + book_append_sheet + serialize', () => {
-    const wb = XLSX.utils.book_new();
-    const summary = XLSX.utils.aoa_to_sheet([
-      ['Metric', 'Value'],
-      ['Impressions', 1200],
-      ['CTR', 0.034],
-    ]);
-    const rows = XLSX.utils.aoa_to_sheet([
-      ['Variant', 'Clicks'],
-      ['A', 12],
-    ]);
-    XLSX.utils.book_append_sheet(wb, summary, 'Summary');
-    XLSX.utils.book_append_sheet(wb, rows, 'Variants');
-    const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
-    expect(out.byteLength).toBeGreaterThan(0);
-
-    const back = XLSX.read(out, { type: 'array' });
-    expect(back.SheetNames).toEqual(['Summary', 'Variants']);
-    expect(back.Sheets.Summary.B2.v).toBe(1200);
-    expect(back.Sheets.Variants.A2.v).toBe('A');
+  it('smoke-test pattern: 4 ordered sheets and deep_link hyperlink with tooltip', async () => {
+    const dup = jsonToAoa([{ key: 'k1', deep_link: 'https://getpawsy.pet/admin/x?a=1&b=2' }]);
+    const col = dup[0].indexOf('deep_link');
+    const links: SheetLink[] = [{ r: 1, c: col, target: String(dup[1][col]), tooltip: 'Open in admin: session + idempotency key' }];
+    dup[1][col] = 'Open in admin →';
+    const wb = createWorkbook();
+    for (const n of ['Filters', 'Summary']) addSheet(wb, n, jsonToAoa([{ a: 1 }]), undefined, { headerRow: false });
+    addSheet(wb, 'Duplicates', dup, undefined, { headerRow: false, links });
+    addSheet(wb, 'All Events', jsonToAoa([{ step: 'x' }]), undefined, { headerRow: false });
+    const z = await open(wb);
+    const names = [...(await text(z, 'xl/workbook.xml')).matchAll(/name="([^"]+)"/g)].map((m) => m[1]);
+    expect(names).toEqual(['Filters', 'Summary', 'Duplicates', 'All Events']);
+    const s3 = await text(z, 'xl/worksheets/sheet3.xml');
+    expect(s3).toContain('<hyperlink ref="B2" r:id="rId1" tooltip="Open in admin: session + idempotency key"/>');
+    const rels = await text(z, 'xl/worksheets/_rels/sheet3.xml.rels');
+    expect(rels).toContain('Target="https://getpawsy.pet/admin/x?a=1&amp;b=2" TargetMode="External"');
+    expect(await text(z, 'xl/sharedStrings.xml')).toContain('Open in admin →');
+    expect(z.file('xl/worksheets/_rels/sheet1.xml.rels')).toBeNull();
   });
 
-  it('AdminSmokeTestEventsPage pattern: json_to_sheet + decode_range + encode_cell link + sheet_to_csv', () => {
-    const ws = XLSX.utils.json_to_sheet([
-      { event: 'pdp_view', count: 3, link: 'https://getpawsy.pet/products/x' },
-      { event: 'add_to_cart', count: 1, link: 'https://getpawsy.pet/products/y' },
-    ]);
-    const range = XLSX.utils.decode_range(ws['!ref'] ?? 'A1');
-    expect(range.e.r).toBe(2);
-    let linkCol = -1;
-    for (let c = range.s.c; c <= range.e.c; c++) {
-      if (ws[XLSX.utils.encode_cell({ r: 0, c })]?.v === 'link') linkCol = c;
-    }
-    expect(linkCol).toBe(2);
-    for (let r = 1; r <= range.e.r; r++) {
-      const addr = XLSX.utils.encode_cell({ r, c: linkCol });
-      ws[addr].l = { Target: String(ws[addr].v) };
-    }
-    expect(ws.C2.l?.Target).toBe('https://getpawsy.pet/products/x');
+  it('Duplicates fallback row', () => {
+    expect(jsonToAoa([{ note: 'No duplicates detected' }])).toEqual([['note'], ['No duplicates detected']]);
+  });
 
-    const csv = XLSX.utils.sheet_to_csv(ws);
-    const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe('event,count,link');
-    expect(lines[1]).toBe('pdp_view,3,https://getpawsy.pet/products/x');
+  it('jsonToAoa unions keys across rows in first-seen order', () => {
+    expect(jsonToAoa([{ a: 1 }, { b: 'x', a: 2 }])).toEqual([['a', 'b'], [1, null], [2, 'x']]);
+  });
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Duplicates');
-    const out = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
-    const back = XLSX.read(out, { type: 'array' });
-    expect(back.Sheets.Duplicates.C2.l?.Target).toBe('https://getpawsy.pet/products/x');
+  it('aoaToCsv matches xlsx 0.18.5 sheet_to_csv output (recorded)', () => {
+    const rows = [
+      { a: 'plain', b: 1.5, c: null, d: 'x,y' },
+      { a: 'q"t', b: 0, c: 'line\nbreak', d: true, e: 'extra' },
+      { a: '', b: -2 },
+    ];
+    // Recorded from xlsx@0.18.5: sheet_to_csv(json_to_sheet(rows))
+    const expected = 'a,b,c,d,e\nplain,1.5,,"x,y",\n"q""t",0,"line\nbreak",TRUE,extra\n,-2,,,';
+    expect(aoaToCsv(jsonToAoa(rows))).toBe(expected);
   });
 });
