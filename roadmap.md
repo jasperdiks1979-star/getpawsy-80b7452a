@@ -30,4 +30,4 @@
 - [x] Analytics dedup — one purchase source event can only ever produce one canonical purchase row + one revenue amount (shared `_shared/canonicalDedup.ts`, mirrored by `canonical_ingest_recent`); the single duplicate smoke row removed.
 - [x] Final closure — the 7 long-standing failures were stale tests, now repaired: FunnelHealthCenter (missing query provider), Pinterest Market Intelligence (engine legitimately writes its own tables; now asserts source signal tables are never mutated), Visitor World Map Pro (strict-v3 removed the unqualified `kpi-visitors`), plus security-a (cron monitors use `requireMonitorCaller`). Suite: 931 passed / 1 skipped / 0 failing; typecheck clean; build OK.
 
-- [ ] Upgrade xlsx 0.18.5 -> 0.20.2 (SheetJS tarball) + tests + publish
+- [ ] Upgrade xlsx to 0.20.2: done locally, tests+build pass; PUBLISH BLOCKED — dependency scanner cannot parse tarball lock entry (needs user decision)
