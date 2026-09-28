@@ -6,7 +6,7 @@ import { getCanonicalEventCounts, type CanonicalStage } from "@/lib/canonicalAna
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Download, RefreshCw, Activity } from "lucide-react";
+import { AlertTriangle, RefreshCw, Activity } from "lucide-react";
 
 type Row = Record<string, any>;
 
