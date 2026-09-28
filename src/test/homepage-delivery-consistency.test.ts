@@ -10,7 +10,7 @@ const nav = read('src/components/v2/storefront/nav-config.ts');
 const compatibilityHome = read('src/components/home/HomePage.tsx');
 
 const HERO_IDS = [
-  '128e0207-8a94-4d71-b428-5b7f5002528f',
+  'a59f49ad-b9ee-47ce-a16d-74c2ab61b900',
   'b9c0f448-162b-4464-bf36-7697e6fe4852',
   '1b218ab0-19b5-4ae5-a227-8099f2e2f00c',
   '84be6648-7fd6-4b18-bdd7-ff9df7907892',
@@ -55,6 +55,12 @@ describe('homepage delivery consistency', () => {
     expect(HERO_IDS).toHaveLength(5);
     for (const id of HERO_IDS) expect(home).toContain(id);
     expect(home).toContain(".in('id', [...HERO_PRODUCT_IDS])");
+  });
+
+  it('excludes products blocked from homepage merchandising', () => {
+    expect(home).toContain(".eq('merch_hidden', false)");
+    expect(home).toContain(".neq('merch_role', 'blocked')");
+    expect(home).not.toContain('128e0207-8a94-4d71-b428-5b7f5002528f');
   });
 
   it('keeps raw shipping language evidence-safe', () => {
