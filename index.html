@@ -396,10 +396,12 @@
         void slugLegacy;
       }
 
-      // Redirect /bestseller/:slug to /product/:slug (canonical URL consolidation)
+      // Redirect /bestseller/:slug straight to canonical /products/:slug (one hop, same for every visitor)
       if (p.indexOf('/bestseller/') === 0) {
-        var bSlug = p.replace('/bestseller/', '');
-        window.location.replace(ORIGIN + '/product/' + bSlug);
+        var bSlug = p.replace('/bestseller/', '').replace(/\/+$/, '');
+        if (bSlug && bSlug.indexOf('/') === -1) {
+          window.location.replace(ORIGIN + '/products/' + bSlug + location.search + location.hash);
+        }
       }
     })();
     </script>

@@ -248,7 +248,7 @@ export const SEO_PILLARS: SeoPillar[] = [
     crossClusterPillar: { namespace: 'cat', pillarSlug: 'cat-trees-for-large-cats', anchor: 'Cat Trees for Large Cats Guide' },
     faq: [
       { q: 'Is it illegal to drive with an unrestrained dog?', a: 'In several US states (including Hawaii, New Jersey, and Rhode Island), it\'s illegal. Even where not mandated, an unrestrained pet is a distracted driving risk. Many insurance companies may deny claims if an unrestrained pet caused an accident.' },
-      { q: 'What\'s the safest way to transport a dog in a car?', a: 'A crash-tested crate or carrier secured in the cargo area is safest. If using the back seat, a CPS-certified harness attached to the vehicle\'s LATCH system or seatbelt provides the best protection.' },
+      { q: 'What\'s the safest way to transport a dog in a car?', a: 'A crash-tested crate or carrier secured in the cargo area is safest. If using the back seat, a harness attached to the vehicle\'s LATCH system or seatbelt provides the best protection.' },
       { q: 'Can my dog ride in the front seat?', a: 'No. Airbags deploy with lethal force for pets. Dogs should always ride in the back seat or cargo area, properly restrained. Even small dogs in front seats face severe airbag injury risk.' },
       { q: 'What is CPS certification for pet restraints?', a: 'The Center for Pet Safety (CPS) is the only independent organization that crash-tests pet travel products using standardized protocols. CPS certification means the product passed dynamic crash testing with certified crash test dog dummies.' },
       { q: 'How do I get my dog comfortable in a car restraint?', a: 'Start with short 5-minute trips. Let your dog explore the restraint with treats before car rides. Gradually increase trip length. Use a familiar blanket. Most dogs adapt within 2–3 weeks of consistent use.' },
@@ -259,8 +259,8 @@ export const SEO_PILLARS: SeoPillar[] = [
         title: 'Dog Seat Belts & Safety Harnesses – What to Look For',
         h1: 'Dog Seat Belts & Safety Harnesses',
         primaryKeyword: 'crash tested dog seat belt',
-        secondaryKeywords: ['dog car harness crash tested', 'CPS certified dog harness', 'dog seatbelt harness', 'safest dog car harness', 'dog car restraint', 'dog crash harness'],
-        intro: 'Most dog "seatbelts" sold online are untested and provide zero crash protection — they\'re just comfort leashes. Genuine crash-tested harnesses meet Center for Pet Safety (CPS) standards and use automotive-grade hardware. We\'ve reviewed every CPS-certified option available in 2026, comparing crash test performance, comfort ratings, and ease of use to help you choose real protection, not false security.',
+        secondaryKeywords: ['dog car harness crash tested', 'dog seatbelt harness', 'safest dog car harness', 'dog car restraint', 'dog crash harness'],
+        intro: 'Most dog "seatbelts" sold online are untested and provide zero crash protection — they\'re just comfort leashes. Genuine crash-tested harnesses meet Center for Pet Safety (CPS) standards and use automotive-grade hardware. We\'ve compared the options available in 2026, comparing crash test performance, comfort ratings, and ease of use to help you choose real protection, not false security.',
         productsCollectionSlug: 'dog-car-travel-safety',
         componentKey: 'DogCarHarness',
         faq: [

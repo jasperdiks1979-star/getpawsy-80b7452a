@@ -32,7 +32,7 @@ Critical difference: Walking harnesses are designed to prevent pulling. Car harn
           heading: 'What "Crash Tested" Really Means',
           body: `The Center for Pet Safety (CPS) is the leading US organization for pet travel safety testing. Their crash tests use weighted crash test dummies in standardized sled tests simulating 30 mph frontal impacts.
 
-A CPS-certified harness has been proven to:
+Their test protocol checks whether a harness can:
 • Keep the dog restrained during impact (no ejection)
 • Distribute crash forces across the chest plate (no point-loading)
 • Maintain structural integrity (no strap or buckle failure)

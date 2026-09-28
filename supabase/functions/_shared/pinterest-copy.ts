@@ -47,7 +47,8 @@ export const US_INTENT_KEYWORDS = [
   "US pet lifestyle",
 ];
 
-const US_TRUST_TAGLINE = "Free US Shipping · Ships from New York, NY · 3–7 business days";
+// Must match src/lib/shipping-constants.ts (FREE_SHIPPING_THRESHOLD, DELIVERY_TIME_STANDARD).
+const US_TRUST_TAGLINE = "Free US shipping on orders $35+ · Estimated delivery 5–10 business days";
 
 /** Convert any user-supplied string to US English + strip intl phrases. */
 export function toUSEnglish(input: string): string {

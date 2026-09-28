@@ -42,9 +42,9 @@ export default function BestDogCarSeatSafety() {
       }}
       expertVerdict={{
         heading: 'Expert Verdict',
-        body: 'After crash-testing 20+ products and 400+ miles of road testing, the Sleepypod Clickit Sport is the clear safety leader with CPS certification. For small dogs, the PupSaver offers crash-tested protection with comfort.',
+        body: 'After crash-testing 20+ products and 400+ miles of road testing, the Sleepypod Clickit Sport is our top overall pick. For small dogs, the PupSaver offers crash-tested protection with comfort.',
         listItems: [
-          'Safest overall: Sleepypod Clickit Sport — only CPS-certified dog harness on the market.',
+          'Safest overall: Sleepypod Clickit Sport.',
           'Best for small dogs: PupSaver — crash-tested to 30 mph with plush bolster design.',
           'Best budget pick: Kurgo Skybox — great visibility and comfort at under $50.',
         ],
@@ -60,8 +60,8 @@ export default function BestDogCarSeatSafety() {
           badge: 'Best Overall',
           name: 'Sleepypod Clickit Sport Harness',
           bestFor: 'Maximum crash-test safety for medium-large dogs',
-          highlights: ['3-point crash-tested (CPS certified)', 'Doubles as walking harness', 'Padded vest distributes force evenly', 'Fits dogs 18–90 lbs'],
-          pros: ['Only CPS-certified harness on market', 'Dual-use as walking harness saves money', 'Wide padded vest prevents injury on impact', 'Works in any vehicle with standard seatbelt'],
+          highlights: ['3-point crash-tested', 'Doubles as walking harness', 'Padded vest distributes force evenly', 'Fits dogs 18–90 lbs'],
+          pros: ['Dual-use as walking harness saves money', 'Wide padded vest prevents injury on impact', 'Works in any vehicle with standard seatbelt'],
           cons: ['Requires seatbelt routing — takes 2–3 min', 'Not suitable for dogs under 18 lbs', 'Premium price point for a harness'],
           priceRange: '$79–$99',
           rating: 4.9,
@@ -122,9 +122,8 @@ export default function BestDogCarSeatSafety() {
         },
         {
           heading: 'Best Dog Car Seat for Safety',
-          body: 'Safety should be the #1 priority. Look for CPS (Center for Pet Safety) certified products or independently crash-tested seats. A pretty seat that fails in a crash is not a safe seat.',
+          body: 'Safety should be the #1 priority. Look for independently crash-tested seats with published test documentation. A pretty seat that fails in a crash is not a safe seat.',
           listItems: [
-            'CPS certification is the gold standard — only 2 products have it',
             'FMVSS-tested products meet federal motor vehicle safety standards',
             'LATCH-compatible seats offer most secure installation',
             '3-point harness systems distribute crash forces better than single-point',
