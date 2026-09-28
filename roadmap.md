@@ -37,3 +37,4 @@
 
 - [x] Google Ads compliance patch (shipping claims, CPS claims, /feed.xml, bestseller one-hop, robots note, Pinterest tagline)
 - [x] /admin-reports/ removed from public hosting (moved to archive/admin-reports/, 2026-09-28)
+- [x] Homepage featured slot 1 replaced with a visible, sellable cat product after the prior item was found merchandising-blocked with a 404 primary image (2026-09-28)
