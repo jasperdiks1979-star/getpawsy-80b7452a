@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-BASE = Path("public/admin-reports/ai-implementation")
+BASE = Path("archive/admin-reports/ai-implementation")
 PUBLIC_URL_PREFIX = "/admin-reports/ai-implementation"
 REPAIR_SLUG = "2026-06-26-ai-report-system-repair"
 

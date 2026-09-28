@@ -125,3 +125,8 @@
 
 # ── SPA fallback ──
 /* /index.html 200
+
+# ── Internal reports removed from public hosting (2026-09-28) ──
+# Files archived in archive/admin-reports/ (not deployed). Old URLs go home.
+/admin-reports/* / 301
+/admin-reports / 301
