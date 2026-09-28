@@ -8,6 +8,8 @@
  * Pages opt in by key; consumers read the config and render accordingly.
  */
 
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
+
 export type TrustModule =
   | 'free_shipping'
   | 'returns'
@@ -33,7 +35,7 @@ export function getTrustModules(surface: TrustSurface): TrustModule[] {
 }
 
 export const TRUST_LABELS: Record<TrustModule, string> = {
-  free_shipping: 'Free shipping over $50',
+  free_shipping: `Free shipping over $${FREE_SHIPPING_THRESHOLD}`,
   returns: '30-day returns',
   secure_checkout: 'Secure checkout',
   us_support: 'Email support within 24 hours',
