@@ -128,7 +128,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
     ogDescription: 'Dog car seats, harnesses & booster seats. Free shipping available + 30-day return policy.',
     h1: 'Dog Car Seats & Travel Safety Gear',
     faqItems: [
-      { question: 'What is the safest dog car seat?', answer: 'The safest dog car seats are those crash-tested at CPS-certified facilities. Look for models that passed the Center for Pet Safety (CPS) certification program — they use weighted crash test dummies in standardized 30 mph sled tests. Products without CPS certification may restrain your dog during normal driving but offer zero protection in a collision. For dogs under 50 lbs, full-enclosure car seats with 5-point harnesses are safest.' },
+      { question: 'What is the safest dog car seat?', answer: 'The safest dog car seats are those with independent crash-test documentation. Look for models that passed the Center for Pet Safety (CPS) certification program — they use weighted crash test dummies in standardized 30 mph sled tests. Products without CPS certification may restrain your dog during normal driving but offer zero protection in a collision. For dogs under 50 lbs, full-enclosure car seats with 5-point harnesses are safest.' },
       { question: 'Is a dog car seat or harness better?', answer: 'For small-medium dogs (under 50 lbs), crash-tested car seats offer the best protection — full enclosure plus harness restraint. For large dogs (50+ lbs), crash-tested harnesses attached to the vehicle seat belt are preferred because large dogs outgrow bucket-style seats. Either way, the device MUST be crash-tested — restraint without crash testing provides a false sense of security.' },
       { question: 'Do dogs legally need to be restrained in cars?', answer: 'Multiple US states require pet restraint in vehicles: Hawaii, New Jersey, Rhode Island, and Connecticut have active laws. Even without legal requirement, an unrestrained 60 lb dog at 35 mph becomes a 2,700 lb projectile — a lethal danger to everyone in the vehicle. Insurance claims can be denied if an unrestrained pet caused the distraction.' },
       { question: 'What size dog car seat do I need?', answer: 'Under 20 lbs: booster seat with elevated platform. 20–50 lbs: standard car seat with 5-point harness system. 50+ lbs: crash-tested harness with seat belt attachment (large dogs outgrow bucket seats). Always measure your dog sitting and lying down, then add 3 inches to each dimension for comfort.' },
@@ -156,7 +156,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
     clusterGuides: [
       { title: 'Safest Dog Travel Options Compared', slug: 'safest-dog-travel-options', keywords: ['safest dog car', 'dog travel safety', 'best way to travel with dog'] },
       { title: 'Dog Booster Seat vs Harness – Expert Comparison', slug: 'dog-booster-seat-vs-harness', keywords: ['dog booster seat vs harness', 'dog car seat vs harness', 'best dog car restraint'] },
-      { title: 'Crash-Tested Dog Car Safety – What Certifications Mean', slug: 'crash-tested-dog-car-safety', keywords: ['crash tested dog seat', 'CPS certified dog seat', 'dog car seat safety rating'] },
+      { title: 'Crash-Tested Dog Car Safety – What Certifications Mean', slug: 'crash-tested-dog-car-safety', keywords: ['crash tested dog seat', 'dog car seat safety rating'] },
     ],
   },
 ];

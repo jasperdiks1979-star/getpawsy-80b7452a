@@ -25,9 +25,9 @@ Disallow: /unsubscribe
 Disallow: /payment-success
 Disallow: /thank-you
 
-# Tracking / filter parameters: allow Google to crawl + follow canonical
-# (canonical tags + meta robots noindex,follow on the page handle de-indexing).
-# Blocking via robots.txt previously caused "Indexed, though blocked by robots.txt" warnings.
+# Click-ID duplicates: block general crawlers from fbclid/gclid URL variants
+# (the clean URL without the parameter stays crawlable). AdsBot-Google ignores
+# User-agent: * rules, so ad landing-page review is not affected.
 Disallow: /*?fbclid=*
 Disallow: /*?gclid=*
 Disallow: /*&fbclid=*

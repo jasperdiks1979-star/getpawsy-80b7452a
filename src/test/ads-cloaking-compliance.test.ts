@@ -95,3 +95,25 @@ describe('no crawler-conditional destination or content', () => {
     expect(s).not.toMatch(/user-?agent|googlebot|adsbot/i);
   });
 });
+
+describe('follow-up remediation (unsupported claims, legacy links, Pinterest copy)', () => {
+  it('no "CPS-certified" claims in public content, storefront code or Pinterest copy', () => {
+    const files = [...PUBLIC_CONTENT, ...STOREFRONT_SRC, 'supabase/functions/_shared/pinterest-copy.ts'];
+    for (const f of files) expect(readFileSync(f, 'utf8'), f).not.toMatch(/CPS[- ]certified/i);
+  });
+  it('/bestseller/ goes straight to /products/ in one hop', () => {
+    const s = readFileSync('index.html', 'utf8');
+    expect(s).toContain("ORIGIN + '/products/' + bSlug");
+    expect(s).not.toContain("ORIGIN + '/product/' + bSlug");
+  });
+  it('Pinterest trust tagline matches current policy and has no New York / 3–7 claim', () => {
+    const s = readFileSync('supabase/functions/_shared/pinterest-copy.ts', 'utf8');
+    const line = s.split('\n').find((l) => l.startsWith('const US_TRUST_TAGLINE'))!;
+    expect(line).toContain(`$${FREE_SHIPPING_THRESHOLD}+`);
+    expect(line).toContain(DELIVERY_TIME_STANDARD);
+    expect(line).not.toMatch(/New York|3\s*[-–]\s*7/);
+  });
+  it('robots.txt note no longer claims gclid URLs are allowed', () => {
+    expect(readFileSync('public/robots.txt', 'utf8')).not.toContain('allow Google to crawl + follow canonical');
+  });
+});
