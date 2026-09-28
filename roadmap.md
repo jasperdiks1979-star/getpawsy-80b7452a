@@ -34,3 +34,5 @@
 - [x] xlsx removed; admin exports use src/utils/excelExport.ts (JSZip); published build-mukeg2ey-rw7i, verified live 27 Sep
 
 - [ ] react-router-dom 6.30.1 -> 6.30.6 (isolated patch): implemented + all gates passed; awaiting separate publish approval
+
+- [ ] Google Ads cloaking/compliance patch (shipping claims, trust label, /feed.xml link, regression test) — prepared, awaiting publish approval
