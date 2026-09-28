@@ -36,4 +36,4 @@
 - [ ] react-router-dom 6.30.1 -> 6.30.6 (isolated patch): implemented + all gates passed; awaiting separate publish approval
 
 - [x] Google Ads compliance patch (shipping claims, CPS claims, /feed.xml, bestseller one-hop, robots note, Pinterest tagline)
-- [ ] Protect /admin-reports/ behind admin sign-in — blocked: static files cannot be auth-gated; needs private storage + access rule (user decision)
+- [x] /admin-reports/ removed from public hosting (moved to archive/admin-reports/, 2026-09-28)
