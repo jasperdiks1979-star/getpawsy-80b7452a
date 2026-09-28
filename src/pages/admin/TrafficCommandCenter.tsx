@@ -97,11 +97,6 @@ const TrafficCommandCenter = () => {
             <Button size="sm" variant="outline" onClick={load} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
             </Button>
-            <Button size="sm" asChild>
-              <a href="/admin-reports/incident/2026-06-25-growth-incident-report.pdf" download>
-                <Download className="h-4 w-4 mr-2" /> Incident PDF
-              </a>
-            </Button>
           </div>
         </div>
 

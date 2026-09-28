@@ -14,50 +14,10 @@ interface ReportItem {
   path: string;
 }
 
-const REPORTS: ReportItem[] = [
-  {
-    filename: "2026-07-02-genesis-v12-conversion-black-box.html",
-    title: "Genesis V12 — Conversion Black Box Report",
-    category: "Conversion Forensics · 0 purchases / 7d · 4 abandoned Stripe sessions · Top 25 fixes · SHA-256 dd1f83…",
-    path: "/admin-reports/genesis-v12/2026-07-02-genesis-v12-conversion-black-box.html",
-  },
-  {
-    filename: "2026-07-02-genesis-v12.1-first-impression-trust.html",
-    title: "Genesis V12.1 — First Impression & Trust Forensics",
-    category: "UX · 5s / 30s persona tests · Top 25 safe improvements · SHA-256 1811bd…",
-    path: "/admin-reports/genesis-v12/2026-07-02-genesis-v12.1-first-impression-trust.html",
-  },
-  {
-    filename: "2026-07-01-lovable-expense-tax-forensics.pdf",
-    title: "Genesis V11 — Lovable Expense & Tax Forensics Report",
-    category: "Bookkeeping · Belastingdienst · Credits verified · Invoices §9 recovery",
-    path: "/admin-reports/genesis-v11/2026-07-01-lovable-expense-tax-forensics.pdf",
-  },
-  {
-    filename: "2026-07-01-financial-integrity-certification.pdf",
-    title: "Genesis V10.3 — Ultimate Financial Integrity & Production Certification",
-    category: "Financial Certification · CERTIFIED 100% LIVE · Overall 97/100 · 0.00% divergence",
-    path: "/admin-reports/genesis-v10.3/2026-07-01-financial-integrity-certification.pdf",
-  },
-  {
-    filename: "2026-07-01-stripe-live-certification.pdf",
-    title: "Genesis V10.2 — Stripe Live Certification & Forensic Audit",
-    category: "Environment Integrity · CERTIFIED 100% LIVE · Health 98/100",
-    path: "/admin-reports/genesis-v10.2/2026-07-01-stripe-live-certification.pdf",
-  },
-  {
-    filename: "GetPawsy_Boardroom_Investor_Report.pdf",
-    title: "GetPawsy Boardroom Investor Report",
-    category: "SEO & Authority Strategy",
-    path: "/admin-reports/GetPawsy_Boardroom_Investor_Report.pdf",
-  },
-  {
-    filename: "2026-07-01-stripe-live-vs-test-forensics.pdf",
-    title: "Genesis V10 — Stripe Live vs Test Forensics",
-    category: "Environment Integrity · YES — proven",
-    path: "/admin-reports/genesis-v10/2026-07-01-stripe-live-vs-test-forensics.pdf",
-  },
-];
+// Static report files were moved out of public hosting (2026-09-28, Google Ads
+// compliance) into archive/admin-reports/ in the source repo. They are no longer
+// served, so no public links are rendered here.
+const REPORTS: ReportItem[] = [];
 
 // Dynamic PDF reports (generated client-side)
 import { ComplianceAuditDownload } from "@/components/admin/ComplianceAuditDownload";
@@ -113,24 +73,9 @@ const AdminReportsPage = () => {
   const [aiReportError, setAiReportError] = useState<string | null>(null);
 
   useEffect(() => {
-    const manifestUrl = `/admin-reports/ai-implementation/manifest.json?v=${Date.now()}`;
-    fetch(manifestUrl, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`Manifest request failed (${r.status})`);
-        return r.json();
-      })
-      .then((d) => {
-        const list = normalizeAiReports(d);
-        setAiReports(list);
-        setAiReportError(list.length ? null : "Manifest loaded but contains no report entries.");
-      })
-      .catch((error) => {
-        setAiReports([]);
-        setAiReportError(error instanceof Error ? error.message : "Manifest could not be loaded.");
-      });
+    // Manifest lived under the former public /admin-reports/ tree (now archived).
+    setAiReports([]);
+    setAiReportError(null);
   }, []);
 
   if (isLoading) return null;
@@ -155,6 +100,11 @@ const AdminReportsPage = () => {
           </NavLink>
         </div>
 
+        <Card className="mb-4">
+          <CardContent className="py-6 text-sm text-muted-foreground">
+            Static report files are archived offline and no longer published on the website.
+          </CardContent>
+        </Card>
         <div className="grid gap-4">
           {REPORTS.map((report) => (
             <Card key={report.filename}>
@@ -225,7 +175,7 @@ const AdminReportsPage = () => {
             <CardContent className="py-8 text-sm text-muted-foreground text-center">
               {aiReportError
                 ? `AI implementation report manifest error: ${aiReportError}`
-                : "No AI implementation reports yet. They appear here automatically after the next run."}
+                : "AI implementation reports are archived offline and no longer published on the website."}
             </CardContent>
           </Card>
         ) : (
