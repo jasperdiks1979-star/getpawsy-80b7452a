@@ -57,6 +57,13 @@
       "when": 1790545056825,
       "tag": "0007_restrict_ai_credit_recovery_log_insert_to_service_role",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790813496878,
+      "tag": "0008_crawler_identity_fields",
+      "breakpoints": true
     }
   ]
 }

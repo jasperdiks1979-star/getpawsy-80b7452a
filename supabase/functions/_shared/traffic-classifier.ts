@@ -21,6 +21,9 @@ export interface ClassifierInput {
   has_checkout?: boolean | null;
   has_order?: boolean | null;
   datacenter_signal?: boolean | null;
+  /** From _shared/crawler-identity.ts; true only after IP-range/DNS verification. */
+  crawler_verified?: boolean | null;
+  crawler_reason?: string | null;
 }
 
 export interface ClassifierResult {
@@ -67,6 +70,19 @@ export function classifyTraffic(input: ClassifierInput): ClassifierResult {
   const hasCheckout = !!input.has_checkout;
   const hasOrder = !!input.has_order;
   const strongHuman = hasAtc || hasCheckout || hasOrder;
+
+  // 0. VERIFIED CRAWLER (IP-range / DNS verified) — never human, never commercial.
+  if (input.crawler_verified) {
+    return {
+      traffic_quality: "bot",
+      is_bot: true,
+      is_internal: false,
+      technical_path: false,
+      bot_confidence: 1,
+      bot_reason: input.crawler_reason ?? "crawler:verified",
+      classification_version: CLASSIFIER_VERSION,
+    };
+  }
 
   // 1. INTERNAL
   if (input.is_internal_hint) {

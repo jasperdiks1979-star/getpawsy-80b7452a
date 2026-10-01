@@ -18639,36 +18639,60 @@ export type Database = {
       crawler_visits: {
         Row: {
           bot_type: string | null
+          crawler_confidence: number | null
+          crawler_family: string | null
+          crawler_identity: string | null
+          crawler_reasons: string[] | null
+          crawler_verification_method: string | null
+          crawler_verified: boolean
           created_at: string
           id: string
           idempotency_key: string | null
           ip_address: string | null
+          ip_hash: string | null
           is_googlebot: boolean
           page_url: string
           referrer: string | null
           user_agent: string
+          user_agent_family: string | null
         }
         Insert: {
           bot_type?: string | null
+          crawler_confidence?: number | null
+          crawler_family?: string | null
+          crawler_identity?: string | null
+          crawler_reasons?: string[] | null
+          crawler_verification_method?: string | null
+          crawler_verified?: boolean
           created_at?: string
           id?: string
           idempotency_key?: string | null
           ip_address?: string | null
+          ip_hash?: string | null
           is_googlebot?: boolean
           page_url: string
           referrer?: string | null
           user_agent: string
+          user_agent_family?: string | null
         }
         Update: {
           bot_type?: string | null
+          crawler_confidence?: number | null
+          crawler_family?: string | null
+          crawler_identity?: string | null
+          crawler_reasons?: string[] | null
+          crawler_verification_method?: string | null
+          crawler_verified?: boolean
           created_at?: string
           id?: string
           idempotency_key?: string | null
           ip_address?: string | null
+          ip_hash?: string | null
           is_googlebot?: boolean
           page_url?: string
           referrer?: string | null
           user_agent?: string
+          user_agent_family?: string | null
         }
         Relationships: []
       }

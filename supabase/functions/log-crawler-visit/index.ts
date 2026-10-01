@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.23.8";
+import { resolveCrawlerIdentity, userAgentFamily, hashIp } from "../_shared/crawler-identity.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -411,6 +412,20 @@ async function isVerifiedGoogleIp(ip: string): Promise<boolean> {
   }
 }
 
+let bingRanges: ParsedRange[] | null = null;
+let bingAt = 0;
+async function isBingIp(ip: string): Promise<boolean> {
+  try {
+    if (!bingRanges || Date.now() - bingAt > 86_400_000) {
+      const res = await fetch('https://www.bing.com/toolbox/bingbot.json');
+      const json = res.ok ? await res.json() as { prefixes?: Array<{ ipv4Prefix?: string; ipv6Prefix?: string }> } : {};
+      const next = (json.prefixes || []).map((p) => parseCidr(p.ipv4Prefix || p.ipv6Prefix || '')).filter(Boolean) as ParsedRange[];
+      if (next.length) { bingRanges = next; bingAt = Date.now(); }
+    }
+    return (bingRanges || []).some((r) => ipMatchesRange(ip, r));
+  } catch { return false; }
+}
+
 // Googlebot and other Google crawler User-Agent patterns
 // Reference: https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers
 const GOOGLE_BOT_PATTERNS = [
@@ -763,6 +778,32 @@ serve(async (req) => {
     const isGooglebot = uaIsGooglebot && verifiedGoogleIp;
     const spoofedGooglebot = uaIsGooglebot && !verifiedGoogleIp;
 
+    // Crawler identity enrichment (observational; never changes served content).
+    const crawler = await resolveCrawlerIdentity(userAgent, ipAddress, {
+      inGoogleRanges: isVerifiedGoogleIp,
+      inBingRanges: isBingIp,
+      // deno-lint-ignore no-explicit-any
+      reverseDns: (ip) => (Deno as any).resolveDns(ip, 'PTR'),
+      forwardDns: async (h) => {
+        // deno-lint-ignore no-explicit-any
+        const D = Deno as any;
+        const a = await D.resolveDns(h, 'A').catch(() => []);
+        const aaaa = await D.resolveDns(h, 'AAAA').catch(() => []);
+        return [...a, ...aaaa];
+      },
+    });
+    const ipHash = await hashIp(ipAddress, Deno.env.get('SUPABASE_URL') ?? 'gp');
+    const crawlerFields = {
+      crawler_identity: crawler.crawler_identity,
+      crawler_family: crawler.crawler_family,
+      crawler_verified: crawler.crawler_verified,
+      crawler_verification_method: crawler.crawler_verification_method,
+      crawler_confidence: crawler.crawler_confidence,
+      user_agent_family: userAgentFamily(userAgent),
+      ip_hash: ipHash,
+      crawler_reasons: crawler.reasons,
+    };
+
     if (spoofedGooglebot) {
       console.warn(
         `[crawler-allowlist] Spoofed Googlebot UA from non-Google IP ${ipAddress} → ${pageUrl}`,
@@ -788,7 +829,7 @@ serve(async (req) => {
     // probabilistically sampled using the configured rate. We still return a
     // 200 OK for sampled-out requests so the client never sees errors.
     const isAppeal = isAppealPage(pageUrl);
-    const alwaysLog = looksLikeTrace || isGooglebot || spoofedGooglebot || isAppeal;
+    const alwaysLog = looksLikeTrace || isGooglebot || spoofedGooglebot || isAppeal || crawler.crawler_verified;
     let sampleRate = 1;
     let sampledOut = false;
     let sampleRoll: number | null = null;
@@ -842,7 +883,7 @@ serve(async (req) => {
       .insert({
         page_url: pageUrl,
         user_agent: userAgent,
-        ip_address: ipAddress,
+        ip_address: null,
         outcome: sampledOut ? 'sampled_out' : 'logged',
         always_log: alwaysLog,
         reason: decisionReason,
@@ -926,7 +967,8 @@ serve(async (req) => {
             user_agent: userAgent,
             is_googlebot: isGooglebot,
             bot_type: loggedBotType,
-            ip_address: ipAddress,
+            ip_address: null,
+            ...crawlerFields,
             referrer: referrer || null,
             idempotency_key: idempotencyKey,
           },
@@ -947,7 +989,8 @@ serve(async (req) => {
           user_agent: userAgent,
           is_googlebot: isGooglebot,
           bot_type: loggedBotType,
-          ip_address: ipAddress,
+          ip_address: null,
+          ...crawlerFields,
           referrer: referrer || null,
         });
       dbError = insertErr;
