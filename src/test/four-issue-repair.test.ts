@@ -114,3 +114,17 @@ describe('ARIE incident shared contract', () => {
     expect(mod.isOpenIncident({ resolved_at: '2026-01-01T00:00:00Z' })).toBe(false);
   });
 });
+
+describe('AOS integrator opportunity/product-score schema contract', () => {
+  const src = read('supabase/functions/aos-engine-integrator/index.ts');
+  it('reads agd_opportunities by business_value_score, not a missing score column', () => {
+    const s = src.slice(src.indexOf('from("agd_opportunities")'), src.indexOf('from("agd_opportunities")') + 220);
+    expect(s).toContain('business_value_score');
+    expect(s).not.toMatch(/"id, title, score/);
+  });
+  it('reads pie_product_scores by computed_at, not a missing updated_at column', () => {
+    const s = src.slice(src.indexOf('from("pie_product_scores")'), src.indexOf('from("pie_product_scores")') + 220);
+    expect(s).toContain('computed_at');
+    expect(s).not.toContain('updated_at');
+  });
+});
