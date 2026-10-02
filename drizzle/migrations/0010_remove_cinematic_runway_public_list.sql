@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Runway assets public read" ON storage.objects;
