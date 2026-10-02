@@ -93,6 +93,9 @@ const MIRRORED_EVENTS = new Set([
   'tiktok_first_interaction',
   'tiktok_atc_click',
   'tiktok_buy_now_click',
+  // Guide → product bridge clicks (PriorityPickBlock / QuickRecommendation).
+  // Slug attribution is stored in raw_payload; page_path is the guide.
+  'guide_product_click',
 ]);
 
 const SESSION_ID_KEY = 'gp_session_id';
@@ -114,6 +117,7 @@ const NAVIGATION_TIME_EVENTS = new Set([
   'lp_cta_repeat_click',
   'lp_cta_misclick',
   'tiktok_deep_link_click',
+  'guide_product_click',
 ]);
 
 function insertWithKeepalive(row: Record<string, unknown>): void {
@@ -252,6 +256,15 @@ export function mirrorLpFunnelEvent(
   const classification = deriveClassification();
 
   const row = {
+    ...(eventName === 'guide_product_click'
+      ? {
+          raw_payload: {
+            guide_slug: cleanString(pickString(params, 'guide_slug'), 200),
+            product_slug: cleanString(pickString(params, 'product_slug'), 200),
+            collection_slug: cleanString(pickString(params, 'collection_slug'), 200),
+          },
+        }
+      : {}),
     session_id: getSessionId(),
     event_name: eventName,
     placement: cleanString(pickString(params, 'placement'), 120),
