@@ -25,6 +25,18 @@ interface Props {
 export function PriorityPickBlock({ slug, hideAnswer }: Props) {
 
   const pick = getPriorityPick(slug);
+  // Reuses the existing guide_product_click event (same shape as QuickRecommendation).
+  const trackGuideClick = (target: 'product' | 'collection') => {
+    try {
+      trackEvent('guide_product_click', {
+        guide_slug: slug,
+        product_slug: target === 'product' ? product?.slug : undefined,
+        collection_slug: target === 'collection' ? pick?.collection.slug : undefined,
+        placement: target === 'product' ? 'priority_pick' : 'priority_pick_collection',
+      });
+    } catch { /* never block navigation */ }
+  };
+
 
   const { data: product } = useQuery({
     queryKey: ['priority-pick', slug],
