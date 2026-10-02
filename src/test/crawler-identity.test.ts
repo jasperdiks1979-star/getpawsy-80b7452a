@@ -67,3 +67,21 @@ describe("dashboard sorter consistency", () => {
     expect(classifySession({ ...base, crawler_verified: false }).traffic_quality_class).toBe(classifySession(base).traffic_quality_class);
   });
 });
+
+import { attachCrawlerVerification, classifySessions } from "../lib/trafficQualityClassifier";
+describe("crawler session linkage", () => {
+  it("verified crawler row flows to session classification; raw keeps session", () => {
+    const sessions = [
+      { session_id: "c1", user_agent: CHROME, has_add_to_cart: true, page_views: 4, duration_seconds: 90 },
+      { session_id: "h1", user_agent: CHROME, has_add_to_cart: true, page_views: 4, duration_seconds: 90 },
+    ] as any[];
+    const linked = attachCrawlerVerification(sessions, [
+      { session_id: "c1", crawler_verified: true, crawler_reasons: ["crawler:verified_googlebot"] },
+      { session_id: "h1", crawler_verified: false, crawler_reasons: null },
+    ]);
+    expect(linked).toHaveLength(2);
+    const [c, h] = classifySessions(linked as any);
+    expect(c.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+    expect(h.traffic_quality_class).toBe(classifySessions([sessions[1]])[0].traffic_quality_class);
+  });
+});
