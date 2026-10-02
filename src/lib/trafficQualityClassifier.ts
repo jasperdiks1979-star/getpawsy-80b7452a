@@ -86,6 +86,9 @@ export interface ClassifierSession {
   is_internal?: boolean | null;
   is_bot?: boolean | null;
   bot_reason?: string | null;
+  /** Server-verified crawler identity (crawler_visits.crawler_verified). */
+  crawler_verified?: boolean | null;
+  crawler_reasons?: string[] | null;
 }
 
 export interface ClassifiedSession {
@@ -370,6 +373,13 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
   const landingLower = lower(landing);
   const refLower = lower(s.referrer);
   const internalHaystack = `${lower(sid)} ${lower(s.utm_source)} ${lower(s.utm_medium)} ${lower(s.utm_campaign)} ${landingLower}`;
+  // 0. Verified crawler (IP-range / DNS verified server-side, see
+  // supabase/functions/_shared/crawler-identity.ts). Never human, never
+  // commercial — overrides commerce signals, mirrors traffic-classifier.ts.
+  if (s.crawler_verified === true) {
+    reasons.push(...(s.crawler_reasons?.length ? s.crawler_reasons : ["crawler:verified"]));
+    return finish("PROBABLE_BOT_OR_AUTOMATION", 1);
+  }
   if (s.is_internal === true) {
     reasons.push("explicit_internal_flag");
     return finish("INTERNAL_OR_TEST", 1);

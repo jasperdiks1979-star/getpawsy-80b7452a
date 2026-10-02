@@ -806,7 +806,7 @@ serve(async (req) => {
 
     if (spoofedGooglebot) {
       console.warn(
-        `[crawler-allowlist] Spoofed Googlebot UA from non-Google IP ${ipAddress} → ${pageUrl}`,
+        `[crawler-allowlist] Spoofed Googlebot UA from non-Google IP (hash ${ipHash ?? 'n/a'}) → ${pageUrl}`,
       );
     }
 
