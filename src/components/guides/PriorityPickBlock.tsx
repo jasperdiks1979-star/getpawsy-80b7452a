@@ -123,7 +123,6 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
               <Link
                 to={`/collections/${pick.collection.slug}`}
                 onClick={() => trackGuideClick('collection')}
-            onClick={() => trackGuideClick('collection')}
                 className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
               >
                 <Package className="w-3.5 h-3.5" />
