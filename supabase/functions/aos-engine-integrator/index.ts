@@ -122,22 +122,24 @@ async function run() {
 
   // === AGD opportunities ===
   await safe(async () => {
+    // Schema: agd_opportunities has business_value_score (no `score` column).
     const { data } = await supabase.from("agd_opportunities")
-      .select("id, title, score, created_at")
-      .gte("created_at", since).order("score", { ascending: false }).limit(5);
+      .select("id, title, business_value_score, created_at")
+      .gte("created_at", since).order("business_value_score", { ascending: false }).limit(5);
     summary.agd = data?.length ?? 0;
     for (const r of data ?? []) {
       await publishEvent("opportunity.detected", "agd",
-        { title: r.title, score: r.score }, "info", r.id);
+        { title: r.title, score: r.business_value_score }, "info", r.id);
     }
     if ((data ?? []).length > 0) await heartbeat("agd");
   });
 
   // === PIE daily meeting / scores ===
   await safe(async () => {
+    // Schema: pie_product_scores timestamps rows with computed_at (no updated_at).
     const { data } = await supabase.from("pie_product_scores")
-      .select("product_id, opportunity_score, updated_at")
-      .gte("updated_at", since).order("opportunity_score", { ascending: false }).limit(5);
+      .select("product_id, opportunity_score, computed_at")
+      .gte("computed_at", since).order("opportunity_score", { ascending: false }).limit(5);
     summary.pie = data?.length ?? 0;
     for (const r of data ?? []) {
       await publishKnowledge("product.opportunity", String(r.product_id), "pie", "score",
