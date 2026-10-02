@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { Button } from '@/components/ui/button';
 import { getPriorityPick } from '@/config/priority-landing-picks';
+import { trackEvent } from '@/lib/analytics';
 
 interface Props {
   slug?: string;
@@ -24,6 +25,18 @@ interface Props {
 export function PriorityPickBlock({ slug, hideAnswer }: Props) {
 
   const pick = getPriorityPick(slug);
+  // Reuses the existing guide_product_click event (same shape as QuickRecommendation).
+  const trackGuideClick = (target: 'product' | 'collection') => {
+    try {
+      trackEvent('guide_product_click', {
+        guide_slug: slug,
+        product_slug: target === 'product' ? product?.slug : undefined,
+        collection_slug: target === 'collection' ? pick?.collection.slug : undefined,
+        placement: target === 'product' ? 'priority_pick' : 'priority_pick_collection',
+      });
+    } catch { /* never block navigation */ }
+  };
+
 
   const { data: product } = useQuery({
     queryKey: ['priority-pick', slug],
@@ -69,6 +82,7 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
         <div className="border-t border-border bg-muted/30 p-5 md:p-6 flex flex-col sm:flex-row gap-4">
           <Link
             to={`/products/${product.slug}`}
+            onClick={() => trackGuideClick('product')}
             className="sm:w-32 aspect-square rounded-xl overflow-hidden bg-background flex-shrink-0"
           >
             <OptimizedImage
@@ -86,6 +100,7 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
               </p>
               <Link
                 to={`/products/${product.slug}`}
+                onClick={() => trackGuideClick('product')}
                 className="font-display font-bold text-foreground leading-snug hover:text-primary transition-colors line-clamp-2"
               >
                 {product.name}
@@ -100,13 +115,14 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Link to={`/products/${product.slug}`}>
+              <Link to={`/products/${product.slug}`} onClick={() => trackGuideClick('product')}>
                 <Button size="sm" className="gap-1.5 font-semibold">
                   {pick.ctaLabel || 'View product'} <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
               <Link
                 to={`/collections/${pick.collection.slug}`}
+                onClick={() => trackGuideClick('collection')}
                 className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
               >
                 <Package className="w-3.5 h-3.5" />
@@ -121,6 +137,7 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
         <div className="border-t border-border bg-muted/30 px-5 py-4">
           <Link
             to={`/collections/${pick.collection.slug}`}
+            onClick={() => trackGuideClick('collection')}
             className="inline-flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
           >
             <Package className="w-3.5 h-3.5" />

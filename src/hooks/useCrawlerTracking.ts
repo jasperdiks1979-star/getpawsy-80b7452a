@@ -40,6 +40,23 @@ function generatePageViewId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** Fire-and-forget single crawler log (used by the site-wide storefront tracker). */
+export function sendCrawlerVisit(pageUrl: string): void {
+  try {
+    void supabase.functions
+      .invoke('log-crawler-visit', {
+        body: {
+          pageUrl,
+          userAgent: navigator.userAgent,
+          referrer: document.referrer,
+          idempotencyKey: `pv:${generatePageViewId()}:view`,
+          sessionId: (() => { try { return getCanonicalSessionId(); } catch { return null; } })(),
+        },
+      })
+      .catch(() => {});
+  } catch { /* never block */ }
+}
+
 /**
  * Hook to track page visits and detect Googlebot/crawlers
  * Add this to pages you want to monitor for Google crawler visits
