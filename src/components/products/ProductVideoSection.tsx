@@ -4,6 +4,7 @@ import { Play, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { needsResign } from "@/lib/productVideoUrl";
 
 interface ProductVideo {
   id: string;
@@ -66,7 +67,21 @@ export function ProductVideoSection({ productId, productName, posterUrl, classNa
         .eq("media_type", "video")
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ProductVideo[];
+      const rows = (data ?? []) as ProductVideo[];
+      // Private-bucket links expire; re-sign on demand only when needed.
+      if (!rows.some((r) => needsResign(r.storage_url))) return rows;
+      try {
+        const { data: fresh } = await supabase.functions.invoke("product-video-urls", {
+          body: { productId },
+        });
+        const urls: Record<string, string | null> = fresh?.urls ?? {};
+        return rows
+          .map((r) => (needsResign(r.storage_url) ? { ...r, storage_url: urls[r.id] ?? "" } : r))
+          .filter((r) => !!r.storage_url);
+      } catch {
+        // Fail safe: drop links we know are dead, keep valid ones.
+        return rows.filter((r) => !needsResign(r.storage_url));
+      }
     },
     staleTime: 5 * 60 * 1000,
     enabled: !suppressed,
