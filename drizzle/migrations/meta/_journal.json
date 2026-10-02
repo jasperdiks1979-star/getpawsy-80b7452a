@@ -64,6 +64,13 @@
       "when": 1790813496878,
       "tag": "0008_crawler_identity_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790918963755,
+      "tag": "0009_crawler_visits_session_link",
+      "breakpoints": true
     }
   ]
 }

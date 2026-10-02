@@ -11,10 +11,13 @@
 // any drift between UI counters, CSV totals, and Summary totals for the
 // same (hours, geo, filters) fails CI.
 import { useQuery } from "@tanstack/react-query";
+import { attachCrawlerVerification } from "@/lib/trafficQualityClassifier";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TruthSession {
   session_id: string;
+  crawler_verified?: boolean | null;
+  crawler_reasons?: string[] | null;
   visitor_id: string | null;
   country: string | null;
   city: string | null;
@@ -242,6 +245,20 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
       // to an empty array so consumers don't crash while the cache warms.
       if (!Array.isArray(data.sessions)) data.sessions = [];
       const payload = data as TruthResponse;
+      // Attach server-verified crawler identity (crawler_visits) to matching
+      // sessions so classifySession() applies its verified-crawler override.
+      // Fail-open: analytics never breaks if this lookup fails.
+      try {
+        const since = new Date(Date.now() - hours * 3600_000).toISOString();
+        const { data: cv } = await supabase
+          .from("crawler_visits")
+          .select("session_id, crawler_verified, crawler_reasons")
+          .eq("crawler_verified", true)
+          .not("session_id", "is", null)
+          .gte("created_at", since)
+          .limit(5000);
+        if (cv?.length) payload.sessions = attachCrawlerVerification(payload.sessions, cv);
+      } catch { /* non-fatal */ }
       payload.served_from_client_cache = false;
       writeClientCache(hours, geo, payload);
       return payload;

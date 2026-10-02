@@ -18653,6 +18653,7 @@ export type Database = {
           is_googlebot: boolean
           page_url: string
           referrer: string | null
+          session_id: string | null
           user_agent: string
           user_agent_family: string | null
         }
@@ -18672,6 +18673,7 @@ export type Database = {
           is_googlebot?: boolean
           page_url: string
           referrer?: string | null
+          session_id?: string | null
           user_agent: string
           user_agent_family?: string | null
         }
@@ -18691,6 +18693,7 @@ export type Database = {
           is_googlebot?: boolean
           page_url?: string
           referrer?: string | null
+          session_id?: string | null
           user_agent?: string
           user_agent_family?: string | null
         }

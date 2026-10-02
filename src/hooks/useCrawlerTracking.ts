@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 /**
  * Shape of the successful response from `log-crawler-visit`.
@@ -62,6 +63,7 @@ export const useCrawlerTracking = (pageName?: string) => {
             userAgent,
             referrer,
             idempotencyKey,
+            sessionId: (() => { try { return getCanonicalSessionId(); } catch { return null; } })(),
           },
         });
 

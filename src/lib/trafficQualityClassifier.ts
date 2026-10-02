@@ -918,3 +918,26 @@ export function trafficQualityCsvValues(c: ClassifiedSession): (string | number)
     c.product_interest_weak ? "true" : "false",
   ];
 }
+
+/**
+ * Join server-verified crawler rows (crawler_visits) onto sessions by
+ * session_id. Additive: unmatched sessions are returned unchanged; Raw mode
+ * keeps every session, classification then marks matches as bot.
+ */
+export function attachCrawlerVerification<T extends { session_id: string }>(
+  sessions: T[],
+  crawlerRows: Array<{ session_id: string | null; crawler_verified: boolean | null; crawler_reasons: string[] | null }>,
+): Array<T & { crawler_verified?: boolean; crawler_reasons?: string[] }> {
+  const map = new Map<string, string[]>();
+  for (const r of crawlerRows) {
+    if (!r.session_id || r.crawler_verified !== true) continue;
+    const prev = map.get(r.session_id) ?? [];
+    for (const x of r.crawler_reasons ?? []) if (!prev.includes(x)) prev.push(x);
+    map.set(r.session_id, prev);
+  }
+  if (!map.size) return sessions;
+  return sessions.map((s) => {
+    const reasons = map.get(s.session_id);
+    return reasons ? { ...s, crawler_verified: true, crawler_reasons: reasons } : s;
+  });
+}

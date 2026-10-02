@@ -43,6 +43,15 @@ const PayloadSchema = z.object({
     .regex(/^[A-Za-z0-9._:\-]+$/, 'idempotencyKey contains unsupported chars')
     .optional()
     .nullable(),
+  // Optional canonical storefront session id (src/lib/canonicalSession.ts)
+  // so verified crawler identity can be joined to analytics sessions.
+  sessionId: z
+    .string()
+    .trim()
+    .max(100)
+    .regex(/^[A-Za-z0-9._:\-]+$/)
+    .optional()
+    .nullable(),
 });
 
 // Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
@@ -711,7 +720,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
-    const { pageUrl, userAgent, referrer, idempotencyKey } = parsed.data;
+    const { pageUrl, userAgent, referrer, idempotencyKey, sessionId } = parsed.data;
 
     // If this looks like a pdp-render-trace ping, enforce that both a slug
     // (extractable from pageUrl) and a recognised state tag are present.
@@ -802,6 +811,7 @@ serve(async (req) => {
       user_agent_family: userAgentFamily(userAgent),
       ip_hash: ipHash,
       crawler_reasons: crawler.reasons,
+      session_id: sessionId || null,
     };
 
     if (spoofedGooglebot) {
