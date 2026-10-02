@@ -57,7 +57,8 @@ const PayloadSchema = z.object({
 // Render-state tags emitted by the PDP bot-trace hook. We don't *require* a
 // state tag (regular crawler visits won't have one), but if the UA *looks*
 // like a pdp-render-trace ping, we validate that the state is one we expect.
-const RENDER_STATE_TAG_RE = /pdp-render-trace\/([a-z0-9_-]+)/i;
+// Accepts the colon form emitted by usePdpBotRenderTrace and the legacy slash form.
+const RENDER_STATE_TAG_RE = /pdp-render-trace[\/:]([a-z0-9_-]+)/i;
 const VALID_RENDER_STATES = new Set(['shell', 'rendered', 'timeout']);
 
 // -----------------------------------------------------------------------------
