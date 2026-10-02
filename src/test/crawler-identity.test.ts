@@ -55,3 +55,15 @@ describe("crawler identity", () => {
     expect(JSON.stringify(r)).not.toContain("66.249.66.1");
   });
 });
+
+import { classifySession } from "../lib/trafficQualityClassifier";
+describe("dashboard sorter consistency", () => {
+  it("verified crawler never human even with commerce", () => {
+    const c = classifySession({ session_id: "s1", user_agent: GBOT, has_add_to_cart: true, has_checkout: true, page_views: 5, duration_seconds: 120, crawler_verified: true, crawler_reasons: ["crawler:verified_googlebot"] } as any);
+    expect(c.traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
+  });
+  it("no crawler flag leaves human commerce session unchanged", () => {
+    const base = { session_id: "s2", user_agent: CHROME, has_add_to_cart: true, page_views: 4, duration_seconds: 90 } as any;
+    expect(classifySession({ ...base, crawler_verified: false }).traffic_quality_class).toBe(classifySession(base).traffic_quality_class);
+  });
+});
