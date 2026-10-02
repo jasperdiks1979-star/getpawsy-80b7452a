@@ -13,6 +13,7 @@ import { recordFunnelStep } from '@/lib/analyticsFunnel';
 import { trackCci } from '@/lib/cci';
 import { getCanonicalSessionId } from '@/lib/canonicalSession';
 import { isTechnicalPath } from '@/lib/technicalRoutes';
+import { claimCrawlerLog } from '@/lib/crawlerCoverage';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -88,6 +89,12 @@ const TrackerInner = () => {
     // so overlap with homepage_view / collection_view / product_view on
     // the same path collapses to a single canonical_events row.
     try { trackCci('page_view', { funnel_stage: 'page' }); } catch {}
+    // Crawler identity: one log per canonical session on public storefront routes.
+    try {
+      if (claimCrawlerLog(path, getCanonicalSessionId(), window.sessionStorage)) {
+        import('@/hooks/useCrawlerTracking').then((m) => m.sendCrawlerVisit(path)).catch(() => {});
+      }
+    } catch {}
     if (path === '/checkout') {
       trackCheckout();
       try { sessionQualitySignals.checkout(); } catch {}
