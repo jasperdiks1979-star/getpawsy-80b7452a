@@ -1,0 +1,2 @@
+ALTER TABLE public.crawler_visits ADD COLUMN IF NOT EXISTS session_id text;
+CREATE INDEX IF NOT EXISTS crawler_visits_verified_session_idx ON public.crawler_visits (created_at DESC) WHERE crawler_verified AND session_id IS NOT NULL;
