@@ -75,6 +75,7 @@ import { CollectionCROBadges, isMoneyCollection } from '@/components/seo/Collect
 import { getMoneyCollectionFAQs } from '@/lib/money-collection-faqs';
 import { TrainingCollectionCrossLinks } from '@/components/collections/TrainingCollectionCrossLinks';
 import { buildStructuredProductName } from '@/lib/structured-product-name';
+import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 // SoldCounter removed — fake "X sold this week" risks Google misrepresentation flags
 
 const TRAINING_COLLECTION_SLUGS = ['dog-potty-training', 'dog-leash-control', 'dog-anti-bark', 'puppy-essentials', 'dog-training-accessories'];
@@ -916,6 +917,7 @@ const SeoCollection = () => {
           {/* Cat Trees Hub: authority content — BELOW products */}
           {collection.slug === 'cat-trees-and-condos' && <CatTreesHubContent />}
           {collection.slug === 'dog-beds' && <DogBedsHubContent />}
+          {collection.slug === 'cat-litter-boxes' && <LitterBoxClusterLinks page="collection" />}
 
           {/* Training Collection Cross-Links — bidirectional silo linking */}
           {TRAINING_COLLECTION_SLUGS.includes(collection.slug) && (
