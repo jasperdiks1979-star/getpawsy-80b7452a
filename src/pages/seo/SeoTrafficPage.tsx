@@ -16,6 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { SITE_URL } from '@/lib/constants';
+import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 
 const ProductCard = lazy(() =>
   import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard }))
@@ -990,6 +991,8 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
             </div>
           </section>
         )}
+
+        {props.slug === 'best-cat-litter-box-2026' && <LitterBoxClusterLinks page="best-2026" />}
 
         {/* ── Internal Links ── */}
         <section className="mb-14">

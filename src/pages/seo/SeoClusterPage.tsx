@@ -8,6 +8,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BadgeCheck, CalendarCheck, Star, ShoppingCart, CheckCircle, Award } from 'lucide-react';
 import { SITE_URL } from '@/lib/constants';
+import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 
 interface ClusterPick {
   name: string;
@@ -146,6 +147,8 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
             ))}
           </div>
         </section>
+
+        {props.slug === 'best-cat-litter-box-reddit' && <LitterBoxClusterLinks page="reddit" />}
 
         {/* Related Pages */}
         <section className="mb-12">

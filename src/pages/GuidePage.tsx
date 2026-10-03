@@ -30,6 +30,7 @@ import { PeopleAlsoRead } from '@/components/seo/PeopleAlsoRead';
 import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
+import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 import { sanitizeHtml } from '@/lib/sanitize';
 
 const BASE_URL = 'https://getpawsy.pet';
@@ -1083,6 +1084,9 @@ const GuidePage = () => {
         {relatedGuides.length >= 2 && (
           <PeopleAlsoRead guides={relatedGuides.slice(0, 6)} className="mb-12" />
         )}
+
+        {guide.slug === 'automatic-litter-box-guide' && <LitterBoxClusterLinks page="automatic-guide" />}
+        {guide.slug === 'how-to-train-cat-to-use-automatic-litter-box' && <LitterBoxClusterLinks page="training-guide" />}
 
         <SectionErrorBoundary section="GuidePage-recommended-products">
           {safeRelatedCategories.length > 0 && (
