@@ -671,11 +671,21 @@ serve(async (req) => {
       order_access_token: orderAccessToken,
     };
 
-    const { data: pendingOrder, error: orderError } = await supabaseAdmin
-      .from("orders")
-      .upsert(orderRow, { onConflict: "checkout_attempt_id" })
-      .select("id")
-      .maybeSingle();
+    // The unique index on checkout_attempt_id is PARTIAL (WHERE NOT NULL), so
+    // Postgres cannot infer it for `ON CONFLICT (checkout_attempt_id)` (42P10)
+    // — every upsert failed. Reuse-or-insert keyed by the attempt id instead;
+    // the partial unique index still blocks a concurrent duplicate (23505),
+    // in which case we re-read the row that won.
+    const findByAttempt = () => supabaseAdmin
+      .from("orders").select("id").eq("checkout_attempt_id", attemptId).maybeSingle();
+    let { data: pendingOrder, error: orderError } = await findByAttempt();
+    if (!orderError && !pendingOrder) {
+      const ins = await supabaseAdmin.from("orders").insert(orderRow).select("id").maybeSingle();
+      pendingOrder = ins.data; orderError = ins.error;
+      if (orderError && (orderError as { code?: string }).code === "23505") {
+        ({ data: pendingOrder, error: orderError } = await findByAttempt());
+      }
+    }
 
     if (orderError || !pendingOrder?.id) {
       // FAIL CLOSED: no payment session is created when we cannot record the
