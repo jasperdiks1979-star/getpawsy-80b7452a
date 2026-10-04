@@ -719,14 +719,7 @@ const Checkout = () => {
       });
     }
 
-    // Always log the Stripe redirect step so we can compute drop-off
-    // between InitiateCheckout and the actual Stripe-hosted page.
-    trackCheckoutFunnel({
-      step: 'stripe_redirect',
-      placement: 'checkout',
-      value: Number(stripeChargedTotal.toFixed(2)),
-      currency: 'USD',
-    });
+    // stripe_redirect is recorded only after create-checkout succeeds (below).
     
     try {
       // Mark redirect attempt BEFORE the network call so we can measure
@@ -843,10 +836,21 @@ const Checkout = () => {
           setIsProcessing(false);
           return;
         }
-        throw new Error(error.message);
+        // Keep only a safe server code + short correlation id internally;
+        // never surface raw function/Stripe details to the shopper.
+        const safeCode = (parsed?.code || parsed?.error || 'checkout_failed').replace(/[^a-z0-9_]/gi, '').slice(0, 40);
+        const corrId = Math.random().toString(36).slice(2, 10);
+        toast.error(`We couldn't start your checkout. Please try again in a moment. (Ref ${corrId})`);
+        throw new Error(`checkout_failed:${safeCode}:${corrId}`);
       }
 
       if (data?.url) {
+        trackCheckoutFunnel({
+          step: 'stripe_redirect',
+          placement: 'checkout',
+          value: Number(stripeChargedTotal.toFixed(2)),
+          currency: 'USD',
+        });
         // Redirect to Stripe Checkout
         fireCheckoutRedirect({
           source_component: 'checkout_stripe_button',
