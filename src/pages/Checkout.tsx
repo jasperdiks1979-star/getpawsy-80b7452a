@@ -840,7 +840,6 @@ const Checkout = () => {
         // never surface raw function/Stripe details to the shopper.
         const safeCode = (parsed?.code || parsed?.error || 'checkout_failed').replace(/[^a-z0-9_]/gi, '').slice(0, 40);
         const corrId = Math.random().toString(36).slice(2, 10);
-        toast.error(`We couldn't start your checkout. Please try again in a moment. (Ref ${corrId})`);
         throw new Error(`checkout_failed:${safeCode}:${corrId}`);
       }
 

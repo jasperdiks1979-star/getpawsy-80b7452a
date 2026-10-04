@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
 import { buildCartIdentity } from "@/v2/commerce/cartIdentity";
 import { Helmet } from "react-helmet-async";
@@ -1049,8 +1050,7 @@ const ProductDetail = () => {
   // Commerce N-6: the EXACT selected variant's stock decides purchasability.
   // Aggregate product stock may never make a zero-stock variant buyable.
   const selectedVariantStock = selectedVariant
-    ? ((selectedVariant as { variantStock?: number | null; stock?: number | null }).variantStock
-      ?? (selectedVariant as { stock?: number | null }).stock)
+    ? (variantStockOf(selectedVariant) ?? undefined)
     : undefined;
   const availabilityResult = computeAvailability(product, selectedVariantStock ?? undefined);
   const variantSoldOut =
