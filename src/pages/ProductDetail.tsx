@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
 import { buildCartIdentity } from "@/v2/commerce/cartIdentity";
 import { Helmet } from "react-helmet-async";
@@ -1049,8 +1050,7 @@ const ProductDetail = () => {
   // Commerce N-6: the EXACT selected variant's stock decides purchasability.
   // Aggregate product stock may never make a zero-stock variant buyable.
   const selectedVariantStock = selectedVariant
-    ? ((selectedVariant as { variantStock?: number | null; stock?: number | null }).variantStock
-      ?? (selectedVariant as { stock?: number | null }).stock)
+    ? (variantStockOf(selectedVariant) ?? undefined)
     : undefined;
   const availabilityResult = computeAvailability(product, selectedVariantStock ?? undefined);
   const variantSoldOut =
@@ -1711,7 +1711,7 @@ const ProductDetail = () => {
                     return (
                       <motion.button
                         key={variant.vid}
-                        onClick={() => { if (!isSelected) { setSelectedVariant(variant); setUserHasSelectedVariant(true); } }}
+                        onClick={() => { setSelectedVariant(variant); setUserHasSelectedVariant(true); }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
