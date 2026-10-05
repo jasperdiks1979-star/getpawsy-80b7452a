@@ -262,7 +262,7 @@ async function main() {
     // noindex, so they are withheld from the sitemap.
     const listingRows = await fetchAllPages(
       "products_public",
-      "select=slug,name,category,description,price,stock,is_active,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+      "select=slug,name,category,description,price,stock,is_active,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null"
     );
     if (!listingRows) throw new Error("[sitemaps] FATAL collection membership fetch failed");
     collections = collections.filter((c) => {
