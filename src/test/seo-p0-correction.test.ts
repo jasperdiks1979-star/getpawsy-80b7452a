@@ -3,7 +3,7 @@ import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  dbGuideToJson, mergeGuideSources, buildGuidePage, buildBlogPostPage,
+  dbGuideToJson, findNonIndexableSitemapPaths, mergeGuideSources, buildGuidePage, buildBlogPostPage,
   sanitizeStoredHtml, storedContentToHtml, findUnrenderedSitemapPaths,
 } from '../../vite-plugin-prerender-guides';
 import { isListable, isMerchVisible, collectionMembers } from '../../vite-plugin-prerender-products';
@@ -97,6 +97,8 @@ describe('sitemap ↔ prerender coverage gate', () => {
     mkdirSync(join(dir, 'blog', 'a'), { recursive: true });
     writeFileSync(join(dir, 'blog', 'a', 'index.html'), 'x');
     expect(findUnrenderedSitemapPaths(dir, 'sitemap-blog.xml')).toEqual(['/blog/b']);
+    writeFileSync(join(dir, 'blog', 'a', 'index.html'), '<meta name="robots" content="noindex, follow"><link rel="canonical" href="https://getpawsy.pet/blog/a">');
+    expect(findNonIndexableSitemapPaths(dir, 'sitemap-blog.xml')).toEqual(['/blog/a']);
   });
   it('covers guide and blog sitemaps and is wired into the build', () => {
     expect(COVERED_SITEMAPS).toEqual(expect.arrayContaining(['sitemap-guides.xml', 'sitemap-blog.xml']));

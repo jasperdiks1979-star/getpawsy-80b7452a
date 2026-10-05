@@ -238,6 +238,25 @@ export function findUnrenderedSitemapPaths(distDir: string, sitemapFile: string)
   return locs.filter((p) => !fs.existsSync(path.join(distDir, p === '/' ? '' : p, 'index.html')));
 }
 
+/** Sitemap URLs whose prerendered HTML is noindex or not self-canonical (homepage shell excluded). */
+export function findNonIndexableSitemapPaths(distDir: string, sitemapFile: string): string[] {
+  const f = path.join(distDir, sitemapFile);
+  if (!fs.existsSync(f)) return [];
+  const out: string[] = [];
+  for (const m of fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    const url = m[1];
+    const p = new URL(url).pathname;
+    if (p === '/') continue;
+    const file = path.join(distDir, p, 'index.html');
+    if (!fs.existsSync(file)) continue;
+    const html = fs.readFileSync(file, 'utf-8');
+    const robots = (html.match(/name="robots" content="([^"]*)"/) || [])[1] || '';
+    const canon = [...html.matchAll(/<link[^>]*rel="canonical"[^>]*href="([^"]*)"/g)].map((x) => x[1]);
+    if (/noindex/.test(robots) || canon.length !== 1 || canon[0] !== url) out.push(p);
+  }
+  return out;
+}
+
 function buildArticleBody(guide: GuideJson): string {
   const rawContent = typeof guide.content === 'string' ? guide.content : '';
   // If guide has raw HTML content field, use it directly

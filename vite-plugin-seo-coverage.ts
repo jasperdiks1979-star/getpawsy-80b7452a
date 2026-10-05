@@ -6,7 +6,7 @@
  */
 import path from 'path';
 import type { Plugin } from 'vite';
-import { findUnrenderedSitemapPaths } from './vite-plugin-prerender-guides';
+import { findUnrenderedSitemapPaths, findNonIndexableSitemapPaths } from './vite-plugin-prerender-guides';
 
 export const COVERED_SITEMAPS = [
   'sitemap-guides.xml', 'sitemap-blog.xml', 'sitemap-collections.xml', 'sitemap-pages.xml', 'sitemap-products-1.xml',
@@ -26,6 +26,8 @@ export default function seoCoveragePlugin(): Plugin {
         for (const f of COVERED_SITEMAPS) {
           const missing = findUnrenderedSitemapPaths(distDir, f);
           if (missing.length) problems.push(`${f}: ${missing.length} without HTML (${missing.slice(0, 5).join(', ')})`);
+          const bad = findNonIndexableSitemapPaths(distDir, f);
+          if (bad.length) problems.push(`${f}: ${bad.length} noindex/non-self-canonical (${bad.slice(0, 5).join(', ')})`);
         }
         if (problems.length) throw new Error(`[seo-coverage] FATAL sitemap/prerender divergence:\n  ${problems.join('\n  ')}`);
         console.log(`[seo-coverage] ✅ Every URL in ${COVERED_SITEMAPS.length} sitemaps has prerendered HTML`);
