@@ -426,9 +426,9 @@ export function buildClusterNav(slug: string, titles: Map<string, string>, linkC
   const c = clusterForGuide(slug);
   if (!c) return '';
   const guides = [c.pillar, ...c.supporting]
-    .filter((s) => s !== slug && titles.has(s) && (!linkCtx || linkCtx.knownGuides.has(s)))
+    .filter((s) => s !== slug && titles.has(s) && (!linkCtx?.knownGuides || linkCtx.knownGuides.has(s)))
     .map((s) => `<li><a href="/guides/${s}">${escapeHtml(titles.get(s)!)}</a></li>`);
-  const shop = !linkCtx || linkCtx.allowedCollections.has(c.collection)
+  const shop = !linkCtx?.allowedCollections || linkCtx.allowedCollections.has(c.collection)
     ? `<p><a href="/collections/${c.collection}">Shop ${escapeHtml(c.label.toLowerCase())}</a></p>` : '';
   if (!guides.length && !shop) return '';
   return `\n      <aside aria-label="Related guides"><h2>More on ${escapeHtml(c.label.toLowerCase())}</h2>${shop}${guides.length ? `<ul>${guides.join('')}</ul>` : ''}</aside>`;
@@ -551,7 +551,7 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string, linkCtx
   const bySlug = new Map(guides.map((g) => [g.slug, g]));
   const topics = SEO_CLUSTERS
     .filter((c) => bySlug.has(c.pillar))
-    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(bySlug.get(c.pillar)!.title)}</a>${linkCtx && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
+    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(bySlug.get(c.pillar)!.title)}</a>${linkCtx?.allowedCollections && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
     .join('\n');
   const breadcrumb = JSON.stringify({
     '@context': 'https://schema.org',

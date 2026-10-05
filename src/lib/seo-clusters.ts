@@ -6,7 +6,6 @@
  * by tests against the sitemap). Used by the hydrated guide page and the
  * build-time prerenderers so both expose the same crawl paths.
  */
-import { APPROVED_FREE_SHIPPING_LINE, APPROVED_RETURNS_LINE } from '../config/merchant-policy';
 
 export interface SeoCluster {
   key: string;
@@ -65,7 +64,10 @@ export function clusterForCollection(slug: string): SeoCluster | undefined {
   return SEO_CLUSTERS.find((c) => c.collection === slug);
 }
 
-const TRUST = `${APPROVED_FREE_SHIPPING_LINE}, ${APPROVED_RETURNS_LINE}.`;
+// Mirrors APPROVED_FREE_SHIPPING_LINE + APPROVED_RETURNS_LINE (merchant-policy);
+// kept literal because this module also loads in the build config (no @ alias). Test-enforced.
+export const COLLECTION_TRUST_LINE = 'Free shipping on eligible orders $35+, 30-day returns.';
+const TRUST = COLLECTION_TRUST_LINE;
 
 /**
  * Canonical collection metadata. Replaces stored copy that asserted unverified
