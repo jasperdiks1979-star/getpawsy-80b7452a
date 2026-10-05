@@ -24,3 +24,12 @@ describe('Oct-4 checkout repair', () => {
     expect(r('src/pages/ProductDetail.tsx')).not.toContain('if (!isSelected) { setSelectedVariant');
   });
 });
+describe('manual litter box gets no automatic claims', () => {
+  it('automatic copy requires an automatic/self-cleaning product', () => {
+    for (const f of ['ProductVsAlternatives', 'ProductProblemSolution']) {
+      const s = r(`src/components/products/${f}.tsx`);
+      expect(s).not.toMatch(/\/litter\\s\*box\|self/);
+    }
+    expect(r('src/components/products/ProductIdealFor.tsx')).toMatch(/litter\/i\.test\(c\) && \/self/);
+  });
+});
