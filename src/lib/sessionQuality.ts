@@ -4,7 +4,6 @@
  * Non-blocking; uses sendBeacon when available.
  */
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
-const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 const RETURN_KEY = "gp_returning_visitor_v1";
 

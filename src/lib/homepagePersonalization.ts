@@ -7,6 +7,7 @@
  * hydration. Failures are silent; nothing here can break a render.
  */
 
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { supabase } from '@/integrations/supabase/client';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { getDeviceClassification } from '@/lib/deviceClassify';
@@ -29,7 +30,6 @@ export type HomepageVariant = {
 };
 
 const CACHE_KEY = 'gp_hp_variant_v1';
-const SESSION_ID_KEY = 'gp_session_id';
 let inflight: Promise<HomepageVariant | null> | null = null;
 
 function isBotUA(): boolean {
@@ -40,12 +40,7 @@ function isBotUA(): boolean {
 
 function getSessionId(): string {
   try {
-    let id = sessionStorage.getItem(SESSION_ID_KEY);
-    if (!id) {
-      id = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-      sessionStorage.setItem(SESSION_ID_KEY, id);
-    }
-    return id;
+    return getCanonicalSessionId();
   } catch {
     return 'anon';
   }
