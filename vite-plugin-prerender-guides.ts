@@ -104,20 +104,20 @@ async function supaRestAll<T>(table: string, params: string): Promise<T[] | null
 }
 
 /** Strip script/style/iframe/object/embed, inline event handlers and javascript: URLs; demote H1 → H2. */
-export function sanitizeStoredHtml(html: string): string {
-  return html
+export function sanitizeStoredHtml(html: string, demoteH1 = true): string {
+  const out = html
     .replace(/<(script|style|iframe|object|embed|form)[\s\S]*?<\/\1\s*>/gi, '')
     .replace(/<(script|style|iframe|object|embed|form|link|meta)\b[^>]*\/?>/gi, '')
     .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
-    .replace(/<h1(\s[^>]*)?>/gi, '<h2>').replace(/<\/h1>/gi, '</h2>');
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+  return demoteH1 ? out.replace(/<h1(\s[^>]*)?>/gi, '<h2>').replace(/<\/h1>/gi, '</h2>') : out;
 }
 
 /** Markdown or HTML stored content → HTML (headings demoted so the page keeps one H1). */
 export function storedContentToHtml(content: string): string {
   const c = content || '';
   if (c.trim().startsWith('<')) return sanitizeStoredHtml(c);
-  const withHeadings = escapeMdHtml(c)
+  const withHeadings = escapeMdHtml(sanitizeStoredHtml(c))
     .replace(/^#{1,2} (.+)$/gm, '\n\n<h2>$1</h2>\n\n')
     .replace(/^#{3,6} (.+)$/gm, '\n\n<h3>$1</h3>\n\n');
   return sanitizeStoredHtml(markdownToHtml(withHeadings).replace(/<p>\s*(<h[23]>[\s\S]*?<\/h[23]>)\s*<\/p>/g, '$1'));
@@ -379,7 +379,7 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
     ? (/^https?:\/\//.test(guide.featuredImage) ? guide.featuredImage : `${SITE}${guide.featuredImage}`)
     : `${SITE}/og-image.png`;
 
-  const articleContent = sanitizeStoredHtml(normalizeProductLinks(buildArticleBody(guide)));
+  const articleContent = sanitizeStoredHtml(normalizeProductLinks(buildArticleBody(guide)), false);
 
   // Determine FAQ items for schema
   let faqItems = guide.faq || [];
