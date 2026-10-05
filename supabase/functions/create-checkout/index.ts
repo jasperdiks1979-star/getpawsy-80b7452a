@@ -706,10 +706,15 @@ serve(async (req) => {
 
     sessionConfig.metadata = { ...orderMetadata, order_id: pendingOrder.id };
 
-    // N-9: Stripe idempotency key tied to the cart/quote/attempt. A duplicate
-    // request (network retry, double tap) returns the SAME session.
+    // N-9: Stripe idempotency key tied to the cart/quote/attempt AND the exact
+    // session parameters. A duplicate request (network retry, double tap) sends
+    // identical parameters and returns the SAME session; a later visit with the
+    // same cart but different session data (origin, GA session, UTM) gets a new
+    // session instead of a StripeIdempotencyError. The order row stays keyed by
+    // checkout_attempt_id, so no duplicate order is created.
+    const paramsDigest = (await checkoutAttemptId(sessionConfig)).slice(0, 16);
     const session = await stripe.checkout.sessions.create(sessionConfig, {
-      idempotencyKey: `checkout_${attemptId}`,
+      idempotencyKey: `checkout_${attemptId}_${paramsDigest}`,
     });
 
     console.log("[CREATE-CHECKOUT] Session created:", session.id);

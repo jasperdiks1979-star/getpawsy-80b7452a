@@ -284,7 +284,8 @@ describe('N-10 session→order commit gap', () => {
     expect(failIdx).toBeLessThan(src.indexOf('stripe.checkout.sessions.create'));
   });
   it('session creation carries an idempotency key tied to the attempt', () => {
-    expect(src).toContain('idempotencyKey: `checkout_${attemptId}`');
+    expect(src).toContain('idempotencyKey: `checkout_${attemptId}_${paramsDigest}`');
+    expect(src).toContain('checkoutAttemptId(sessionConfig)');
     expect(src).not.toContain('onConflict: "checkout_attempt_id"');
     expect(src).toContain('.eq("checkout_attempt_id", attemptId)');
     expect(src).toContain('"23505"');
