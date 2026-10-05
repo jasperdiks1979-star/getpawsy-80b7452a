@@ -6,6 +6,7 @@
  * Only a curated subset of events is mirrored — anything else stays in
  * GA4 only. Failures are swallowed: analytics must never break the UX.
  */
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
@@ -97,8 +98,6 @@ const MIRRORED_EVENTS = new Set([
   // Slug attribution is stored in raw_payload; page_path is the guide.
   'guide_product_click',
 ]);
-
-const SESSION_ID_KEY = 'gp_session_id';
 
 /**
  * Navigation-time events — fired inside a click handler that immediately

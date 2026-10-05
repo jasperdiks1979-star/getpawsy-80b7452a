@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { Helmet } from 'react-helmet-async';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { Link, useNavigate } from 'react-router-dom';

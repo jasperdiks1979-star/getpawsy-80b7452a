@@ -13,6 +13,7 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
   import('@/lib/analytics').then(m => m.trackGoogleAdsAddToCart(productId, productName, price, qty));
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
 import { getCartSessionId, clearCartSessionId } from '@/lib/cartSession';
