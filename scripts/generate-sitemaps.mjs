@@ -23,6 +23,8 @@ import {
   loadSeoPolicy,
   isProductIndexable,
   isCrawlerExcludedProduct,
+  crawlerCollectionMembers,
+  MIN_INDEXABLE_COLLECTION_PRODUCTS,
   isGuideIndexable,
   isBlogIndexable,
   assertStrictSitemapPaths,
@@ -256,6 +258,19 @@ async function main() {
       .filter((c) => c.slug && ACTIVE_COLLECTION_SLUGS.has(c.slug))
       .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
     console.log(`[sitemaps] Collections (locked active): ${collections.length}`);
+    // Same membership as the collection prerender; thin collections render
+    // noindex, so they are withheld from the sitemap.
+    const listingRows = await fetchAllPages(
+      "products_public",
+      "select=slug,name,category,description,price,stock,is_active,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null"
+    );
+    if (!listingRows) throw new Error("[sitemaps] FATAL collection membership fetch failed");
+    collections = collections.filter((c) => {
+      const slug = c.path.replace("/collections/", "");
+      const n = crawlerCollectionMembers(slug, listingRows).length;
+      if (n < MIN_INDEXABLE_COLLECTION_PRODUCTS) console.log(`[sitemaps] Withholding thin collection ${slug} (${n} products)`);
+      return n >= MIN_INDEXABLE_COLLECTION_PRODUCTS;
+    });
   } else {
     // Fallback: only include locked slugs
     collections = safeRead(joinRoot("data", "collections.json"), [])

@@ -3,7 +3,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
-import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
+import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, crawlerCollectionMembers, isCrawlerListable, MIN_INDEXABLE_COLLECTION_PRODUCTS, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
 
 const SITE = 'https://getpawsy.pet';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -75,7 +75,7 @@ export function isMerchVisible(p: ProductRecord): boolean {
 }
 
 export function isListable(p: ProductRecord): boolean {
-  return Boolean(p.slug) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
+  return isCrawlerListable(p);
 }
 
 function collectionHrefFor(category: string | null): string | null {
@@ -377,24 +377,10 @@ ${opts.items.map((it) => `<li><a href="${escapeHtml(it.href)}">${escapeHtml(it.l
 </html>`;
 }
 
-/** Category membership for the locked canonical collections (mirrors seo_collections filters). */
-const COLLECTION_MATCH: Record<string, (category: string) => boolean> = {
-  dogs: (c) => /\bdog/i.test(c),
-  cats: (c) => /\bcat/i.test(c),
-  'dog-beds': (c) => c.toLowerCase() === 'dog beds',
-  'cat-trees-and-condos': (c) => c.toLowerCase() === 'cat trees & condos',
-  'cat-litter-boxes': (c) => c.toLowerCase() === 'cat litter boxes',
-  'cat-toys': (c) => c.toLowerCase() === 'cat toys',
-  'cat-beds': (c) => c.toLowerCase() === 'cat beds',
-};
-
 const PRIMARY_MERCH = loadPrimaryMerchandisedCollections();
 
 export function collectionMembers(slug: string, products: ProductRecord[]): ProductRecord[] {
-  const match = COLLECTION_MATCH[slug];
-  if (!match) return [];
-  const primary = PRIMARY_MERCH.has(slug);
-  return products.filter((p) => isListable(p) && (!primary || isMerchVisible(p)) && match(p.category || ''));
+  return crawlerCollectionMembers(slug, products, PRIMARY_MERCH);
 }
 
 async function fetchBlogPosts(): Promise<Array<{ slug: string; title: string; excerpt: string | null }>> {
@@ -546,7 +532,7 @@ export default function prerenderProductsPlugin(): Plugin {
           crumbs: [{ name: 'Home', path: '/' }, { name: 'Collections', path: '/collections/all' }, { name: cat.label, path: `/collections/${slug}` }],
           items: members.map((p) => ({ href: `/products/${p.slug}`, label: p.name, extra: `$${formatPrice(p.price)}` })),
           // Mirrors the runtime thin-collection guard (<3 products → noindex).
-          indexable: members.length >= 3,
+          indexable: members.length >= MIN_INDEXABLE_COLLECTION_PRODUCTS,
         }), 'utf-8');
         collectionCount++;
       }

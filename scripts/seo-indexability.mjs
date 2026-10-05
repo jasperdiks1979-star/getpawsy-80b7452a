@@ -175,3 +175,30 @@ export function loadPrimaryMerchandisedCollections(rootDir = process.cwd()) {
   if (!m) throw new Error("[seo-indexability] PRIMARY_MERCHANDISED_COLLECTIONS not found");
   return new Set([...m[1].matchAll(/'([a-z0-9-]+)'/g)].map((x) => x[1]));
 }
+
+/** Category membership for the locked canonical collections (mirrors seo_collections filters). */
+export const COLLECTION_CATEGORY_MATCH = Object.freeze({
+  dogs: (c) => /\bdog/i.test(c),
+  cats: (c) => /\bcat/i.test(c),
+  "dog-beds": (c) => c.toLowerCase() === "dog beds",
+  "cat-trees-and-condos": (c) => c.toLowerCase() === "cat trees & condos",
+  "cat-litter-boxes": (c) => c.toLowerCase() === "cat litter boxes",
+  "cat-toys": (c) => c.toLowerCase() === "cat toys",
+  "cat-beds": (c) => c.toLowerCase() === "cat beds",
+});
+
+/** Runtime thin-collection guard: fewer members → noindex, never in sitemap. */
+export const MIN_INDEXABLE_COLLECTION_PRODUCTS = 3;
+
+/** Crawler listing gate: active, in stock, indexable, priced, slugged. */
+export function isCrawlerListable(p) {
+  return Boolean(p?.slug) && p.is_active !== false && Number(p.stock || 0) > 0 && isProductIndexable(p) && Number(p.price) > 0;
+}
+
+/** Members shown on a prerendered collection (primary collections: merch_hidden=false only). */
+export function crawlerCollectionMembers(slug, products, primarySet = loadPrimaryMerchandisedCollections()) {
+  const match = COLLECTION_CATEGORY_MATCH[slug];
+  if (!match) return [];
+  const primary = primarySet.has(slug);
+  return products.filter((p) => !isCrawlerExcludedProduct(p) && isCrawlerListable(p) && (!primary || p.merch_hidden !== true) && match(p.category || ""));
+}

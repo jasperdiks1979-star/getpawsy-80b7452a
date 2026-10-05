@@ -26,3 +26,7 @@ export declare function findRedirectMapProblems(map: Record<string, string>): st
 
 export function isCrawlerExcludedProduct(p: { name?: string | null; category?: string | null; description?: string | null }): boolean;
 export function loadPrimaryMerchandisedCollections(rootDir?: string): Set<string>;
+export const COLLECTION_CATEGORY_MATCH: Readonly<Record<string, (category: string) => boolean>>;
+export const MIN_INDEXABLE_COLLECTION_PRODUCTS: number;
+export function isCrawlerListable(p: any): boolean;
+export function crawlerCollectionMembers<T>(slug: string, products: T[], primarySet?: Set<string>): T[];
