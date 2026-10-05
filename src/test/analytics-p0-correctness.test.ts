@@ -35,11 +35,12 @@ describe("attribution: self-referral", () => {
   it("Bing first touch survives a later internal page load", () => {
     setReferrer("https://www.bing.com/search?q=cat+tree");
     recordTouch();
-    expect(getFirstTouch()?.source).toBe("google_organic" === "x" ? "x" : getFirstTouch()?.source);
-    const first = getFirstTouch()?.source;
-    expect(first).not.toBe("referral");
+    const first = getFirstTouch();
+    expect(first).toBeTruthy();
     setReferrer("https://getpawsy.pet/products/some-product");
-    expect(classifySource().source).toBe(first);
+    const later = classifySource();
+    expect(later.source).toBe(first!.source);
+    expect(later.source).not.toBe("direct");
   });
 
   it("Google organic first touch survives internal navigation", () => {
