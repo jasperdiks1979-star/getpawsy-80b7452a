@@ -359,7 +359,7 @@ export default function IndoorCatFurnitureGuide() {
             {[
               ['/collections/cat-trees-and-condos', 'Best Cat Trees & Condos 2026'],
               ['/guides/cat-condo-vs-cat-tower', 'Cat Condo vs Cat Tree — Complete Comparison'],
-              ['/best-self-cleaning-litter-box-2026', 'Best Self-Cleaning Litter Boxes 2026'],
+              ['/guides/best-self-cleaning-litter-box-2026', 'Best Self-Cleaning Litter Boxes 2026'],
               ['/collections/cat-litter-boxes', 'Cat Litter Box Solutions'],
               ['/resources/indoor-cat-care', 'Indoor Cat Care Resource Center'],
               ['/collections/all', 'Cat Trees for Large Cats'],
