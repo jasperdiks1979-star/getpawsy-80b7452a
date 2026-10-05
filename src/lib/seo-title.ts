@@ -14,6 +14,7 @@ export function sanitizeGuideSeoTitle(raw: string): string {
   t = t.replace(/\s*\|\s*(GetPawsy|Pawsy Guide|Free (US )?Shipping)\b/gi, ' ');
   t = t.replace(/\s*[—–-]\s*Complete Guide for Pet Parents/gi, ' ');
   t = t.replace(/\bCompared\s*(&amp;|&|and)\s*Ranked\b/gi, 'Compared');
+  t = t.replace(/\s*[–—-]\s*Tested\s+for\b/gi, ' for');
   t = t.replace(/\bTested on [^–—|()]+/gi, ' ');
   t = t.replace(/\b[A-Za-z]+-Level Tested\b/gi, ' ');
   t = t.replace(/\bAirline-Approved\s*(&amp;|&|and)?\s*/gi, ' ');
