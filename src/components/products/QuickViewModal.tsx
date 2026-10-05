@@ -1,3 +1,4 @@
+import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,7 +68,7 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
       if (!vid) return null;
       
       const variantKey = String(v.variantKey || v.variantNameEn || 'Option');
-      const variantSellPrice = Number(v.variantSellPrice) || Number(product.price) || 0;
+      const variantSellPrice = customerUnitPrice(Number(product.price) || 0, v as PricedVariant, (product.variants as unknown[]).length);
       const variantImage = v.variantImage ? String(v.variantImage) : undefined;
       const color = detectColor(variantKey);
       

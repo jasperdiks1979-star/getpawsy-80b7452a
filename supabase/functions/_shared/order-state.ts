@@ -253,7 +253,8 @@ export interface CatalogVariant {
   variantSku?: string | null;
   variantNameEn?: string | null;
   variantKey?: string | null;
-  variantSellPrice?: number | null;
+  variantSellPrice?: number | string | null;
+  variantCostPrice?: number | string | null;
 }
 
 /**
@@ -296,14 +297,25 @@ export function resolveExactVariant(
  */
 export const PRICE_TOLERANCE_CENTS = 1;
 
-/** Canonical unit price for an exact variant, falling back to base price. */
+/**
+ * Canonical customer unit price. Mirrors src/lib/customerUnitPrice.ts exactly.
+ * `products.price` is the customer sell price. `variantSellPrice` overrides it
+ * only for multi-option products when the variant carries `variantCostPrice`
+ * (the marker of a processed selling price); without that marker the field is
+ * the raw supplier cost and must never be charged.
+ */
 export function canonicalUnitPrice(
   basePrice: number,
   variant: CatalogVariant | null | undefined,
+  variantCount = 1,
 ): number {
-  const vp = variant?.variantSellPrice;
-  if (typeof vp === "number" && Number.isFinite(vp) && vp > 0) return vp;
-  return basePrice;
+  const base = Math.round(Number(basePrice) * 100) / 100;
+  if (!variant || variantCount <= 1) return base;
+  const sell = Number(variant.variantSellPrice);
+  const cost = Number(variant.variantCostPrice);
+  if (variant.variantCostPrice == null || !Number.isFinite(cost) || cost <= 0) return base;
+  if (!Number.isFinite(sell) || sell <= 0) return base;
+  return Math.round(sell * 100) / 100;
 }
 
 export function validateLinePrice(input: {

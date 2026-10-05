@@ -96,8 +96,15 @@ describe('N-3 single pricing contract', () => {
 
 // ── N-4: exact variant price ───────────────────────────────────────────────
 describe('N-4 exact variant price', () => {
-  it('uses the variant sell price when the variant has one', () => {
-    expect(canonicalUnitPrice(79.13, { vid: 'v1', variantSellPrice: 93.4 })).toBe(93.4);
+  it('uses a processed variant sell price on multi-option products', () => {
+    expect(canonicalUnitPrice(79.13, { vid: 'v1', variantSellPrice: 93.4, variantCostPrice: 40 }, 2)).toBe(93.4);
+  });
+  it('never charges a raw supplier cost (no variantCostPrice marker)', () => {
+    expect(canonicalUnitPrice(103.99, { vid: 'v1', variantSellPrice: 51.01 }, 2)).toBe(103.99);
+  });
+  it('single-option products always charge the base price', () => {
+    expect(canonicalUnitPrice(103.99, { vid: 'v1', variantSellPrice: 51.01 }, 1)).toBe(103.99);
+    expect(canonicalUnitPrice(114.99, { vid: 'v1', variantSellPrice: 111.99, variantCostPrice: 44.97 }, 1)).toBe(114.99);
   });
   it('falls back to base price only when the variant has none', () => {
     expect(canonicalUnitPrice(79.13, { vid: 'v1' })).toBe(79.13);
@@ -265,7 +272,8 @@ describe('N-2 webhook retry semantics', () => {
 describe('N-10 session→order commit gap', () => {
   const src = read('supabase/functions/create-checkout/index.ts');
   it('the order is written before the Stripe session exists', () => {
-    const orderIdx = src.indexOf('.upsert(orderRow');
+    // Lookup-then-insert (the partial unique index cannot back ON CONFLICT).
+    const orderIdx = src.indexOf('.insert(orderRow)');
     const sessionIdx = src.indexOf('stripe.checkout.sessions.create');
     expect(orderIdx).toBeGreaterThan(-1);
     expect(orderIdx).toBeLessThan(sessionIdx);
@@ -276,8 +284,11 @@ describe('N-10 session→order commit gap', () => {
     expect(failIdx).toBeLessThan(src.indexOf('stripe.checkout.sessions.create'));
   });
   it('session creation carries an idempotency key tied to the attempt', () => {
-    expect(src).toContain('idempotencyKey: `checkout_${attemptId}`');
-    expect(src).toContain('onConflict: "checkout_attempt_id"');
+    expect(src).toContain('idempotencyKey: `checkout_${attemptId}_${paramsDigest}`');
+    expect(src).toContain('checkoutAttemptId(sessionConfig)');
+    expect(src).not.toContain('onConflict: "checkout_attempt_id"');
+    expect(src).toContain('.eq("checkout_attempt_id", attemptId)');
+    expect(src).toContain('"23505"');
   });
   it('the webhook can rebind a paid session to its order via the attempt id', () => {
     const wh = read('supabase/functions/stripe-webhook/index.ts');
