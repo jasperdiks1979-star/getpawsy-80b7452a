@@ -1,3 +1,4 @@
+import { customerUnitPrice, type PricedVariant } from './customerUnitPrice';
 /**
  * Quick add-to-cart safety rules (non-PDP entry points).
  *
@@ -118,10 +119,12 @@ export function variantLabel(variant: QuickAddVariant): string {
  * Canonical unit price of an exact variant — identical to the server's
  * `canonicalUnitPrice`, so the cart line always survives price parity.
  */
-export function quickAddUnitPrice(basePrice: number, variant?: QuickAddVariant | null): number {
-  const vp = Number(variant?.variantSellPrice);
-  if (Number.isFinite(vp) && vp > 0) return Math.round(vp * 100) / 100;
-  return Math.round(basePrice * 100) / 100;
+export function quickAddUnitPrice(
+  basePrice: number,
+  variant?: QuickAddVariant | null,
+  variantCount = 1,
+): number {
+  return customerUnitPrice(basePrice, variant as PricedVariant | null, variantCount);
 }
 
 export function resolveQuickAddPlan(
@@ -188,7 +191,7 @@ function buildVariantAdd(
       ...baseItem,
       id: `${product.id}-${vid}`,
       name: label ? `${baseItem.name} - ${label}` : baseItem.name,
-      price: quickAddUnitPrice(basePrice, variant),
+      price: quickAddUnitPrice(basePrice, variant, parseQuickAddVariants(product.variants).length),
       image: variant.variantImage || baseItem.image,
       variant: label || undefined,
     },

@@ -255,7 +255,11 @@ export function buildBundleCartLines(
   const lines: BundleLine[] = components.map((c) => {
     const variant = findOption(c, selection[c.product.id] ?? null);
     const basePrice = Number(c.product.price ?? 0);
-    const price = quickAddUnitPrice(basePrice, variant);
+    const price = quickAddUnitPrice(
+      basePrice,
+      variant,
+      Array.isArray(c.product.variants) ? c.product.variants.length : c.options.length,
+    );
     const label = variant ? variantLabel(variant) : '';
     return {
       id: variant ? `${c.product.id}-${String(variant.vid)}` : c.product.id,

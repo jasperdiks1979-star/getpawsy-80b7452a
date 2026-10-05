@@ -1,3 +1,4 @@
+import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
 import { buildStructuredProductName } from '@/lib/structured-product-name';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getCategoryCollectionUrl } from '@/lib/category-collection-map';
@@ -443,7 +444,6 @@ const BestsellerDetail = () => {
       const displayName = safeVariantKey || safeVariantNameEn || safeVariantSku || 'Option';
       
       // Check if the variant price seems like a cost price
-      const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
       
       const cleanVariant: ProductVariant = {
         vid,
@@ -453,8 +453,8 @@ const BestsellerDetail = () => {
         variantSku: safeVariantSku,
         variantImage,
         variantWeight,
-        variantSellPrice: isProbablyCostPrice ? productPrice : variantPrice,
-        variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
+        variantSellPrice: customerUnitPrice(productPrice, variant as PricedVariant, (product.variants as unknown[]).length),
+        variantCostPrice: undefined,
       };
       
       return cleanVariant;

@@ -29,7 +29,8 @@ describe('quick add — variant invariant (non-PDP entry points)', () => {
     if (plan.kind !== 'add') return;
     expect(plan.variantId).toBe('V1');
     expect(plan.item.id).toBe(`${PID}-V1`);
-    expect(plan.item.price).toBe(31.5);
+    // Single-option products charge the displayed base price.
+    expect(plan.item.price).toBe(29.99);
   });
 
   it('product with no variants quick-adds the bare product id', () => {
@@ -114,7 +115,8 @@ describe('cart -> checkout parity and legacy recovery', () => {
   });
 
   it('quick-add unit price matches the server canonical unit price rules', () => {
-    expect(quickAddUnitPrice(29.99, { variantSellPrice: 34.5 })).toBe(34.5);
+    expect(quickAddUnitPrice(29.99, { variantSellPrice: 34.5, variantCostPrice: 12 } as never, 2)).toBe(34.5);
+    expect(quickAddUnitPrice(29.99, { variantSellPrice: 34.5 }, 1)).toBe(29.99);
     expect(quickAddUnitPrice(29.99, { variantSellPrice: 0 })).toBe(29.99);
     expect(quickAddUnitPrice(29.994, null)).toBe(29.99);
   });
@@ -123,7 +125,7 @@ describe('cart -> checkout parity and legacy recovery', () => {
     const plan = resolveQuickAddPlan(
       product([
         { vid: 'A', variantStock: 0 },
-        { vid: 'B', variantStock: 1, variantSellPrice: 40 },
+        { vid: 'B', variantStock: 1, variantSellPrice: 40, variantCostPrice: 18 },
       ]),
     );
     if (plan.kind !== 'add') throw new Error('expected add');

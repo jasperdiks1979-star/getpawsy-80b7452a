@@ -1,3 +1,4 @@
+import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
@@ -684,7 +685,6 @@ const ProductDetail = () => {
 
         // Check if the variant price seems like a cost price (much lower than product selling price)
         // If variantSellPrice is less than 40% of product price, it's likely still the cost price
-        const isProbablyCostPrice = variantPrice > 0 && variantPrice < productPrice * 0.4;
 
         // Build a clean variant object with ONLY the fields we need
         const cleanVariant: ProductVariant = {
@@ -695,10 +695,13 @@ const ProductDetail = () => {
           variantSku: safeVariantSku,
           variantImage,
           variantWeight,
-          variantSellPrice: isProbablyCostPrice
-            ? calculateSellingPrice(variantPrice, variantWeight).sellingPrice
-            : variantPrice,
-          variantCostPrice: isProbablyCostPrice ? variantPrice : undefined,
+          // One price authority shared with create-checkout (customerUnitPrice).
+          variantSellPrice: customerUnitPrice(
+            productPrice,
+            variant as PricedVariant,
+            (product.variants as unknown[]).length,
+          ),
+          variantCostPrice: undefined,
         };
 
         return cleanVariant;

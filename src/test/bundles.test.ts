@@ -146,7 +146,11 @@ describe('bundle cart lines', () => {
     const multi = base({
       slug: 'multi',
       price: 100,
-      variants: [variant('a', 'Grey', 5, 120), variant('b', 'Pink', 5, 130)],
+      // variantCostPrice marks a processed selling price (raw supplier cost has none).
+      variants: [
+        { ...variant('a', 'Grey', 5, 120), variantCostPrice: 50 },
+        { ...variant('b', 'Pink', 5, 130), variantCostPrice: 55 },
+      ],
     });
     const plain = base({ slug: 'plain', id: '33333333-3333-3333-3333-333333333333', price: 45.99, variants: null });
     const components = componentsFor([multi, plain]);

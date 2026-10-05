@@ -249,7 +249,11 @@ serve(async (req) => {
 
       // ── N-4: canonical price of the EXACT variant, base price only when the
       // variant has no distinct price of its own.
-      const serverUnitPrice = canonicalUnitPrice(Number(p.price), variant);
+      const serverUnitPrice = canonicalUnitPrice(
+        Number(p.price),
+        variant,
+        Array.isArray(p.variants) ? p.variants.length : 0,
+      );
 
       // ── K/N-3: one pricing contract — the client price must match to the cent.
       const priceCheck = validateLinePrice({
