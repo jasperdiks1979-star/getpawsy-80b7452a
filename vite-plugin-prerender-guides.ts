@@ -18,6 +18,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
 import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
+import { clusterForGuide } from './src/lib/seo-clusters';
 
 /** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
 export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
@@ -420,7 +421,21 @@ function extractFaqFromHtml(html: string): Array<{ question: string; answer: str
   return faqs;
 }
 
-export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true, linkCtx?: InternalLinkContext): string {
+/** "More in this topic" block: collection, pillar and sibling guides that are advertised. */
+export function buildClusterNav(slug: string, titles: Map<string, string>, linkCtx?: InternalLinkContext): string {
+  const c = clusterForGuide(slug);
+  if (!c) return '';
+  const guides = [c.pillar, ...c.supporting]
+    .filter((s) => s !== slug && titles.has(s) && (!linkCtx || linkCtx.knownGuides.has(s)))
+    .map((s) => `<li><a href="/guides/${s}">${escapeHtml(titles.get(s)!)}</a></li>`);
+  const shop = !linkCtx || linkCtx.allowedCollections.has(c.collection)
+    ? `<p><a href="/collections/${c.collection}">Shop ${escapeHtml(c.label.toLowerCase())}</a></p>` : '';
+  if (!guides.length && !shop) return '';
+  return `\n      <aside aria-label="Related guides"><h2>More on ${escapeHtml(c.label.toLowerCase())}</h2>${shop}${guides.length ? `<ul>${guides.join('')}</ul>` : ''}</aside>`;
+}
+
+export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true, linkCtx?: InternalLinkContext, titles?: Map<string, string>): string {
+  const clusterNav = titles ? buildClusterNav(guide.slug, titles, linkCtx) : '';
   const robots = indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
   const title = guide.meta_title || guide.seoTitle || guide.title;
   const description = guide.meta_description || guide.seoDescription || guide.excerpt || '';
@@ -506,11 +521,11 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
       <nav aria-label="Breadcrumb">
         <ol>
           <li><a href="/">Home</a></li>
-          <li><a href="/pet-care-guides">Guides</a></li>
+          <li><a href="/guides">Guides</a></li>
           <li>${escapeHtml(guide.title)}</li>
         </ol>
       </nav>
-      ${articleContent}
+      ${articleContent}${clusterNav}
     </article>
   </div>
   ${scriptTags}
@@ -626,7 +641,7 @@ export default function prerenderGuidesPlugin(): Plugin {
           // Consolidation redirect sources stay SPA-only (React redirects them).
           if (guide.slug in policy.guideRedirects) continue;
           const indexable = !policy.noindexGuides.has(guide.slug);
-          const html = buildGuidePage(guide, spaHtml, indexable, linkCtx);
+          const html = buildGuidePage(guide, spaHtml, indexable, linkCtx, guideTitles);
           // Directory-index output: the host resolves /guides/<slug> to <slug>/index.html natively.
           const slugDir = path.join(distGuidesDir, guide.slug);
           fs.mkdirSync(slugDir, { recursive: true });
