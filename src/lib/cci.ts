@@ -7,7 +7,6 @@ import { getCanonicalSessionId } from '@/lib/canonicalSession';
 import { isTechnicalPath } from '@/lib/technicalRoutes';
 
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
-const SESSION_KEY = 'gp_session_id';
 const VISITOR_KEY = 'gp_visitor_id';
 const UTM_FIRST_KEY = 'gp_utm_first';
 const LOCATION_KEY = 'visitor_location';
