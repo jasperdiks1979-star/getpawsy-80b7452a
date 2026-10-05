@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 const MONEY_PAGES = [
   {
-    path: '/best-cat-litter-box-2026',
+    path: '/guides/best-cat-litter-box-2026',
     title: 'Best Cat Litter Box 2026 (What Actually Works)',
     description: 'we compared litter boxes — these 5 control odor, tracking, and mess.',
     emoji: '🐱',
@@ -12,11 +12,11 @@ const MONEY_PAGES = [
   {
     path: '/best-dog-car-seat-safety',
     title: 'Best Dog Car Seats 2026 (Crash-Tested & Safe)',
-    description: 'Crash-tested car seats for dogs of all sizes. Expert safety picks.',
+    description: 'Dog car seats for all sizes, compared by fit and safety features.',
     emoji: '🚗',
   },
   {
-    path: '/best-interactive-cat-toys',
+    path: '/guides/best-interactive-cat-toys-that-work',
     title: 'Best Interactive Cat Toys 2026 (Top Picks Tested)',
     description: 'Toys that actually hold attention beyond 5 minutes. carefully selected.',
     emoji: '🎯',
@@ -24,16 +24,15 @@ const MONEY_PAGES = [
   {
     path: '/best-dog-anxiety-solutions',
     title: 'Best Dog Anxiety Solutions 2026 (What Actually Works)',
-    description: 'Premium quality calming products tested with real anxious dogs.',
+    description: 'Calming products for anxious dogs, compared.',
     emoji: '🐕',
   },
 ] as const;
 
 const CLUSTER_PAGES = [
-  { path: '/best-cat-litter-box-reddit', title: 'Best Litter Box — Reddit Picks' },
-  { path: '/best-litter-box-for-smell', title: 'Best Litter Box for Odor Control' },
-  { path: '/best-litter-box-large-cats', title: 'Best Litter Box for Large Cats' },
-  { path: '/best-litter-boxes-apartments-2026', title: 'Best Litter Boxes for Apartments' },
+  { path: '/guides/best-odor-control-litter-box', title: 'Best Litter Box for Odor Control' },
+  { path: '/guides/best-extra-large-litter-boxes', title: 'Best Litter Box for Large Cats' },
+  { path: '/guides/best-litter-boxes-apartments-2026', title: 'Best Litter Boxes for Apartments' },
 ] as const;
 
 export function BestBuyingGuides2026() {

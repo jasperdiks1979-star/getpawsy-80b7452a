@@ -26,13 +26,13 @@ const L = {
   collection: { text: 'Browse our current cat litter boxes', href: '/collections/cat-litter-boxes' },
   automatic: { text: 'Automatic litter box guide', href: '/guides/automatic-litter-box-guide' },
   training: { text: 'How to train your cat to use an automatic litter box', href: '/guides/how-to-train-cat-to-use-automatic-litter-box' },
-  best2026: { text: 'Compare current litter box options for 2026', href: '/best-cat-litter-box-2026' },
-  reddit: { text: 'Litter boxes cat owners discuss on Reddit', href: '/best-cat-litter-box-reddit' },
+  best2026: { text: 'Compare current litter box options for 2026', href: '/guides/best-cat-litter-box-2026' },
+  reddit: { text: 'Litter boxes cat owners discuss on Reddit', href: '/guides/best-cat-litter-box-2026' },
 } satisfies Record<string, ClusterLink>;
 
 /** Links per page. Links already present on a page are intentionally omitted. */
 export const LITTER_CLUSTER_CONFIG: Record<LitterClusterPage, { slug: string; links: ClusterLink[]; products: number }> = {
-  collection: { slug: 'cat-litter-boxes', links: [L.automatic, L.training, L.best2026, L.reddit], products: 0 },
+  collection: { slug: 'cat-litter-boxes', links: [L.automatic, L.training, L.best2026], products: 0 },
   // No automatic/self-cleaning litter box is currently live and in stock,
   // so the automatic guides get no product links (never a non-automatic stand-in).
   'automatic-guide': { slug: 'automatic-litter-box-guide', links: [L.collection, L.training], products: 0 },

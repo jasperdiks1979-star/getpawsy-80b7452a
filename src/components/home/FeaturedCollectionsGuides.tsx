@@ -13,7 +13,7 @@ const FEATURED_COLLECTIONS = [
     label: 'Cat Trees & Condos',
     description: 'Multi-level cat trees, scratching posts & condos for active indoor cats.',
     icon: '🐱',
-    guidePath: '/best-interactive-cat-toys',
+    guidePath: '/guides/best-interactive-cat-toys-that-work',
     guideLabel: 'best cat toys guide',
   },
   {
@@ -29,7 +29,7 @@ const FEATURED_COLLECTIONS = [
     label: 'Cat Litter Boxes',
     description: 'Top-rated litter boxes for odor control, large cats & multi-cat households.',
     icon: '🧹',
-    guidePath: '/best-cat-litter-box-2026',
+    guidePath: '/guides/best-cat-litter-box-2026',
     guideLabel: 'best cat litter box 2026 guide',
   },
   {
