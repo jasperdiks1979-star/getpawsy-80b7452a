@@ -18,7 +18,7 @@ interface Review {
 function detectType(name: string, category: string): ProductType {
   const c = `${name} ${category}`.toLowerCase();
   if (/cat\s*tree|cat\s*condo|cat\s*tower|scratching/i.test(c)) return 'cat tree';
-  if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) return 'litter box';
+  if (/self[\s-]*clean|automatic\s*litter|robot/i.test(c)) return 'litter box';
   if (c.includes('bed') || c.includes('cushion') || c.includes('pillow')) return 'bed';
   if (c.includes('bowl') || c.includes('feeder') || c.includes('dish')) return 'bowl';
   if (c.includes('harness')) return 'harness';
