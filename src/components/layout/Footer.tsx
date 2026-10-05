@@ -78,7 +78,7 @@ const footerLinks = {
   guides: [
     { label: 'Cat Litter Box Guide', href: '/guides/best-cat-litter-box-2026' },
     { label: 'Best Cat Trees', href: '/guides/best-cat-trees-small-apartments' },
-    { label: 'Dog Car Seat Guide', href: '/guides/best-dog-car-seats-safe-travel' },
+    { label: 'Dog Car Seat Guide', href: '/guides/safest-dog-car-seat-for-travel' },
     { label: 'Dog Training Guide', href: '/guides/complete-dog-training-guide-2026' },
     { label: 'Cat Toys Guide', href: '/guides/best-interactive-cat-toys-that-work' },
     { label: 'All Guides', href: '/guides' },

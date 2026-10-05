@@ -14,7 +14,7 @@ const SUBCATEGORIES = [
     title: 'Orthopedic Dog Beds',
     description: 'Memory foam support for senior dogs, large breeds, and pets with joint issues like hip dysplasia or arthritis. Distributes weight evenly to relieve pressure points.',
     keywords: ['orthopedic', 'memory foam', 'joint support'],
-    guideLink: '/guides/best-orthopedic-dog-bed-large-dogs-2026',
+    guideLink: '/guides/best-orthopedic-dog-bed-2026',
     guideLabel: 'Orthopedic Bed Guide →',
   },
   {
@@ -22,7 +22,7 @@ const SUBCATEGORIES = [
     title: 'Large Breed Dog Beds',
     description: 'Extra-large beds rated for 80–120+ lbs with reinforced stitching. Sized for Labs, Golden Retrievers, German Shepherds, and Great Danes who need room to stretch.',
     keywords: ['large dog bed', 'XL', 'heavy duty'],
-    guideLink: '/guides/best-dog-beds-large-breeds-2026',
+    guideLink: '/guides/best-dog-beds-for-large-dogs',
     guideLabel: 'Large Breed Guide →',
   },
   {
@@ -38,7 +38,7 @@ const SUBCATEGORIES = [
     title: 'Washable & Waterproof Dog Beds',
     description: 'Machine-washable covers with waterproof liners — essential for puppies in training, senior dogs, and messy eaters. Keeps bedding fresh and hygienic.',
     keywords: ['washable', 'waterproof', 'easy clean'],
-    guideLink: '/guides/machine-washable-dog-bed-guide',
+    guideLink: '/guides/how-to-wash-a-dog-bed-properly',
     guideLabel: 'Washable Bed Guide →',
   },
 ];

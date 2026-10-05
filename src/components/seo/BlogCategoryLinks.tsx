@@ -33,7 +33,7 @@ const categoryLinkMap: Record<string, Array<{ href: string; label: string; type:
     { href: '/collections/dog-beds', label: 'Recommended Orthopedic Dog Beds', type: 'collection' },
     { href: '/collections/cat-trees-and-condos', label: 'Browse Cat Trees & Condos', type: 'collection' },
     { href: '/guides/best-cat-trees-small-apartments', label: 'Cat Trees for Small Spaces Guide', type: 'guide' },
-    { href: '/guides/dog-grooming-essentials-guide', label: 'Dog Grooming Guide', type: 'guide' },
+    { href: '/guides/how-to-groom-a-dog-at-home', label: 'Dog Grooming Guide', type: 'guide' },
   ],
   Fish: [
     { href: '/collections/dogs', label: 'Explore Our Dog Collection', type: 'collection' },

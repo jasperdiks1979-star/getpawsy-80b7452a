@@ -17,6 +17,23 @@ import fs from 'fs';
 import path from 'path';
 import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
+import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
+import { clusterForGuide, SEO_CLUSTERS } from './src/lib/seo-clusters';
+import { sanitizeGuideSeoTitle, clampMetaDescription } from './src/lib/seo-title';
+
+/** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
+export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
+  const read = (f: string, ns: string) => {
+    const file = path.join(dir, f);
+    if (!fs.existsSync(file)) return null;
+    return new Set([...fs.readFileSync(file, 'utf-8').matchAll(/<loc>[^<]*\/([a-z-]+)\/([a-z0-9-]+)<\/loc>/g)].filter((m) => m[1] === ns).map((m) => m[2]));
+  };
+  const knownGuides = read('sitemap-guides.xml', 'guides');
+  const allowedProducts = read('sitemap-products-1.xml', 'products');
+  const allowedCollections = read('sitemap-collections.xml', 'collections');
+  if (!knownGuides || !allowedProducts || !allowedCollections) return undefined;
+  return { knownGuides, allowedProducts, allowedCollections };
+}
 
 interface GuideJson {
   slug: string;
@@ -169,14 +186,14 @@ interface BlogRow {
   featured_image: string | null; category: string | null;
 }
 
-export function buildBlogPostPage(post: BlogRow, spaHtml: string): string {
+export function buildBlogPostPage(post: BlogRow, spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/blog/${post.slug}`;
   const title = post.meta_title || `${post.title} | GetPawsy`;
-  const description = post.meta_description || post.excerpt || '';
+  const description = clampMetaDescription(post.meta_description || post.excerpt || '');
   const image = post.featured_image
     ? (/^https?:\/\//.test(post.featured_image) ? post.featured_image : `${SITE}${post.featured_image}`)
     : null;
-  const body = normalizeProductLinks(storedContentToHtml(post.content || ''));
+  const body = canonicalizeInternalLinks(normalizeProductLinks(storedContentToHtml(post.content || '')), linkCtx);
   const article = JSON.stringify({
     '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description,
     ...(image ? { image } : {}),
@@ -236,6 +253,22 @@ export function findUnrenderedSitemapPaths(distDir: string, sitemapFile: string)
   if (!fs.existsSync(f)) return [`(missing ${sitemapFile})`];
   const locs = [...fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
   return locs.filter((p) => !fs.existsSync(path.join(distDir, p === '/' ? '' : p, 'index.html')));
+}
+
+/** Indexable dist/<dir>/<slug>/index.html pages that the sitemap does not list. */
+export function findUnadvertisedIndexablePages(distDir: string, dir: string, sitemapFile: string): string[] {
+  const root = path.join(distDir, dir);
+  const f = path.join(distDir, sitemapFile);
+  if (!fs.existsSync(root) || !fs.existsSync(f)) return [];
+  const listed = new Set([...fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname));
+  const out: string[] = [];
+  for (const slug of fs.readdirSync(root)) {
+    const file = path.join(root, slug, 'index.html');
+    if (!fs.existsSync(file)) continue;
+    const robots = (fs.readFileSync(file, 'utf-8').match(/name="robots" content="([^"]*)"/) || [])[1] || '';
+    if (!/noindex/.test(robots) && !listed.has(`/${dir}/${slug}`)) out.push(`/${dir}/${slug}`);
+  }
+  return out;
 }
 
 /** Sitemap URLs whose prerendered HTML is noindex or not self-canonical (homepage shell excluded). */
@@ -389,16 +422,30 @@ function extractFaqFromHtml(html: string): Array<{ question: string; answer: str
   return faqs;
 }
 
-export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true): string {
+/** "More in this topic" block: collection, pillar and sibling guides that are advertised. */
+export function buildClusterNav(slug: string, titles: Map<string, string>, linkCtx?: InternalLinkContext): string {
+  const c = clusterForGuide(slug);
+  if (!c) return '';
+  const guides = [c.pillar, ...c.supporting]
+    .filter((s) => s !== slug && titles.has(s) && (!linkCtx?.knownGuides || linkCtx.knownGuides.has(s)))
+    .map((s) => `<li><a href="/guides/${s}">${escapeHtml(titles.get(s)!)}</a></li>`);
+  const shop = !linkCtx?.allowedCollections || linkCtx.allowedCollections.has(c.collection)
+    ? `<p><a href="/collections/${c.collection}">Shop ${escapeHtml(c.label.toLowerCase())}</a></p>` : '';
+  if (!guides.length && !shop) return '';
+  return `\n      <aside aria-label="Related guides"><h2>More on ${escapeHtml(c.label.toLowerCase())}</h2>${shop}${guides.length ? `<ul>${guides.join('')}</ul>` : ''}</aside>`;
+}
+
+export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true, linkCtx?: InternalLinkContext, titles?: Map<string, string>): string {
+  const clusterNav = titles ? buildClusterNav(guide.slug, titles, linkCtx) : '';
   const robots = indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
-  const title = guide.meta_title || guide.seoTitle || guide.title;
-  const description = guide.meta_description || guide.seoDescription || guide.excerpt || '';
+  const title = sanitizeGuideSeoTitle(guide.meta_title || guide.seoTitle || guide.title);
+  const description = clampMetaDescription(guide.meta_description || guide.seoDescription || guide.excerpt || '');
   const canonical = `${SITE}/guides/${guide.slug}`;
   const ogImage = guide.featuredImage
     ? (/^https?:\/\//.test(guide.featuredImage) ? guide.featuredImage : `${SITE}${guide.featuredImage}`)
     : `${SITE}/og-image.png`;
 
-  const articleContent = sanitizeStoredHtml(normalizeProductLinks(buildArticleBody(guide)), false);
+  const articleContent = sanitizeStoredHtml(canonicalizeInternalLinks(normalizeProductLinks(buildArticleBody(guide)), linkCtx), false);
 
   // Determine FAQ items for schema
   let faqItems = guide.faq || [];
@@ -475,11 +522,11 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
       <nav aria-label="Breadcrumb">
         <ol>
           <li><a href="/">Home</a></li>
-          <li><a href="/pet-care-guides">Guides</a></li>
+          <li><a href="/guides">Guides</a></li>
           <li>${escapeHtml(guide.title)}</li>
         </ol>
       </nav>
-      ${articleContent}
+      ${articleContent}${clusterNav}
     </article>
   </div>
   ${scriptTags}
@@ -492,7 +539,7 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
 // and the template carried unsupported claims. Do not re-add.
 
 /** Raw HTML for the /guides hub (dist/guides/index.html). */
-export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string {
+export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/guides`;
   const title = 'Pet Care Guides | GetPawsy';
   const description = 'Buying guides and how-to articles for cat and dog owners from GetPawsy.';
@@ -501,6 +548,11 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string
     .slice()
     .sort((x, y) => x.title.localeCompare(y.title))
     .map((g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a>${g.excerpt ? ` — ${escapeHtml(g.excerpt)}` : ''}</li>`)
+    .join('\n');
+  const bySlug = new Map(guides.map((g) => [g.slug, g]));
+  const topics = SEO_CLUSTERS
+    .filter((c) => bySlug.has(c.pillar))
+    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(bySlug.get(c.pillar)!.title)}</a>${linkCtx?.allowedCollections && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
     .join('\n');
   const breadcrumb = JSON.stringify({
     '@context': 'https://schema.org',
@@ -534,6 +586,7 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string
       <nav aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li>Guides</li></ol></nav>
       <h1>Pet Care Guides</h1>
       <p>${description}</p>
+      ${topics ? `<h2>Start here</h2>\n      <ul>\n${topics}\n      </ul>\n      <h2>All guides</h2>` : ''}
       <ul>
 ${items}
       </ul>
@@ -566,6 +619,8 @@ export default function prerenderGuidesPlugin(): Plugin {
       }
 
       const policy = loadSeoPolicy();
+      const linkCtx = linkContextFromSitemaps(path.resolve('public'));
+      if (!linkCtx) throw new Error('[prerender-guides] FATAL sitemaps missing — cannot canonicalize internal links');
       const files = fs.readdirSync(guidesDir).filter(f => f.endsWith('.json') && f !== 'index.json');
       const staticGuides: GuideJson[] = [];
       for (const file of files) {
@@ -580,6 +635,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         'select=slug,title,excerpt,category,keywords,published_at,updated_at,featured_image,reading_time,guide_data&is_published=eq.true&slug=not.is.null&order=slug.asc');
       if (dbRows === null) throw new Error('[prerender-guides] FATAL published_guides fetch failed — sitemap guides would ship without HTML');
       const merged = mergeGuideSources(staticGuides, dbRows.map(dbGuideToJson));
+      const guideTitles = new Map([...merged.values()].map((g) => [g.slug, g.title] as [string, string]));
 
       let guideCount = 0;
       let dbOnlyCount = 0;
@@ -593,7 +649,7 @@ export default function prerenderGuidesPlugin(): Plugin {
           // Consolidation redirect sources stay SPA-only (React redirects them).
           if (guide.slug in policy.guideRedirects) continue;
           const indexable = !policy.noindexGuides.has(guide.slug);
-          const html = buildGuidePage(guide, spaHtml, indexable);
+          const html = buildGuidePage(guide, spaHtml, indexable, linkCtx, guideTitles);
           // Directory-index output: the host resolves /guides/<slug> to <slug>/index.html natively.
           const slugDir = path.join(distGuidesDir, guide.slug);
           fs.mkdirSync(slugDir, { recursive: true });
@@ -608,7 +664,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         }
       }
 
-      fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml), 'utf-8');
+      fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml, linkCtx), 'utf-8');
       console.log(`[prerender-guides] ✅ Prerendered ${guideCount} guides (${dbOnlyCount} DB-only, ${noindexCount} noindex) + /guides hub (${hubGuides.length})`);
 
       // ── Blog articles (dist/blog/<slug>/index.html) — same filter as sitemap ──
@@ -621,7 +677,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         if (!/^[a-z0-9-]+$/.test(post.slug) || !isBlogIndexable(post.slug, policy) || merged.has(post.slug)) continue;
         const dir = path.join(distDir, 'blog', post.slug);
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, 'index.html'), buildBlogPostPage(post, spaHtml), 'utf-8');
+        fs.writeFileSync(path.join(dir, 'index.html'), buildBlogPostPage(post, spaHtml, linkCtx), 'utf-8');
         blogCount++;
       }
       console.log(`[prerender-guides] ✅ Prerendered ${blogCount} blog articles → dist/blog/<slug>/index.html`);

@@ -71,7 +71,7 @@ export function CatTreesHubContent() {
         </div>
 
         <p className="text-muted-foreground leading-relaxed">
-          The single most effective stability upgrade is <strong className="text-foreground">wall anchoring</strong>. An L-bracket and strap mounted into a wall stud eliminates virtually all tip-over risk, even for tall trees with heavy cats. Every tree in our <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees and condos collection</Link> includes or is compatible with wall-anchor hardware. For a deeper dive, read our <Link to="/guides/cat-tree-stability-guide" className="text-primary underline">complete stability guide</Link>.
+          The single most effective stability upgrade is <strong className="text-foreground">wall anchoring</strong>. An L-bracket and strap mounted into a wall stud eliminates virtually all tip-over risk, even for tall trees with heavy cats. Every tree in our <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees and condos collection</Link> includes or is compatible with wall-anchor hardware. For a deeper dive, read our <Link to="/guides/choosing-safe-cat-tree-indoor" className="text-primary underline">complete stability guide</Link>.
         </p>
       </section>
 
@@ -183,7 +183,7 @@ export function CatTreesHubContent() {
           Living in a small apartment doesn't mean your cat can't have a proper tree. The key is choosing <strong className="text-foreground">tall but narrow</strong> models — a tree under 24 inches wide but 60+ inches tall gives vertical territory without consuming precious floor space. Wall-mounted cat shelf systems are another excellent option, creating aerial highways along your walls with zero floor footprint.
         </p>
         <p className="text-muted-foreground leading-relaxed">
-          Avoid short, wide trees — they take up floor space without satisfying your cat's vertical instincts. Our <Link to="/collections/best-cat-trees-for-small-apartments" className="text-primary underline">best cat trees for small apartments</Link> collection features space-efficient designs tested in real apartments. For the full height guide, see our <Link to="/guides/how-tall-should-cat-tree-be" className="text-primary underline">cat tree height guide</Link>.
+          Avoid short, wide trees — they take up floor space without satisfying your cat's vertical instincts. Our <Link to="/collections/best-cat-trees-for-small-apartments" className="text-primary underline">best cat trees for small apartments</Link> collection features space-efficient designs tested in real apartments. For the full height guide, see our <Link to="/guides/cat-tree-buying-guide" className="text-primary underline">cat tree height guide</Link>.
         </p>
       </section>
 
@@ -263,7 +263,7 @@ export function CatTreesHubContent() {
           </table>
         </div>
         <p className="text-muted-foreground leading-relaxed mb-4">
-          <strong className="text-foreground">Our recommendation:</strong> For most indoor cats, a <strong className="text-foreground">combo tree-condo</strong> with both open platforms and one enclosed cubby offers the best of both worlds. Active cats use the top platforms during the day; the same cat retreats to the enclosed condo at night or when stressed. Browse our <Link to="/collections/cat-condos" className="text-primary underline">cat condos collection</Link> or read our complete <Link to="/guides/cat-condo-vs-cat-tree-2026" className="text-primary underline">cat condo vs cat tree guide</Link>.
+          <strong className="text-foreground">Our recommendation:</strong> For most indoor cats, a <strong className="text-foreground">combo tree-condo</strong> with both open platforms and one enclosed cubby offers the best of both worlds. Active cats use the top platforms during the day; the same cat retreats to the enclosed condo at night or when stressed. Browse our <Link to="/collections/cat-condos" className="text-primary underline">cat condos collection</Link> or read our complete <Link to="/guides/cat-condo-vs-cat-tower" className="text-primary underline">cat condo vs cat tree guide</Link>.
         </p>
       </section>
 
@@ -293,7 +293,7 @@ export function CatTreesHubContent() {
           </div>
         </div>
         <p className="text-muted-foreground leading-relaxed">
-          Pro tip: When replacing worn sisal, use <strong className="text-foreground">3/8" natural sisal rope</strong> (not the thinner 1/4" variety). Wrap tightly from bottom to top with hot glue at each end. A single post re-wrap costs about $8 in materials and extends your tree's life by 2+ years. For detailed instructions, see our <Link to="/guides/cat-tree-materials-sisal-vs-carpet" className="text-primary underline">sisal vs carpet guide</Link>.
+          Pro tip: When replacing worn sisal, use <strong className="text-foreground">3/8" natural sisal rope</strong> (not the thinner 1/4" variety). Wrap tightly from bottom to top with hot glue at each end. A single post re-wrap costs about $8 in materials and extends your tree's life by 2+ years. For detailed instructions, see our <Link to="/guides/best-cat-scratching-post" className="text-primary underline">sisal vs carpet guide</Link>.
         </p>
       </section>
 

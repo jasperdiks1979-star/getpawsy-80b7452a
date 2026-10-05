@@ -66,7 +66,7 @@ const NOINDEX_PREFIXES: string[] = [
 /**
  * Specific guide slugs that are off-niche or thin content → noindex.
  */
-const NOINDEX_GUIDE_SLUGS: string[] = [
+export const NOINDEX_GUIDE_SLUGS: string[] = [
   'how-to-choose-guinea-pig-cage',
   'guinea-pig-cage-vs-playpen',
   'outdoor-dog-games-enrichment',

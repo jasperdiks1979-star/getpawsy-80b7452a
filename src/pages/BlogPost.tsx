@@ -1,4 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
 import { Helmet } from 'react-helmet-async';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -214,7 +215,7 @@ const BlogPostPage = () => {
   // This is a regular function, not a hook, so it can be defined anywhere
   const renderContent = (content: string) => {
     // Use linked content for HTML content
-    const contentToRender = linkedContent || content;
+    const contentToRender = canonicalizeInternalLinks(linkedContent || content);
     
     // Check if content is HTML (from rich text editor)
     if (contentToRender.includes('<p>') || contentToRender.includes('<h1>') || contentToRender.includes('<h2>') || contentToRender.includes('<ul>') || contentToRender.includes('<ol>')) {

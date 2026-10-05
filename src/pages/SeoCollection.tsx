@@ -1,4 +1,5 @@
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
+import { CANONICAL_COLLECTION_META } from '@/lib/seo-clusters';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useMemo, useState } from 'react';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
@@ -579,10 +580,10 @@ const SeoCollection = () => {
       {domConfig && <StickyJumpNav items={domConfig.jumpNavItems} />}
       </SectionErrorBoundary>
       <Helmet>
-        <title>{collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
+        <title>{CANONICAL_COLLECTION_META[collection.slug]?.title || collection.meta_title || generateCollectionMetaTitle(collection.primary_keyword)}</title>
         <meta 
           name="description" 
-          content={collection.meta_description || generateCollectionMetaDescription(collection.primary_keyword)} 
+          content={CANONICAL_COLLECTION_META[collection.slug]?.description || collection.meta_description || generateCollectionMetaDescription(collection.primary_keyword)} 
         />
         <meta 
           name="keywords" 
@@ -596,8 +597,8 @@ const SeoCollection = () => {
         )}
         
         {/* Open Graph */}
-        <meta property="og:title" content={collection.meta_title || collection.name} />
-        <meta property="og:description" content={collection.meta_description || collection.seo_intro.substring(0, 155)} />
+        <meta property="og:title" content={CANONICAL_COLLECTION_META[collection.slug]?.title || collection.meta_title || collection.name} />
+        <meta property="og:description" content={CANONICAL_COLLECTION_META[collection.slug]?.description || collection.meta_description || collection.seo_intro.substring(0, 155)} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`https://getpawsy.pet/collections/${collection.slug}`} />
         <meta property="og:site_name" content="GetPawsy" />

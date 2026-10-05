@@ -64,7 +64,6 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'machine-washable-dog-bed-guide': 'how-to-wash-a-dog-bed-properly',
   'waterproof-orthopedic-dog-beds-guide': 'how-to-wash-a-dog-bed-properly',
   'how-thick-should-a-dog-bed-be': 'how-to-choose-the-right-dog-bed-size',
-  'outdoor-dog-games-enrichment': 'outdoor-dog-games-2026',
 
   // ── Cat Furniture Consolidation ────────────────────────────
   // cat-condo-vs-cat-tower is the live canonical guide for this intent
@@ -262,7 +261,64 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   // ── Trending strip broken slug redirects ───────────────────
   'best-dog-car-seat-safety': 'safest-dog-car-seat-for-travel',
   'best-dog-anxiety-solutions': 'dog-bed-for-anxiety-do-they-work',
+
+  // ── P1 (2026-10-05): templated DB-only guides folded into the stronger
+  // static guide covering the same intent. No GSC impressions on any source.
+  // Litter boxes
+  'large-cat-litter-boxes': 'best-extra-large-litter-boxes',
+  'litter-box-odor-solutions': 'litter-box-odor-control-solutions',
+  'best-cat-litter-for-odor': 'best-cat-litter-for-odor-control',
+  'best-litter-for-odor-control': 'best-cat-litter-for-odor-control',
+  'self-cleaning-litter-box': 'best-self-cleaning-litter-box-2026',
+  'best-litter-box-for-apartments': 'best-litter-boxes-apartments-2026',
+  'cat-litter-box-furniture': 'best-cat-litter-box-furniture-enclosures-2026',
+  'hidden-litter-box-ideas': 'best-cat-litter-box-furniture-enclosures-2026',
+  'low-tracking-litter-box-guide': 'best-low-tracking-litter-box',
+  'litter-box-cleaning-tips': 'how-to-clean-cat-litter-box',
+  // Cat trees
+  'best-cat-trees-for-large-cats': 'best-cat-trees-large-cats-2026',
+  'best-cat-tree-2026': 'best-cat-trees-2026',
+  'best-cat-towers': 'best-cat-trees-2026',
+  'small-apartment-cat-trees': 'best-cat-trees-small-apartments',
+  'space-saving-cat-trees': 'best-cat-trees-small-apartments',
+  'cat-trees-for-multiple-cats': 'best-cat-tree-for-two-cats',
+  'luxury-cat-trees': 'best-luxury-cat-tree',
+  'minimalist-cat-trees': 'modern-cat-trees-home-design',
+  // Cat toys / enrichment
+  'interactive-cat-toys': 'best-interactive-cat-toys-that-work',
+  'interactive-toys-for-bored-cats': 'best-toys-for-bored-indoor-cats',
+  'cat-toys-for-bored-cats': 'best-toys-for-bored-indoor-cats',
+  'best-cat-toys-for-indoor-cats': 'best-cat-toys',
+  'automatic-cat-toys': 'best-automatic-cat-toy',
+  'electronic-cat-toys': 'best-automatic-cat-toy',
+  'smart-cat-toys': 'best-automatic-cat-toy',
+  'cat-toys-that-move': 'best-automatic-cat-toy',
+  'self-play-cat-toys': 'best-automatic-cat-toy',
+  'cat-enrichment-toys': 'best-cat-enrichment-ideas-indoor-cats-2026',
+  'cat-toys-for-mental-stimulation': 'best-cat-enrichment-ideas-indoor-cats-2026',
+  'stimulating-toys-for-cats': 'best-cat-enrichment-ideas-indoor-cats-2026',
+  'treat-puzzle-toys-for-cats': 'puzzle-toys-for-cats',
+  'best-toys-for-indoor-kittens': 'cat-toys-for-kittens',
+  'cat-toys-with-feathers': 'cat-teaser-toys',
+  // Dog toys
+  'dog-puzzle-toys': 'best-dog-puzzle-toys',
+  'treat-puzzle-toys-for-dogs': 'best-dog-puzzle-toys',
+  'dog-mental-stimulation-toys': 'best-dog-toys-mental-stimulation',
+  'dog-enrichment-toys': 'best-dog-toys-mental-stimulation',
+  'dog-boredom-toys': 'best-toys-for-bored-dogs',
+  'interactive-toys-for-dogs': 'best-interactive-dog-toys',
+  // Orphan static guides (not in the curated guide index) folded into the
+  // indexed guide for the same intent.
+  'cat-trees-for-apartments-guide': 'best-cat-trees-small-apartments',
+  'enclosed-litter-boxes-guide': 'covered-vs-open-litter-box',
+  'best-elevated-dog-bed-guide': 'best-elevated-dog-bed',
+  'sisal-vs-carpet-scratching-posts': 'best-cat-scratching-post',
+  'how-tall-should-cat-tree-be': 'cat-tree-buying-guide',
+  'cat-tree-stability-guide': 'choosing-safe-cat-tree-indoor',
+  'signs-your-dog-has-joint-pain': 'signs-dog-needs-joint-support',
+  'crash-tested-dog-car-seat-guide': 'safest-dog-car-seat-for-travel',
 };
+
 
 /** Set of slugs that should be redirected (for sitemap exclusion) */
 export const REDIRECTED_GUIDE_SLUGS = new Set(Object.keys(GUIDE_REDIRECTS));

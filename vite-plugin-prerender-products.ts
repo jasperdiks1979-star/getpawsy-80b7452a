@@ -1,4 +1,7 @@
 import fs from 'fs';
+import { clampMetaDescription } from './src/lib/seo-title';
+export { clampMetaDescription };
+import { CANONICAL_COLLECTION_META, clusterForCollection, type SeoCluster } from './src/lib/seo-clusters';
 import path from 'path';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
@@ -78,10 +81,26 @@ export function isListable(p: ProductRecord): boolean {
   return isCrawlerListable(p);
 }
 
+/** Paths advertised in public/sitemap-<name>.xml (null if the sitemap is absent, e.g. in unit tests). */
+const advertisedCache = new Map<string, Set<string> | null>();
+export function advertisedPaths(name: string): Set<string> | null {
+  if (!advertisedCache.has(name)) {
+    const f = path.resolve('public', `sitemap-${name}.xml`);
+    advertisedCache.set(name, fs.existsSync(f)
+      ? new Set([...fs.readFileSync(f, 'utf-8').matchAll(/<loc>https?:\/\/[^/<]+([^<]*)<\/loc>/g)].map((m) => m[1]))
+      : null);
+  }
+  return advertisedCache.get(name)!;
+}
+
 function collectionHrefFor(category: string | null): string | null {
   const slug = slugify(category || '');
   const canonical = slug ? resolveToCanonical(slug) : null;
-  return canonical && canonical !== 'all' ? `/collections/${canonical}` : null;
+  if (!canonical || canonical === 'all') return null;
+  const href = `/collections/${canonical}`;
+  // Never point breadcrumbs/schema at a thin (noindex) or unadvertised collection.
+  const advertised = advertisedPaths('collections');
+  return advertised && !advertised.has(href) ? null : href;
 }
 
 function extractAssets(spaHtml: string): { assetTags: string; scriptTags: string } {
@@ -266,12 +285,43 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
   });
 }
 
+/** "<name> | GetPawsy", name cut at a word boundary so the title stays ≤ 65 chars. */
+export function productSeoTitle(name: string): string {
+  const n = name.replace(/\s+/g, ' ').trim();
+  const room = 65 - ' | GetPawsy'.length;
+  if (n.length <= room) return `${n} | GetPawsy`;
+  const cut = n.slice(0, room - 1);
+  const i = cut.lastIndexOf(' ');
+  return `${(i > 20 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—&\s]+$/, '')}… | GetPawsy`;
+}
+
+
+/** Titles of file-backed guides (public/data/guides), for cluster link labels. */
+function readGuideTitles(): Map<string, string> {
+  const dir = path.resolve('public/data/guides');
+  const out = new Map<string, string>();
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith('.json') || f === 'index.json') continue;
+    try { const g = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')); if (g?.slug && g?.title) out.set(g.slug, g.title); } catch { /* skip */ }
+  }
+  return out;
+}
+
+/** Pillar first, then supporting guides; only guides with a file-backed page. */
+export function clusterGuideLinks(cluster: SeoCluster | undefined, titles: Map<string, string>): Array<{ href: string; label: string }> {
+  if (!cluster) return [];
+  return [cluster.pillar, ...cluster.supporting]
+    .filter((s) => titles.has(s))
+    .map((s) => ({ href: `/guides/${s}`, label: titles.get(s)! }));
+}
+
 export function buildProductPage(product: ProductRecord, related: ProductRecord[], spaHtml: string): string {
   const slug = product.slug || product.id;
   const canonical = `${SITE}/products/${slug}`;
   const cleanDescription = stripHtml(product.description);
   const price = formatPrice(product.price);
-  const description = (cleanDescription || `${product.name} — $${price} USD at GetPawsy.`).slice(0, 280);
+  const description = clampMetaDescription(cleanDescription || `${product.name} — $${price} USD at GetPawsy.`);
   const images = productImages(product);
   const primaryImage = images[0] || `${SITE}/og-image.png`;
   const robots = isProductIndexable(product) ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
@@ -296,13 +346,13 @@ export function buildProductPage(product: ProductRecord, related: ProductRecord[
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(product.name)} | GetPawsy</title>
+  <title>${escapeHtml(productSeoTitle(product.name))}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <meta name="robots" content="${robots}">
   <meta name="googlebot" content="${robots}">
   <link rel="canonical" href="${canonical}">
   <meta property="og:type" content="product">
-  <meta property="og:title" content="${escapeHtml(product.name)} | GetPawsy">
+  <meta property="og:title" content="${escapeHtml(productSeoTitle(product.name))}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${canonical}">
   <meta property="og:image" content="${escapeHtml(primaryImage)}">
@@ -334,6 +384,10 @@ export function buildListingPage(opts: {
   spaHtml: string; path: string; title: string; h1: string; description: string;
   intro: string; crumbs: Array<{ name: string; path: string }>;
   items: Array<{ href: string; label: string; extra?: string }>; indexable?: boolean;
+  /** Related guides (collection → pillar → supporting). */
+  guides?: Array<{ href: string; label: string }>;
+  /** Emit an ItemList of the (canonical) item URLs. */
+  itemList?: boolean;
 }): string {
   const canonical = `${SITE}${opts.path === '/' ? '/' : opts.path}`;
   const robots = opts.indexable === false ? ROBOTS_NOINDEX_FOLLOW : ROBOTS_INDEX;
@@ -343,6 +397,15 @@ export function buildListingPage(opts: {
     '@type': 'BreadcrumbList',
     itemListElement: opts.crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: `${SITE}${c.path}` })),
   });
+  const itemList = opts.itemList && opts.items.length
+    ? `\n  <script type="application/ld+json">${JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'ItemList', url: canonical,
+      itemListElement: opts.items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}${it.href}`, name: it.label })),
+    }).replace(/</g, '\\u003c')}</script>`
+    : '';
+  const guides = opts.guides && opts.guides.length
+    ? `\n      <h2>Buying guides</h2>\n      <ul>\n${opts.guides.map((g) => `<li><a href="${escapeHtml(g.href)}">${escapeHtml(g.label)}</a></li>`).join('\n')}\n      </ul>`
+    : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -359,7 +422,7 @@ export function buildListingPage(opts: {
   <meta property="og:url" content="${canonical}">
   <meta property="og:site_name" content="GetPawsy">
   ${assetTags}
-  <script type="application/ld+json">${breadcrumb}</script>
+  <script type="application/ld+json">${breadcrumb}</script>${itemList}
 </head>
 <body>
   <div id="root">
@@ -369,7 +432,7 @@ export function buildListingPage(opts: {
       <p>${escapeHtml(opts.intro)}</p>
       <ul>
 ${opts.items.map((it) => `<li><a href="${escapeHtml(it.href)}">${escapeHtml(it.label)}</a>${it.extra ? ` — ${escapeHtml(it.extra)}` : ''}</li>`).join('\n')}
-      </ul>
+      </ul>${guides}
     </main>
   </div>
   ${scriptTags}
@@ -519,6 +582,7 @@ export default function prerenderProductsPlugin(): Plugin {
 
       // ── Canonical collections (dist/collections/<slug>/index.html) ──
       let collectionCount = 0;
+      const guideTitles = readGuideTitles();
       for (const slug of CANONICAL_SITEMAP_COLLECTIONS) {
         const cat = getCanonicalCategory(slug);
         if (!cat || !cat.active) throw new Error(`[prerender-products] canonical collection ${slug} missing from registry`);
@@ -526,11 +590,14 @@ export default function prerenderProductsPlugin(): Plugin {
         const dir = path.join(distDir, 'collections', slug);
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, 'index.html'), buildListingPage({
-          spaHtml, path: `/collections/${slug}`, title: `${cat.label} | GetPawsy`, h1: cat.label,
-          description: `Browse ${members.length} in-stock ${cat.label.toLowerCase()} at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.`,
+          spaHtml, path: `/collections/${slug}`,
+          title: CANONICAL_COLLECTION_META[slug]?.title ?? `${cat.label} | GetPawsy`, h1: cat.label,
+          description: CANONICAL_COLLECTION_META[slug]?.description ?? `Browse in-stock ${cat.label.toLowerCase()} at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.`,
           intro: `${members.length} in-stock products in ${cat.label}.`,
-          crumbs: [{ name: 'Home', path: '/' }, { name: 'Collections', path: '/collections/all' }, { name: cat.label, path: `/collections/${slug}` }],
+          crumbs: [{ name: 'Home', path: '/' }, { name: 'Products', path: '/products' }, { name: cat.label, path: `/collections/${slug}` }],
           items: members.map((p) => ({ href: `/products/${p.slug}`, label: p.name, extra: `$${formatPrice(p.price)}` })),
+          itemList: true,
+          guides: clusterGuideLinks(clusterForCollection(slug), guideTitles),
           // Mirrors the runtime thin-collection guard (<3 products → noindex).
           indexable: members.length >= MIN_INDEXABLE_COLLECTION_PRODUCTS,
         }), 'utf-8');
@@ -541,7 +608,8 @@ export default function prerenderProductsPlugin(): Plugin {
       try {
         const { loadSeoPolicy, isBlogIndexable } = await import('./scripts/seo-indexability.mjs');
         const policy = loadSeoPolicy();
-        const posts = (await fetchBlogPosts()).filter((b) => isBlogIndexable(b.slug, policy));
+        const advertisedBlog = advertisedPaths('blog');
+        const posts = (await fetchBlogPosts()).filter((b) => isBlogIndexable(b.slug, policy) && (!advertisedBlog || advertisedBlog.has(`/blog/${b.slug}`)));
         fs.mkdirSync(path.join(distDir, 'blog'), { recursive: true });
         fs.writeFileSync(path.join(distDir, 'blog', 'index.html'), buildListingPage({
           spaHtml, path: '/blog', title: 'Blog | GetPawsy', h1: 'GetPawsy Blog',

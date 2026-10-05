@@ -201,7 +201,7 @@ export default function CatCondoVsCatTree2026() {
               </div>
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              For a deep dive on stability physics, read our <Link to="/guides/cat-tree-stability-guide" className="text-primary underline">cat tree stability guide</Link>. All products in our <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> are stability-evaluated.
+              For a deep dive on stability physics, read our <Link to="/guides/choosing-safe-cat-tree-indoor" className="text-primary underline">cat tree stability guide</Link>. All products in our <Link to="/collections/cat-trees-and-condos" className="text-primary underline">cat trees & condos collection</Link> are stability-evaluated.
             </p>
           </section>
 
