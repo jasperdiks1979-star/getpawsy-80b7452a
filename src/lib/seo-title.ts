@@ -20,6 +20,9 @@ export function sanitizeGuideSeoTitle(raw: string): string {
   t = t.replace(/\bAirline-Approved\s*(&amp;|&|and)?\s*/gi, ' ');
   t = t.replace(/\b(Crash-Tested|Vet-Backed|Expert|Proven|Ranked|Tested)\b/gi, ' ');
   t = t.replace(/\bVet Solutions\b/gi, 'Solutions');
+  t = t.replace(/\(?\s*(2026\s+)?Honest Review\s*\)?/gi, (m) => (/2026/.test(m) ? '(2026)' : ' '));
+  t = t.replace(/\bTop Picks\s*(&amp;|&|and)\s*Reviews\b/gi, 'Top Picks');
+  t = t.replace(/\b(Escape-Proof|Odor-Free|Science-Backed)\b/gi, ' ');
   t = t.replace(/\bSafest\s+/gi, '');
   // Tidy leftovers.
   t = t.replace(/\s*(&amp;|&)\s*(?=[)–—|]|$|\s*\()/g, ' ');
@@ -51,4 +54,24 @@ export function clampMetaDescription(text: string, max = 160): string {
   const cut = t.slice(0, max - 1);
   const i = cut.lastIndexOf(' ');
   return `${(i > 80 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—\s]+$/, '')}…`;
+}
+
+/**
+ * Meta-description hygiene: removes testing/ranking/authority/outcome claims
+ * the catalog cannot evidence, keeping the factual remainder readable.
+ */
+export function sanitizeSeoDescription(raw: string): string {
+  let t = ` ${raw} `;
+  t = t.replace(/\s*ranked by vets\b/gi, '');
+  t = t.replace(/\bthe safest\s+(and\s+)?/gi, '').replace(/\bsafest\s+/gi, '');
+  t = t.replace(/\bReal owner reviews with pros\s*(&amp;|&|and)\s*cons\b/gi, 'Pros & cons');
+  t = t.replace(/\b(compared\s*(&amp;|&|and)\s*)?ranked\b/gi, (m) => (/compared/i.test(m) ? 'compared' : ''));
+  t = t.replace(/\b(vet|science|expert)[- ]backed\b/gi, '');
+  t = t.replace(/\b(crash|vet|lab)[- ]tested\b/gi, '');
+  t = t.replace(/\b(odor[- ]free|escape[- ]proof)\b/gi, '');
+  t = t.replace(/\b(our\s+)?experts?\b(?:'s)?/gi, (m) => (/our/i.test(m) ? 'our' : ''));
+  t = t.replace(/\b(proven|tested)\b/gi, '');
+  t = t.replace(/\s+([,.;:!?])/g, '$1').replace(/(&amp;|&)\s*(?=[,.;]|options\b)/g, '').replace(/\s+/g, ' ').trim();
+  t = t.replace(/(^|[.!?]\s+)([a-z])/g, (_m, a, b) => a + b.toUpperCase());
+  return t;
 }

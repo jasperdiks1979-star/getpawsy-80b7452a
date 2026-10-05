@@ -19,7 +19,7 @@ import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
 import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
 import { clusterForGuide, SEO_CLUSTERS } from './src/lib/seo-clusters';
-import { sanitizeGuideSeoTitle, clampMetaDescription } from './src/lib/seo-title';
+import { sanitizeGuideSeoTitle, clampMetaDescription, sanitizeSeoDescription } from './src/lib/seo-title';
 
 /** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
 export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
@@ -188,8 +188,8 @@ interface BlogRow {
 
 export function buildBlogPostPage(post: BlogRow, spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/blog/${post.slug}`;
-  const title = post.meta_title || `${post.title} | GetPawsy`;
-  const description = clampMetaDescription(post.meta_description || post.excerpt || '');
+  const title = sanitizeGuideSeoTitle(post.meta_title || post.title);
+  const description = clampMetaDescription(sanitizeSeoDescription(post.meta_description || post.excerpt || ''));
   const image = post.featured_image
     ? (/^https?:\/\//.test(post.featured_image) ? post.featured_image : `${SITE}${post.featured_image}`)
     : null;
@@ -422,6 +422,18 @@ function extractFaqFromHtml(html: string): Array<{ question: string; answer: str
   return faqs;
 }
 
+/** First paragraph of stored guide text (verbatim, tags stripped) — used only when no description exists. */
+export function firstParagraphText(guide: GuideJson): string {
+  const pieces: string[] = [];
+  if (typeof guide.content === 'string') pieces.push(guide.content);
+  for (const sec of guide.sections || []) for (const v of Object.values(sec)) if (typeof v === 'string') pieces.push(v);
+  for (const p of pieces) {
+    const txt = p.replace(/<[^>]+>/g, ' ').replace(/[#*_>`\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (txt.length >= 60) return txt;
+  }
+  return '';
+}
+
 /** "More in this topic" block: collection, pillar and sibling guides that are advertised. */
 export function buildClusterNav(slug: string, titles: Map<string, string>, linkCtx?: InternalLinkContext): string {
   const c = clusterForGuide(slug);
@@ -439,7 +451,7 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
   const clusterNav = titles ? buildClusterNav(guide.slug, titles, linkCtx) : '';
   const robots = indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
   const title = sanitizeGuideSeoTitle(guide.meta_title || guide.seoTitle || guide.title);
-  const description = clampMetaDescription(guide.meta_description || guide.seoDescription || guide.excerpt || '');
+  const description = clampMetaDescription(sanitizeSeoDescription(guide.meta_description || guide.seoDescription || (guide as { metaDescription?: string }).metaDescription || guide.excerpt || firstParagraphText(guide)));
   const canonical = `${SITE}/guides/${guide.slug}`;
   const ogImage = guide.featuredImage
     ? (/^https?:\/\//.test(guide.featuredImage) ? guide.featuredImage : `${SITE}${guide.featuredImage}`)
