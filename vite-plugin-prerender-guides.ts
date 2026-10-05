@@ -628,6 +628,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         'select=slug,title,excerpt,category,keywords,published_at,updated_at,featured_image,reading_time,guide_data&is_published=eq.true&slug=not.is.null&order=slug.asc');
       if (dbRows === null) throw new Error('[prerender-guides] FATAL published_guides fetch failed — sitemap guides would ship without HTML');
       const merged = mergeGuideSources(staticGuides, dbRows.map(dbGuideToJson));
+      const guideTitles = new Map([...merged.values()].map((g) => [g.slug, g.title] as [string, string]));
 
       let guideCount = 0;
       let dbOnlyCount = 0;
