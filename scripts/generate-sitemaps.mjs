@@ -22,6 +22,7 @@ import {
 import {
   loadSeoPolicy,
   isProductIndexable,
+  isCrawlerExcludedProduct,
   isGuideIndexable,
   isBlogIndexable,
   assertStrictSitemapPaths,
@@ -194,6 +195,8 @@ async function main() {
         if (!isProductIndexable(p)) return false;
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
+        // Same exclusion as the product prerender: no HTML is emitted for these.
+        if (isCrawlerExcludedProduct(p)) return false;
         // PHASE 10B: SANDBOX fixtures may never reach public/ or dist/.
         if (isSandboxFixture({ slug: p.slug, name: p.name })) return false;
         if (seen.has(p.slug)) return false;
@@ -286,7 +289,9 @@ async function main() {
   }
 
   // ── Ensure static JSON guides are always in sitemap (even if not in DB yet) ──
-  const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), []);
+  // Only index entries backed by a guide file (useGuide() 404s otherwise).
+  const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), [])
+    .filter((g) => g && g.slug && fs.existsSync(joinRoot("public", "data", "guides", `${g.slug}.json`)));
   if (Array.isArray(staticGuideIndex)) {
     const existingSlugs = new Set(guideEntriesRaw.map(g => g.path));
     for (const g of staticGuideIndex) {
