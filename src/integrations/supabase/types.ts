@@ -9777,6 +9777,7 @@ export type Database = {
           classified_channel: string | null
           classifier_version: string | null
           country: string | null
+          crawler_identity: string | null
           device: string | null
           duration_evidence_source: string | null
           effective_duration_seconds: number | null
@@ -9822,6 +9823,7 @@ export type Database = {
           traffic_class: string | null
           traffic_quality: string
           updated_at: string
+          user_agent: string | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -9841,6 +9843,7 @@ export type Database = {
           classified_channel?: string | null
           classifier_version?: string | null
           country?: string | null
+          crawler_identity?: string | null
           device?: string | null
           duration_evidence_source?: string | null
           effective_duration_seconds?: number | null
@@ -9888,6 +9891,7 @@ export type Database = {
           traffic_class?: string | null
           traffic_quality?: string
           updated_at?: string
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -9907,6 +9911,7 @@ export type Database = {
           classified_channel?: string | null
           classifier_version?: string | null
           country?: string | null
+          crawler_identity?: string | null
           device?: string | null
           duration_evidence_source?: string | null
           effective_duration_seconds?: number | null
@@ -9954,6 +9959,7 @@ export type Database = {
           traffic_class?: string | null
           traffic_quality?: string
           updated_at?: string
+          user_agent?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -76755,6 +76761,20 @@ export type Database = {
         }
         Relationships: []
       }
+      guide_assist_attribution_v1: {
+        Row: {
+          click_id: string | null
+          clicked_at: string | null
+          first_add_to_cart_at: string | null
+          first_product_view_at: string | null
+          guide_path: string | null
+          guide_slug: string | null
+          placement: string | null
+          product_slug: string | null
+          session_id: string | null
+        }
+        Relationships: []
+      }
       gv_first_sale_priority_v: {
         Row: {
           best_audience_match: number | null
@@ -79345,6 +79365,10 @@ export type Database = {
         Returns: number
       }
       canonical_session_apply_attribution: {
+        Args: { since: string }
+        Returns: number
+      }
+      canonical_session_apply_evidence: {
         Args: { since: string }
         Returns: number
       }
