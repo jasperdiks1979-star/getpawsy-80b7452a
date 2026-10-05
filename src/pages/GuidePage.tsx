@@ -31,7 +31,7 @@ import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
 import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
-import { sanitizeGuideSeoTitle } from '@/lib/seo-title';
+import { sanitizeGuideSeoTitle, stripUnsupportedTitleClaims } from '@/lib/seo-title';
 import { GuideClusterNav } from '@/components/guides/GuideClusterNav';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
@@ -248,6 +248,20 @@ const GuidePage = () => {
       .filter(g => g.slug !== guide.slug && g.category === guide.category && !existingSlugs.has(g.slug) && !contentLinkedSlugs.has(g.slug))
       .slice(0, 6 - relatedGuides.length);
     relatedGuides.push(...sameCat);
+  }
+  // Point retired guide slugs at their canonical guide, drop self/duplicates,
+  // and strip unsupported claims from card labels.
+  {
+    const seen = new Set<string>([guide.slug]);
+    const normalized = relatedGuides.flatMap((rg) => {
+      const target = getGuideRedirectTarget(rg.slug);
+      const slug = target ?? rg.slug;
+      if (seen.has(slug) || contentLinkedSlugs.has(slug)) return [];
+      seen.add(slug);
+      const base = target ? (allGuides?.find((g) => g.slug === slug) ?? { ...rg, slug }) : rg;
+      return [{ ...base, title: stripUnsupportedTitleClaims(base.title) }];
+    });
+    relatedGuides.splice(0, relatedGuides.length, ...normalized);
   }
 
   // Active SEO title from A/B test or fallback

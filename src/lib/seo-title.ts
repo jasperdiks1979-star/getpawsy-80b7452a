@@ -8,7 +8,8 @@
 const MAX = 65;
 const BRAND = ' | GetPawsy';
 
-export function sanitizeGuideSeoTitle(raw: string): string {
+/** Claim/filler hygiene only (no brand suffix, no length clamp) — used for link labels too. */
+export function stripUnsupportedTitleClaims(raw: string): string {
   let t = ` ${raw} `;
   // Trailing brand / shipping suffixes (re-added once below).
   t = t.replace(/\s*\|\s*(GetPawsy|Pawsy Guide|Free (US )?Shipping)\b/gi, ' ');
@@ -31,6 +32,11 @@ export function sanitizeGuideSeoTitle(raw: string): string {
   t = t.replace(/\s*[–—-]\s*(?=\(|$)/g, ' ').replace(/^[–—-]\s*/, '').replace(/\s+/g, ' ').trim();
   t = t.replace(/\s*[–—]\s*[–—]\s*/g, ' – ');
   t = t.replace(/[–—:,&]\s*$/, '').trim();
+  return t;
+}
+
+export function sanitizeGuideSeoTitle(raw: string): string {
+  let t = stripUnsupportedTitleClaims(raw);
   if (t.length + BRAND.length <= MAX) return t + BRAND;
   if (t.length <= MAX) return t;
   // Too long: drop the subtitle after the last dash separator, keep a (year).

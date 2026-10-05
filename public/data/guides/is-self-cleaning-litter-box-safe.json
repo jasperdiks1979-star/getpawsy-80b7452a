@@ -4,23 +4,52 @@
   "seoTitle": "Is a Self-Cleaning Litter Box Safe? – Complete Safety Guide",
   "seoDescription": "Are automatic litter boxes safe for cats? Safety sensors, injury risks, and what to look for explained. Vet-informed guidance for concerned cat owners. Updated 2026.",
   "h1Override": "Is a Self-Cleaning Litter Box Safe for Your Cat?",
-  "trustLines": ["Safety features explained in detail", "Risk factors identified", "Updated March 2026"],
+  "trustLines": [
+    "Safety features explained in detail",
+    "Risk factors identified",
+    "Updated March 2026"
+  ],
   "excerpt": "Complete safety analysis of self-cleaning litter boxes. Sensor technology, injury risks, kitten safety, and what features to look for in a safe automatic box.",
   "quickAnswer": "Modern self-cleaning litter boxes with infrared and weight sensors are generally safe for adult cats over 5 lbs. The key safety features to look for are: dual sensors (infrared + weight), configurable cycle delays (10–20 minutes), and automatic stop if motion is detected mid-cycle. The primary risks involve older budget models without adequate sensors and kittens under 5 lbs who may not trigger safety mechanisms.",
   "category": "Cat Litter",
-  "keywords": ["is self cleaning litter box safe", "automatic litter box safety", "self cleaning litter box cat safety", "are automatic litter boxes safe for cats"],
+  "keywords": [
+    "is self cleaning litter box safe",
+    "automatic litter box safety",
+    "self cleaning litter box cat safety",
+    "are automatic litter boxes safe for cats"
+  ],
   "publishedAt": "2026-03-23",
   "updatedAt": "2026-03-23",
   "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
   "readingTime": 8,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "jumpNav": [
-    { "label": "Safety Concerns", "anchor": "common-safety-concerns-addressed" },
-    { "label": "Sensor Technology", "anchor": "safety-sensor-technology-explained" },
-    { "label": "What to Look For", "anchor": "safety-features-checklist" },
-    { "label": "Who Should Avoid", "anchor": "who-should-avoid-automatic-litter-boxes" },
-    { "label": "Safe Usage Tips", "anchor": "safe-usage-best-practices" },
-    { "label": "FAQ", "anchor": "faq" }
+    {
+      "label": "Safety Concerns",
+      "anchor": "common-safety-concerns-addressed"
+    },
+    {
+      "label": "Sensor Technology",
+      "anchor": "safety-sensor-technology-explained"
+    },
+    {
+      "label": "What to Look For",
+      "anchor": "safety-features-checklist"
+    },
+    {
+      "label": "Who Should Avoid",
+      "anchor": "who-should-avoid-automatic-litter-boxes"
+    },
+    {
+      "label": "Safe Usage Tips",
+      "anchor": "safe-usage-best-practices"
+    },
+    {
+      "label": "FAQ",
+      "anchor": "faq"
+    }
   ],
   "sections": [
     {
@@ -29,7 +58,7 @@
     },
     {
       "heading": "Safety Sensor Technology Explained",
-      "content": "Understanding how safety sensors work helps you evaluate which models are genuinely safe:\n\n**Infrared Motion Sensors**\nInfrared beams cross the litter box interior. When your cat breaks the beam (by entering or moving inside), the system registers a presence. The cleaning cycle will not start — or will immediately stop — while any beam is broken.\n\n- Range: Effective across the full interior width\n- Response time: Instantaneous (<100ms)\n- Limitation: Can't detect a completely still cat pressed against the wall (extremely rare scenario)\n\n**Weight/Pressure Sensors**\nPressure pads under the litter bed measure total weight. When weight exceeds the litter-only baseline (typically by 3+ lbs), the system knows a cat is present.\n\n- Advantage: Detects a cat even if motionless\n- Limitation: Small kittens under 3–4 lbs may not register reliably\n\n**Combination Systems (Safest)**\nPremium models use both infrared AND weight sensors simultaneously. The cleaning cycle only starts when BOTH sensor types confirm the box is empty. This dual-confirmation approach eliminates the edge cases of either individual sensor type.\n\nThe [60L Smart Automatic Litter Box](/lp/self-cleaning-litter-box) uses dual infrared sensors plus a weight-based detection system with a configurable delay timer — a triple-safety approach.\n\nFor more on the technology, see our guide on [how self-cleaning litter boxes work](/guides/how-does-self-cleaning-litter-box-work)."
+      "content": "Understanding how safety sensors work helps you evaluate which models are genuinely safe:\n\n**Infrared Motion Sensors**\nInfrared beams cross the litter box interior. When your cat breaks the beam (by entering or moving inside), the system registers a presence. The cleaning cycle will not start — or will immediately stop — while any beam is broken.\n\n- Range: Effective across the full interior width\n- Response time: Instantaneous (<100ms)\n- Limitation: Can't detect a completely still cat pressed against the wall (extremely rare scenario)\n\n**Weight/Pressure Sensors**\nPressure pads under the litter bed measure total weight. When weight exceeds the litter-only baseline (typically by 3+ lbs), the system knows a cat is present.\n\n- Advantage: Detects a cat even if motionless\n- Limitation: Small kittens under 3–4 lbs may not register reliably\n\n**Combination Systems (Safest)**\nPremium models use both infrared AND weight sensors simultaneously. The cleaning cycle only starts when BOTH sensor types confirm the box is empty. This dual-confirmation approach eliminates the edge cases of either individual sensor type.\n\nThe [60L Smart Automatic Litter Box](/lp/self-cleaning-litter-box) uses an infrared sensor to detect when your cat exits before starting the cleaning cycle; check the product page for its current specifications.\n\nFor more on the technology, see our guide on [how self-cleaning litter boxes work](/guides/how-does-self-cleaning-litter-box-work)."
     },
     {
       "heading": "Safety Features Checklist",
@@ -78,11 +107,15 @@
     {
       "name": "60L Smart Automatic Litter Box",
       "price": "$268.99",
-      "advantages": ["Dual infrared safety sensors", "Weight detection system", "Configurable 5–20 minute delay", "Under 50 dB operation", "App-based monitoring"],
-      "link": "/lp/self-cleaning-litter-box",
-      "badge": "Safety Certified",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "availability": "InStock",
-      "description": "Triple-safety automatic litter box with infrared + weight sensors and configurable delay timer."
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring."
     }
   ]
 }

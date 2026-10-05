@@ -11,4 +11,3 @@ export { AggregateRatingSchema, calculateAggregateRating } from './AggregateRati
 export { LocalBusinessSchema } from './LocalBusinessSchema';
 export { CollectionPillarLinks } from './CollectionPillarLinks';
 export { SuperclusterRelatedContent } from './SuperclusterRelatedContent';
-export { MoneyPageBooster } from './MoneyPageBooster';

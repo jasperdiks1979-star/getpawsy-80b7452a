@@ -33,7 +33,7 @@
     "bestPremium": {
       "name": "60L Automatic Smart Litter Box",
       "reason": "60-liter capacity handles cats up to 18 lbs with room to spare. Self-cleaning means no daily scooping of oversized waste.",
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control"
     }
   },
   "comparisonProducts": [
@@ -55,13 +55,14 @@
       "name": "60L Automatic Smart Litter Box",
       "image": "https://getpawsy.pet/images/products/33ad17c0-b009-4df5-8e45-265fcb78bdbc-2.jpg",
       "price": "$268.99",
-      "description": "60-liter self-cleaning litter box with capacity for cats up to 18 lbs.",
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring.",
       "advantages": [
-        "60L large capacity",
-        "Handles cats up to 18 lbs",
-        "Self-cleaning automation"
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
       ],
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Best Automatic",
       "availability": "InStock"
     },

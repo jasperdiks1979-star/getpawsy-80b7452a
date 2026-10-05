@@ -4,25 +4,57 @@
   "seoTitle": "How Does a Self-Cleaning Litter Box Work? – Mechanism Explained",
   "seoDescription": "Learn how self-cleaning litter boxes work — from rake systems to rotating drums and infrared sensors. Understand the technology before you buy. Updated 2026.",
   "h1Override": "How Does a Self-Cleaning Litter Box Work? Technology Explained",
-  "trustLines": ["Mechanism types compared", "Safety sensors explained", "Updated for 2026"],
+  "trustLines": [
+    "Mechanism types compared",
+    "Safety sensors explained",
+    "Updated for 2026"
+  ],
   "excerpt": "Complete breakdown of how self-cleaning litter boxes work — rake, rotating, and sifting mechanisms explained with pros, cons, and safety features.",
   "quickAnswer": "Self-cleaning litter boxes use one of three mechanisms — raking, rotating drum, or sifting — to automatically separate waste from clean litter after your cat exits. Most models use infrared or weight sensors to detect when your cat has left, then wait 5–20 minutes before starting a cleaning cycle. Waste is deposited into a sealed drawer or bag for easy disposal.",
   "featuredSnippet": "Self-cleaning litter boxes work by detecting when your cat exits (using infrared or weight sensors), waiting a set delay period, then automatically separating clumped waste from clean litter. The three main mechanisms are rake systems (a motorized rake pushes clumps into a waste compartment), rotating drums (the entire drum rotates to sift waste through a screen), and gravity sifting (trays shift to let clean litter fall through). Waste is deposited into a sealed compartment with carbon filters to reduce odor.",
   "category": "Cat Litter",
-  "keywords": ["how does self cleaning litter box work", "self cleaning litter box mechanism", "automatic litter box technology", "how automatic litter box works"],
+  "keywords": [
+    "how does self cleaning litter box work",
+    "self cleaning litter box mechanism",
+    "automatic litter box technology",
+    "how automatic litter box works"
+  ],
   "publishedAt": "2026-03-23",
   "updatedAt": "2026-03-23",
   "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
   "readingTime": 8,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "jumpNav": [
-    { "label": "Three Mechanisms", "anchor": "the-three-cleaning-mechanisms" },
-    { "label": "Sensor Technology", "anchor": "sensor-technology-how-it-detects-your-cat" },
-    { "label": "Cleaning Cycle", "anchor": "the-cleaning-cycle-step-by-step" },
-    { "label": "Waste Handling", "anchor": "waste-handling-and-odor-control" },
-    { "label": "Smart Features", "anchor": "smart-app-features" },
-    { "label": "Maintenance", "anchor": "ongoing-maintenance" },
-    { "label": "FAQ", "anchor": "faq" }
+    {
+      "label": "Three Mechanisms",
+      "anchor": "the-three-cleaning-mechanisms"
+    },
+    {
+      "label": "Sensor Technology",
+      "anchor": "sensor-technology-how-it-detects-your-cat"
+    },
+    {
+      "label": "Cleaning Cycle",
+      "anchor": "the-cleaning-cycle-step-by-step"
+    },
+    {
+      "label": "Waste Handling",
+      "anchor": "waste-handling-and-odor-control"
+    },
+    {
+      "label": "Smart Features",
+      "anchor": "smart-app-features"
+    },
+    {
+      "label": "Maintenance",
+      "anchor": "ongoing-maintenance"
+    },
+    {
+      "label": "FAQ",
+      "anchor": "faq"
+    }
   ],
   "sections": [
     {
@@ -31,7 +63,7 @@
     },
     {
       "heading": "Sensor Technology: How It Detects Your Cat",
-      "content": "Safety is the primary concern with any automatic litter box. Modern units use one or more sensor types to detect your cat:\n\n**Infrared Motion Sensors** — The most common safety feature. Infrared beams detect movement inside the litter chamber. When broken, the cleaning cycle is paused or delayed. The [60L Smart Litter Box](/lp/self-cleaning-litter-box) uses dual infrared sensors positioned at entry and exit points.\n\n**Weight Sensors** — Pressure pads under the litter bed detect when a cat enters (weight increase) and exits (weight returns to baseline). These also help distinguish between a cat using the box and litter shifting during cleaning.\n\n**Timer Delays** — Even with sensors, most units add a configurable delay (typically 5–20 minutes) after the last detected activity before starting a cycle. This provides an extra safety margin.\n\n**Combination Systems** — Premium models combine infrared + weight + timer for triple-layer safety. If any sensor detects activity during a cycle, the mechanism stops immediately and resets.\n\nFor safety-specific guidance, see our guide on [whether self-cleaning litter boxes are safe](/guides/is-self-cleaning-litter-box-safe)."
+      "content": "Safety is the primary concern with any automatic litter box. Modern units use one or more sensor types to detect your cat:\n\n**Infrared Motion Sensors** — The most common safety feature. Infrared beams detect movement inside the litter chamber. When broken, the cleaning cycle is paused or delayed. The [60L Smart Litter Box](/lp/self-cleaning-litter-box) uses an infrared sensor to detect when your cat exits before starting the cleaning cycle.\n\n**Weight Sensors** — Pressure pads under the litter bed detect when a cat enters (weight increase) and exits (weight returns to baseline). These also help distinguish between a cat using the box and litter shifting during cleaning.\n\n**Timer Delays** — Even with sensors, most units add a configurable delay (typically 5–20 minutes) after the last detected activity before starting a cycle. This provides an extra safety margin.\n\n**Combination Systems** — Premium models combine infrared + weight + timer for triple-layer safety. If any sensor detects activity during a cycle, the mechanism stops immediately and resets.\n\nFor safety-specific guidance, see our guide on [whether self-cleaning litter boxes are safe](/guides/is-self-cleaning-litter-box-safe)."
     },
     {
       "heading": "The Cleaning Cycle Step by Step",
@@ -87,22 +119,42 @@
   "buyingCriteria": {
     "title": "What to Look For in a Self-Cleaning Litter Box",
     "criteria": [
-      { "name": "Safety Sensors", "description": "Look for infrared + weight sensor combinations with configurable delay timers for maximum safety." },
-      { "name": "Noise Level", "description": "Under 50 dB is ideal, especially for bedrooms or apartments. Check decibel ratings before buying." },
-      { "name": "Waste Capacity", "description": "Larger waste drawers mean less frequent emptying. Multi-cat homes should prioritize 7+ day capacity." },
-      { "name": "Litter Compatibility", "description": "Confirm your preferred litter type works with the mechanism. Most require clumping clay." },
-      { "name": "App Connectivity", "description": "Smart features add convenience but aren't essential. Prioritize usage tracking and waste alerts." }
+      {
+        "name": "Safety Sensors",
+        "description": "Look for infrared + weight sensor combinations with configurable delay timers for maximum safety."
+      },
+      {
+        "name": "Noise Level",
+        "description": "Under 50 dB is ideal, especially for bedrooms or apartments. Check decibel ratings before buying."
+      },
+      {
+        "name": "Waste Capacity",
+        "description": "Larger waste drawers mean less frequent emptying. Multi-cat homes should prioritize 7+ day capacity."
+      },
+      {
+        "name": "Litter Compatibility",
+        "description": "Confirm your preferred litter type works with the mechanism. Most require clumping clay."
+      },
+      {
+        "name": "App Connectivity",
+        "description": "Smart features add convenience but aren't essential. Prioritize usage tracking and waste alerts."
+      }
     ]
   },
   "comparisonProducts": [
     {
       "name": "60L Smart Automatic Litter Box",
       "price": "$268.99",
-      "advantages": ["Infrared safety sensors", "App control (iOS/Android)", "60L capacity for multi-cat homes", "Under 50 dB operation"],
-      "link": "/lp/self-cleaning-litter-box",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Our Pick",
       "availability": "InStock",
-      "description": "Large-capacity automatic litter box with smart app control, infrared sensors, and deodorizing system."
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring."
     }
   ]
 }

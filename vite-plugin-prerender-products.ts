@@ -1,3 +1,4 @@
+import { stripUnsupportedTitleClaims } from './src/lib/seo-title';
 import fs from 'fs';
 import { clampMetaDescription } from './src/lib/seo-title';
 export { clampMetaDescription };
@@ -303,7 +304,7 @@ function readGuideTitles(): Map<string, string> {
   if (!fs.existsSync(dir)) return out;
   for (const f of fs.readdirSync(dir)) {
     if (!f.endsWith('.json') || f === 'index.json') continue;
-    try { const g = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')); if (g?.slug && g?.title) out.set(g.slug, g.title); } catch { /* skip */ }
+    try { const g = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')); if (g?.slug && g?.title) out.set(g.slug, stripUnsupportedTitleClaims(g.title)); } catch { /* skip */ }
   }
   return out;
 }

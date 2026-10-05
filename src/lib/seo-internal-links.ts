@@ -14,6 +14,20 @@ import { GUIDE_REDIRECTS } from './guide-consolidation';
 import { BLOG_REDIRECTS, NOINDEX_BLOG_SLUGS } from './blog-consolidation';
 import { NOINDEX_GUIDE_SLUGS } from './seo-robots-policy';
 import { resolveToCanonical } from './canonical-category-registry';
+import { ROOT_GUIDE_CONSOLIDATION } from './seo-root-consolidation';
+
+/**
+ * Non-namespaced paths found in stored content whose live route is a
+ * duplicate, a generic fallback or missing; each target is a proven
+ * canonical page (sitemap guide/blog or the exact named product).
+ */
+export const CONTENT_PATH_REWRITES: Readonly<Record<string, string>> = {
+  ...ROOT_GUIDE_CONSOLIDATION,
+  '/dog/dog-car-travel-safety': '/guides/dog-travel-safety-guide',
+  '/cat/cat-trees-for-large-cats': '/guides/best-cat-trees-large-cats-2026',
+  '/how-to-stop-dog-anxiety-in-car': '/blog/how-to-stop-dog-anxiety-in-car',
+  '/lp/self-cleaning-litter-box': '/products/automatic-cat-litter-box-self-cleaning-app-control',
+};
 
 export interface InternalLinkContext {
   /** Known guide slugs; when given, links to other guide slugs are unlinked. */
@@ -29,7 +43,9 @@ const HOST_RE = /^https?:\/\/(?:www\.)?getpawsy\.pet(?=\/)/i;
 
 /** Returns the canonical href, the original href (external/other), or null to unlink. */
 export function canonicalizeInternalHref(href: string, ctx: InternalLinkContext = {}): string | null {
-  const local = href.replace(HOST_RE, '');
+  let local = href.replace(HOST_RE, '');
+  const bare = local.match(/^([^?#]*?)\/?([?#].*)?$/);
+  if (bare && CONTENT_PATH_REWRITES[bare[1]]) { local = CONTENT_PATH_REWRITES[bare[1]] + (bare[2] || ''); href = local; }
   const m = local.match(/^\/(guides|blog|collections|collection|products|product|bestsellers?)\/([a-z0-9-]+)\/?([?#].*)?$/i);
   if (!m) {
     // Nested paths under content namespaces (e.g. /guides/cluster/x) are not routes.
