@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
+import { recordTouch } from '@/lib/attribution';
 
 /**
  * Global visitor tracking component that tracks all page visits
@@ -32,6 +33,10 @@ export const GlobalVisitorTracker = () => {
   // Track on every route change
   useEffect(() => {
     const path = location.pathname;
+
+    // Persist first/last touch so later events never re-derive the source
+    // from an internal (own-host) referrer.
+    try { recordTouch(); } catch { /* never block */ }
 
     // Send SPA page_view to all gtag configs (GA4, Ads, GT)
     if (typeof window.gtag === 'function') {

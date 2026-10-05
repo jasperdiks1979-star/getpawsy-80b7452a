@@ -244,11 +244,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isProdHost = PRODUCTION_DOMAINS.includes(window.location.hostname);
 
     try {
-      let sessionId = sessionStorage.getItem("visitor_session_id");
-      if (!sessionId) {
-        sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-        sessionStorage.setItem("visitor_session_id", sessionId);
-      }
+      const sessionId = getCanonicalSessionId();
       
       // Get location from cache
       let locationData: { latitude?: number; longitude?: number; country?: string; city?: string } = {};

@@ -1,17 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { cleanUtmSource, cleanUtmMedium, cleanUtmFreeform, cleanReferrer, cleanString, isBotUserAgent } from "@/lib/eventSanitizer";
 import { resolveUtm } from "@/lib/utmNormalizer";
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 
 const LOG_SENTINEL_KEY = "gp_utm_logged";
 
 function getSessionId(): string | null {
   try {
-    let sid = sessionStorage.getItem("visitor_session_id");
-    if (!sid) {
-      sid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-      sessionStorage.setItem("visitor_session_id", sid);
-    }
-    return sid;
+    return getCanonicalSessionId();
   } catch {
     return null;
   }

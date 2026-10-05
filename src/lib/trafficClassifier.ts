@@ -7,7 +7,7 @@ export type TrafficType =
   | "human" | "prefetch" | "prerender" | "crawler" | "bot" | "internal" | "unknown";
 
 const BOT_RE =
-  /(bot|crawler|spider|crawling|googlebot|bingbot|yandex|baiduspider|duckduckbot|facebookexternalhit|pinterestbot|tiktokbot|ahrefsbot|semrushbot|mj12bot|petalbot|applebot|cloudflare-healthcheck|uptimerobot|prerender|headless|phantom|slurp|chrome-lighthouse)/i;
+  /(bot|crawler|spider|crawling|googlebot|bingbot|yandex|baiduspider|duckduckbot|facebookexternalhit|meta-externalagent|meta-externalfetcher|facebookcatalog|facebot|pinterestbot|tiktokbot|ahrefsbot|semrushbot|mj12bot|petalbot|applebot|cloudflare-healthcheck|uptimerobot|prerender|headless|phantom|slurp|chrome-lighthouse)/i;
 
 export function classifyTraffic(): { type: TrafficType; reason: string | null } {
   try {

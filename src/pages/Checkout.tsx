@@ -453,11 +453,7 @@ const Checkout = () => {
     }
 
     try {
-      let sessionId = sessionStorage.getItem("visitor_session_id");
-      if (!sessionId) {
-        sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-        sessionStorage.setItem("visitor_session_id", sessionId);
-      }
+      const sessionId = getCanonicalSessionId();
       
       let location = sessionStorage.getItem("visitor_location");
       if (!location) {

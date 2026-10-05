@@ -145,16 +145,7 @@ function insertWithKeepalive(row: Record<string, unknown>): void {
 
 function getSessionId(): string {
   try {
-    const store = window.sessionStorage;
-    let id = store.getItem(SESSION_ID_KEY);
-    if (!id) {
-      id =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-      store.setItem(SESSION_ID_KEY, id);
-    }
-    return id;
+    return getCanonicalSessionId();
   } catch {
     return `anon_${Date.now()}`;
   }

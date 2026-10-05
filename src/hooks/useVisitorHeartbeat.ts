@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 
@@ -11,7 +12,7 @@ const isProductionDomain = (): boolean => {
 
 // Get session ID from session storage
 const getSessionId = (): string | null => {
-  return sessionStorage.getItem("visitor_session_id");
+  try { return getCanonicalSessionId(); } catch { return null; }
 };
 
 /**
