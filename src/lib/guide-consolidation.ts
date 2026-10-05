@@ -98,9 +98,11 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'harness-training-guide': 'leash-training-dog-step-by-step',
   'dog-harness-guide': 'leash-training-dog-step-by-step',
   'best-dog-harness-for-pulling': 'leash-training-dog-step-by-step',
-  'how-to-stop-barking': 'how-to-stop-dog-barking',
-  'stop-barking-guide': 'how-to-stop-dog-barking',
-  'barking-solutions': 'how-to-stop-dog-barking',
+  'how-to-stop-barking': 'how-to-stop-dog-barking-guide',
+  'stop-barking-guide': 'how-to-stop-dog-barking-guide',
+  'barking-solutions': 'how-to-stop-dog-barking-guide',
+  // Listed in the static index but has no guide file — send to the real barking guide.
+  'how-to-stop-dog-barking': 'how-to-stop-dog-barking-guide',
   'crate-training-tips': 'puppy-training-first-30-days',
   'crate-training-guide': 'puppy-training-first-30-days',
 
