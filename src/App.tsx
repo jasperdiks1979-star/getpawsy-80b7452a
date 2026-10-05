@@ -1,3 +1,4 @@
+import CollectionAliasRedirect from "@/components/routing/CollectionAliasRedirect";
 import { lazy, Suspense, Component, ReactNode, useState, useEffect } from "react";
 // ⚡ Toaster/Sonner deferred — not needed for first paint
 const Toaster = lazy(() => import("@/components/ui/toaster").then((m) => ({ default: m.Toaster })));
@@ -1520,45 +1521,45 @@ const App = () => {
                           />
 
                           {/* ═══ /dog/* and /cat/* → redirect ALL to /collections ═══ */}
-                          <Route path="/dog" element={<Navigate to="/collections/dog" replace />} />
-                          <Route path="/cat" element={<Navigate to="/collections/cat" replace />} />
-                          <Route path="/dog/training" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/dog/travel" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/cat/training" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/cat/travel" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/dog/*" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/cat/*" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/dog" element={<CollectionAliasRedirect slug="dog" fallback="dog" />} />
+                          <Route path="/cat" element={<CollectionAliasRedirect slug="cat" fallback="cat" />} />
+                          <Route path="/dog/training" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
+                          <Route path="/dog/travel" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
+                          <Route path="/cat/training" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
+                          <Route path="/cat/travel" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
+                          <Route path="/dog/*" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
+                          <Route path="/cat/*" element={<CollectionAliasRedirect slug="all" fallback="all" />} />
                           {/* ═══ LEGACY CLUSTER REDIRECTS (301-equivalent) ═══ */}
                           {/* ═══ LEGACY CLUSTER REDIRECTS → all go to /collections/* ═══ */}
-                          <Route path="/orthopedic-dog-beds" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/cat-trees-for-large-cats" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/dog-car-travel-safety" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/orthopedic-dog-beds" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/cat-trees-for-large-cats" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-car-travel-safety" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/waterproof-orthopedic-dog-bed" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/memory-foam-dog-beds" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/cat-tree-for-maine-coon" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/heavy-duty-cat-tree" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/cat-condos-for-large-cats" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-car-seats" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-booster-seat" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-car-harness" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-potty-training" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-leash-control" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-anti-bark" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/puppy-training-essentials" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-training-accessories" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/no-pull-dog-harness" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
-                          <Route path="/collections/long-training-leashes" element={<Navigate to="/collections/dog-collars-leashes" replace />} />
-                          <Route path="/collections/dog-training-clickers" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-treat-pouches" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/dog-training-kits" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/puppy-training-tools" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/recall-training-gear" element={<Navigate to="/collections/all" replace />} />
-                          <Route path="/collections/pet-grooming-tools" element={<Navigate to="/collections/dog-grooming" replace />} />
-                          <Route path="/collections/dog-car-travel-safety-seats" element={<Navigate to="/collections/all" replace />} />
+                          <Route path="/orthopedic-dog-beds" element={<CollectionAliasRedirect slug="orthopedic-dog-beds" fallback="all" />} />
+                          <Route path="/cat-trees-for-large-cats" element={<CollectionAliasRedirect slug="cat-trees-for-large-cats" fallback="all" />} />
+                          <Route path="/dog-car-travel-safety" element={<CollectionAliasRedirect slug="dog-car-travel-safety" fallback="all" />} />
+                          <Route path="/collections/orthopedic-dog-beds" element={<CollectionAliasRedirect slug="orthopedic-dog-beds" fallback="all" />} />
+                          <Route path="/collections/cat-trees-for-large-cats" element={<CollectionAliasRedirect slug="cat-trees-for-large-cats" fallback="all" />} />
+                          <Route path="/collections/dog-car-travel-safety" element={<CollectionAliasRedirect slug="dog-car-travel-safety" fallback="all" />} />
+                          <Route path="/collections/best-orthopedic-dog-bed-large-dogs" element={<CollectionAliasRedirect slug="best-orthopedic-dog-bed-large-dogs" fallback="all" />} />
+                          <Route path="/collections/waterproof-orthopedic-dog-bed" element={<CollectionAliasRedirect slug="waterproof-orthopedic-dog-bed" fallback="all" />} />
+                          <Route path="/collections/memory-foam-dog-beds" element={<CollectionAliasRedirect slug="memory-foam-dog-beds" fallback="all" />} />
+                          <Route path="/collections/cat-tree-for-maine-coon" element={<CollectionAliasRedirect slug="cat-tree-for-maine-coon" fallback="all" />} />
+                          <Route path="/collections/heavy-duty-cat-tree" element={<CollectionAliasRedirect slug="heavy-duty-cat-tree" fallback="all" />} />
+                          <Route path="/collections/cat-condos-for-large-cats" element={<CollectionAliasRedirect slug="cat-condos-for-large-cats" fallback="all" />} />
+                          <Route path="/collections/dog-car-seats" element={<CollectionAliasRedirect slug="dog-car-seats" fallback="all" />} />
+                          <Route path="/collections/dog-booster-seat" element={<CollectionAliasRedirect slug="dog-booster-seat" fallback="all" />} />
+                          <Route path="/collections/dog-car-harness" element={<CollectionAliasRedirect slug="dog-car-harness" fallback="all" />} />
+                          <Route path="/collections/dog-potty-training" element={<CollectionAliasRedirect slug="dog-potty-training" fallback="all" />} />
+                          <Route path="/collections/dog-leash-control" element={<CollectionAliasRedirect slug="dog-leash-control" fallback="all" />} />
+                          <Route path="/collections/dog-anti-bark" element={<CollectionAliasRedirect slug="dog-anti-bark" fallback="all" />} />
+                          <Route path="/collections/puppy-training-essentials" element={<CollectionAliasRedirect slug="puppy-training-essentials" fallback="all" />} />
+                          <Route path="/collections/dog-training-accessories" element={<CollectionAliasRedirect slug="dog-training-accessories" fallback="all" />} />
+                          <Route path="/collections/no-pull-dog-harness" element={<CollectionAliasRedirect slug="no-pull-dog-harness" fallback="dog-collars-leashes" />} />
+                          <Route path="/collections/long-training-leashes" element={<CollectionAliasRedirect slug="long-training-leashes" fallback="dog-collars-leashes" />} />
+                          <Route path="/collections/dog-training-clickers" element={<CollectionAliasRedirect slug="dog-training-clickers" fallback="all" />} />
+                          <Route path="/collections/dog-treat-pouches" element={<CollectionAliasRedirect slug="dog-treat-pouches" fallback="all" />} />
+                          <Route path="/collections/dog-training-kits" element={<CollectionAliasRedirect slug="dog-training-kits" fallback="all" />} />
+                          <Route path="/collections/puppy-training-tools" element={<CollectionAliasRedirect slug="puppy-training-tools" fallback="all" />} />
+                          <Route path="/collections/recall-training-gear" element={<CollectionAliasRedirect slug="recall-training-gear" fallback="all" />} />
+                          <Route path="/collections/pet-grooming-tools" element={<CollectionAliasRedirect slug="pet-grooming-tools" fallback="dog-grooming" />} />
+                          <Route path="/collections/dog-car-travel-safety-seats" element={<CollectionAliasRedirect slug="dog-car-travel-safety-seats" fallback="all" />} />
 
                           {/* SEO Collection pages — /collections/:slug */}
                           <Route path="/collections" element={<Navigate to="/collections/all" replace />} />
@@ -1763,26 +1764,26 @@ const App = () => {
                           />
 
                           {/* Parent category routes */}
-                          <Route path="/dogs" element={<Navigate to="/collections/dog" replace />} />
-                          <Route path="/cats" element={<Navigate to="/collections/cat" replace />} />
+                          <Route path="/dogs" element={<CollectionAliasRedirect slug="dogs" fallback="dog" />} />
+                          <Route path="/cats" element={<CollectionAliasRedirect slug="cats" fallback="cat" />} />
 
                           {/* Category navigation routes — redirect to /collections/ */}
                           <Route
                             path="/dogs/dog-beds"
                             element={<Navigate to="/collections/dog-beds" replace />}
                           />
-                          <Route path="/dogs/dog-toys" element={<Navigate to="/collections/dogs" replace />} />
-                          <Route path="/dogs/chew-toys" element={<Navigate to="/collections/dogs" replace />} />
-                          <Route path="/dogs/dog-collars-leashes" element={<Navigate to="/collections/dogs" replace />} />
-                          <Route path="/dogs/dog-carriers" element={<Navigate to="/collections/dog-travel-accessories" replace />} />
-                          <Route path="/dogs/dog-grooming" element={<Navigate to="/collections/dogs" replace />} />
-                          <Route path="/cats/cat-toys" element={<Navigate to="/collections/cats" replace />} />
-                          <Route path="/cats/cat-litter" element={<Navigate to="/collections/cat-litter-boxes" replace />} />
-                          <Route path="/cats/litter-boxes" element={<Navigate to="/collections/cat-litter-boxes" replace />} />
-                          <Route path="/cats/cat-trees" element={<Navigate to="/collections/cat-trees-and-condos" replace />} />
-                          <Route path="/collections/cat-trees" element={<Navigate to="/collections/cat-trees-and-condos" replace />} />
-                          <Route path="/cats/cat-carriers" element={<Navigate to="/collections/cats" replace />} />
-                          <Route path="/cats/automatic-feeders" element={<Navigate to="/collections/cats" replace />} />
+                          <Route path="/dogs/dog-toys" element={<CollectionAliasRedirect slug="dogs" fallback="dogs" />} />
+                          <Route path="/dogs/chew-toys" element={<CollectionAliasRedirect slug="dogs" fallback="dogs" />} />
+                          <Route path="/dogs/dog-collars-leashes" element={<CollectionAliasRedirect slug="dogs" fallback="dogs" />} />
+                          <Route path="/dogs/dog-carriers" element={<CollectionAliasRedirect slug="dog-travel-accessories" fallback="dog-travel-accessories" />} />
+                          <Route path="/dogs/dog-grooming" element={<CollectionAliasRedirect slug="dogs" fallback="dogs" />} />
+                          <Route path="/cats/cat-toys" element={<CollectionAliasRedirect slug="cats" fallback="cats" />} />
+                          <Route path="/cats/cat-litter" element={<CollectionAliasRedirect slug="cat-litter-boxes" fallback="cat-litter-boxes" />} />
+                          <Route path="/cats/litter-boxes" element={<CollectionAliasRedirect slug="cat-litter-boxes" fallback="cat-litter-boxes" />} />
+                          <Route path="/cats/cat-trees" element={<CollectionAliasRedirect slug="cat-trees-and-condos" fallback="cat-trees-and-condos" />} />
+                          <Route path="/collections/cat-trees" element={<CollectionAliasRedirect slug="cat-trees" fallback="cat-trees-and-condos" />} />
+                          <Route path="/cats/cat-carriers" element={<CollectionAliasRedirect slug="cats" fallback="cats" />} />
+                          <Route path="/cats/automatic-feeders" element={<CollectionAliasRedirect slug="cats" fallback="cats" />} />
                           <Route path="/category/:slug" element={<Navigate to="/products" replace />} />
                           <Route
                             path="/shop"

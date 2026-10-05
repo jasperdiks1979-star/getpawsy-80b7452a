@@ -356,7 +356,7 @@ export const QuickViewModal = ({ product, isOpen, onClose }: QuickViewModalProps
             
             {/* View full details link */}
             <Link 
-              to={`/product/${product.id}`}
+              to={`/products/${product.slug || product.id}`}
               className="mt-auto"
               onClick={onClose}
             >

@@ -32,6 +32,11 @@ import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
 import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { resolveToCanonical } from '@/lib/canonical-category-registry';
+
+/** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
+const normalizeProductHref = (href: string): string =>
+  href.replace(/^(https:\/\/getpawsy\.pet)?\/product\//, '$1/products/');
 
 const BASE_URL = 'https://getpawsy.pet';
 
@@ -139,7 +144,10 @@ const GuidePage = () => {
 
   // Enrich comparisonProducts with real images from the database
   const enrichedComparisonProducts = useMemo(() => {
-    return guide?.comparisonProducts?.map(p => {
+    return guide?.comparisonProducts?.map(raw => {
+      // Canonical product namespace is /products/{slug}; legacy /product/ links
+      // stored in guide content are normalized at render time.
+      const p = raw.link ? { ...raw, link: normalizeProductHref(raw.link) } : raw;
       // Check if the image exists (static paths like /images/guides/... usually don't)
       const isStaticPlaceholder = !p.image || p.image.startsWith('/images/guides/');
       if (isStaticPlaceholder) {
@@ -157,7 +165,7 @@ const GuidePage = () => {
     // Priority 1: Add guide's own comparisonProducts (most accurate, short names)
     guide?.comparisonProducts?.forEach(cp => {
       if (cp.name && cp.link) {
-        map.set(cp.name.toLowerCase().trim(), cp.link);
+        map.set(cp.name.toLowerCase().trim(), normalizeProductHref(cp.link));
       }
     });
     
@@ -166,7 +174,7 @@ const GuidePage = () => {
       if (p.slug) {
         const name = p.name.toLowerCase().trim();
         if (!map.has(name)) {
-          map.set(name, `/product/${p.slug}`);
+          map.set(name, `/products/${p.slug}`);
         }
         
         // Extract meaningful multi-word phrases (3+ words) from product names
@@ -175,7 +183,7 @@ const GuidePage = () => {
           for (let i = 0; i <= words.length - len; i++) {
             const phrase = words.slice(i, i + len).join(' ');
             if (phrase.length >= 12 && !map.has(phrase)) {
-              map.set(phrase, `/product/${p.slug}`);
+              map.set(phrase, `/products/${p.slug}`);
             }
           }
         }
@@ -1117,7 +1125,7 @@ const GuidePage = () => {
                 return (
                   <Link
                     key={cat}
-                    to={collectionSlug ? `/collections/${collectionSlug}` : `/collections/${cat}`}
+                    to={(() => { const c = resolveToCanonical(collectionSlug || cat); return c && c !== 'all' ? `/collections/${c}` : '/products'; })()}
                     className="text-sm bg-card border border-border rounded-full px-5 py-2 hover:border-primary/40 hover:text-primary hover:shadow-sm transition-all font-medium"
                   >
                     View all {displayName} products →

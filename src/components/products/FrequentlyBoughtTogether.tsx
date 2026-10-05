@@ -369,8 +369,8 @@ export const FrequentlyBoughtTogether = ({
           const isSelected = selectedIds.has(product.id);
           const isCurrentProduct = product.id === currentProduct.id;
           const productUrl = product.slug 
-            ? `/product/${product.slug}` 
-            : `/product/${product.id}`;
+            ? `/products/${product.slug}` 
+            : `/products/${product.id}`;
 
           return (
             <div key={product.id} className="flex items-center gap-3">

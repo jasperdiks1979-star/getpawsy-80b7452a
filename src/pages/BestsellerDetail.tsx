@@ -115,7 +115,7 @@ const generateProductJsonLd = (
 ) => {
   // CANONICAL URL: Always use the product's canonical URL, never the bestseller URL
   // This prevents "Duplicate page without user-selected canonical" in GSC
-  const canonicalProductUrl = `https://getpawsy.pet/product/${product.slug || product.id}`;
+  const canonicalProductUrl = `https://getpawsy.pet/products/${product.slug || product.id}`;
   // Use centralized availability logic
   const schemaAvailability = computeAvailability(product);
   const availability = schemaAvailability.isInStock
@@ -309,7 +309,7 @@ const BestsellerDetail = () => {
   const { trigger } = useHaptic();
   const { addToRecentlyViewed, getRecentlyViewedIds } = useRecentlyViewed();
   const isMobile = useIsMobile();
-  useCanonical(`/product/${slug || ''}`);
+  useCanonical(`/products/${slug || ''}`);
   
   // A/B Test for bundle strategies
   // Variant A: Frequently Bought Together (FBT) - 10% discount
@@ -795,7 +795,7 @@ const BestsellerDetail = () => {
         <meta property="og:title" content={bestseller.hero_headline || product.name} />
         <meta property="og:description" content={bestseller.seo_description || product.description || ''} />
         <meta property="og:image" content={product.image_url || '/og-image.png'} />
-        <meta property="og:url" content={`https://getpawsy.pet/product/${product.slug || product.id}`} />
+        <meta property="og:url" content={`https://getpawsy.pet/products/${product.slug || product.id}`} />
         <meta property="product:price:amount" content={getDisplayPrice(product as MerchantProduct).price.toFixed(2)} />
         <meta property="product:price:currency" content="USD" />
         

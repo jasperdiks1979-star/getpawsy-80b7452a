@@ -15,13 +15,13 @@ describe('Product SEO Safety', () => {
     'simple-product',
   ];
 
-  it.each(VALID_SLUGS)('product/%s must be indexable', (slug) => {
-    const directive = getRobotsDirective(`/product/${slug}`, '');
+  it.each(VALID_SLUGS)('products/%s must be indexable', (slug) => {
+    const directive = getRobotsDirective(`/products/${slug}`, '');
     expect(directive).toBe('index');
   });
 
-  it.each(VALID_SLUGS)('product/%s robots content includes index,follow', (slug) => {
-    const directive = getRobotsDirective(`/product/${slug}`, '');
+  it.each(VALID_SLUGS)('products/%s robots content includes index,follow', (slug) => {
+    const directive = getRobotsDirective(`/products/${slug}`, '');
     const content = getRobotsContent(directive);
     expect(content).toContain('index');
     expect(content).toContain('follow');
@@ -33,7 +33,7 @@ describe('Product SEO Safety', () => {
     expect(canonical).toBe(`https://getpawsy.pet/product/${slug}`);
   });
 
-  it.each(VALID_SLUGS)('product/%s must not be in noindex paths', (slug) => {
+  it.each(VALID_SLUGS)('products/%s must not be in noindex paths', (slug) => {
     expect(shouldNoindex(`/product/${slug}`)).toBe(false);
   });
 

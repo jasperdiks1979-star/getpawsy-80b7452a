@@ -166,7 +166,7 @@ export const PostAddUpsellModal = ({
 
   const discountedPrice = upsellProduct.price * (1 - UPSELL_DISCOUNT / 100);
   const benefitCopy = getUpsellBenefit(upsellProduct.name);
-  const productUrl = upsellProduct.slug ? `/product/${upsellProduct.slug}` : `/product/${upsellProduct.id}`;
+  const productUrl = upsellProduct.slug ? `/products/${upsellProduct.slug}` : `/products/${upsellProduct.id}`;
 
   return (
     <AnimatePresence>

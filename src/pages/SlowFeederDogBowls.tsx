@@ -387,7 +387,7 @@ export default function SlowFeederDogBowls() {
                   const discount = product.compare_at_price
                     ? Math.round((1 - Number(product.price) / Number(product.compare_at_price)) * 100)
                     : null;
-                  const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
+                  const productUrl = product.slug ? `/products/${product.slug}` : `/products/${product.id}`;
 
                   return (
                     <div key={product.id} className="bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
