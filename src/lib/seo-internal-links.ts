@@ -31,7 +31,11 @@ const HOST_RE = /^https?:\/\/(?:www\.)?getpawsy\.pet(?=\/)/i;
 export function canonicalizeInternalHref(href: string, ctx: InternalLinkContext = {}): string | null {
   const local = href.replace(HOST_RE, '');
   const m = local.match(/^\/(guides|blog|collections|collection|products|product|bestsellers?)\/([a-z0-9-]+)\/?([?#].*)?$/i);
-  if (!m) return href;
+  if (!m) {
+    // Nested paths under content namespaces (e.g. /guides/cluster/x) are not routes.
+    if (/^\/(guides|blog|collections|products|product)\/[^?#]+\/[^?#]/i.test(local)) return null;
+    return href;
+  }
   const ns = m[1].toLowerCase();
   const slug = m[2].toLowerCase();
   const tail = m[3] || '';

@@ -79,10 +79,26 @@ export function isListable(p: ProductRecord): boolean {
   return isCrawlerListable(p);
 }
 
+/** Paths advertised in public/sitemap-<name>.xml (null if the sitemap is absent, e.g. in unit tests). */
+const advertisedCache = new Map<string, Set<string> | null>();
+export function advertisedPaths(name: string): Set<string> | null {
+  if (!advertisedCache.has(name)) {
+    const f = path.resolve('public', `sitemap-${name}.xml`);
+    advertisedCache.set(name, fs.existsSync(f)
+      ? new Set([...fs.readFileSync(f, 'utf-8').matchAll(/<loc>https?:\/\/[^/<]+([^<]*)<\/loc>/g)].map((m) => m[1]))
+      : null);
+  }
+  return advertisedCache.get(name)!;
+}
+
 function collectionHrefFor(category: string | null): string | null {
   const slug = slugify(category || '');
   const canonical = slug ? resolveToCanonical(slug) : null;
-  return canonical && canonical !== 'all' ? `/collections/${canonical}` : null;
+  if (!canonical || canonical === 'all') return null;
+  const href = `/collections/${canonical}`;
+  // Never point breadcrumbs/schema at a thin (noindex) or unadvertised collection.
+  const advertised = advertisedPaths('collections');
+  return advertised && !advertised.has(href) ? null : href;
 }
 
 function extractAssets(spaHtml: string): { assetTags: string; scriptTags: string } {
@@ -588,7 +604,8 @@ export default function prerenderProductsPlugin(): Plugin {
       try {
         const { loadSeoPolicy, isBlogIndexable } = await import('./scripts/seo-indexability.mjs');
         const policy = loadSeoPolicy();
-        const posts = (await fetchBlogPosts()).filter((b) => isBlogIndexable(b.slug, policy));
+        const advertisedBlog = advertisedPaths('blog');
+        const posts = (await fetchBlogPosts()).filter((b) => isBlogIndexable(b.slug, policy) && (!advertisedBlog || advertisedBlog.has(`/blog/${b.slug}`)));
         fs.mkdirSync(path.join(distDir, 'blog'), { recursive: true });
         fs.writeFileSync(path.join(distDir, 'blog', 'index.html'), buildListingPage({
           spaHtml, path: '/blog', title: 'Blog | GetPawsy', h1: 'GetPawsy Blog',
