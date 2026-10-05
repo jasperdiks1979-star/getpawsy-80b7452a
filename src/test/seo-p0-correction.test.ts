@@ -65,10 +65,19 @@ describe('blog article prerender', () => {
 
 describe('merch_hidden exclusion from crawler listings', () => {
   const base = { id: '1', slug: 'a', name: 'A', description: null, price: 10, image_url: null, images: null, category: 'Cat Toys', stock: 5, is_active: true, updated_at: null };
-  it('hidden products are not listable; visible are', () => {
-    expect(isListable({ ...base, merch_hidden: true })).toBe(false);
-    expect(isListable({ ...base, merch_hidden: false })).toBe(true);
+  it('merch visibility flag', () => {
+    expect(isMerchVisible({ ...base, merch_hidden: true })).toBe(false);
     expect(isMerchVisible({ ...base, merch_hidden: null })).toBe(true);
+    expect(isListable({ ...base, merch_hidden: false })).toBe(true);
+  });
+  it('/products hub and related listings filter merch_hidden', () => {
+    const src = readFileSync('vite-plugin-prerender-products.ts', 'utf-8');
+    expect(src).toContain('safeProducts.filter((p) => isListable(p) && isMerchVisible(p))');
+    expect(src).toContain('isListable(candidate) && isMerchVisible(candidate)');
+  });
+  it('non-primary (dog) collections keep runtime behaviour', () => {
+    const m = collectionMembers('dog-beds', [{ ...base, category: 'Dog Beds', merch_hidden: true }]);
+    expect(m).toHaveLength(1);
   });
   it('collections exclude merch_hidden products', () => {
     const m = collectionMembers('cat-toys', [{ ...base, merch_hidden: true }, { ...base, id: '2', slug: 'b', merch_hidden: false }]);

@@ -3,7 +3,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
-import { isProductIndexable, isCrawlerExcludedProduct, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
+import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
 
 const SITE = 'https://getpawsy.pet';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -64,17 +64,18 @@ function isInStock(p: ProductRecord): boolean {
   return p.is_active !== false && Number(p.stock || 0) > 0;
 }
 
-/** Products a crawler-facing listing may show: in stock and indexable. */
+/** Base listing gate: in stock, indexable, priced. Merch visibility is applied per surface. */
 /**
- * Storefront merchandising visibility (mirrors products_shop / primary
- * collections: merch_hidden=false). Listing-only — never changes PDP robots.
+ * Storefront merchandising visibility (mirrors products_shop and the primary
+ * merchandised collections: merch_hidden=false). Listing-only — never changes
+ * PDP robots/indexability.
  */
 export function isMerchVisible(p: ProductRecord): boolean {
   return p.merch_hidden !== true;
 }
 
 export function isListable(p: ProductRecord): boolean {
-  return Boolean(p.slug) && isMerchVisible(p) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
+  return Boolean(p.slug) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
 }
 
 function collectionHrefFor(category: string | null): string | null {
@@ -387,10 +388,13 @@ const COLLECTION_MATCH: Record<string, (category: string) => boolean> = {
   'cat-beds': (c) => c.toLowerCase() === 'cat beds',
 };
 
+const PRIMARY_MERCH = loadPrimaryMerchandisedCollections();
+
 export function collectionMembers(slug: string, products: ProductRecord[]): ProductRecord[] {
   const match = COLLECTION_MATCH[slug];
   if (!match) return [];
-  return products.filter((p) => isListable(p) && match(p.category || ''));
+  const primary = PRIMARY_MERCH.has(slug);
+  return products.filter((p) => isListable(p) && (!primary || isMerchVisible(p)) && match(p.category || ''));
 }
 
 async function fetchBlogPosts(): Promise<Array<{ slug: string; title: string; excerpt: string | null }>> {
@@ -501,7 +505,7 @@ export default function prerenderProductsPlugin(): Plugin {
       for (const product of safeProducts) {
         const slug = product.slug || product.id;
         const related = safeProducts
-          .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category && isListable(candidate))
+          .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category && isListable(candidate) && isMerchVisible(candidate))
           .slice(0, 4);
         const html = buildProductPage(product, related, spaHtml);
         // Directory-index output: static hosting resolves /products/<slug> to
@@ -518,7 +522,7 @@ export default function prerenderProductsPlugin(): Plugin {
       updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
 
       // ── /products hub (dist/products/index.html) ──
-      const listable = safeProducts.filter(isListable).sort((a, b) => a.name.localeCompare(b.name));
+      const listable = safeProducts.filter((p) => isListable(p) && isMerchVisible(p)).sort((a, b) => a.name.localeCompare(b.name));
       fs.writeFileSync(path.join(distProductDir, 'index.html'), buildListingPage({
         spaHtml, path: '/products', title: 'All Products | GetPawsy', h1: 'All Products',
         description: 'Browse in-stock cat and dog products at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.',

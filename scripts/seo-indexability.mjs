@@ -164,3 +164,14 @@ export function isCrawlerExcludedProduct(p) {
   const text = `${p?.name || ""} ${p?.category || ""} ${p?.description || ""}`;
   return NON_PET_RE.some((r) => r.test(text)) || POLICY_UNSAFE_RE.some((r) => r.test(text));
 }
+
+/**
+ * Primary merchandised collections (merch_hidden=false only), parsed from the
+ * runtime source of truth in src/lib/collection-matching-engine.ts.
+ */
+export function loadPrimaryMerchandisedCollections(rootDir = process.cwd()) {
+  const src = fs.readFileSync(path.join(rootDir, "src/lib/collection-matching-engine.ts"), "utf-8");
+  const m = src.match(/PRIMARY_MERCHANDISED_COLLECTIONS\s*=\s*new Set\(\[([\s\S]*?)\]\)/);
+  if (!m) throw new Error("[seo-indexability] PRIMARY_MERCHANDISED_COLLECTIONS not found");
+  return new Set([...m[1].matchAll(/'([a-z0-9-]+)'/g)].map((x) => x[1]));
+}

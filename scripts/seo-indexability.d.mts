@@ -25,3 +25,4 @@ export declare function assertStrictSitemapPaths(
 export declare function findRedirectMapProblems(map: Record<string, string>): string[];
 
 export function isCrawlerExcludedProduct(p: { name?: string | null; category?: string | null; description?: string | null }): boolean;
+export function loadPrimaryMerchandisedCollections(rootDir?: string): Set<string>;
