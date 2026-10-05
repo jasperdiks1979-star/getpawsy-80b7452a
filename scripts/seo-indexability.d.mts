@@ -23,3 +23,5 @@ export declare function assertStrictSitemapPaths(
   policy?: SeoPolicy,
 ): void;
 export declare function findRedirectMapProblems(map: Record<string, string>): string[];
+
+export function isCrawlerExcludedProduct(p: { name?: string | null; category?: string | null; description?: string | null }): boolean;

@@ -172,13 +172,13 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,category,description,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,category,description,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
   const seoPolicy = loadSeoPolicy();

@@ -3,7 +3,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
-import { isProductIndexable, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
+import { isProductIndexable, isCrawlerExcludedProduct, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
 
 const SITE = 'https://getpawsy.pet';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -401,26 +401,8 @@ async function fetchBlogPosts(): Promise<Array<{ slug: string; title: string; ex
   return rows || [];
 }
 
-/** Non-pet exclusion patterns — only cats & dogs allowed */
-const NON_PET_RE: RegExp[] = [
-  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
-  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
-  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
-  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
-  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
-  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
-  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
-];
-const POLICY_UNSAFE_RE: RegExp[] = [
-  /shock\s*(collar|training|correction)?/i, /static\s*correction/i,
-  /electric\s*(fence|collar|training)/i, /aversive\s*training/i,
-  /wireless\s*fence/i, /training\s*collar/i, /prong\s*collar/i, /choke\s*chain/i,
-];
 function isExcludedProduct(product: ProductRecord): boolean {
-  const text = `${product.name} ${product.category || ''} ${product.description || ''}`;
-  if (NON_PET_RE.some(p => p.test(text))) return true;
-  if (POLICY_UNSAFE_RE.some(p => p.test(text))) return true;
-  return false;
+  return isCrawlerExcludedProduct(product);
 }
 
 function buildNotFoundPage(spaHtml: string): string {

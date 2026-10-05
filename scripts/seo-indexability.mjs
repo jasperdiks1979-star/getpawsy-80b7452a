@@ -143,3 +143,24 @@ export function findRedirectMapProblems(map) {
   }
   return problems;
 }
+
+/** Non-pet exclusion patterns — only cats & dogs allowed */
+const NON_PET_RE = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
+];
+const POLICY_UNSAFE_RE = [
+  /shock\s*(collar|training|correction)?/i, /static\s*correction/i,
+  /electric\s*(fence|collar|training)/i, /aversive\s*training/i,
+  /wireless\s*fence/i, /training\s*collar/i, /prong\s*collar/i, /choke\s*chain/i,
+];
+/** Products never prerendered nor advertised in the sitemap (non-pet / policy-unsafe). */
+export function isCrawlerExcludedProduct(p) {
+  const text = `${p?.name || ""} ${p?.category || ""} ${p?.description || ""}`;
+  return NON_PET_RE.some((r) => r.test(text)) || POLICY_UNSAFE_RE.some((r) => r.test(text));
+}
