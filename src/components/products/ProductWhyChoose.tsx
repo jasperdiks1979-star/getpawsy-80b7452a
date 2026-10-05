@@ -21,7 +21,7 @@ function generateContent(name: string, cat: string): ContentBlock {
   const n = (name || '').toLowerCase();
   const c = (cat || '').toLowerCase();
 
-  if (/litter/i.test(n + ' ' + c)) {
+  if (/litter/i.test(n + ' ' + c) && /self[\s-]*clean|automatic|robot/i.test(n + ' ' + c)) {
     return {
       heading: 'Why Pet Owners Choose This Litter Box',
       paragraphs: [
