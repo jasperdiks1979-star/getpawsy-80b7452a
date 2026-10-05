@@ -18,7 +18,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
 import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
-import { clusterForGuide } from './src/lib/seo-clusters';
+import { clusterForGuide, SEO_CLUSTERS } from './src/lib/seo-clusters';
 
 /** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
 export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
@@ -538,7 +538,7 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
 // and the template carried unsupported claims. Do not re-add.
 
 /** Raw HTML for the /guides hub (dist/guides/index.html). */
-export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string {
+export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/guides`;
   const title = 'Pet Care Guides | GetPawsy';
   const description = 'Buying guides and how-to articles for cat and dog owners from GetPawsy.';
@@ -547,6 +547,11 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string
     .slice()
     .sort((x, y) => x.title.localeCompare(y.title))
     .map((g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a>${g.excerpt ? ` — ${escapeHtml(g.excerpt)}` : ''}</li>`)
+    .join('\n');
+  const bySlug = new Map(guides.map((g) => [g.slug, g]));
+  const topics = SEO_CLUSTERS
+    .filter((c) => bySlug.has(c.pillar))
+    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(bySlug.get(c.pillar)!.title)}</a>${linkCtx && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
     .join('\n');
   const breadcrumb = JSON.stringify({
     '@context': 'https://schema.org',
@@ -580,6 +585,7 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string): string
       <nav aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li>Guides</li></ol></nav>
       <h1>Pet Care Guides</h1>
       <p>${description}</p>
+      ${topics ? `<h2>Start here</h2>\n      <ul>\n${topics}\n      </ul>\n      <h2>All guides</h2>` : ''}
       <ul>
 ${items}
       </ul>
