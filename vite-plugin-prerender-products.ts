@@ -283,6 +283,16 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
   });
 }
 
+/** "<name> | GetPawsy", name cut at a word boundary so the title stays ≤ 65 chars. */
+export function productSeoTitle(name: string): string {
+  const n = name.replace(/\s+/g, ' ').trim();
+  const room = 65 - ' | GetPawsy'.length;
+  if (n.length <= room) return `${n} | GetPawsy`;
+  const cut = n.slice(0, room - 1);
+  const i = cut.lastIndexOf(' ');
+  return `${(i > 20 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—&\s]+$/, '')}… | GetPawsy`;
+}
+
 /** Meta descriptions: ≤160 chars, cut at a word boundary (no mid-word truncation). */
 export function clampMetaDescription(text: string, max = 160): string {
   const t = text.replace(/\s+/g, ' ').trim();
@@ -342,13 +352,13 @@ export function buildProductPage(product: ProductRecord, related: ProductRecord[
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(product.name)} | GetPawsy</title>
+  <title>${escapeHtml(productSeoTitle(product.name))}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <meta name="robots" content="${robots}">
   <meta name="googlebot" content="${robots}">
   <link rel="canonical" href="${canonical}">
   <meta property="og:type" content="product">
-  <meta property="og:title" content="${escapeHtml(product.name)} | GetPawsy">
+  <meta property="og:title" content="${escapeHtml(productSeoTitle(product.name))}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${canonical}">
   <meta property="og:image" content="${escapeHtml(primaryImage)}">
