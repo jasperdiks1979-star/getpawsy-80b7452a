@@ -386,6 +386,7 @@ export function buildListingPage(opts: {
   items: Array<{ href: string; label: string; extra?: string }>; indexable?: boolean;
   /** Related guides (collection → pillar → supporting). */
   guides?: Array<{ href: string; label: string }>;
+  categories?: Array<{ href: string; label: string }>;
   /** Emit an ItemList of the (canonical) item URLs. */
   itemList?: boolean;
 }): string {
@@ -405,6 +406,9 @@ export function buildListingPage(opts: {
     : '';
   const guides = opts.guides && opts.guides.length
     ? `\n      <h2>Buying guides</h2>\n      <ul>\n${opts.guides.map((g) => `<li><a href="${escapeHtml(g.href)}">${escapeHtml(g.label)}</a></li>`).join('\n')}\n      </ul>`
+    : '';
+  const categories = opts.categories && opts.categories.length
+    ? `\n      <h2>Shop by category</h2>\n      <ul>\n${opts.categories.map((g) => `<li><a href="${escapeHtml(g.href)}">${escapeHtml(g.label)}</a></li>`).join('\n')}\n      </ul>`
     : '';
   return `<!DOCTYPE html>
 <html lang="en">
@@ -432,7 +436,7 @@ export function buildListingPage(opts: {
       <p>${escapeHtml(opts.intro)}</p>
       <ul>
 ${opts.items.map((it) => `<li><a href="${escapeHtml(it.href)}">${escapeHtml(it.label)}</a>${it.extra ? ` — ${escapeHtml(it.extra)}` : ''}</li>`).join('\n')}
-      </ul>${guides}
+      </ul>${categories}${guides}
     </main>
   </div>
   ${scriptTags}
@@ -575,9 +579,12 @@ export default function prerenderProductsPlugin(): Plugin {
       fs.writeFileSync(path.join(distProductDir, 'index.html'), buildListingPage({
         spaHtml, path: '/products', title: 'All Products | GetPawsy', h1: 'All Products',
         description: 'Browse in-stock cat and dog products at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.',
-        intro: `${listable.length} in-stock products.`,
+        intro: `${listable.length} in-stock cat and dog products, listed alphabetically. Browse by category below or read our buying guides.`,
         crumbs: [{ name: 'Home', path: '/' }, { name: 'Products', path: '/products' }],
         items: listable.map((p) => ({ href: `/products/${p.slug}`, label: p.name, extra: `$${formatPrice(p.price)}` })),
+        itemList: true,
+        categories: productsHubCategoryLinks(safeProducts),
+        guides: [{ href: '/guides', label: 'All pet buying guides' }],
       }), 'utf-8');
 
       // ── Canonical collections (dist/collections/<slug>/index.html) ──
@@ -639,4 +646,11 @@ export default function prerenderProductsPlugin(): Plugin {
       console.log(`[prerender-products] Sample slugs: ${sample.join(', ')}`);
     },
   };
+}
+/** Indexable canonical collections for the /products hub "Shop by category" list. */
+function productsHubCategoryLinks(products: Parameters<typeof collectionMembers>[1]): Array<{ href: string; label: string }> {
+  return CANONICAL_SITEMAP_COLLECTIONS
+    .map((slug) => ({ slug, cat: getCanonicalCategory(slug), n: collectionMembers(slug, products).length }))
+    .filter((c) => c.cat?.active && c.n >= MIN_INDEXABLE_COLLECTION_PRODUCTS)
+    .map((c) => ({ href: `/collections/${c.slug}`, label: `${c.cat!.label} (${c.n} products)` }));
 }

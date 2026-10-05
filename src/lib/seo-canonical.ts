@@ -9,6 +9,7 @@
  */
 
 import { SITE_URL } from '@/lib/constants';
+import { ROOT_GUIDE_CONSOLIDATION } from './seo-root-consolidation';
 
 /**
  * Strip query params, trailing slashes, and enforce apex canonical.
@@ -24,7 +25,8 @@ export function buildCanonicalUrl(path: string): string {
   if (normalizedPath === '/' || normalizedPath === '') {
     return `${SITE_URL}/`;
   }
-  return `${SITE_URL}${normalizedPath}`;
+  // Root duplicates of an established guide canonicalize to that guide.
+  return `${SITE_URL}${ROOT_GUIDE_CONSOLIDATION[normalizedPath] ?? normalizedPath}`;
 }
 
 /**

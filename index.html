@@ -241,7 +241,9 @@
 
       // Set canonical link
       var el = document.getElementById('gp-canonical');
-      if (el) el.setAttribute('href', canonical);
+      // Prerendered pages ship their own canonical (incl. consolidation targets); keep it.
+      if (el && el.getAttribute('href')) canonical = el.getAttribute('href');
+      else if (el) el.setAttribute('href', canonical);
 
       // Expose the strip-params regex for the React canonical hook so a
       // single source of truth governs tracking-param removal.

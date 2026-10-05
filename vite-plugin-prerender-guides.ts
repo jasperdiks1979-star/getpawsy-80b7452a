@@ -1,3 +1,4 @@
+import { ROOT_GUIDE_CONSOLIDATION } from './src/lib/seo-root-consolidation';
 /**
  * Vite Plugin: Prerender Guide Pages
  *
@@ -677,6 +678,27 @@ export default function prerenderGuidesPlugin(): Plugin {
       }
 
       fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml, linkCtx), 'utf-8');
+      // ── Consolidation stubs: redirect-source guides + root duplicates of a
+      // /guides page get raw HTML with noindex,follow + canonical → target.
+      // The SPA still hydrates (and redirects guide sources) as before.
+      {
+        const rootMap = ROOT_GUIDE_CONSOLIDATION;
+        const stubs: Array<[string, string]> = [
+          ...Object.entries(policy.guideRedirects).map(([src, to]) => [`/guides/${src}`, `/guides/${to}`] as [string, string]),
+          ...Object.entries(rootMap),
+        ];
+        let stubCount = 0;
+        for (const [src, to] of stubs) {
+          if (!/^\/[a-z0-9/-]+$/.test(src) || !/^\/guides\/[a-z0-9-]+$/.test(to)) continue;
+          const file = path.join(distDir, src, 'index.html');
+          if (fs.existsSync(file)) continue;
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          fs.writeFileSync(file, buildConsolidationStub(spaHtml, to), 'utf-8');
+          stubCount++;
+        }
+        console.log(`[prerender-guides] ✅ ${stubCount} consolidation stubs (noindex,follow + canonical → target)`);
+      }
+
       console.log(`[prerender-guides] ✅ Prerendered ${guideCount} guides (${dbOnlyCount} DB-only, ${noindexCount} noindex) + /guides hub (${hubGuides.length})`);
 
       // ── Blog articles (dist/blog/<slug>/index.html) — same filter as sitemap ──
@@ -695,4 +717,13 @@ export default function prerenderGuidesPlugin(): Plugin {
       console.log(`[prerender-guides] ✅ Prerendered ${blogCount} blog articles → dist/blog/<slug>/index.html`);
     },
   };
+}
+
+/** SPA shell marked noindex,follow with a canonical to the consolidation target. */
+export function buildConsolidationStub(spaHtml: string, targetPath: string): string {
+  const href = `https://getpawsy.pet${targetPath}`;
+  return spaHtml
+    .replace(/<meta name="robots" content="[^"]*"\s*\/?>/, '<meta name="robots" content="noindex, follow" />')
+    .replace(/<meta name="googlebot" content="[^"]*"\s*\/?>/, '<meta name="googlebot" content="noindex, follow" />')
+    .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" id="gp-canonical" href="${href}" />`);
 }
