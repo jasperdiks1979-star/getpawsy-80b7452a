@@ -31,6 +31,8 @@ import { GuideShareFreshness } from '@/components/guides/GuideShareFreshness';
 import { GuideHelpfulWidget } from '@/components/guides/GuideHelpfulWidget';
 import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
 import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
+import { sanitizeGuideSeoTitle } from '@/lib/seo-title';
+import { GuideClusterNav } from '@/components/guides/GuideClusterNav';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
 import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
@@ -255,7 +257,7 @@ const GuidePage = () => {
   const safeSections = guide.sections || [];
   const safeRelatedCategories = guide.relatedCategories || [];
 
-  const activeSeoTitle = getSeoTitle(guide.slug, guide.seoTitle, guide.title);
+  const activeSeoTitle = sanitizeGuideSeoTitle(getSeoTitle(guide.slug, guide.seoTitle, guide.title) || guide.title);
 
   // Article schema with Person author entity
   const articleSchema = {
@@ -1095,6 +1097,7 @@ const GuidePage = () => {
           <PeopleAlsoRead guides={relatedGuides.slice(0, 6)} className="mb-12" />
         )}
 
+        <GuideClusterNav slug={guide.slug} />
         {guide.slug === 'automatic-litter-box-guide' && <LitterBoxClusterLinks page="automatic-guide" />}
         {guide.slug === 'how-to-train-cat-to-use-automatic-litter-box' && <LitterBoxClusterLinks page="training-guide" />}
 

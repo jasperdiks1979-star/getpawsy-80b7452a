@@ -19,6 +19,7 @@ import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
 import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
 import { clusterForGuide, SEO_CLUSTERS } from './src/lib/seo-clusters';
+import { sanitizeGuideSeoTitle } from './src/lib/seo-title';
 
 /** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
 export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
@@ -437,7 +438,7 @@ export function buildClusterNav(slug: string, titles: Map<string, string>, linkC
 export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true, linkCtx?: InternalLinkContext, titles?: Map<string, string>): string {
   const clusterNav = titles ? buildClusterNav(guide.slug, titles, linkCtx) : '';
   const robots = indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
-  const title = guide.meta_title || guide.seoTitle || guide.title;
+  const title = sanitizeGuideSeoTitle(guide.meta_title || guide.seoTitle || guide.title);
   const description = guide.meta_description || guide.seoDescription || guide.excerpt || '';
   const canonical = `${SITE}/guides/${guide.slug}`;
   const ogImage = guide.featuredImage
