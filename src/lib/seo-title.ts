@@ -43,3 +43,12 @@ export function sanitizeGuideSeoTitle(raw: string): string {
   const cut = t.slice(0, MAX - 1);
   return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
+
+/** Meta descriptions: ≤160 chars, cut at a word boundary (no mid-word truncation). */
+export function clampMetaDescription(text: string, max = 160): string {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const i = cut.lastIndexOf(' ');
+  return `${(i > 80 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—\s]+$/, '')}…`;
+}

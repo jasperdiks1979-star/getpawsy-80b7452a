@@ -1,4 +1,6 @@
 import fs from 'fs';
+import { clampMetaDescription } from './src/lib/seo-title';
+export { clampMetaDescription };
 import { CANONICAL_COLLECTION_META, clusterForCollection, type SeoCluster } from './src/lib/seo-clusters';
 import path from 'path';
 import type { Plugin } from 'vite';
@@ -293,14 +295,6 @@ export function productSeoTitle(name: string): string {
   return `${(i > 20 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—&\s]+$/, '')}… | GetPawsy`;
 }
 
-/** Meta descriptions: ≤160 chars, cut at a word boundary (no mid-word truncation). */
-export function clampMetaDescription(text: string, max = 160): string {
-  const t = text.replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  const cut = t.slice(0, max - 1);
-  const i = cut.lastIndexOf(' ');
-  return `${(i > 80 ? cut.slice(0, i) : cut).replace(/[,;:.\-–—\s]+$/, '')}…`;
-}
 
 /** Titles of file-backed guides (public/data/guides), for cluster link labels. */
 function readGuideTitles(): Map<string, string> {
