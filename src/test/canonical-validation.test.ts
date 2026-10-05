@@ -44,7 +44,7 @@ describe('Canonical URL Generation', () => {
 
 describe('Robots Policy Alignment', () => {
   // Indexable routes
-  const indexableRoutes = ['/', '/products', '/product/test-slug', '/collections/dog-beds', '/guides/best-cat-toy', '/blog/test-post', '/dog', '/cat', '/bestsellers'];
+  const indexableRoutes = ['/', '/products', '/products/test-slug', '/collections/dog-beds', '/guides/best-cat-toy', '/blog/test-post', '/dog', '/cat', '/bestsellers'];
   for (const route of indexableRoutes) {
     it(`${route} is indexable`, () => {
       const directive = getRobotsDirective(route);

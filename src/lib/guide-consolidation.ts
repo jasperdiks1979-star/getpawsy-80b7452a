@@ -37,7 +37,6 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   // → Redirect to PILLAR (best-dog-bed-2026)
   'dog-bed-buying-guide': 'best-dog-bed-2026',
   'dog-bed-for-anxiety': 'dog-bed-for-anxiety-do-they-work',
-  'dog-bed-for-anxiety-do-they-work': 'dog-bed-for-anxiety-do-they-work',  // identity — keep target
   'dog-bed-size-chart-guide': 'how-to-choose-the-right-dog-bed-size',
 
   // → Redirect to SUB-PILLAR (best-orthopedic-dog-bed-2026)
@@ -68,9 +67,10 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'outdoor-dog-games-enrichment': 'outdoor-dog-games-2026',
 
   // ── Cat Furniture Consolidation ────────────────────────────
-  'cat-condo-vs-cat-tower': 'cat-condo-vs-cat-tree-2026',
-  'modern-cat-condo-vs-traditional-cat-tree': 'cat-condo-vs-cat-tree-2026',
-  'cat-condo-vs-cat-tree-difference': 'cat-condo-vs-cat-tree-2026',
+  // cat-condo-vs-cat-tower is the live canonical guide for this intent
+  // (cat-condo-vs-cat-tree-2026 never existed in any guide source).
+  'modern-cat-condo-vs-traditional-cat-tree': 'cat-condo-vs-cat-tower',
+  'cat-condo-vs-cat-tree-difference': 'cat-condo-vs-cat-tower',
 
   // ── Dog Training Guide Consolidation (→ new pillar guides) ──
   'dog-leash-training': 'leash-training-dog-step-by-step',
@@ -184,8 +184,8 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
 
   // ── Traffic Explosion alternate slug redirects ─────────────────
   'best-modern-cat-tree': 'modern-cat-trees-home-design',
-  'tall-cat-tree-guide': 'how-tall-should-cat-tree-be',
-  'cat-tree-vs-cat-condo': 'cat-condo-vs-cat-tree-2026',
+  'tall-cat-tree-guide': 'cat-tree-buying-guide',
+  'cat-tree-vs-cat-condo': 'cat-condo-vs-cat-tower',
   'best-automatic-litter-box': 'best-self-cleaning-litter-box-2026',
   'best-litter-box-small-apartment': 'best-litter-boxes-apartments-2026',
   'best-litter-box-odor-control': 'best-odor-control-litter-box',

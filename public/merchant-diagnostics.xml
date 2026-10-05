@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-10-02T13:44:52.779Z" total_products="303">
+<merchant_diagnostics generated="2026-10-05T15:33:52.275Z" total_products="315">
   <summary>
     <missing_gtin>22</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>12</overlength_title>
-    <short_title>3</short_title>
+    <short_title>8</short_title>
     <out_of_stock>0</out_of_stock>
-    <duplicate_titles>4</duplicate_titles>
+    <duplicate_titles>5</duplicate_titles>
     <duplicate_images>0</duplicate_images>
-    <missing_compare_at_price>3</missing_compare_at_price>
+    <missing_compare_at_price>4</missing_compare_at_price>
   </summary>
   <issues>
     <issue type="missing_gtin" product_id="06f5e022-4ce1-4d6d-bb68-b4d9b05e96c8" name="Wooden Pet House Cat Litter Box Enclosure With Drawer, Side Table, Indoor Pet..." />
     <issue type="missing_compare_at_price" product_id="07ad844f-3a96-4fef-b8cd-8a6309d3bee4" name="Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="missing_compare_at_price" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
+    <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
     <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
@@ -39,18 +40,24 @@
     <issue type="overlength_title" product_id="8eea41d7-2e96-43fb-b7c7-da9f6f1318b6" name=" 6&quot; Height Small Puppy Dog Feeding Station for Messy Pets, Stainless Steel El..." length="161" />
     <issue type="missing_gtin" product_id="908bb847-5058-4219-bebc-0d77bb2beede" name="Cat Tree Condo – 5-Level Revolving Scratcher &amp; Climbing Tower with Perch for ..." />
     <issue type="missing_gtin" product_id="b194c6a0-7dcd-4842-93d4-14933d500a1d" name="Wooden Bird Cage Aviary, Flight Cage With 4 Perches, Nest And Slide-Out Tray ..." />
+    <issue type="short_title" product_id="b7820153-07c6-4f8e-a0be-be7540ee72cb" name="Smart Laser Cat Teaser Toy USB Charging" length="39" />
     <issue type="overlength_title" product_id="b7e7c3af-2ea9-4483-91e2-bc974b1d3b01" name=" Floor-to-Ceiling Cat Tree Cat Climbing Tower with Sisal-Covered Scratching P..." length="159" />
     <issue type="overlength_title" product_id="c48e0e44-e340-45e6-851d-c7727138c1fd" name="Modern Indoor Cat Tree Wooden Cat Tower Suitable For Cats, Includes Hammock, ..." length="152" />
     <issue type="overlength_title" product_id="c511afe4-081e-41cc-9e61-ed9946fb56a7" name="Dog Chew Toys, Dog Toothbrush Care Cleaning Sticks, Dog Toothbrush Chew Toy S..." length="190" />
+    <issue type="short_title" product_id="c59309f4-0e6e-4b90-8a27-4177f001a585" name="Versatile Accordion Cat Scratcher" length="33" />
+    <issue type="missing_compare_at_price" product_id="c59309f4-0e6e-4b90-8a27-4177f001a585" name="Versatile Accordion Cat Scratcher" />
     <issue type="missing_gtin" product_id="c77d410c-38ce-4df8-a0a7-524d5cb3d76f" name="Outdoor Cat Enclosure – Window Playground Box for Multiple Cats" />
     <issue type="missing_gtin" product_id="c8838424-1b15-4193-afd5-2e8d9fe69acd" name="Outdoor Cat Enclosure – Catio Window Box with Shelves &amp; Bridges" />
     <issue type="overlength_title" product_id="c8a9adc6-fd11-4e5e-bac3-139982e767dc" name=" 85.5&quot; Cat Tree Height Adjustable Floor-to-Ceiling 4-Tier Kitty Climbing Acti..." length="171" />
+    <issue type="short_title" product_id="d1843b7b-4a5f-4a6e-8db7-42fd8d013f4d" name="C Sofa Bearded Cat 56" length="21" />
     <issue type="missing_gtin" product_id="d28d05a3-4069-4329-8a1c-941af9f21a15" name="The Same-style Dog Coat Is Durable Long-lasting And Cold-resistant" />
     <issue type="missing_gtin" product_id="d7baf590-affa-403f-ba96-58b298ba652d" name="Dog Leash – High-Density Nylon Outdoor Walking Lead for Dogs" />
     <issue type="missing_gtin" product_id="dfa1a373-d818-40f2-9639-e1b08602c84e" name="Outdoor Dog House – Weatherproof Wooden Kennel with Porch" />
     <issue type="missing_gtin" product_id="e718aa2a-77d5-462e-ac29-2736f220acf7" name="Cat Scratch-proof Spray" />
     <issue type="short_title" product_id="e718aa2a-77d5-462e-ac29-2736f220acf7" name="Cat Scratch-proof Spray" length="23" />
     <issue type="missing_gtin" product_id="f5e91024-1a87-47b1-bd5d-ac9547640e06" name="Double-sided All-Season Dog Bed Mat Made Of Chew-Resistant Leather For Pets" />
+    <issue type="short_title" product_id="f87b5c9a-fa1f-4fa4-ab0e-84b849005743" name="Double-Layer Sisal Cat Scratcher" length="32" />
+    <issue type="duplicate_title" product_ids="0bfdc4cf-0631-4a35-8192-74451faa5444,39e9b068-c393-4b47-90b7-5e1fd5abb831,9c2bf6ac-83ff-42c6-afd5-4120f104e941,ceb05898-f029-44f2-b4a3-156356007034,ebe7dc66-7f02-4897-a9db-e58c89c2c08a" count="5" />
     <issue type="duplicate_title" product_ids="0d81c870-510a-47f7-9407-b8b7d18a7b43,4cee1de1-bad2-449c-afad-94a482394545" count="2" />
     <issue type="duplicate_title" product_ids="3e16b666-187a-4a60-afe4-55adea8d06c4,6f44ee1c-251c-4895-b281-50f3320eb98b" count="2" />
     <issue type="duplicate_title" product_ids="c15e7914-ab30-4b05-a8bd-2b94a056e00f,d5046917-bdb3-49fd-88ac-850e639d283c" count="2" />

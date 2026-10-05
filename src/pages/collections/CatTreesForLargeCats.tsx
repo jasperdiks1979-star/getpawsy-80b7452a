@@ -103,7 +103,7 @@ export default function CatTreesForLargeCats() {
         '@type': 'ListItem', position: i + 1,
         item: {
           '@type': 'Product',
-          '@id': `https://getpawsy.pet/product/${p.slug || p.id}`,
+          '@id': `https://getpawsy.pet/products/${p.slug || p.id}`,
           name: buildStructuredProductName(p),
           image: p.images?.[0],
           ...((p.price && Number(p.price) > 0) ? {

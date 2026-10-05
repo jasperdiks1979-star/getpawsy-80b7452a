@@ -118,7 +118,7 @@ const generateCollectionJsonLd = (collection: SeoCollectionData, products: Colle
       position: index + 1,
       item: {
         '@type': 'Product',
-        '@id': `https://getpawsy.pet/product/${product.slug || product.id}`,
+        '@id': `https://getpawsy.pet/products/${product.slug || product.id}`,
         name: buildStructuredProductName(product),
         image: product.image_url,
         ...((product.price && Number(product.price) > 0) ? {

@@ -166,7 +166,7 @@ export const CustomersAlsoBought = ({
       {/* Products Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {products.map((product, index) => {
-          const productUrl = `/product/${product.id}`;
+          const productUrl = `/products/${(product as any).slug || product.id}`;
 
           return (
             <motion.div

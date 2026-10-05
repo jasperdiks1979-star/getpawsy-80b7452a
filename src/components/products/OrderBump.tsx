@@ -61,7 +61,7 @@ export const OrderBump = ({
   const discountedPrice = product.price * (1 - discountPercent / 100);
   const savings = product.price - discountedPrice;
   const benefitCopy = getBumpBenefit(product.name);
-  const productUrl = product.slug ? `/product/${product.slug}` : `/product/${product.id}`;
+  const productUrl = product.slug ? `/products/${product.slug}` : `/products/${product.id}`;
 
   const handleToggle = () => {
     onToggle(!isChecked, product);

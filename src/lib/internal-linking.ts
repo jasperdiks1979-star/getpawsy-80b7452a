@@ -13,6 +13,13 @@ import { BLOG_CORNERSTONE_TRIGGERS, PRIORITY_CORNERSTONES, getCornerstoneAnchor 
 import { getCategoryCollectionUrl } from './category-collection-map';
 import { MONEY_COLLECTIONS } from './money-collections';
 import { getLinkWeightMultiplier } from './revenue-tier-engine';
+import { resolveToCanonical } from './canonical-category-registry';
+
+/** Resolve any collection slug/alias to a live canonical collection URL. */
+function canonicalCollectionUrl(slug: string): string {
+  const c = resolveToCanonical(slug);
+  return c && c !== 'all' ? `/collections/${c}` : '/products';
+}
 
 interface LinkableKeyword {
   keyword: string;
@@ -488,7 +495,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
     kws.forEach((kw) => {
       keywords.push({
         keyword: kw.toLowerCase(),
-        url: `/collections/${slug}`,
+        url: canonicalCollectionUrl(slug),
         type: 'category',
         priority: 10, // Highest priority for SEO collection pages
       });
@@ -503,14 +510,14 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
     // Primary keyword → money collection URL
     keywords.push({
       keyword: mc.primaryKeyword.toLowerCase(),
-      url: `/collections/${mc.slug}`,
+      url: canonicalCollectionUrl(mc.slug),
       type: 'category',
       priority: Math.round(15 * tierMultiplier),
     });
     // Short name as anchor variant
     keywords.push({
       keyword: mc.shortName.toLowerCase(),
-      url: `/collections/${mc.slug}`,
+      url: canonicalCollectionUrl(mc.slug),
       type: 'category',
       priority: Math.round(13 * tierMultiplier),
     });
@@ -519,7 +526,7 @@ export const generateCategoryKeywords = (categories: Category[]): LinkableKeywor
     for (const phrase of descWords.slice(0, 2)) {
       keywords.push({
         keyword: phrase,
-        url: `/collections/${mc.slug}`,
+        url: canonicalCollectionUrl(mc.slug),
         type: 'category',
         priority: Math.round(11 * tierMultiplier),
       });

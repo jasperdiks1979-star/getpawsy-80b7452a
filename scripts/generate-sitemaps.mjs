@@ -19,6 +19,15 @@ import {
   dedupeEntriesByLoc,
   STALE_ARTIFACT_FILES,
 } from "./merchant-integrity.mjs";
+import {
+  loadSeoPolicy,
+  isProductIndexable,
+  isGuideIndexable,
+  isBlogIndexable,
+  assertStrictSitemapPaths,
+  CANONICAL_SITEMAP_COLLECTIONS,
+  PRERENDERED_STATIC_ROUTES,
+} from "./seo-indexability.mjs";
 
 const BASE = "https://getpawsy.pet";
 const OUT_DIR = joinRoot("public");
@@ -163,20 +172,26 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,name,updated_at&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
+  const seoPolicy = loadSeoPolicy();
+  // Runtime SEO policy: seo_noindex OR Tier C → noindex,follow → never in sitemap.
+  const noindexProductSlugs = new Set(
+    (productsRaw || []).filter((p) => p.slug && !isProductIndexable(p)).map((p) => p.slug),
+  );
   let products;
   if (productsRaw && productsRaw.length > 0) {
     const seen = new Set();
     products = productsRaw
       .filter((p) => {
+        if (!isProductIndexable(p)) return false;
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
         // PHASE 10B: SANDBOX fixtures may never reach public/ or dist/.
@@ -211,11 +226,9 @@ async function main() {
   ]);
 
   // ── COLLECTIONS (locked to 5 active collections only) ──
-  const ACTIVE_COLLECTION_SLUGS = new Set([
-    "dogs", "cats", "dog-beds", "cat-trees-and-condos", "cat-litter-boxes",
-    // Phase 5 reactivated these cat-first collections (seo_collections.is_active = true).
-    "cat-toys", "cat-beds",
-  ]);
+  // Single source: scripts/seo-indexability.mjs (aliases such as
+  // self-cleaning-litter-box are never advertised).
+  const ACTIVE_COLLECTION_SLUGS = new Set(CANONICAL_SITEMAP_COLLECTIONS);
 
   let collectionsRaw = await fetchAllPages(
     "seo_collections",
@@ -286,6 +299,20 @@ async function main() {
     console.log(`[sitemaps] Guides after static merge: ${guideEntriesRaw.length}`);
   }
 
+  // ── Strict guide filter: no redirect sources, no noindex slugs ──
+  const knownGuideSlugs = new Set([
+    ...(guidesRaw || []).map((g) => g.slug),
+    ...(Array.isArray(staticGuideIndex) ? staticGuideIndex.map((g) => g.slug) : []),
+  ].filter(Boolean));
+  {
+    const before = guideEntriesRaw.length;
+    guideEntriesRaw = guideEntriesRaw.filter((g) => {
+      const slug = String(g.path || "").replace(/^\/guides\//, "");
+      return g.path === `/guides/${slug}` && isGuideIndexable(slug, seoPolicy) && knownGuideSlugs.has(slug);
+    });
+    console.log(`[sitemaps] Guides after strict filter: ${guideEntriesRaw.length} (dropped ${before - guideEntriesRaw.length})`);
+  }
+
   // ── BLOG POSTS ──
   let blogRaw = await fetchAllPages(
     "blog_posts",
@@ -306,6 +333,17 @@ async function main() {
   } else {
     blogEntries = safeRead(joinRoot("data", "blog.json"), []).filter((e) => e && e.path);
     console.log(`[sitemaps] Blog posts from JSON fallback: ${blogEntries.length}`);
+  }
+
+  // Strict blog filter: no redirect sources, no noindex slugs, and no slug
+  // that is a guide (that content belongs under /guides).
+  {
+    const before = blogEntries.length;
+    blogEntries = blogEntries.filter((b) => {
+      const slug = String(b.path || "").replace(/^\/blog\//, "");
+      return b.path === `/blog/${slug}` && isBlogIndexable(slug, seoPolicy) && !knownGuideSlugs.has(slug);
+    });
+    console.log(`[sitemaps] Blog after strict filter: ${blogEntries.length} (dropped ${before - blogEntries.length})`);
   }
 
   // ── Sort alphabetically ──
@@ -343,7 +381,11 @@ async function main() {
     { path: "/faq", priority: 0.50, changefreq: "monthly", lastmod: today },
     { path: "/privacy", priority: 0.30, changefreq: "monthly", lastmod: today },
     { path: "/terms", priority: 0.30, changefreq: "monthly", lastmod: today },
-  ].map((e) => ({
+  ]
+  // Only routes that ship route-specific prerendered HTML are advertised;
+  // the rest stay routable but are withheld until they are prerendered.
+  .filter((e) => PRERENDERED_STATIC_ROUTES.includes(e.path))
+  .map((e) => ({
     loc: absUrl(BASE, e.path), lastmod: e.lastmod, changefreq: e.changefreq, priority: e.priority,
     _path: e.path, _updatedAt: e.lastmod,
   }));
@@ -362,6 +404,10 @@ async function main() {
   // ── Record history ──
   const allEntries = [...staticPages, ...productEntries, ...collectionEntries, ...guideEntries, ...blogPageEntries];
   for (const e of allEntries) newHistory[e._path] = { lastmod: e.lastmod, updatedAt: e._updatedAt };
+
+  // Fail loudly on any redirect source, noindex URL, duplicate loc,
+  // unknown guide or invalid namespace.
+  assertStrictSitemapPaths(allEntries.map((e) => e._path), { noindexProductSlugs, knownGuideSlugs }, seoPolicy);
 
   // PHASE 10B: strip fixtures + duplicate canonical URLs from every urlset.
   const clean = (entries) => {

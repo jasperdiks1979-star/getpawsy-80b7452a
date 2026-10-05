@@ -109,7 +109,7 @@ export function CategorySchema({
           itemOffered: {
             '@type': 'Product',
             name: product.name,
-            url: `${baseUrl}/product/${product.slug || product.id}`,
+            url: `${baseUrl}/products/${product.slug || product.id}`,
           },
           price: offer.price,
           priceCurrency: 'USD',

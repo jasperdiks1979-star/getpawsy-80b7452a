@@ -142,6 +142,35 @@ export const CANONICAL_CATEGORIES: CanonicalCategory[] = [
     icon: '🚽',
     hasInventory: true,
   },
+  // Canonical SEO collections (active in seo_collections, in the locked
+  // sitemap set). Valid redirect/link targets only — not shown on any
+  // navigation surface, so the UI is unchanged.
+  {
+    key: 'cat-toys',
+    label: 'Cat Toys',
+    url: '/collections/cat-toys',
+    active: true,
+    parentKey: 'cats',
+    menuEligible: false,
+    homepageEligible: false,
+    searchEligible: false,
+    footerEligible: false,
+    displayOrder: 3,
+    hasInventory: true,
+  },
+  {
+    key: 'cat-beds',
+    label: 'Cat Beds',
+    url: '/collections/cat-beds',
+    active: true,
+    parentKey: 'cats',
+    menuEligible: false,
+    homepageEligible: false,
+    searchEligible: false,
+    footerEligible: false,
+    displayOrder: 4,
+    hasInventory: true,
+  },
 ];
 
 // ── Derived lookups ──

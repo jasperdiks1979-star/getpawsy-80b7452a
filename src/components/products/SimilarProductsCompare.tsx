@@ -91,7 +91,7 @@ export function SimilarProductsCompare({ products, currentProductName }: Similar
               <tr key={p.id} className="border-b border-border/30 last:border-0">
                 <td className="py-3 px-2">
                   <Link
-                    to={`/product/${p.slug || p.id}`}
+                    to={`/products/${p.slug || p.id}`}
                     className="flex items-center gap-2 hover:text-primary transition-colors"
                   >
                     <OptimizedImage

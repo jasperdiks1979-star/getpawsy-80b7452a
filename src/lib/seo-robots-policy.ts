@@ -57,6 +57,10 @@ const NOINDEX_PREFIXES: string[] = [
   '/compliance',
   '/merchant-fix-checklist',
   '/lp/',
+  // Legacy aliases of canonical /products/{slug} and /collections/{slug}.
+  '/product',
+  '/bestseller',
+  '/collection',
 ];
 
 /**
@@ -77,7 +81,6 @@ const NOINDEX_GUIDE_SLUGS: string[] = [
  * These override any accidental noindex from shared components.
  */
 const INDEXABLE_PREFIXES: string[] = [
-  '/product/',
   '/products',
   '/collections/',
   '/guides/',
@@ -98,7 +101,6 @@ const INDEXABLE_PREFIXES: string[] = [
   '/why-trust-our-reviews',
   '/about-the-author',
   '/editorial-guidelines',
-  '/bestseller/',
   '/bestsellers',
   '/dog/',
   '/dog',

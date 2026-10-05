@@ -49,6 +49,7 @@ interface BlogPost {
 }
 
 interface Product {
+  slug?: string | null;
   id: string;
   name: string;
   price: number;
@@ -158,7 +159,7 @@ const BlogPostPage = () => {
       // Fetch products that match the relevant categories
       let query = supabase
         .from('products_public')
-        .select('id, name, price, compare_at_price, image_url, category')
+        .select('id, slug, name, price, compare_at_price, image_url, category')
         .eq('is_active', true)
         .limit(8);
 
@@ -168,7 +169,7 @@ const BlogPostPage = () => {
         const categoryFilters = relevantCategories.map(cat => `category.ilike.%${cat}%`);
         query = supabase
           .from('products_public')
-          .select('id, name, price, compare_at_price, image_url, category')
+          .select('id, slug, name, price, compare_at_price, image_url, category')
           .eq('is_active', true)
           .or(categoryFilters.join(','))
           .limit(8);
@@ -179,7 +180,7 @@ const BlogPostPage = () => {
         // Fallback: get any active products
         const { data: fallbackData } = await supabase
           .from('products_public')
-          .select('id, name, price, compare_at_price, image_url, category')
+          .select('id, slug, name, price, compare_at_price, image_url, category')
           .eq('is_active', true)
           .limit(8);
         return (fallbackData || []) as Product[];
@@ -503,7 +504,7 @@ const BlogPostPage = () => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.slice(0, 4).map((product) => (
-                <Link key={product.id} to={`/products/${product.id}`}>
+                <Link key={product.id} to={`/products/${product.slug || product.id}`}>
                   <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
                     <div className="aspect-square bg-muted relative overflow-hidden">
                       {product.image_url ? (
