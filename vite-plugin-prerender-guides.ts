@@ -189,7 +189,7 @@ interface BlogRow {
 export function buildBlogPostPage(post: BlogRow, spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/blog/${post.slug}`;
   const title = post.meta_title || `${post.title} | GetPawsy`;
-  const description = post.meta_description || post.excerpt || '';
+  const description = clampMetaDescription(post.meta_description || post.excerpt || '');
   const image = post.featured_image
     ? (/^https?:\/\//.test(post.featured_image) ? post.featured_image : `${SITE}${post.featured_image}`)
     : null;
