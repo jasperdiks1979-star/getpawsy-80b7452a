@@ -17,11 +17,11 @@ export function GuideClusterNav({ slug }: { slug: string }) {
   return (
     <aside aria-label="Related guides" className="mt-10 rounded-lg border border-border bg-muted/40 p-5">
       <h2 className="text-lg font-semibold text-foreground">More on {cluster.label.toLowerCase()}</h2>
-      <p className="mt-2 text-sm">
+      {cluster.linkCollection !== false && <p className="mt-2 text-sm">
         <Link to={`/collections/${cluster.collection}`} className="text-primary underline-offset-4 hover:underline">
           Shop {cluster.label.toLowerCase()}
         </Link>
-      </p>
+      </p>}
       {siblings.length > 0 && (
         <ul className="mt-3 space-y-1.5 text-sm">
           {siblings.map((s) => (

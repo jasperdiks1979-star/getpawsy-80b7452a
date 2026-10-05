@@ -13,6 +13,8 @@ export interface SeoCluster {
   collection: string;
   pillar: string;
   supporting: string[];
+  /** False while the collection is thin/noindex: guides must not link it. */
+  linkCollection?: boolean;
 }
 
 export const SEO_CLUSTERS: SeoCluster[] = [
@@ -42,7 +44,7 @@ export const SEO_CLUSTERS: SeoCluster[] = [
     ],
   },
   {
-    key: 'cat-beds', label: 'Cat beds', collection: 'cat-beds',
+    key: 'cat-beds', label: 'Cat beds', collection: 'cat-beds', linkCollection: false,
     pillar: 'cat-bed-guide',
     supporting: ['best-cat-bed'],
   },
