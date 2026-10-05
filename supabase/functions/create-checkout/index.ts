@@ -206,6 +206,7 @@ serve(async (req) => {
       const rawId = String(it.id);
       const suffix = rawId.slice(productId.length).replace(/^[_-]/, "");
       it.cj_variant_id = suffix.length > 0 ? suffix : null;
+      (it as { client_line_id?: string }).client_line_id = rawId;
       it.id = productId;
       if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 100) {
         throw new Error("Invalid item quantity");
@@ -270,6 +271,10 @@ serve(async (req) => {
             error: "Prices changed while you were shopping. Please refresh your cart.",
             code: "price_mismatch",
             product_id: it.id,
+            // Lets the cart re-price this exact line to the price the shopper
+            // will now see; the request is still rejected (no silent charge).
+            line_id: (it as { client_line_id?: string }).client_line_id ?? it.id,
+            current_price: serverUnitPrice,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
         );

@@ -1,3 +1,4 @@
+import { guardVariantPricing } from "../_shared/variant-price-guard.ts";
 // CJ Stock Reconciliation — single source of truth = variant.inventories[]
 // for countryCode === "US". Iterates CJ-mapped products in batches, fetches
 // the live CJ payload, recomputes US stock per variant, and corrects
@@ -223,8 +224,8 @@ Deno.serve(async (req) => {
           variantNameEn: v.variantNameEn ?? null,
           variantSku: v.variantSku ?? null,
           variantImage: v.variantImage ?? null,
-          variantSellPrice: v.variantSellPrice ?? null,
-          variantCostPrice: v.variantCostPrice ?? null,
+          // Price guard: keep processed sell price + marker; CJ cost goes to supplierCostPrice.
+          ...guardVariantPricing(p.variants, v as Record<string, unknown>),
           variantSugSellPrice: v.variantSugSellPrice ?? null,
           variantWeight: v.variantWeight ?? null,
           variantLength: v.variantLength ?? null,

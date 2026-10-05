@@ -67,6 +67,8 @@ interface CartContextType {
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  /** Re-price one line to the server's current customer price (stale carts). */
+  repriceItem: (id: string, price: number) => void;
   clearCart: (markRecovered?: boolean) => void;
   setAbandonedCartEmail: (email: string) => void;
   totalItems: number;
@@ -523,6 +525,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
+  const repriceItem = (id: string, price: number) => {
+    const next = Math.round(Number(price) * 100) / 100;
+    if (!Number.isFinite(next) || next <= 0) return;
+    setItems(prev => prev.map(item => (item.id === id ? { ...item, price: next } : item)));
+  };
+
   const clearCart = useCallback(async (markRecovered = false) => {
     if (markRecovered && items.length > 0) {
       // Mark cart as recovered in database
@@ -554,6 +562,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addItem,
       removeItem,
       updateQuantity,
+      repriceItem,
       clearCart,
       setAbandonedCartEmail,
       totalItems,
@@ -595,6 +604,7 @@ export const useCart = () => {
       addItem: noop,
       removeItem: noop,
       updateQuantity: noop,
+      repriceItem: noop,
       clearCart: noop,
       setAbandonedCartEmail: noop,
       totalItems: 0,
