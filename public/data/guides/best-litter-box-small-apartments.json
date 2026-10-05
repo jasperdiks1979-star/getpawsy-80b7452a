@@ -6,18 +6,30 @@
   "excerpt": "7 compact litter boxes tested in real apartments under 600 sq ft. Discreet, odor-controlling picks for studios, one-bedrooms, and tight spaces — with honest pros & cons.",
   "quickAnswer": "The best litter box for a small apartment is a furniture-style enclosure that doubles as an end table or side table. It hides the litter box completely, controls odor with ventilation, and doesn't waste floor space. Our top pick: the Barn Door Enclosure ($176.99) at 31.5\" x 21\".",
   "category": "Cat Litter",
-  "keywords": ["litter box for small apartment", "compact litter box", "apartment litter box", "small space litter box", "discreet cat litter box"],
+  "keywords": [
+    "litter box for small apartment",
+    "compact litter box",
+    "apartment litter box",
+    "small space litter box",
+    "discreet cat litter box"
+  ],
   "publishedAt": "2026-02-15",
   "updatedAt": "2026-02-15",
   "featuredImage": "/images/guides/litter-box-small-apartment.jpg",
   "readingTime": 12,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "comparisonProducts": [
     {
       "name": "Barn Door Enclosure (31.5\")",
       "price": "$176.99",
       "description": "Compact furniture enclosure with charming barn door design. Fits beside a sofa or in a hallway nook.",
-      "advantages": ["Compact 31.5\" x 21\" footprint", "Doubles as side table", "Under $180"],
+      "advantages": [
+        "Compact 31.5\" x 21\" footprint",
+        "Doubles as side table",
+        "Under $180"
+      ],
       "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best for Apartments",
       "availability": "InStock"
@@ -26,7 +38,11 @@
       "name": "Wooden 2-Room Enclosure",
       "price": "$284.99",
       "description": "Two-room design reduces litter tracking — cat walks through a clean room before exiting.",
-      "advantages": ["Two-room tracking reduction", "Solid wood build", "Sleek black finish"],
+      "advantages": [
+        "Two-room tracking reduction",
+        "Solid wood build",
+        "Sleek black finish"
+      ],
       "link": "/products/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
       "badge": "Best for Tracking",
       "availability": "InStock"
@@ -34,9 +50,14 @@
     {
       "name": "60L Automatic Smart Litter Box",
       "price": "$268.99",
-      "description": "Self-cleaning with built-in deodorizer — ideal when you can't scoop twice daily in a small space.",
-      "advantages": ["Self-cleaning automation", "Built-in deodorizer", "App control"],
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring.",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Best Automatic",
       "availability": "InStock"
     }
@@ -70,10 +91,22 @@
   "buyingCriteria": {
     "title": "Apartment Litter Box Buying Criteria",
     "criteria": [
-      { "name": "Footprint", "description": "Under 32\" x 22\" fits most apartment spots. Measure your intended location before buying." },
-      { "name": "Dual Function", "description": "Furniture enclosures that serve as tables, cabinets, or benches save space and justify their presence in living areas." },
-      { "name": "Odor Containment", "description": "Enclosed with ventilation — not sealed. Carbon filters add extra protection in tight spaces." },
-      { "name": "Noise Level", "description": "Automatic models make noise. Check cycle timing if the box is near your sleeping area." }
+      {
+        "name": "Footprint",
+        "description": "Under 32\" x 22\" fits most apartment spots. Measure your intended location before buying."
+      },
+      {
+        "name": "Dual Function",
+        "description": "Furniture enclosures that serve as tables, cabinets, or benches save space and justify their presence in living areas."
+      },
+      {
+        "name": "Odor Containment",
+        "description": "Enclosed with ventilation — not sealed. Carbon filters add extra protection in tight spaces."
+      },
+      {
+        "name": "Noise Level",
+        "description": "Automatic models make noise. Check cycle timing if the box is near your sleeping area."
+      }
     ]
   },
   "commonMistakes": [

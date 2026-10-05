@@ -4,23 +4,52 @@
   "seoTitle": "How to Train Cat to Use Automatic Litter Box – Step by Step",
   "seoDescription": "Step-by-step guide to transition your cat to an automatic litter box. Tips for nervous cats, multi-cat homes, and troubleshooting common problems. Updated 2026.",
   "h1Override": "How to Train Your Cat to Use an Automatic Litter Box",
-  "trustLines": ["Step-by-step transition plan", "Tips for anxious cats", "Updated March 2026"],
+  "trustLines": [
+    "Step-by-step transition plan",
+    "Tips for anxious cats",
+    "Updated March 2026"
+  ],
   "excerpt": "Complete transition guide for switching your cat from a manual to automatic litter box. Day-by-day plan, tips for nervous cats, and troubleshooting.",
   "quickAnswer": "Most cats adapt to an automatic litter box within 7–14 days using a gradual introduction: place the new box unplugged next to the old one for 3 days, then run it empty for 2 days so your cat hears the motor, then add litter and let your cat explore. Keep the old box available for the first 2 weeks. Remove it only after your cat consistently uses the new one.",
   "category": "Cat Litter",
-  "keywords": ["train cat automatic litter box", "transition cat to self cleaning litter box", "cat won't use automatic litter box", "introduce cat to self cleaning box"],
+  "keywords": [
+    "train cat automatic litter box",
+    "transition cat to self cleaning litter box",
+    "cat won't use automatic litter box",
+    "introduce cat to self cleaning box"
+  ],
   "publishedAt": "2026-03-23",
   "updatedAt": "2026-03-23",
   "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
   "readingTime": 7,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "jumpNav": [
-    { "label": "Before You Start", "anchor": "before-you-start" },
-    { "label": "Day-by-Day Plan", "anchor": "the-14-day-transition-plan" },
-    { "label": "Nervous Cats", "anchor": "tips-for-nervous-or-senior-cats" },
-    { "label": "Multi-Cat Homes", "anchor": "multi-cat-household-transitions" },
-    { "label": "Troubleshooting", "anchor": "troubleshooting-common-problems" },
-    { "label": "FAQ", "anchor": "faq" }
+    {
+      "label": "Before You Start",
+      "anchor": "before-you-start"
+    },
+    {
+      "label": "Day-by-Day Plan",
+      "anchor": "the-14-day-transition-plan"
+    },
+    {
+      "label": "Nervous Cats",
+      "anchor": "tips-for-nervous-or-senior-cats"
+    },
+    {
+      "label": "Multi-Cat Homes",
+      "anchor": "multi-cat-household-transitions"
+    },
+    {
+      "label": "Troubleshooting",
+      "anchor": "troubleshooting-common-problems"
+    },
+    {
+      "label": "FAQ",
+      "anchor": "faq"
+    }
   ],
   "sections": [
     {
@@ -48,13 +77,33 @@
     "name": "Train Your Cat to Use an Automatic Litter Box",
     "description": "Step-by-step method to transition your cat from a manual to an automatic self-cleaning litter box over 14 days.",
     "totalTime": "P14D",
-    "supply": ["Automatic litter box", "Same brand cat litter", "Cat treats", "Used litter from current box"],
+    "supply": [
+      "Automatic litter box",
+      "Same brand cat litter",
+      "Cat treats",
+      "Used litter from current box"
+    ],
     "steps": [
-      { "name": "Place box unplugged", "text": "Position the automatic litter box near the existing one, powered off. Add familiar litter and a scoop of used litter for scent. Let your cat explore for 3 days." },
-      { "name": "Sound familiarization", "text": "Power on the unit in manual mode. Run 2-3 empty cycles while your cat is nearby but not inside. Reward calm behavior with treats." },
-      { "name": "Enable automatic mode", "text": "Switch to automatic mode with the longest delay setting (15-20 minutes). Continue maintaining the old box but scoop less frequently." },
-      { "name": "Build preference", "text": "Reduce cleaning of the old box to once daily. The automatic box will be consistently cleaner, encouraging your cat to prefer it." },
-      { "name": "Remove old box", "text": "After 3+ days of consistent use of the automatic box, remove the old one. Monitor for stress signs and bring it back if needed." }
+      {
+        "name": "Place box unplugged",
+        "text": "Position the automatic litter box near the existing one, powered off. Add familiar litter and a scoop of used litter for scent. Let your cat explore for 3 days."
+      },
+      {
+        "name": "Sound familiarization",
+        "text": "Power on the unit in manual mode. Run 2-3 empty cycles while your cat is nearby but not inside. Reward calm behavior with treats."
+      },
+      {
+        "name": "Enable automatic mode",
+        "text": "Switch to automatic mode with the longest delay setting (15-20 minutes). Continue maintaining the old box but scoop less frequently."
+      },
+      {
+        "name": "Build preference",
+        "text": "Reduce cleaning of the old box to once daily. The automatic box will be consistently cleaner, encouraging your cat to prefer it."
+      },
+      {
+        "name": "Remove old box",
+        "text": "After 3+ days of consistent use of the automatic box, remove the old one. Monitor for stress signs and bring it back if needed."
+      }
     ]
   },
   "faq": [
@@ -87,11 +136,16 @@
     {
       "name": "60L Smart Automatic Litter Box",
       "price": "$268.99",
-      "advantages": ["Adjustable delay settings for gradual introduction", "App monitoring tracks which cats use it", "Under 50 dB — less startling for nervous cats", "Wide front entry for easy access"],
-      "link": "/lp/self-cleaning-litter-box",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Cat-Friendly Design",
       "availability": "InStock",
-      "description": "Automatic litter box with adjustable settings designed for easy cat transition."
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring."
     }
   ]
 }

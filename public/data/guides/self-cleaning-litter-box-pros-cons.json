@@ -4,22 +4,48 @@
   "seoTitle": "Self-Cleaning Litter Box Pros and Cons (2026) – Honest Review",
   "seoDescription": "Honest pros and cons of self-cleaning litter boxes based on real usage. Cost, maintenance, noise, and cat acceptance — everything you need to know before buying.",
   "h1Override": "Self-Cleaning Litter Box Pros and Cons – Is It Worth the Investment?",
-  "trustLines": ["Based on real owner experience", "Cost breakdown included", "Updated March 2026"],
+  "trustLines": [
+    "Based on real owner experience",
+    "Cost breakdown included",
+    "Updated March 2026"
+  ],
   "excerpt": "Complete pros and cons breakdown of self-cleaning litter boxes. Real costs, maintenance reality, noise levels, and whether your cat will actually use one.",
   "quickAnswer": "Self-cleaning litter boxes save 10–15 minutes daily and maintain better hygiene between cleanings. The trade-offs: higher upfront cost ($200–$600 vs $20–$80 manual), ongoing filter/liner expenses ($10–$20/month), and a 1–2 week cat adjustment period. They're worth it for busy professionals and multi-cat homes but may be unnecessary for single-cat owners who don't mind daily scooping.",
   "category": "Cat Litter",
-  "keywords": ["self cleaning litter box pros and cons", "automatic litter box advantages disadvantages", "is self cleaning litter box worth it", "self cleaning litter box review"],
+  "keywords": [
+    "self cleaning litter box pros and cons",
+    "automatic litter box advantages disadvantages",
+    "is self cleaning litter box worth it",
+    "self cleaning litter box review"
+  ],
   "publishedAt": "2026-03-23",
   "updatedAt": "2026-03-23",
   "featuredImage": "/images/guides/self-cleaning-litter-box.jpg",
   "readingTime": 7,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "jumpNav": [
-    { "label": "The Pros", "anchor": "the-real-advantages" },
-    { "label": "The Cons", "anchor": "the-honest-drawbacks" },
-    { "label": "Cost Analysis", "anchor": "real-cost-analysis-3-year-breakdown" },
-    { "label": "Who Should Buy", "anchor": "who-should-and-shouldnt-buy" },
-    { "label": "FAQ", "anchor": "faq" }
+    {
+      "label": "The Pros",
+      "anchor": "the-real-advantages"
+    },
+    {
+      "label": "The Cons",
+      "anchor": "the-honest-drawbacks"
+    },
+    {
+      "label": "Cost Analysis",
+      "anchor": "real-cost-analysis-3-year-breakdown"
+    },
+    {
+      "label": "Who Should Buy",
+      "anchor": "who-should-and-shouldnt-buy"
+    },
+    {
+      "label": "FAQ",
+      "anchor": "faq"
+    }
   ],
   "sections": [
     {
@@ -86,11 +112,16 @@
     {
       "name": "60L Smart Automatic Litter Box",
       "price": "$268.99",
-      "advantages": ["App monitoring for health tracking", "60L capacity for multi-cat homes", "Under 50 dB — won't scare cats", "Infrared + weight dual sensors"],
-      "link": "/lp/self-cleaning-litter-box",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Recommended",
       "availability": "InStock",
-      "description": "Our recommended automatic litter box balancing features, safety, and value for most cat owners."
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring."
     }
   ]
 }

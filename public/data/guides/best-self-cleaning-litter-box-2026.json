@@ -67,7 +67,7 @@
     "bestOverall": {
       "name": "60L Automatic Cat Litter Box with Smart App Control",
       "reason": "Large 60L capacity with infrared safety, built-in deodorizer, and smartphone app for multi-cat households. The most complete package available.",
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat"
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control"
     },
     "bestBudget": {
       "name": "Cat Litter Box Enclosure with Barn Door",
@@ -85,14 +85,14 @@
       "name": "60L Automatic Smart Litter Box",
       "image": "https://getpawsy.pet/images/products/516103ad-7294-4255-b29a-7bf2dae185ef-10.jpg",
       "price": "$268.99",
-      "description": "Self-cleaning automatic cat litter box with 60L capacity, smart app control, infrared sensor, and built-in deodorizer.",
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring.",
       "advantages": [
-        "Self-cleaning with app control",
-        "Built-in deodorizer",
-        "Multi-cat compatible",
-        "Infrared safety sensor"
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
       ],
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Best Overall",
       "availability": "InStock"
     },

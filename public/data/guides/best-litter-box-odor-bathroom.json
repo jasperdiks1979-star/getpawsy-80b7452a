@@ -6,19 +6,31 @@
   "excerpt": "6 litter boxes tested specifically for bathroom use. Reviewed for odor control, moisture resistance, and compact size — with honest pros & cons.",
   "quickAnswer": "The best litter box for a bathroom is an enclosed model with ventilation and activated carbon filtration. Combined with bathroom fan ventilation, this setup eliminates most odor. Our top pick: the 60L Automatic Smart Litter Box ($268.99) with built-in deodorizer.",
   "category": "Cat Litter",
-  "keywords": ["litter box for bathroom", "best litter box odor bathroom", "bathroom cat litter box", "odor control litter box bathroom"],
+  "keywords": [
+    "litter box for bathroom",
+    "best litter box odor bathroom",
+    "bathroom cat litter box",
+    "odor control litter box bathroom"
+  ],
   "publishedAt": "2026-02-15",
   "updatedAt": "2026-02-15",
   "featuredImage": "/images/guides/litter-box-bathroom-odor.jpg",
   "readingTime": 11,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "comparisonProducts": [
     {
       "name": "60L Automatic Smart Litter Box",
       "price": "$268.99",
-      "description": "Self-cleaning with built-in deodorizer and sealed waste drawer. Best for bathroom odor elimination.",
-      "advantages": ["Built-in carbon deodorizer", "Sealed waste drawer", "Self-cleaning after every use"],
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring.",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "badge": "Best for Bathrooms",
       "availability": "InStock"
     },
@@ -26,7 +38,11 @@
       "name": "Wooden 2-Room Enclosure",
       "price": "$284.99",
       "description": "Enclosed solid wood design contains odor while reducing tracking from the bathroom to other rooms.",
-      "advantages": ["Two-room odor containment", "Moisture-resistant wood", "Reduces tracking"],
+      "advantages": [
+        "Two-room odor containment",
+        "Moisture-resistant wood",
+        "Reduces tracking"
+      ],
       "link": "/products/cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black",
       "availability": "InStock"
     },
@@ -34,7 +50,11 @@
       "name": "Barn Door Enclosure",
       "price": "$176.99",
       "description": "Compact footprint fits most bathroom corners. Easy barn door access for scooping.",
-      "advantages": ["Compact bathroom fit", "Easy scooping access", "Budget-friendly"],
+      "advantages": [
+        "Compact bathroom fit",
+        "Easy scooping access",
+        "Budget-friendly"
+      ],
       "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Budget",
       "availability": "InStock"
@@ -69,10 +89,22 @@
   "buyingCriteria": {
     "title": "Bathroom Litter Box Buying Criteria",
     "criteria": [
-      { "name": "Moisture Resistance", "description": "Wood enclosures must have moisture-resistant coatings for humid bathroom environments." },
-      { "name": "Compact Size", "description": "Bathrooms are tight. Measure your available space — most bathroom setups need boxes under 32\" wide." },
-      { "name": "Ventilation Design", "description": "Enclosed with vents, not sealed. Bathrooms need airflow to work with the exhaust fan." },
-      { "name": "Easy Clean Access", "description": "You'll scoop more often in bathrooms. Wide-opening doors or automatic cleaning save time." }
+      {
+        "name": "Moisture Resistance",
+        "description": "Wood enclosures must have moisture-resistant coatings for humid bathroom environments."
+      },
+      {
+        "name": "Compact Size",
+        "description": "Bathrooms are tight. Measure your available space — most bathroom setups need boxes under 32\" wide."
+      },
+      {
+        "name": "Ventilation Design",
+        "description": "Enclosed with vents, not sealed. Bathrooms need airflow to work with the exhaust fan."
+      },
+      {
+        "name": "Easy Clean Access",
+        "description": "You'll scoop more often in bathrooms. Wide-opening doors or automatic cleaning save time."
+      }
     ]
   },
   "commonMistakes": [

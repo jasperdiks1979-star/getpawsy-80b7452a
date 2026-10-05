@@ -6,18 +6,29 @@
   "excerpt": "5 kitten-safe litter boxes tested for low entry height, safety, and easy training. Reviewed with honest pros & cons for new kitten owners.",
   "quickAnswer": "The best litter box for kittens has a low entry (under 3 inches), no top-entry design, and uses unscented clumping litter. Start with a small, open pan and transition to an enclosed box once your kitten is 6+ months old and comfortable with litter habits.",
   "category": "Cat Litter",
-  "keywords": ["best litter box for kittens", "kitten litter box", "first litter box kitten", "kitten litter training box"],
+  "keywords": [
+    "best litter box for kittens",
+    "kitten litter box",
+    "first litter box kitten",
+    "kitten litter training box"
+  ],
   "publishedAt": "2026-02-15",
   "updatedAt": "2026-02-15",
   "featuredImage": "/images/guides/litter-box-kittens.jpg",
   "readingTime": 10,
-  "relatedCategories": ["cat-litter-boxes"],
+  "relatedCategories": [
+    "cat-litter-boxes"
+  ],
   "comparisonProducts": [
     {
       "name": "Barn Door Enclosure",
       "price": "$176.99",
       "description": "Grows with your kitten — use with a low-sided pan inside when young, then switch to a standard pan as they grow.",
-      "advantages": ["Low cat hole entry", "Grows with kitten", "Furniture-style design"],
+      "advantages": [
+        "Low cat hole entry",
+        "Grows with kitten",
+        "Furniture-style design"
+      ],
       "link": "/products/cat-litter-box-enclosure-with-barn-door-cat-hole-31-5-x-21-x-20-white",
       "badge": "Best Grow-With",
       "availability": "InStock"
@@ -25,9 +36,14 @@
     {
       "name": "60L Automatic Smart Litter Box",
       "price": "$268.99",
-      "description": "Infrared safety sensor prevents cycle during kitten use. Best for when kittens reach 5+ months.",
-      "advantages": ["Infrared safety sensor", "Self-cleaning convenience", "Grows with cat"],
-      "link": "/products/60l-automatic-cat-litter-box-smart-app-control-deodorizing-infrared-sensor-suitable-for-multiple-cat",
+      "description": "60L self-cleaning litter box: an infrared sensor detects when your cat exits before the cleaning cycle starts, with app control for schedules and usage monitoring.",
+      "advantages": [
+        "60L capacity",
+        "Infrared sensor waits for your cat to exit before cleaning",
+        "App control for cleaning schedules and usage monitoring",
+        "Built-in odor management"
+      ],
+      "link": "/products/automatic-cat-litter-box-self-cleaning-app-control",
       "availability": "InStock"
     }
   ],
@@ -60,10 +76,22 @@
   "buyingCriteria": {
     "title": "Kitten Litter Box Buying Criteria",
     "criteria": [
-      { "name": "Entry Height", "description": "Under 3 inches for kittens under 3 months. Standard 4-5 inch entries work for kittens 4+ months." },
-      { "name": "No Moving Parts", "description": "Avoid automatic boxes until 5-6 months. Mechanical noise can frighten kittens and create litter box aversion." },
-      { "name": "Growth Potential", "description": "Buy an enclosure that works now with a low pan and later with a standard pan. Avoid disposable kitten-only boxes." },
-      { "name": "Litter Safety", "description": "Use non-clumping litter for kittens under 12 weeks. Transition to unscented clumping after 3 months." }
+      {
+        "name": "Entry Height",
+        "description": "Under 3 inches for kittens under 3 months. Standard 4-5 inch entries work for kittens 4+ months."
+      },
+      {
+        "name": "No Moving Parts",
+        "description": "Avoid automatic boxes until 5-6 months. Mechanical noise can frighten kittens and create litter box aversion."
+      },
+      {
+        "name": "Growth Potential",
+        "description": "Buy an enclosure that works now with a low pan and later with a standard pan. Avoid disposable kitten-only boxes."
+      },
+      {
+        "name": "Litter Safety",
+        "description": "Use non-clumping litter for kittens under 12 weeks. Transition to unscented clumping after 3 months."
+      }
     ]
   },
   "commonMistakes": [

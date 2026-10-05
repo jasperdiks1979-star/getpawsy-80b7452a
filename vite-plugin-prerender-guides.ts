@@ -1,3 +1,4 @@
+import { stripUnsupportedTitleClaims } from './src/lib/seo-title';
 import { ROOT_GUIDE_CONSOLIDATION } from './src/lib/seo-root-consolidation';
 /**
  * Vite Plugin: Prerender Guide Pages
@@ -441,7 +442,7 @@ export function buildClusterNav(slug: string, titles: Map<string, string>, linkC
   if (!c) return '';
   const guides = [c.pillar, ...c.supporting]
     .filter((s) => s !== slug && titles.has(s) && (!linkCtx?.knownGuides || linkCtx.knownGuides.has(s)))
-    .map((s) => `<li><a href="/guides/${s}">${escapeHtml(titles.get(s)!)}</a></li>`);
+    .map((s) => `<li><a href="/guides/${s}">${escapeHtml(stripUnsupportedTitleClaims(titles.get(s)!))}</a></li>`);
   const shop = !linkCtx?.allowedCollections || linkCtx.allowedCollections.has(c.collection)
     ? `<p><a href="/collections/${c.collection}">Shop ${escapeHtml(c.label.toLowerCase())}</a></p>` : '';
   if (!guides.length && !shop) return '';
@@ -560,12 +561,12 @@ export function buildGuidesHubPage(guides: GuideJson[], spaHtml: string, linkCtx
   const items = guides
     .slice()
     .sort((x, y) => x.title.localeCompare(y.title))
-    .map((g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a>${g.excerpt ? ` — ${escapeHtml(g.excerpt)}` : ''}</li>`)
+    .map((g) => `<li><a href="/guides/${escapeHtml(g.slug)}">${escapeHtml(stripUnsupportedTitleClaims(g.title))}</a>${g.excerpt ? ` — ${escapeHtml(g.excerpt)}` : ''}</li>`)
     .join('\n');
   const bySlug = new Map(guides.map((g) => [g.slug, g]));
   const topics = SEO_CLUSTERS
     .filter((c) => bySlug.has(c.pillar))
-    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(bySlug.get(c.pillar)!.title)}</a>${linkCtx?.allowedCollections && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
+    .map((c) => `<li><a href="/guides/${c.pillar}">${escapeHtml(stripUnsupportedTitleClaims(bySlug.get(c.pillar)!.title))}</a>${linkCtx?.allowedCollections && !linkCtx.allowedCollections.has(c.collection) ? '' : ` — <a href="/collections/${c.collection}">shop ${escapeHtml(c.label.toLowerCase())}</a>`}</li>`)
     .join('\n');
   const breadcrumb = JSON.stringify({
     '@context': 'https://schema.org',
