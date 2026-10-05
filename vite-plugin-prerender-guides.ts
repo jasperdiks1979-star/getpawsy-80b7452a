@@ -663,7 +663,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         }
       }
 
-      fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml), 'utf-8');
+      fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml, linkCtx), 'utf-8');
       console.log(`[prerender-guides] ✅ Prerendered ${guideCount} guides (${dbOnlyCount} DB-only, ${noindexCount} noindex) + /guides hub (${hubGuides.length})`);
 
       // ── Blog articles (dist/blog/<slug>/index.html) — same filter as sitemap ──
