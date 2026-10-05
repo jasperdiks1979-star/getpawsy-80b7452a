@@ -23,6 +23,7 @@ interface ProductRecord {
   updated_at: string | null;
   seo_noindex?: boolean | null;
   seo_tier?: string | null;
+  merch_hidden?: boolean | null;
 }
 
 function escapeHtml(value: string): string {
@@ -64,8 +65,16 @@ function isInStock(p: ProductRecord): boolean {
 }
 
 /** Products a crawler-facing listing may show: in stock and indexable. */
+/**
+ * Storefront merchandising visibility (mirrors products_shop / primary
+ * collections: merch_hidden=false). Listing-only — never changes PDP robots.
+ */
+export function isMerchVisible(p: ProductRecord): boolean {
+  return p.merch_hidden !== true;
+}
+
 export function isListable(p: ProductRecord): boolean {
-  return Boolean(p.slug) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
+  return Boolean(p.slug) && isMerchVisible(p) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
 }
 
 function collectionHrefFor(category: string | null): string | null {
@@ -199,7 +208,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {
