@@ -50,11 +50,19 @@ function storedUtm(name: string): string | null {
   }
 }
 
+const OWN_HOST_RE = /(^|\.)getpawsy\.pet$/;
+
+export function isOwnHost(host: string | null | undefined): boolean {
+  return !!host && OWN_HOST_RE.test(host.toLowerCase());
+}
+
 function refHost(): string | null {
   try {
     const r = document.referrer;
     if (!r) return null;
-    return new URL(r).hostname.toLowerCase();
+    const h = new URL(r).hostname.toLowerCase();
+    // Own-host referrers are internal navigation, never an acquisition source.
+    return isOwnHost(h) ? null : h;
   } catch {
     return null;
   }
@@ -88,6 +96,15 @@ export function classifySource(): AttributionTouch {
   } else if (utmMedium === 'email' || utmSource.includes('newsletter')) source = 'email';
   else if (!host && !utmSource && !utmMedium) source = 'direct';
   else if (host) source = 'referral';
+
+  // A no-signal page (internal navigation / reload) must not overwrite a
+  // real first-touch source such as Bing or Google organic.
+  if (source === 'direct' || source === 'other') {
+    const first = readTouch(FIRST_TOUCH_KEY);
+    if (first && first.source !== 'direct' && first.source !== 'other') {
+      return { ...first, at: Date.now() };
+    }
+  }
 
   return {
     source,

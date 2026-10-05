@@ -4,7 +4,6 @@
  */
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { isTechnicalPath } from "@/lib/technicalRoutes";
-const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
 export type FunnelStep =

@@ -17,7 +17,6 @@ import { ensureGeoClassified, getCachedUsTier, getCachedGeoCountry } from '@/lib
 import { getDeviceClassification } from '@/lib/deviceClassify';
 import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
-const SESSION_KEY = 'gp_session_id';
 const DEDUPE_PREFIX = 'gp_fe_dedupe_';
 const DEDUPE_WINDOW_MS = 10_000;
 

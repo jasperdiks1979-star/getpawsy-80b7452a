@@ -14,7 +14,6 @@ import { resolveUtm } from "@/lib/utmNormalizer";
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
 
 const STORAGE_KEY = "gp_engagement_started_v1";
-const SESSION_KEY = "gp_session_id";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
 function getSessionId(): string {

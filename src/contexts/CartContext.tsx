@@ -13,6 +13,7 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
   import('@/lib/analytics').then(m => m.trackGoogleAdsAddToCart(productId, productName, price, qty));
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
 import { getCartSessionId, clearCartSessionId } from '@/lib/cartSession';
@@ -244,11 +245,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isProdHost = PRODUCTION_DOMAINS.includes(window.location.hostname);
 
     try {
-      let sessionId = sessionStorage.getItem("visitor_session_id");
-      if (!sessionId) {
-        sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-        sessionStorage.setItem("visitor_session_id", sessionId);
-      }
+      const sessionId = getCanonicalSessionId();
       
       // Get location from cache
       let locationData: { latitude?: number; longitude?: number; country?: string; city?: string } = {};

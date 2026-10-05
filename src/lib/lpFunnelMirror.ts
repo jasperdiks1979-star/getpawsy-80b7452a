@@ -6,6 +6,7 @@
  * Only a curated subset of events is mirrored — anything else stays in
  * GA4 only. Failures are swallowed: analytics must never break the UX.
  */
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { supabase } from '@/integrations/supabase/client';
 import { getFounderModeStatus } from '@/lib/founder-mode';
 import { getVisitorCohort } from '@/lib/visitorCohort';
@@ -98,8 +99,6 @@ const MIRRORED_EVENTS = new Set([
   'guide_product_click',
 ]);
 
-const SESSION_ID_KEY = 'gp_session_id';
-
 /**
  * Navigation-time events — fired inside a click handler that immediately
  * triggers a route change (CTA click → /products/...). The default
@@ -145,16 +144,7 @@ function insertWithKeepalive(row: Record<string, unknown>): void {
 
 function getSessionId(): string {
   try {
-    const store = window.sessionStorage;
-    let id = store.getItem(SESSION_ID_KEY);
-    if (!id) {
-      id =
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-      store.setItem(SESSION_ID_KEY, id);
-    }
-    return id;
+    return getCanonicalSessionId();
   } catch {
     return `anon_${Date.now()}`;
   }

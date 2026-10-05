@@ -78,6 +78,20 @@
       "when": 1790962460380,
       "tag": "0010_remove_cinematic_runway_public_list",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791230904092,
+      "tag": "0011_analytics_p0_classification_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791230942985,
+      "tag": "0012_analytics_p0_legacy_self_referrer",
+      "breakpoints": true
     }
   ]
 }

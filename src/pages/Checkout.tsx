@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { Helmet } from 'react-helmet-async';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { Link, useNavigate } from 'react-router-dom';
@@ -453,11 +454,7 @@ const Checkout = () => {
     }
 
     try {
-      let sessionId = sessionStorage.getItem("visitor_session_id");
-      if (!sessionId) {
-        sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-        sessionStorage.setItem("visitor_session_id", sessionId);
-      }
+      const sessionId = getCanonicalSessionId();
       
       let location = sessionStorage.getItem("visitor_location");
       if (!location) {

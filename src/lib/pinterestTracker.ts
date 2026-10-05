@@ -7,12 +7,12 @@
  * silently, never the UI.
  */
 
-const SESSION_KEY = "gp_session_id";
 const BOOT_FLAG = "gp_pin_session_booted";
 const PIN_ID_KEY = "gp_pin_id";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
+import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { getBotClassification } from "@/lib/botDetection";
 
 /**
@@ -36,15 +36,7 @@ function isPrefetchSession(): boolean {
 
 function getSessionKey(): string {
   try {
-    let id = sessionStorage.getItem(SESSION_KEY);
-    if (!id) {
-      id =
-        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-      sessionStorage.setItem(SESSION_KEY, id);
-    }
-    return id;
+    return getCanonicalSessionId();
   } catch {
     return `anon_${Date.now()}`;
   }
