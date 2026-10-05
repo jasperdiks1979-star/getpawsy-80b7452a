@@ -1,3 +1,4 @@
+import { ROOT_GUIDE_CONSOLIDATION } from './seo-root-consolidation';
 /**
  * SEO Robots Policy — Single source of truth for index/noindex decisions.
  *
@@ -143,6 +144,9 @@ export function getRobotsDirective(pathname: string, search: string = ''): Robot
   for (const prefix of NOINDEX_PREFIXES) {
     if (clean === prefix || clean.startsWith(prefix + '/')) return 'noindex';
   }
+
+  // Root SEO pages that duplicate an established /guides page (canonical → guide)
+  if (ROOT_GUIDE_CONSOLIDATION[clean]) return 'noindex-follow';
 
   // Off-niche guide slugs → noindex-follow (preserve link equity)
   if (clean.startsWith('/guides/')) {

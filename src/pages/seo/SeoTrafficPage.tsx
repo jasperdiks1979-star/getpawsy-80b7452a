@@ -1,3 +1,4 @@
+import { buildCanonicalUrl } from '@/lib/seo-canonical';
 /**
  * SeoTrafficPage — Maximum-conversion money page template.
  * Badges, CTAs every 2-3 sections, enhanced quick picks, trust strips.
@@ -293,7 +294,7 @@ function BestOverallHero({ pick, products, categories, species }: { pick: BestOv
 }
 
 export default function SeoTrafficPage(props: SeoTrafficPageProps) {
-  const canonical = `${SITE_URL}/${props.slug}`;
+  const canonical = buildCanonicalUrl(`/${props.slug}`);
   const lastUpdated = props.lastUpdated || '2026-03-18';
 
   // ── Jump Nav sections ──
