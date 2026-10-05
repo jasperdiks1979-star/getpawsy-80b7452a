@@ -44,8 +44,9 @@ import {
   DELIVERY_TIME_STANDARD,
   RETURNS_POLICY_SHORT,
   getApplicableTier,
-  getTierDiscountPercent,
 } from '@/lib/shipping-constants';
+import { computeCartQuote, toCents } from '@/lib/cart-pricing';
+import { STOREFRONT_COUPONS } from '@/lib/couponCodes';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -191,7 +192,7 @@ const CheckoutSkeleton = memo(() => (
 CheckoutSkeleton.displayName = 'CheckoutSkeleton';
 
 const Checkout = () => {
-  const { items, totalPrice, setAbandonedCartEmail } = useCart();
+  const { items, totalPrice, setAbandonedCartEmail, repriceItem } = useCart();
   const { issues: variantIssues } = useCartVariantIssues(items);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -289,30 +290,25 @@ const Checkout = () => {
     typeof window !== 'undefined' &&
     window.scrollY > 200;
 
-  // Valid discount codes
-  const VALID_DISCOUNT_CODES: Record<string, { discount: number; label: string }> = {
-    'WELCOME10': { discount: 10, label: 'Welcome 10% Off' },
-    'DONTGO15': { discount: 15, label: "Don't Go 15% Off" },
-  };
+  // Valid discount codes (shared table, must match create-checkout).
+  const VALID_DISCOUNT_CODES = STOREFRONT_COUPONS;
 
-  const shipping = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE;
-  
   // Tiered incentive discount (automatic, stacks with coupon).
-  // VOLUME discount: never applies to a single unit — mirrors the server
-  // guard in supabase/functions/create-checkout/index.ts so the displayed
-  // total always equals the Stripe-charged total.
+  // All money comes from the canonical cents engine (src/lib/cart-pricing.ts),
+  // the exact mirror create-checkout uses, so displayed total == Stripe charge.
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-  const tierDiscountPercent = getTierDiscountPercent(totalPrice, totalUnits);
-  const currentTier = tierDiscountPercent > 0 ? getApplicableTier(totalPrice) : null;
-  const tierDiscountAmount = totalPrice * (tierDiscountPercent / 100);
-  
-  // Coupon discount (applied after tier discount)
   const couponDiscountPercent = discountApplied ? VALID_DISCOUNT_CODES[discountApplied]?.discount || 0 : 0;
-  const couponDiscountAmount = (totalPrice * couponDiscountPercent) / 100;
-  
-  // Total discount = tier + coupon (no stacking conflict: tier is automatic reward, coupon is promotional)
-  const totalDiscountAmount = tierDiscountAmount + couponDiscountAmount;
-  const total = totalPrice - totalDiscountAmount + shipping;
+  const quote = computeCartQuote(
+    items.map((i) => ({ unitPriceCents: toCents(i.price), quantity: i.quantity })),
+    { couponPercent: couponDiscountPercent },
+  );
+  const shipping = quote.shippingCents / 100;
+  const tierDiscountPercent = quote.tierPercent;
+  const currentTier = tierDiscountPercent > 0 ? getApplicableTier(totalPrice) : null;
+  const tierDiscountAmount = quote.tierDeductionCents / 100;
+  const couponDiscountAmount = quote.couponDeductionCents / 100;
+  const totalDiscountAmount = quote.totalDeductionCents / 100;
+  const total = quote.totalCents / 100;
 
   // Klarna eligibility — only show messaging when Stripe actually offers it.
   // create-checkout now charges exactly subtotal − tier% − coupon% + shipping
@@ -811,6 +807,21 @@ const Checkout = () => {
           toast.error("This item's option is no longer available. Please choose one again.");
           setIsProcessing(false);
           navigate(line?.slug ? `/products/${line.slug}` : productId ? `/products/${productId}` : '/cart');
+          return;
+        }
+        // Stale cart (e.g. saved before a price correction): update the line to
+        // the price the server will charge and let the shopper review the new
+        // total before trying again. Nothing is charged on this attempt.
+        if (parsed?.code === 'price_mismatch') {
+          const p = parsed as { line_id?: string; current_price?: number };
+          if (p.line_id && typeof p.current_price === 'number' && p.current_price > 0 &&
+              items.some((i) => i.id === p.line_id)) {
+            repriceItem(p.line_id, p.current_price);
+            toast.info(`A price in your cart was updated to $${p.current_price.toFixed(2)}. Please review your total and try again.`);
+          } else {
+            toast.error('Prices changed while you were shopping. Please refresh your cart.');
+          }
+          setIsProcessing(false);
           return;
         }
         if (parsed?.code === 'cj_shipping_unavailable' || parsed?.code === 'country_not_supported') {

@@ -1,3 +1,4 @@
+import { guardVariantPricing } from "../_shared/variant-price-guard.ts";
 // CJ media + variant backfill orchestrator.
 //
 // Iterates ALL products with cj_product_id (active OR inactive) in batches,
@@ -556,6 +557,8 @@ Deno.serve(async (req) => {
                 name: v.variantNameEn ?? v.variantName ?? null,
                 image: v.variantImage ?? null,
                 price: v.variantSellPrice ?? null,
+                // Price guard: never drop a processed sell price/marker.
+                ...guardVariantPricing(existingVariants, v as Record<string, unknown>),
                 weight: v.variantWeight ?? null,
                 color, size, stock,
                 active: stock > 0,
