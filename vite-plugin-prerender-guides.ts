@@ -17,6 +17,21 @@ import fs from 'fs';
 import path from 'path';
 import type { Plugin } from 'vite';
 import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability.mjs';
+import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
+
+/** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
+export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
+  const read = (f: string, ns: string) => {
+    const file = path.join(dir, f);
+    if (!fs.existsSync(file)) return null;
+    return new Set([...fs.readFileSync(file, 'utf-8').matchAll(/<loc>[^<]*\/([a-z-]+)\/([a-z0-9-]+)<\/loc>/g)].filter((m) => m[1] === ns).map((m) => m[2]));
+  };
+  const knownGuides = read('sitemap-guides.xml', 'guides');
+  const allowedProducts = read('sitemap-products-1.xml', 'products');
+  const allowedCollections = read('sitemap-collections.xml', 'collections');
+  if (!knownGuides || !allowedProducts || !allowedCollections) return undefined;
+  return { knownGuides, allowedProducts, allowedCollections };
+}
 
 interface GuideJson {
   slug: string;
@@ -169,14 +184,14 @@ interface BlogRow {
   featured_image: string | null; category: string | null;
 }
 
-export function buildBlogPostPage(post: BlogRow, spaHtml: string): string {
+export function buildBlogPostPage(post: BlogRow, spaHtml: string, linkCtx?: InternalLinkContext): string {
   const canonical = `${SITE}/blog/${post.slug}`;
   const title = post.meta_title || `${post.title} | GetPawsy`;
   const description = post.meta_description || post.excerpt || '';
   const image = post.featured_image
     ? (/^https?:\/\//.test(post.featured_image) ? post.featured_image : `${SITE}${post.featured_image}`)
     : null;
-  const body = normalizeProductLinks(storedContentToHtml(post.content || ''));
+  const body = canonicalizeInternalLinks(normalizeProductLinks(storedContentToHtml(post.content || '')), linkCtx);
   const article = JSON.stringify({
     '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description,
     ...(image ? { image } : {}),
@@ -236,6 +251,22 @@ export function findUnrenderedSitemapPaths(distDir: string, sitemapFile: string)
   if (!fs.existsSync(f)) return [`(missing ${sitemapFile})`];
   const locs = [...fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
   return locs.filter((p) => !fs.existsSync(path.join(distDir, p === '/' ? '' : p, 'index.html')));
+}
+
+/** Indexable dist/<dir>/<slug>/index.html pages that the sitemap does not list. */
+export function findUnadvertisedIndexablePages(distDir: string, dir: string, sitemapFile: string): string[] {
+  const root = path.join(distDir, dir);
+  const f = path.join(distDir, sitemapFile);
+  if (!fs.existsSync(root) || !fs.existsSync(f)) return [];
+  const listed = new Set([...fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname));
+  const out: string[] = [];
+  for (const slug of fs.readdirSync(root)) {
+    const file = path.join(root, slug, 'index.html');
+    if (!fs.existsSync(file)) continue;
+    const robots = (fs.readFileSync(file, 'utf-8').match(/name="robots" content="([^"]*)"/) || [])[1] || '';
+    if (!/noindex/.test(robots) && !listed.has(`/${dir}/${slug}`)) out.push(`/${dir}/${slug}`);
+  }
+  return out;
 }
 
 /** Sitemap URLs whose prerendered HTML is noindex or not self-canonical (homepage shell excluded). */
@@ -389,7 +420,7 @@ function extractFaqFromHtml(html: string): Array<{ question: string; answer: str
   return faqs;
 }
 
-export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true): string {
+export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = true, linkCtx?: InternalLinkContext): string {
   const robots = indexable ? ROBOTS_INDEX : ROBOTS_NOINDEX_FOLLOW;
   const title = guide.meta_title || guide.seoTitle || guide.title;
   const description = guide.meta_description || guide.seoDescription || guide.excerpt || '';
@@ -398,7 +429,7 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
     ? (/^https?:\/\//.test(guide.featuredImage) ? guide.featuredImage : `${SITE}${guide.featuredImage}`)
     : `${SITE}/og-image.png`;
 
-  const articleContent = sanitizeStoredHtml(normalizeProductLinks(buildArticleBody(guide)), false);
+  const articleContent = sanitizeStoredHtml(canonicalizeInternalLinks(normalizeProductLinks(buildArticleBody(guide)), linkCtx), false);
 
   // Determine FAQ items for schema
   let faqItems = guide.faq || [];
@@ -566,6 +597,8 @@ export default function prerenderGuidesPlugin(): Plugin {
       }
 
       const policy = loadSeoPolicy();
+      const linkCtx = linkContextFromSitemaps(path.resolve('public'));
+      if (!linkCtx) throw new Error('[prerender-guides] FATAL sitemaps missing — cannot canonicalize internal links');
       const files = fs.readdirSync(guidesDir).filter(f => f.endsWith('.json') && f !== 'index.json');
       const staticGuides: GuideJson[] = [];
       for (const file of files) {
@@ -593,7 +626,7 @@ export default function prerenderGuidesPlugin(): Plugin {
           // Consolidation redirect sources stay SPA-only (React redirects them).
           if (guide.slug in policy.guideRedirects) continue;
           const indexable = !policy.noindexGuides.has(guide.slug);
-          const html = buildGuidePage(guide, spaHtml, indexable);
+          const html = buildGuidePage(guide, spaHtml, indexable, linkCtx);
           // Directory-index output: the host resolves /guides/<slug> to <slug>/index.html natively.
           const slugDir = path.join(distGuidesDir, guide.slug);
           fs.mkdirSync(slugDir, { recursive: true });
@@ -621,7 +654,7 @@ export default function prerenderGuidesPlugin(): Plugin {
         if (!/^[a-z0-9-]+$/.test(post.slug) || !isBlogIndexable(post.slug, policy) || merged.has(post.slug)) continue;
         const dir = path.join(distDir, 'blog', post.slug);
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, 'index.html'), buildBlogPostPage(post, spaHtml), 'utf-8');
+        fs.writeFileSync(path.join(dir, 'index.html'), buildBlogPostPage(post, spaHtml, linkCtx), 'utf-8');
         blogCount++;
       }
       console.log(`[prerender-guides] ✅ Prerendered ${blogCount} blog articles → dist/blog/<slug>/index.html`);

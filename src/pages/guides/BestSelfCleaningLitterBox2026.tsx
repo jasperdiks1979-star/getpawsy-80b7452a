@@ -504,7 +504,7 @@ export default function BestSelfCleaningLitterBox2026() {
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               ['/collections/cat-trees-and-condos', 'Best Cat Trees & Condos'],
-              ['/guides/cat-condo-vs-cat-tree-2026', 'Cat Condo vs Cat Tree — Which Is Better?'],
+              ['/guides/cat-condo-vs-cat-tower', 'Cat Condo vs Cat Tree — Which Is Better?'],
               ['/collections/cat-litter-boxes', 'All Cat Litter Box Solutions'],
               ['/guides/best-interactive-cat-toys-that-work', 'Best Interactive Cat Toys'],
               ['/collections/cats', 'Browse All Cat Products'],

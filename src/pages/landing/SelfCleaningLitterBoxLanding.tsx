@@ -395,8 +395,8 @@ export default function SelfCleaningLitterBoxLanding() {
                 { path: '/guides/how-does-self-cleaning-litter-box-work', title: 'How Do Self-Cleaning Litter Boxes Work?' },
                 { path: '/guides/self-cleaning-litter-box-pros-cons', title: 'Self-Cleaning Litter Box: Pros & Cons' },
                 { path: '/guides/litter-box-odor-control-solutions', title: 'Litter Box Odor Control Solutions' },
-                { path: '/guides/best-litter-box-for-multiple-cats', title: 'Best Litter Box for Multiple Cats' },
-                { path: '/guides/automatic-vs-manual-litter-box', title: 'Automatic vs Manual Litter Box' },
+                { path: '/guides/best-litter-boxes-multi-cat', title: 'Best Litter Box for Multiple Cats' },
+                { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Automatic vs Manual Litter Box' },
                 { path: '/guides/how-to-train-cat-to-use-automatic-litter-box', title: 'How to Train Your Cat to Use an Automatic Litter Box' },
                 { path: '/guides/is-self-cleaning-litter-box-safe', title: 'Is a Self-Cleaning Litter Box Safe?' },
               ].map((g) => (

@@ -33,6 +33,7 @@ import { GuideMoneyLinks } from '@/components/guides/GuideMoneyLinks';
 import { LitterBoxClusterLinks } from '@/components/guides/LitterBoxClusterLinks';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
+import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
 
 /** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
 const normalizeProductHref = (href: string): string =>
@@ -458,8 +459,9 @@ const GuidePage = () => {
   };
 
   const formatInline = (text: string) => {
+    // Resolve stored internal links to final canonical destinations first.
     // Bold
-    let result = text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+    let result = canonicalizeInternalLinks(text).replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
     // Markdown links [text](/guides/slug) → <a> tags
     result = result.replace(/\[([^\]]+)\]\(\/guides\/([a-z0-9-]+)\)/g, 
       '<a href="/guides/$2" class="text-primary hover:underline font-medium" data-internal-guide="true">$1</a>');

@@ -307,6 +307,18 @@ async function main() {
   // Only index entries backed by a guide file (useGuide() 404s otherwise).
   const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), [])
     .filter((g) => g && g.slug && fs.existsSync(joinRoot("public", "data", "guides", `${g.slug}.json`)));
+  // Every guide file is prerendered, so every indexable guide file is advertised
+  // (sitemap ⇔ prerender parity; redirect/noindex filtering happens below).
+  if (Array.isArray(staticGuideIndex)) {
+    const indexed = new Set(staticGuideIndex.map((g) => g.slug));
+    for (const f of fs.readdirSync(joinRoot("public", "data", "guides"))) {
+      if (!f.endsWith(".json") || f === "index.json") continue;
+      const slug = f.slice(0, -5);
+      if (indexed.has(slug)) continue;
+      const data = safeRead(joinRoot("public", "data", "guides", f), null);
+      if (data && data.slug === slug) staticGuideIndex.push({ slug, updatedAt: data.updatedAt, publishedAt: data.publishedAt });
+    }
+  }
   if (Array.isArray(staticGuideIndex)) {
     const existingSlugs = new Set(guideEntriesRaw.map(g => g.path));
     for (const g of staticGuideIndex) {

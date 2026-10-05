@@ -31,27 +31,27 @@ const INTROS: Record<ClusterId, {
     text: (name) =>
       `Your dog deserves comfort that supports their health at every life stage. This ${name.toLowerCase()} collection features products tested for quality materials, ergonomic design, and long-term durability. From orthopedic beds for senior dogs to travel carriers built for safety, each product is evaluated against real pet-owner feedback and veterinary recommendations. We prioritize items that genuinely improve your dog's daily comfort.`,
     links: [
-      { label: 'Orthopedic Dog Bed Guide', href: '/guides/orthopedic-dog-beds' },
+      { label: 'Orthopedic Dog Bed Guide', href: '/guides/best-orthopedic-dog-bed-2026' },
       { label: 'Dog Travel Safety Tips', href: '/collections/all' },
-      { label: 'Senior Dog Comfort Guide', href: '/guides/senior-dog-care' },
+      { label: 'Senior Dog Comfort Guide', href: '/guides/signs-dog-needs-joint-support' },
     ],
   },
   'cat-enrichment-furniture': {
     text: (name) =>
       `Indoor cats thrive when their environment stimulates natural behaviors like climbing, scratching, and exploring. This ${name.toLowerCase()} collection is curated to help your cat stay active, engaged, and happy — without compromising your home's aesthetics. Each product is reviewed for stability, material quality, and space efficiency. Whether you have a single kitten or a multi-cat household, you'll find options that match your setup.`,
     links: [
-      { label: 'Best Cat Trees Buying Guide', href: '/guides/best-cat-trees' },
+      { label: 'Best Cat Trees Buying Guide', href: '/guides/best-cat-trees-2026' },
       { label: 'Indoor Cat Enrichment Tips', href: '/collections/all' },
-      { label: 'Cat Scratching Solutions', href: '/guides/cat-scratching-posts' },
+      { label: 'Cat Scratching Solutions', href: '/guides/best-cat-scratching-post' },
     ],
   },
   'cat-hygiene-litter': {
     text: (name) =>
       `A clean litter setup is essential for your cat's health and your household comfort. This ${name.toLowerCase()} collection covers everything from standard litter boxes to self-cleaning systems with odor control technology. We evaluate each product based on ease of maintenance, odor management, and cat acceptance rates from real user reviews. Find the solution that fits your space and your cat's preferences.`,
     links: [
-      { label: 'Best Litter Boxes Compared', href: '/guides/best-cat-litter-boxes' },
-      { label: 'Self-Cleaning Litter Guide', href: '/guides/self-cleaning-litter-box-guide' },
-      { label: 'Litter Box Odor Control', href: '/guides/litter-box-odor-control' },
+      { label: 'Best Litter Boxes Compared', href: '/guides/best-cat-litter-box-2026' },
+      { label: 'Self-Cleaning Litter Guide', href: '/guides/best-self-cleaning-litter-box-2026' },
+      { label: 'Litter Box Odor Control', href: '/guides/litter-box-odor-control-solutions' },
     ],
   },
 };
