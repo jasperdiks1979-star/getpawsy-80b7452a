@@ -73,6 +73,190 @@ function markdownToHtml(md: string): string {
   return `<p>${html}</p>`.replace(/<p>\s*<\/p>/g, '');
 }
 
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
+
+/** Paged anon REST read; returns null on any failure so callers can fail loudly. */
+async function supaRestAll<T>(table: string, params: string): Promise<T[] | null> {
+  const out: T[] = [];
+  for (let from = 0; from < 5000; from += 500) {
+    let ok = false;
+    for (let attempt = 0; attempt < 3 && !ok; attempt++) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 20000);
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Range: `${from}-${from + 499}` },
+          signal: ctrl.signal,
+        });
+        clearTimeout(t);
+        if (!res.ok) continue;
+        const rows = (await res.json()) as T[];
+        out.push(...rows);
+        ok = true;
+        if (rows.length < 500) return out;
+      } catch { /* retry */ }
+    }
+    if (!ok) return null;
+  }
+  return out;
+}
+
+/** Strip script/style/iframe/object/embed, inline event handlers and javascript: URLs; demote H1 → H2. */
+export function sanitizeStoredHtml(html: string, demoteH1 = true): string {
+  const out = html
+    .replace(/<(script|style|iframe|object|embed|form)[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<(script|style|iframe|object|embed|form|link|meta)\b[^>]*\/?>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+  return demoteH1 ? out.replace(/<h1(\s[^>]*)?>/gi, '<h2>').replace(/<\/h1>/gi, '</h2>') : out;
+}
+
+/** Markdown or HTML stored content → HTML (headings demoted so the page keeps one H1). */
+export function storedContentToHtml(content: string): string {
+  const c = content || '';
+  if (c.trim().startsWith('<')) return sanitizeStoredHtml(c);
+  const withHeadings = escapeMdHtml(sanitizeStoredHtml(c))
+    .replace(/^#{1,2} (.+)$/gm, '\n\n<h2>$1</h2>\n\n')
+    .replace(/^#{3,6} (.+)$/gm, '\n\n<h3>$1</h3>\n\n');
+  return sanitizeStoredHtml(markdownToHtml(withHeadings).replace(/<p>\s*(<h[23]>[\s\S]*?<\/h[23]>)\s*<\/p>/g, '$1'));
+}
+function escapeMdHtml(s: string): string { return s.replace(/<(?!\/?(strong|em|a|ul|li|h2|h3)\b)/g, '&lt;'); }
+
+interface DbGuideRow {
+  slug: string; title: string; excerpt: string | null; category: string | null; keywords: string[] | null;
+  published_at: string | null; updated_at: string | null; featured_image: string | null;
+  reading_time: number | null; guide_data: Record<string, any> | null;
+}
+
+/** DB published_guides row → GuideJson, mirroring useGuide() in src/hooks/useGuides.ts. */
+export function dbGuideToJson(row: DbGuideRow): GuideJson {
+  const gd = row.guide_data || {};
+  return {
+    slug: row.slug,
+    title: gd.title || row.title,
+    excerpt: gd.excerpt || row.excerpt || undefined,
+    category: row.category || undefined,
+    keywords: row.keywords || [],
+    publishedAt: row.published_at || undefined,
+    updatedAt: row.updated_at || undefined,
+    featuredImage: row.featured_image || undefined,
+    readingTime: row.reading_time || undefined,
+    content: typeof gd.content === 'string' ? gd.content : undefined,
+    sections: gd.sections || [],
+    faq: gd.faq || [],
+    buyingCriteria: gd.buyingCriteria,
+    commonMistakes: gd.commonMistakes,
+    quickAnswer: gd.quickAnswer,
+    comparisonProducts: gd.comparisonProducts,
+    seoTitle: gd.seoTitle,
+    seoDescription: gd.seoDescription,
+  };
+}
+
+/** Static guides win over DB on overlapping slugs (useGuide() checks static first). */
+export function mergeGuideSources(staticGuides: GuideJson[], dbGuides: GuideJson[]): Map<string, GuideJson> {
+  const m = new Map<string, GuideJson>();
+  for (const g of dbGuides) if (g.slug) m.set(g.slug, g);
+  for (const g of staticGuides) if (g.slug) m.set(g.slug, g);
+  return m;
+}
+
+interface BlogRow {
+  slug: string; title: string; meta_title: string | null; meta_description: string | null; excerpt: string | null;
+  content: string | null; author_name: string | null; published_at: string | null; updated_at: string | null;
+  featured_image: string | null; category: string | null;
+}
+
+export function buildBlogPostPage(post: BlogRow, spaHtml: string): string {
+  const canonical = `${SITE}/blog/${post.slug}`;
+  const title = post.meta_title || `${post.title} | GetPawsy`;
+  const description = post.meta_description || post.excerpt || '';
+  const image = post.featured_image
+    ? (/^https?:\/\//.test(post.featured_image) ? post.featured_image : `${SITE}${post.featured_image}`)
+    : null;
+  const body = normalizeProductLinks(storedContentToHtml(post.content || ''));
+  const article = JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description,
+    ...(image ? { image } : {}),
+    datePublished: post.published_at || undefined, dateModified: post.updated_at || post.published_at || undefined,
+    author: { '@type': post.author_name ? 'Person' : 'Organization', name: post.author_name || 'GetPawsy' },
+    publisher: { '@type': 'Organization', name: 'GetPawsy', url: SITE },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical }, inLanguage: 'en-US',
+  });
+  const crumbs = JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: canonical },
+    ],
+  });
+  const { assetTags, scriptTags } = extractAssets(spaHtml);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta name="robots" content="${ROBOTS_INDEX}">
+  <meta name="googlebot" content="${ROBOTS_INDEX}">
+  <link rel="canonical" href="${canonical}">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escapeHtml(post.title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${canonical}">
+  ${image ? `<meta property="og:image" content="${escapeHtml(image)}">` : ''}
+  <meta property="og:site_name" content="GetPawsy">
+  ${assetTags}
+  <script type="application/ld+json">${article}</script>
+  <script type="application/ld+json">${crumbs}</script>
+</head>
+<body>
+  <div id="root">
+    <main>
+      <nav aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/blog">Blog</a> / ${escapeHtml(post.title)}</nav>
+      <article>
+        <h1>${escapeHtml(post.title)}</h1>
+        <p>${post.author_name ? `By ${escapeHtml(post.author_name)}` : ''}${post.published_at ? ` · <time datetime="${escapeHtml(post.published_at)}">${escapeHtml(post.published_at.slice(0, 10))}</time>` : ''}</p>
+        ${body}
+      </article>
+    </main>
+  </div>
+  ${scriptTags}
+</body>
+</html>`;
+}
+
+/** Every <loc> in a sitemap file must have dist/<path>/index.html. Returns missing paths. */
+export function findUnrenderedSitemapPaths(distDir: string, sitemapFile: string): string[] {
+  const f = path.join(distDir, sitemapFile);
+  if (!fs.existsSync(f)) return [`(missing ${sitemapFile})`];
+  const locs = [...fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  return locs.filter((p) => !fs.existsSync(path.join(distDir, p === '/' ? '' : p, 'index.html')));
+}
+
+/** Sitemap URLs whose prerendered HTML is noindex or not self-canonical (homepage shell excluded). */
+export function findNonIndexableSitemapPaths(distDir: string, sitemapFile: string): string[] {
+  const f = path.join(distDir, sitemapFile);
+  if (!fs.existsSync(f)) return [];
+  const out: string[] = [];
+  for (const m of fs.readFileSync(f, 'utf-8').matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    const url = m[1];
+    const p = new URL(url).pathname;
+    if (p === '/') continue;
+    const file = path.join(distDir, p, 'index.html');
+    if (!fs.existsSync(file)) continue;
+    const html = fs.readFileSync(file, 'utf-8');
+    const robots = (html.match(/name="robots" content="([^"]*)"/) || [])[1] || '';
+    const canon = [...html.matchAll(/<link[^>]*rel="canonical"[^>]*href="([^"]*)"/g)].map((x) => x[1]);
+    if (/noindex/.test(robots) || canon.length !== 1 || canon[0] !== url) out.push(p);
+  }
+  return out;
+}
+
 function buildArticleBody(guide: GuideJson): string {
   const rawContent = typeof guide.content === 'string' ? guide.content : '';
   // If guide has raw HTML content field, use it directly
@@ -211,10 +395,10 @@ export function buildGuidePage(guide: GuideJson, spaHtml: string, indexable = tr
   const description = guide.meta_description || guide.seoDescription || guide.excerpt || '';
   const canonical = `${SITE}/guides/${guide.slug}`;
   const ogImage = guide.featuredImage
-    ? `${SITE}${guide.featuredImage}`
+    ? (/^https?:\/\//.test(guide.featuredImage) ? guide.featuredImage : `${SITE}${guide.featuredImage}`)
     : `${SITE}/og-image.png`;
 
-  const articleContent = normalizeProductLinks(buildArticleBody(guide));
+  const articleContent = sanitizeStoredHtml(normalizeProductLinks(buildArticleBody(guide)), false);
 
   // Determine FAQ items for schema
   let faqItems = guide.faq || [];
@@ -383,37 +567,64 @@ export default function prerenderGuidesPlugin(): Plugin {
 
       const policy = loadSeoPolicy();
       const files = fs.readdirSync(guidesDir).filter(f => f.endsWith('.json') && f !== 'index.json');
-      let guideCount = 0;
-      let noindexCount = 0;
-      const hubGuides: GuideJson[] = [];
-
+      const staticGuides: GuideJson[] = [];
       for (const file of files) {
         try {
-          const raw = fs.readFileSync(path.join(guidesDir, file), 'utf-8');
-          const guide: GuideJson = JSON.parse(raw);
+          const g: GuideJson = JSON.parse(fs.readFileSync(path.join(guidesDir, file), 'utf-8'));
+          if (g?.slug) staticGuides.push(g);
+        } catch (e) {
+          console.warn(`[prerender-guides] Failed to parse ${file}:`, e);
+        }
+      }
+      const dbRows = await supaRestAll<DbGuideRow>('published_guides',
+        'select=slug,title,excerpt,category,keywords,published_at,updated_at,featured_image,reading_time,guide_data&is_published=eq.true&slug=not.is.null&order=slug.asc');
+      if (dbRows === null) throw new Error('[prerender-guides] FATAL published_guides fetch failed — sitemap guides would ship without HTML');
+      const merged = mergeGuideSources(staticGuides, dbRows.map(dbGuideToJson));
+
+      let guideCount = 0;
+      let dbOnlyCount = 0;
+      let noindexCount = 0;
+      const hubGuides: GuideJson[] = [];
+      const staticSlugs = new Set(staticGuides.map((g) => g.slug));
+
+      for (const guide of merged.values()) {
+        try {
           if (!guide.slug || !/^[a-z0-9-]+$/.test(guide.slug)) continue;
           // Consolidation redirect sources stay SPA-only (React redirects them).
           if (guide.slug in policy.guideRedirects) continue;
           const indexable = !policy.noindexGuides.has(guide.slug);
           const html = buildGuidePage(guide, spaHtml, indexable);
-          // Directory-index output: Lovable hosting resolves /guides/<slug> to
-          // <slug>/index.html natively; <slug>.html needed a _redirects rewrite
-          // the host does not apply.
+          // Directory-index output: the host resolves /guides/<slug> to <slug>/index.html natively.
           const slugDir = path.join(distGuidesDir, guide.slug);
           fs.mkdirSync(slugDir, { recursive: true });
           fs.writeFileSync(path.join(slugDir, 'index.html'), html, 'utf-8');
           const legacyFlat = path.join(distGuidesDir, `${guide.slug}.html`);
           if (fs.existsSync(legacyFlat)) fs.unlinkSync(legacyFlat);
           guideCount++;
+          if (!staticSlugs.has(guide.slug)) dbOnlyCount++;
           if (indexable) hubGuides.push(guide); else noindexCount++;
         } catch (e) {
-          console.warn(`[prerender-guides] Failed to prerender ${file}:`, e);
+          console.warn(`[prerender-guides] Failed to prerender ${guide.slug}:`, e);
         }
       }
 
       fs.writeFileSync(path.join(distGuidesDir, 'index.html'), buildGuidesHubPage(hubGuides, spaHtml), 'utf-8');
+      console.log(`[prerender-guides] ✅ Prerendered ${guideCount} guides (${dbOnlyCount} DB-only, ${noindexCount} noindex) + /guides hub (${hubGuides.length})`);
 
-      console.log(`[prerender-guides] ✅ Prerendered ${guideCount} guides (${noindexCount} noindex) + /guides hub → dist/guides/<slug>/index.html`);
+      // ── Blog articles (dist/blog/<slug>/index.html) — same filter as sitemap ──
+      const { isBlogIndexable } = await import('./scripts/seo-indexability.mjs');
+      const posts = await supaRestAll<BlogRow>('blog_posts',
+        'select=slug,title,meta_title,meta_description,excerpt,content,author_name,published_at,updated_at,featured_image,category&is_published=eq.true&is_noindexed=eq.false&slug=not.is.null&order=slug.asc');
+      if (posts === null) throw new Error('[prerender-guides] FATAL blog_posts fetch failed — sitemap blog articles would ship without HTML');
+      let blogCount = 0;
+      for (const post of posts) {
+        if (!/^[a-z0-9-]+$/.test(post.slug) || !isBlogIndexable(post.slug, policy) || merged.has(post.slug)) continue;
+        const dir = path.join(distDir, 'blog', post.slug);
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'index.html'), buildBlogPostPage(post, spaHtml), 'utf-8');
+        blogCount++;
+      }
+      console.log(`[prerender-guides] ✅ Prerendered ${blogCount} blog articles → dist/blog/<slug>/index.html`);
     },
   };
 }

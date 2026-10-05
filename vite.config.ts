@@ -7,6 +7,7 @@ import sitemapsPlugin from "./vite-plugin-sitemaps";
 import clsBuildGuard from "./vite-plugin-cls-build-guard";
 import prerenderGuidesPlugin from "./vite-plugin-prerender-guides";
 import prerenderProductsPlugin from "./vite-plugin-prerender-products";
+import seoCoveragePlugin from "./vite-plugin-seo-coverage";
 import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig(({ mode }) => ({
@@ -120,6 +121,7 @@ export default defineConfig(({ mode }) => ({
     clsBuildGuard(),
     prerenderGuidesPlugin(),
     prerenderProductsPlugin(),
+    seoCoveragePlugin(),
     mode === "production" && visualizer({
       filename: 'audits/bundle-report.html',
       gzipSize: true,

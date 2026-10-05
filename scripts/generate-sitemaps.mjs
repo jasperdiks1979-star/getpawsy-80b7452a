@@ -22,6 +22,9 @@ import {
 import {
   loadSeoPolicy,
   isProductIndexable,
+  isCrawlerExcludedProduct,
+  crawlerCollectionMembers,
+  MIN_INDEXABLE_COLLECTION_PRODUCTS,
   isGuideIndexable,
   isBlogIndexable,
   assertStrictSitemapPaths,
@@ -172,13 +175,13 @@ async function main() {
   // ── PRODUCTS (all active canonical products) ──
   let productsRaw = await fetchAllPages(
     "products_public",
-    "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+    "select=slug,name,category,description,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
   );
 
   if (!productsRaw || productsRaw.length === 0) {
     productsRaw = await fetchAllPages(
       "products",
-      "select=slug,name,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
+      "select=slug,name,category,description,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null&order=updated_at.desc"
     );
   }
   const seoPolicy = loadSeoPolicy();
@@ -194,6 +197,8 @@ async function main() {
         if (!isProductIndexable(p)) return false;
         if (!p.slug || p.slug.trim() === "" || isExcluded(`/products/${p.slug}`)) return false;
         if (isNonPetSlugOrName(p.slug, p.name)) return false;
+        // Same exclusion as the product prerender: no HTML is emitted for these.
+        if (isCrawlerExcludedProduct(p)) return false;
         // PHASE 10B: SANDBOX fixtures may never reach public/ or dist/.
         if (isSandboxFixture({ slug: p.slug, name: p.name })) return false;
         if (seen.has(p.slug)) return false;
@@ -253,6 +258,19 @@ async function main() {
       .filter((c) => c.slug && ACTIVE_COLLECTION_SLUGS.has(c.slug))
       .map((c) => ({ path: `/collections/${c.slug}`, lastmod: c.updated_at }));
     console.log(`[sitemaps] Collections (locked active): ${collections.length}`);
+    // Same membership as the collection prerender; thin collections render
+    // noindex, so they are withheld from the sitemap.
+    const listingRows = await fetchAllPages(
+      "products_public",
+      "select=slug,name,category,description,price,stock,is_active,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&seo_noindex=eq.false&slug=not.is.null"
+    );
+    if (!listingRows) throw new Error("[sitemaps] FATAL collection membership fetch failed");
+    collections = collections.filter((c) => {
+      const slug = c.path.replace("/collections/", "");
+      const n = crawlerCollectionMembers(slug, listingRows).length;
+      if (n < MIN_INDEXABLE_COLLECTION_PRODUCTS) console.log(`[sitemaps] Withholding thin collection ${slug} (${n} products)`);
+      return n >= MIN_INDEXABLE_COLLECTION_PRODUCTS;
+    });
   } else {
     // Fallback: only include locked slugs
     collections = safeRead(joinRoot("data", "collections.json"), [])
@@ -286,7 +304,9 @@ async function main() {
   }
 
   // ── Ensure static JSON guides are always in sitemap (even if not in DB yet) ──
-  const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), []);
+  // Only index entries backed by a guide file (useGuide() 404s otherwise).
+  const staticGuideIndex = safeRead(joinRoot("public", "data", "guides", "index.json"), [])
+    .filter((g) => g && g.slug && fs.existsSync(joinRoot("public", "data", "guides", `${g.slug}.json`)));
   if (Array.isArray(staticGuideIndex)) {
     const existingSlugs = new Set(guideEntriesRaw.map(g => g.path));
     for (const g of staticGuideIndex) {

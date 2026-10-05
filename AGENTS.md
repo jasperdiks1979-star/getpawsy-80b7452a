@@ -4,4 +4,4 @@
 
 - Spreadsheet exports use src/utils/excelExport.ts (JSZip); do not re-add xlsx. Why: xlsx >=0.19 is off-npm (scanner cannot parse it) and 0.18.5 carries two high advisories.
 - Homepage featured products must pass active, positive-stock, non-duplicate, merch-visible, non-blocked gates. Why: a technically purchasable PDP is not sufficient when catalog merchandising has explicitly blocked the product.
-- SEO indexability (sitemap + prerender) comes from scripts/seo-indexability.mjs, which reads the existing TS policy sources; prerendered pages are written as <route>/index.html. Why: one policy for sitemap, raw HTML and runtime, and the host only resolves directory indexes.
+- SEO indexability (sitemap + prerender) comes from scripts/seo-indexability.mjs, which reads the existing TS policy sources; prerendered pages are written as <route>/index.html and vite-plugin-seo-coverage fails the build if any sitemap URL lacks indexable, self-canonical HTML. Why: one policy for sitemap, raw HTML and runtime, and the host only resolves directory indexes.

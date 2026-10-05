@@ -3,7 +3,7 @@ import path from 'path';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
-import { isProductIndexable, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
+import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, crawlerCollectionMembers, isCrawlerListable, MIN_INDEXABLE_COLLECTION_PRODUCTS, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
 
 const SITE = 'https://getpawsy.pet';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
@@ -23,6 +23,7 @@ interface ProductRecord {
   updated_at: string | null;
   seo_noindex?: boolean | null;
   seo_tier?: string | null;
+  merch_hidden?: boolean | null;
 }
 
 function escapeHtml(value: string): string {
@@ -63,9 +64,18 @@ function isInStock(p: ProductRecord): boolean {
   return p.is_active !== false && Number(p.stock || 0) > 0;
 }
 
-/** Products a crawler-facing listing may show: in stock and indexable. */
+/** Base listing gate: in stock, indexable, priced. Merch visibility is applied per surface. */
+/**
+ * Storefront merchandising visibility (mirrors products_shop and the primary
+ * merchandised collections: merch_hidden=false). Listing-only — never changes
+ * PDP robots/indexability.
+ */
+export function isMerchVisible(p: ProductRecord): boolean {
+  return p.merch_hidden !== true;
+}
+
 export function isListable(p: ProductRecord): boolean {
-  return Boolean(p.slug) && isInStock(p) && isProductIndexable(p) && Number(p.price) > 0;
+  return isCrawlerListable(p);
 }
 
 function collectionHrefFor(category: string | null): string | null {
@@ -199,7 +209,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {
@@ -367,21 +377,10 @@ ${opts.items.map((it) => `<li><a href="${escapeHtml(it.href)}">${escapeHtml(it.l
 </html>`;
 }
 
-/** Category membership for the locked canonical collections (mirrors seo_collections filters). */
-const COLLECTION_MATCH: Record<string, (category: string) => boolean> = {
-  dogs: (c) => /\bdog/i.test(c),
-  cats: (c) => /\bcat/i.test(c),
-  'dog-beds': (c) => c.toLowerCase() === 'dog beds',
-  'cat-trees-and-condos': (c) => c.toLowerCase() === 'cat trees & condos',
-  'cat-litter-boxes': (c) => c.toLowerCase() === 'cat litter boxes',
-  'cat-toys': (c) => c.toLowerCase() === 'cat toys',
-  'cat-beds': (c) => c.toLowerCase() === 'cat beds',
-};
+const PRIMARY_MERCH = loadPrimaryMerchandisedCollections();
 
 export function collectionMembers(slug: string, products: ProductRecord[]): ProductRecord[] {
-  const match = COLLECTION_MATCH[slug];
-  if (!match) return [];
-  return products.filter((p) => isListable(p) && match(p.category || ''));
+  return crawlerCollectionMembers(slug, products, PRIMARY_MERCH);
 }
 
 async function fetchBlogPosts(): Promise<Array<{ slug: string; title: string; excerpt: string | null }>> {
@@ -392,26 +391,8 @@ async function fetchBlogPosts(): Promise<Array<{ slug: string; title: string; ex
   return rows || [];
 }
 
-/** Non-pet exclusion patterns — only cats & dogs allowed */
-const NON_PET_RE: RegExp[] = [
-  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
-  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
-  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
-  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
-  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
-  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
-  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
-];
-const POLICY_UNSAFE_RE: RegExp[] = [
-  /shock\s*(collar|training|correction)?/i, /static\s*correction/i,
-  /electric\s*(fence|collar|training)/i, /aversive\s*training/i,
-  /wireless\s*fence/i, /training\s*collar/i, /prong\s*collar/i, /choke\s*chain/i,
-];
 function isExcludedProduct(product: ProductRecord): boolean {
-  const text = `${product.name} ${product.category || ''} ${product.description || ''}`;
-  if (NON_PET_RE.some(p => p.test(text))) return true;
-  if (POLICY_UNSAFE_RE.some(p => p.test(text))) return true;
-  return false;
+  return isCrawlerExcludedProduct(product);
 }
 
 function buildNotFoundPage(spaHtml: string): string {
@@ -510,7 +491,7 @@ export default function prerenderProductsPlugin(): Plugin {
       for (const product of safeProducts) {
         const slug = product.slug || product.id;
         const related = safeProducts
-          .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category && isListable(candidate))
+          .filter((candidate) => candidate.id !== product.id && candidate.category && candidate.category === product.category && isListable(candidate) && isMerchVisible(candidate))
           .slice(0, 4);
         const html = buildProductPage(product, related, spaHtml);
         // Directory-index output: static hosting resolves /products/<slug> to
@@ -527,7 +508,7 @@ export default function prerenderProductsPlugin(): Plugin {
       updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
 
       // ── /products hub (dist/products/index.html) ──
-      const listable = safeProducts.filter(isListable).sort((a, b) => a.name.localeCompare(b.name));
+      const listable = safeProducts.filter((p) => isListable(p) && isMerchVisible(p)).sort((a, b) => a.name.localeCompare(b.name));
       fs.writeFileSync(path.join(distProductDir, 'index.html'), buildListingPage({
         spaHtml, path: '/products', title: 'All Products | GetPawsy', h1: 'All Products',
         description: 'Browse in-stock cat and dog products at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.',
@@ -551,7 +532,7 @@ export default function prerenderProductsPlugin(): Plugin {
           crumbs: [{ name: 'Home', path: '/' }, { name: 'Collections', path: '/collections/all' }, { name: cat.label, path: `/collections/${slug}` }],
           items: members.map((p) => ({ href: `/products/${p.slug}`, label: p.name, extra: `$${formatPrice(p.price)}` })),
           // Mirrors the runtime thin-collection guard (<3 products → noindex).
-          indexable: members.length >= 3,
+          indexable: members.length >= MIN_INDEXABLE_COLLECTION_PRODUCTS,
         }), 'utf-8');
         collectionCount++;
       }

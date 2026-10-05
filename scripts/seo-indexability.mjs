@@ -143,3 +143,62 @@ export function findRedirectMapProblems(map) {
   }
   return problems;
 }
+
+/** Non-pet exclusion patterns — only cats & dogs allowed */
+const NON_PET_RE = [
+  /\b(bird|parrot|parakeet|cockatiel|canary|finch|budgie|macaw|aviary|bird\s*cage)\b/i,
+  /\b(reptile|snake|lizard|gecko|iguana|turtle|tortoise|terrarium|vivarium)\b/i,
+  /\b(chicken|poultry|hen|rooster|coop|egg\s*incubator)\b/i,
+  /\b(hamster|gerbil|guinea\s*pig|chinchilla|ferret|rodent|hamster\s*cage|hamster\s*wheel)\b/i,
+  /\b(fish\s*tank|aquarium|fish\s*food|fish\s*bowl|betta|goldfish)\b/i,
+  /\b(rabbit\s*hutch|rabbit\s*cage|bunny\s*cage)\b/i,
+  /\b(sunglasses|nail\s*art|fashion\s*accessor|jewelry|bracelet|necklace|earring)\b/i,
+];
+const POLICY_UNSAFE_RE = [
+  /shock\s*(collar|training|correction)?/i, /static\s*correction/i,
+  /electric\s*(fence|collar|training)/i, /aversive\s*training/i,
+  /wireless\s*fence/i, /training\s*collar/i, /prong\s*collar/i, /choke\s*chain/i,
+];
+/** Products never prerendered nor advertised in the sitemap (non-pet / policy-unsafe). */
+export function isCrawlerExcludedProduct(p) {
+  const text = `${p?.name || ""} ${p?.category || ""} ${p?.description || ""}`;
+  return NON_PET_RE.some((r) => r.test(text)) || POLICY_UNSAFE_RE.some((r) => r.test(text));
+}
+
+/**
+ * Primary merchandised collections (merch_hidden=false only), parsed from the
+ * runtime source of truth in src/lib/collection-matching-engine.ts.
+ */
+export function loadPrimaryMerchandisedCollections(rootDir = process.cwd()) {
+  const src = fs.readFileSync(path.join(rootDir, "src/lib/collection-matching-engine.ts"), "utf-8");
+  const m = src.match(/PRIMARY_MERCHANDISED_COLLECTIONS\s*=\s*new Set\(\[([\s\S]*?)\]\)/);
+  if (!m) throw new Error("[seo-indexability] PRIMARY_MERCHANDISED_COLLECTIONS not found");
+  return new Set([...m[1].matchAll(/'([a-z0-9-]+)'/g)].map((x) => x[1]));
+}
+
+/** Category membership for the locked canonical collections (mirrors seo_collections filters). */
+export const COLLECTION_CATEGORY_MATCH = Object.freeze({
+  dogs: (c) => /\bdog/i.test(c),
+  cats: (c) => /\bcat/i.test(c),
+  "dog-beds": (c) => c.toLowerCase() === "dog beds",
+  "cat-trees-and-condos": (c) => c.toLowerCase() === "cat trees & condos",
+  "cat-litter-boxes": (c) => c.toLowerCase() === "cat litter boxes",
+  "cat-toys": (c) => c.toLowerCase() === "cat toys",
+  "cat-beds": (c) => c.toLowerCase() === "cat beds",
+});
+
+/** Runtime thin-collection guard: fewer members → noindex, never in sitemap. */
+export const MIN_INDEXABLE_COLLECTION_PRODUCTS = 3;
+
+/** Crawler listing gate: active, in stock, indexable, priced, slugged. */
+export function isCrawlerListable(p) {
+  return Boolean(p?.slug) && p.is_active !== false && Number(p.stock || 0) > 0 && isProductIndexable(p) && Number(p.price) > 0;
+}
+
+/** Members shown on a prerendered collection (primary collections: merch_hidden=false only). */
+export function crawlerCollectionMembers(slug, products, primarySet = loadPrimaryMerchandisedCollections()) {
+  const match = COLLECTION_CATEGORY_MATCH[slug];
+  if (!match) return [];
+  const primary = primarySet.has(slug);
+  return products.filter((p) => !isCrawlerExcludedProduct(p) && isCrawlerListable(p) && (!primary || p.merch_hidden !== true) && match(p.category || ""));
+}
