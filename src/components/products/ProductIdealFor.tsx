@@ -12,7 +12,7 @@ interface IdealForData {
 function getIdealFor(name: string, cat: string): IdealForData {
   const c = `${name} ${cat}`.toLowerCase();
 
-  if (/litter/i.test(c)) {
+  if (/litter/i.test(c) && /self[\s-]*clean|automatic|robot/i.test(c)) {
     return {
       audiences: [
         'Multi-cat households looking for hands-free litter management',

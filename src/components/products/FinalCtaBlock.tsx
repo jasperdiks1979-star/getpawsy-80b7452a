@@ -12,7 +12,7 @@ interface FinalCtaBlockProps {
 
 function getCtaCopy(name: string, category: string): { headline: string; subtext: string } {
   const c = `${name} ${category}`.toLowerCase();
-  if (/litter\s*box|self[\s-]*clean|automatic\s*litter/i.test(c)) {
+  if (/self[\s-]*clean|automatic\s*litter|robot/i.test(c)) {
     return { headline: 'Upgrade Your Cat\'s Hygiene Today', subtext: 'Less work. Less smell. More comfort.' };
   }
   if (/cat\s*tree|cat\s*condo|scratching/i.test(c)) {
