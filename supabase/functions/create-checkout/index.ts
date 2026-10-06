@@ -11,6 +11,7 @@ import {
   variantIsPurchasable,
 } from "../_shared/order-state.ts";
 import { computeCartQuote, toCents } from "../_shared/pricing-engine.ts";
+import { resolveCheckoutAttempt } from "../_shared/checkout-attempt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -422,7 +423,7 @@ serve(async (req) => {
 
     // N-9: stable attempt id — same cart + same quote + same destination gives
     // the same id, so a retry or a double tap cannot create a second session.
-    const attemptId = await checkoutAttemptId({
+    const baseAttemptId = await checkoutAttemptId({
       items: items
         .map((i) => `${i.id}:${i.cj_variant_id ?? ""}:${toCents(i.price)}x${i.quantity}`)
         .sort(),
@@ -431,6 +432,36 @@ serve(async (req) => {
       coupon: normalizedCode,
       total: expectedTotalCents,
     });
+
+    // A cart fingerprint identifies a retry only while its order is unpaid.
+    // Once an order is settled, the same shopper buying the same cart again is
+    // a new purchase. Walk a deterministic chain so concurrent retries of that
+    // later purchase still converge on one pending order and one Stripe key.
+    let attemptId: string;
+    let reusableOrder: { id: string; payment_status: string | null } | null;
+    try {
+      ({ attemptId, reusableOrder } = await resolveCheckoutAttempt(
+        baseAttemptId,
+        async (candidateId) => {
+          const { data, error } = await supabaseAdmin
+            .from("orders")
+            .select("id, payment_status")
+            .eq("checkout_attempt_id", candidateId)
+            .maybeSingle();
+          return { data, error };
+        },
+        checkoutAttemptId,
+      ));
+    } catch (error) {
+      console.error("[CREATE-CHECKOUT] Attempt resolution failed:", error);
+      return new Response(
+        JSON.stringify({
+          error: "checkout_unavailable",
+          message: "We couldn't start your checkout just now. Please try again in a moment.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 },
+      );
+    }
 
     // Order metadata for analytics + reconciliation
     const orderMetadata = {
@@ -686,8 +717,12 @@ serve(async (req) => {
     // the partial unique index still blocks a concurrent duplicate (23505),
     // in which case we re-read the row that won.
     const findByAttempt = () => supabaseAdmin
-      .from("orders").select("id").eq("checkout_attempt_id", attemptId).maybeSingle();
-    let { data: pendingOrder, error: orderError } = await findByAttempt();
+      .from("orders")
+      .select("id, payment_status")
+      .eq("checkout_attempt_id", attemptId)
+      .maybeSingle();
+    let pendingOrder = reusableOrder;
+    let orderError: unknown = null;
     if (!orderError && !pendingOrder) {
       const ins = await supabaseAdmin.from("orders").insert(orderRow).select("id").maybeSingle();
       pendingOrder = ins.data; orderError = ins.error;

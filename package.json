@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/verify-us-address.mjs && vite build && node scripts/verify-us-address.mjs --dist",
+    "build": "vitest run src/test/checkout-attempt-idempotency.test.ts && node scripts/verify-us-address.mjs && vite build && node scripts/verify-us-address.mjs --dist",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:checkout-idempotency": "vitest run src/test/checkout-attempt-idempotency.test.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:admin": "playwright test e2e/admin-pinterest-quality.spec.ts e2e/admin-pinterest-quality-auth.spec.ts e2e/admin-pinterest-quality-errors.spec.ts e2e/admin-pinterest-quality-retry.spec.ts e2e/admin-pinterest-quality-loading.spec.ts e2e/admin-pinterest-quality-status-mapping.spec.ts e2e/admin-pinterest-quality-success-recovery.spec.ts",
