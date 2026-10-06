@@ -68,7 +68,7 @@ export function clusterForCollection(slug: string): SeoCluster | undefined {
 
 // Mirrors APPROVED_FREE_SHIPPING_LINE + APPROVED_RETURNS_LINE (merchant-policy);
 // kept literal because this module also loads in the build config (no @ alias). Test-enforced.
-export const COLLECTION_TRUST_LINE = 'Free shipping on eligible orders $35+, 30-day returns.';
+export const COLLECTION_TRUST_LINE = 'Free US shipping on orders $35+, 30-day returns.';
 const TRUST = COLLECTION_TRUST_LINE;
 
 /**
