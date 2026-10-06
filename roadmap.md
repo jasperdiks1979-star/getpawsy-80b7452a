@@ -8,5 +8,5 @@
 - [x] Verify product-video storefront access and narrowly repair it only if needed.
 - [x] Repair AOS integration only if it remains active and its schema contract is broken.
 - [x] Run focused tests, typecheck, full suite, production build, and database health.
-- [ ] Complete one controlled publish.
-- [ ] Verify production and report evidence for every finding.
+- [x] Complete one controlled publish.
+- [x] Verify production and report evidence for every finding.
