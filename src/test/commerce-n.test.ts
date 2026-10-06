@@ -290,6 +290,15 @@ describe('N-10 session→order commit gap', () => {
     expect(src).toContain('.eq("checkout_attempt_id", attemptId)');
     expect(src).toContain('"23505"');
   });
+  it('reuses only an unpaid attempt and advances past every settled order', () => {
+    const resolver = read('supabase/functions/_shared/checkout-attempt.ts');
+    expect(src).toContain('resolveCheckoutAttempt(');
+    expect(resolver).toContain('lookup.data.payment_status === "unpaid"');
+    expect(resolver).not.toContain('payment_status === "paid"');
+    expect(resolver).toContain('settled_order_id: lookup.data.id');
+    expect(resolver).toContain('throw new Error("checkout_attempt_chain_limit")');
+    expect(src.indexOf('resolveCheckoutAttempt(')).toBeLessThan(src.indexOf('const orderMetadata ='));
+  });
   it('the webhook can rebind a paid session to its order via the attempt id', () => {
     const wh = read('supabase/functions/stripe-webhook/index.ts');
     expect(wh).toContain('checkout_attempt_id');

@@ -323,9 +323,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * The guard runs centrally, after the optimistic add, so no caller can
    * bypass it: a bare line on a multi-option product is removed again and the
    * shopper is taken to the product page to pick an exact option. Products
-   * with 0 or 1 sellable option are untouched. Failure to verify fails OPEN
-   * here (the cart's "Choose option" recovery UI and the server both still
-   * fail closed), so a network blip never deletes a valid line.
+   * with 0 or 1 sellable option are untouched. Failure to verify fails closed
+   * for a bare line: the unverified line is removed and the shopper is sent to
+   * the product page. This is deliberately conservative because an invalid
+   * multi-option line must never persist in the cart.
    */
   const enforceVariantSafety = useCallback(async (item: Omit<CartItem, 'quantity'>) => {
     if (cartLineHasVariant(item.id)) return;
@@ -343,7 +344,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const row = Array.isArray(data)
         ? (data[0] as { slug?: string | null; variants?: unknown } | undefined)
         : undefined;
-      if (error || !row) return;
+      if (error || !row) throw error ?? new Error('Option metadata unavailable');
       if (!cartLineNeedsVariantChoice(item.id, row.variants)) return;
 
 
@@ -354,7 +355,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.location.assign(url);
       }
     } catch {
-      // Fail open — cart recovery UI and the server stay authoritative.
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      showErrorToast('Choose an option to continue');
+      const url = quickAddProductUrl({ id: productId, slug: item.slug ?? null });
+      if (typeof window !== 'undefined' && window.location.pathname !== url) {
+        window.location.assign(url);
+      }
     }
   }, []);
 

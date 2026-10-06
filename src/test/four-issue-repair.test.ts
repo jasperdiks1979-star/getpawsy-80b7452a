@@ -58,9 +58,15 @@ describe('central variant-safe cart guard', () => {
 
   it('removes the malformed line and routes to the product page', () => {
     const fn = ctx.slice(ctx.indexOf('const enforceVariantSafety'), ctx.indexOf('const addItem'));
-    expect(fn).toContain('setItems(prev => prev.filter');
+    expect(fn.match(/setItems\(prev => prev\.filter/g)?.length).toBe(2);
     expect(fn).toContain('quickAddProductUrl');
     expect(fn).toContain('Choose an option to continue');
+  });
+
+  it('fails closed when option metadata cannot be verified', () => {
+    const fn = ctx.slice(ctx.indexOf('const enforceVariantSafety'), ctx.indexOf('const addItem'));
+    expect(fn).toContain("throw error ?? new Error('Option metadata unavailable')");
+    expect(fn).not.toContain('Failure to verify fails OPEN');
   });
 
   it('keeps cart and checkout recovery paths wired', () => {
@@ -117,6 +123,14 @@ describe('ARIE incident shared contract', () => {
 
 describe('AOS integrator opportunity/product-score schema contract', () => {
   const src = read('supabase/functions/aos-engine-integrator/index.ts');
+  it('reads revenue snapshots by the current daily-rollup schema and reports query failures', () => {
+    const start = src.indexOf('from("pcie_v2_revenue_snapshots")');
+    const s = src.slice(start, start + 700);
+    expect(s).toContain('snapshot_date, revenue_per_style, roas_per_family, totals, created_at');
+    expect(s).not.toContain('creative_id, revenue_cents, roas');
+    expect(s).toContain('if (error) throw error');
+    expect(s).toContain('"revenue_intelligence"');
+  });
   it('reads agd_opportunities by business_value_score, not a missing score column', () => {
     const s = src.slice(src.indexOf('from("agd_opportunities")'), src.indexOf('from("agd_opportunities")') + 220);
     expect(s).toContain('business_value_score');

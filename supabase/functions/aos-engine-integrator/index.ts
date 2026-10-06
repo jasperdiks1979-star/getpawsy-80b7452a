@@ -108,17 +108,25 @@ async function run() {
 
   // === Revenue Intelligence: latest snapshots ===
   await safe(async () => {
-    const { data } = await supabase.from("pcie_v2_revenue_snapshots")
-      .select("creative_id, revenue_cents, roas, created_at")
-      .gte("created_at", since).order("revenue_cents", { ascending: false }).limit(5);
+    // This table is a daily aggregate. Keep its JSON rollups intact instead of
+    // querying the old per-creative columns that no longer exist.
+    const { data, error } = await supabase.from("pcie_v2_revenue_snapshots")
+      .select("snapshot_date, revenue_per_style, roas_per_family, totals, created_at")
+      .gte("created_at", since).order("created_at", { ascending: false }).limit(5);
+    if (error) throw error;
     summary.revenue_intelligence = data?.length ?? 0;
     for (const r of data ?? []) {
       await publishEvent("revenue.snapshot", "revenue_intelligence",
-        { creative_id: r.creative_id, revenue_cents: r.revenue_cents, roas: r.roas },
-        "info", String(r.creative_id));
+        {
+          snapshot_date: r.snapshot_date,
+          revenue_per_style: r.revenue_per_style,
+          roas_per_family: r.roas_per_family,
+          totals: r.totals,
+        },
+        "info", String(r.snapshot_date));
     }
     if ((data ?? []).length > 0) await heartbeat("revenue_intelligence");
-  });
+  }, "revenue_intelligence");
 
   // === AGD opportunities ===
   await safe(async () => {
