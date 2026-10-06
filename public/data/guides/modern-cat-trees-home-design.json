@@ -1,18 +1,28 @@
 {
   "slug": "modern-cat-trees-home-design",
   "title": "Modern Cat Trees That Match Your Home Décor (2026) — Stylish Picks Compared & Ranked",
-  "seoTitle": "Modern Cat Trees for Home Décor (2026) — Stylish Picks Tested | Free Shipping",
+  "seoTitle": "Modern Cat Trees for Home Décor (2026) — Stylish Picks | Free Shipping",
   "seoDescription": "We compared modern cat trees designed for stylish homes. Minimalist, mid-century & Scandinavian picks that blend with your décor. Updated Feb 2026. Free US shipping.",
   "h1Override": "Modern Cat Trees That Match Your Home Décor (2026)",
-  "excerpt": "Cat trees that look like furniture, not eyesores. Modern, minimalist picks tested for style and function. Updated for 2026.",
+  "excerpt": "Cat trees that look like furniture, not eyesores. Modern, minimalist picks compared for style and function. Updated for 2026.",
   "quickAnswer": "The best modern cat tree for stylish homes is the walnut-finished minimalist tower. Its clean lines, neutral fabric platforms, and slim profile blend with mid-century and Scandinavian interiors while providing genuine enrichment with sisal-wrapped posts and multiple resting levels.",
   "category": "Cat Furniture",
-  "keywords": ["modern cat tree", "stylish cat tree", "designer cat furniture", "mid-century cat tree", "cat tree home decor", "aesthetic cat tree 2026"],
+  "keywords": [
+    "modern cat tree",
+    "stylish cat tree",
+    "designer cat furniture",
+    "mid-century cat tree",
+    "cat tree home decor",
+    "aesthetic cat tree 2026"
+  ],
   "publishedAt": "2026-02-13",
   "updatedAt": "2026-02-13",
   "featuredImage": "/images/guides/cat-tree-apartment.jpg",
   "readingTime": 9,
-  "relatedCategories": ["cat-trees-and-condos", "cat-furniture"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-furniture"
+  ],
   "trustLines": [
     "6 modern cat trees tested in real living rooms",
     "Rated for stability, enrichment & visual design",
@@ -30,7 +40,11 @@
       "name": "Walnut Minimalist Cat Tower",
       "price": "$249.99",
       "description": "Clean-line walnut-finished tower with linen-upholstered platforms and sisal posts.",
-      "advantages": ["Real walnut veneer", "Neutral linen platforms", "Slim 16\" profile"],
+      "advantages": [
+        "Real walnut veneer",
+        "Neutral linen platforms",
+        "Slim 16\" profile"
+      ],
       "link": "/products?category=cat-trees-and-condos",
       "badge": "Best Modern Design",
       "availability": "InStock"
@@ -39,7 +53,11 @@
       "name": "4.6ft Dark Gray Cat Tree Tower",
       "price": "$318.99",
       "description": "Dark gray finish blends with contemporary interiors while delivering maximum enrichment.",
-      "advantages": ["3 hiding condos", "11 scratching posts", "Modern dark colorway"],
+      "advantages": [
+        "3 hiding condos",
+        "11 scratching posts",
+        "Modern dark colorway"
+      ],
       "link": "/products/4-6-in-dark-gray-cat-tree-tower-with-wide-base-3-large-hinding-condo-11-sisal-scratching-post-sisal-",
       "badge": "Best Overall Cat Tree",
       "availability": "InStock"
@@ -48,7 +66,11 @@
       "name": "Beige Multi-Level Cat Tower",
       "price": "$94.99",
       "description": "Budget-friendly neutral beige that works in most interior palettes.",
-      "advantages": ["Under $100", "Neutral color scheme", "Light color hides pet hair"],
+      "advantages": [
+        "Under $100",
+        "Neutral color scheme",
+        "Light color hides pet hair"
+      ],
       "link": "/products/beige-multi-level-cat-tower-with-condos-hammocks-and-sisal-scratching-posts",
       "badge": "Best Budget",
       "availability": "InStock"
@@ -75,11 +97,26 @@
   "buyingCriteria": {
     "title": "Modern Cat Tree Buying Criteria",
     "criteria": [
-      { "name": "Visual Design", "description": "Match your interior style: mid-century (walnut), Scandinavian (bamboo/light wood), contemporary (dark gray/black steel), minimalist (white/capsule)." },
-      { "name": "Material Quality", "description": "Real wood veneer > laminate > wrapped particle board. Linen/woven fabric > synthetic plush. Check that finishes are non-toxic." },
-      { "name": "Enrichment Value", "description": "Style means nothing if your cat ignores it. Ensure at least 2 sisal scratching surfaces and 1 enclosed resting area." },
-      { "name": "Cleanability", "description": "Modern finishes show dirt faster. Removable washable cushions and wipeable surfaces are essential for maintaining the aesthetic." },
-      { "name": "Proportion", "description": "Modern trees should look scaled to your room. Oversized trees in small rooms look worse than traditional ones." }
+      {
+        "name": "Visual Design",
+        "description": "Match your interior style: mid-century (walnut), Scandinavian (bamboo/light wood), contemporary (dark gray/black steel), minimalist (white/capsule)."
+      },
+      {
+        "name": "Material Quality",
+        "description": "Real wood veneer > laminate > wrapped particle board. Linen/woven fabric > synthetic plush. Check that finishes are non-toxic."
+      },
+      {
+        "name": "Enrichment Value",
+        "description": "Style means nothing if your cat ignores it. Ensure at least 2 sisal scratching surfaces and 1 enclosed resting area."
+      },
+      {
+        "name": "Cleanability",
+        "description": "Modern finishes show dirt faster. Removable washable cushions and wipeable surfaces are essential for maintaining the aesthetic."
+      },
+      {
+        "name": "Proportion",
+        "description": "Modern trees should look scaled to your room. Oversized trees in small rooms look worse than traditional ones."
+      }
     ]
   },
   "prosAndCons": {
@@ -126,10 +163,25 @@
     }
   ],
   "jumpNav": [
-    { "label": "Why Modern Trees", "anchor": "section-0" },
-    { "label": "Top 6 Comparison", "anchor": "section-1" },
-    { "label": "Styling Tips", "anchor": "section-2" },
-    { "label": "Maintenance", "anchor": "section-3" },
-    { "label": "FAQs", "anchor": "faq" }
+    {
+      "label": "Why Modern Trees",
+      "anchor": "section-0"
+    },
+    {
+      "label": "Top 6 Comparison",
+      "anchor": "section-1"
+    },
+    {
+      "label": "Styling Tips",
+      "anchor": "section-2"
+    },
+    {
+      "label": "Maintenance",
+      "anchor": "section-3"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faq"
+    }
   ]
 }

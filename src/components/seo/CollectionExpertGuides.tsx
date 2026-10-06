@@ -43,7 +43,7 @@ const COLLECTION_GUIDE_MAP: Record<string, GuideLink[]> = {
   // ── Slow Feeder Dog Bowls ──
   'best-slow-feeder-dog-bowls': [
     { slug: 'slow-feeder-bowl-benefits-dogs', title: 'Why Slow Feeder Bowls Prevent Bloat in Dogs', excerpt: 'Veterinary science behind anti-gulp feeding and GDV prevention.' },
-    { slug: 'best-bowl-for-fast-eating-dog', title: 'Best Bowls for Fast-Eating Dogs – 2026 Picks', excerpt: 'Maze, puzzle, and lick mat options tested for durability and effectiveness.' },
+    { slug: 'best-bowl-for-fast-eating-dog', title: 'Best Bowls for Fast-Eating Dogs – 2026 Picks', excerpt: 'Maze, puzzle, and lick mat options compared for durability and effectiveness.' },
   ],
   // ── Cat Litter Boxes ──
   'best-cat-litter-boxes': [
@@ -52,7 +52,7 @@ const COLLECTION_GUIDE_MAP: Record<string, GuideLink[]> = {
   ],
   // ── Cat Trees & Condos ──
   'cat-trees-and-condos': [
-    { slug: 'best-cat-trees-large-cats-2026', title: 'Best Cat Trees for Large Cats – 9 Tested for Stability', excerpt: 'Weight-tested cat trees rated for 25+ lb cats with zero wobble.' },
+    { slug: 'best-cat-trees-large-cats-2026', title: 'Best Cat Trees for Large Cats – 9 Compared for Stability', excerpt: 'Weight-compared cat trees rated for 25+ lb cats with zero wobble.' },
     { slug: 'where-to-place-cat-tree-living-room', title: 'Where to Place a Cat Tree in Your Home', excerpt: 'Window vs corner placement and how it affects your cat\'s usage.' },
   ],
   // ── Dog Toys ──

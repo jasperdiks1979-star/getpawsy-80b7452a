@@ -175,7 +175,7 @@ function generateBoostActions(query: GSCQueryMetrics): BoostAction[] {
     },
     {
       type: 'title-optimization',
-      description: `Improve title tag CTR for "${q}" (add modifier: Tested, 2026, Pros & Cons)`,
+      description: `Improve title tag CTR for "${q}" (add modifier: Compared, 2026, Pros & Cons)`,
       completed: false,
     },
   ];

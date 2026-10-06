@@ -1,14 +1,23 @@
 {
   "slug": "best-portable-pet-water-bottle",
   "title": "5 Best Portable Pet Water Bottles (2026) – Leak-Proof Picks for Walks & Travel",
-  "excerpt": "Tested portable pet water bottles for walks, hikes, and travel. Leak-proof designs with built-in bowls. Best picks for dogs and cats. Updated March 2026.",
+  "excerpt": "Compared portable pet water bottles for walks, hikes, and travel. Leak-proof designs with built-in bowls. Best picks for dogs and cats. Updated March 2026.",
   "category": "Pet Travel",
-  "keywords": ["portable pet water bottle", "dog water bottle", "pet water bottle for walks", "travel water bottle for dogs", "leak proof dog water bottle"],
+  "keywords": [
+    "portable pet water bottle",
+    "dog water bottle",
+    "pet water bottle for walks",
+    "travel water bottle for dogs",
+    "leak proof dog water bottle"
+  ],
   "publishedAt": "2026-03-11",
   "updatedAt": "2026-03-13",
   "featuredImage": "/images/guides/portable-pet-water-bottle.jpg",
   "readingTime": 12,
-  "relatedCategories": ["pet-travel", "dog-bowls-feeders"],
+  "relatedCategories": [
+    "pet-travel",
+    "dog-bowls-feeders"
+  ],
   "seoTitle": "5 Best Portable Pet Water Bottles – Leak-Proof for Walks & Travel (2026)",
   "seoDescription": "Tested leak-proof pet water bottles with built-in bowls for walks, hikes, and car trips. BPA-free picks for dogs and cats. Updated March 2026.",
   "h1Override": "5 Best Portable Pet Water Bottles in 2026 (Leak-Proof & Travel Ready)",
@@ -46,7 +55,7 @@
     },
     {
       "heading": "Product Recommendations",
-      "content": "Find portable pet water solutions on GetPawsy:\n\n→ Browse [Pet Travel Accessories](/collections/pet-travel) for water bottles and bowls\n→ Read our [Pet Travel Guide](/guides/pet-travel-guide) for complete travel hydration tips\n→ See [Best Dog Car Seats](/guides/best-dog-car-seat) for road trip essentials\n→ Check [Traveling with Dogs Tips](/guides/traveling-with-dogs-tips) for outdoor adventure preparation\n→ Read our [Pet Feeding Guide](/guides/pet-feeding-guide) for home hydration solutions"
+      "content": "Find portable pet water solutions on GetPawsy:\n\n→ Browse Pet Travel Accessories for water bottles and bowls\n→ Read our [Pet Travel Guide](/guides/pet-travel-guide) for complete travel hydration tips\n→ See [Best Dog Car Seats](/guides/best-dog-car-seat) for road trip essentials\n→ Check [Traveling with Dogs Tips](/guides/traveling-with-dogs-tips) for outdoor adventure preparation\n→ Read our [Pet Feeding Guide](/guides/pet-feeding-guide) for home hydration solutions"
     }
   ],
   "faq": [
@@ -74,11 +83,26 @@
   "buyingCriteria": {
     "title": "Portable Pet Water Bottle Buying Criteria",
     "criteria": [
-      { "name": "Leak Prevention", "description": "Must have a locking mechanism — not just a friction-fit cap. Test upside down for 24 hours before trusting in a bag." },
-      { "name": "One-Hand Operation", "description": "Essential for walking with a leash in the other hand. Button-press designs beat screw-cap designs." },
-      { "name": "Material Safety", "description": "BPA-free plastic or food-grade stainless steel. Avoid bottles with strong plastic odors." },
-      { "name": "Trough Size", "description": "Wide enough for your dog's muzzle. Small dogs need 3+ inches wide, large dogs need 5+ inches." },
-      { "name": "Capacity", "description": "12–14 oz for daily walks, 20+ oz for hikes. Balance capacity against weight — an empty bottle shouldn't exceed 8 oz." }
+      {
+        "name": "Leak Prevention",
+        "description": "Must have a locking mechanism — not just a friction-fit cap. Test upside down for 24 hours before trusting in a bag."
+      },
+      {
+        "name": "One-Hand Operation",
+        "description": "Essential for walking with a leash in the other hand. Button-press designs beat screw-cap designs."
+      },
+      {
+        "name": "Material Safety",
+        "description": "BPA-free plastic or food-grade stainless steel. Avoid bottles with strong plastic odors."
+      },
+      {
+        "name": "Trough Size",
+        "description": "Wide enough for your dog's muzzle. Small dogs need 3+ inches wide, large dogs need 5+ inches."
+      },
+      {
+        "name": "Capacity",
+        "description": "12–14 oz for daily walks, 20+ oz for hikes. Balance capacity against weight — an empty bottle shouldn't exceed 8 oz."
+      }
     ]
   }
 }

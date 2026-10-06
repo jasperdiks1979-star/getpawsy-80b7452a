@@ -266,9 +266,24 @@ const GuidePage = () => {
 
   // Active SEO title from A/B test or fallback
   // Safe accessors — never crash on missing data
-  const safeFaq = guide.faq || [];
+  // Some stored guides use typed blocks ({type:'heading',text} / {type:'content',content} /
+  // {type:'faq',items}); fold them into {heading, content} so the page never crashes.
+  const typedFaq: { question: string; answer: string }[] = [];
+  const safeSections = (guide.sections || []).reduce<{ heading: string; content: string }[]>((acc, raw) => {
+    const s = raw as unknown as { heading?: string; content?: unknown; type?: string; text?: string; items?: { question?: string; q?: string; answer?: string; a?: string }[] };
+    if (s.type === 'heading' && typeof s.text === 'string') { acc.push({ heading: s.text, content: '' }); return acc; }
+    if (s.type === 'faq' && Array.isArray(s.items)) {
+      for (const it of s.items) { const q = it.question ?? it.q; const a = it.answer ?? it.a; if (q && a) typedFaq.push({ question: q, answer: a }); }
+      return acc;
+    }
+    if (typeof s.content !== 'string') return acc;
+    const last = acc[acc.length - 1];
+    if (s.type && last && !last.content) last.content = s.content;
+    else acc.push({ heading: s.heading ?? '', content: s.content });
+    return acc;
+  }, []).filter((s) => s.content.trim() !== '');
+  const safeFaq = (guide.faq && guide.faq.length ? guide.faq : typedFaq);
   const safeKeywords = guide.keywords || [];
-  const safeSections = guide.sections || [];
   const safeRelatedCategories = guide.relatedCategories || [];
 
   const activeSeoTitle = sanitizeGuideSeoTitle(getSeoTitle(guide.slug, guide.seoTitle, guide.title) || guide.title);

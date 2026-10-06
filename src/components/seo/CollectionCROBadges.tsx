@@ -10,28 +10,28 @@ interface CollectionCROBadgesProps {
 const BADGE_CONFIG: Record<string, { badges: { icon: 'shield' | 'truck' | 'award'; label: string }[] }> = {
   'cat-trees-and-condos': {
     badges: [
-      { icon: 'shield', label: 'Stability Tested' },
+      { icon: 'shield', label: 'Stability Compared' },
       { icon: 'award', label: 'Large Cat Approved' },
       { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'best-cat-litter-boxes': {
     badges: [
-      { icon: 'shield', label: 'Odor Control Tested' },
+      { icon: 'shield', label: 'Odor Control Compared' },
       { icon: 'award', label: 'Popular' },
       { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'modern-cat-trees': {
     badges: [
-      { icon: 'shield', label: 'Stability Tested' },
+      { icon: 'shield', label: 'Stability Compared' },
       { icon: 'award', label: 'Design Award' },
       { icon: 'truck', label: 'US Shipping' },
     ],
   },
   'best-cat-scratching-posts': {
     badges: [
-      { icon: 'shield', label: 'Durability Tested' },
+      { icon: 'shield', label: 'Durability Compared' },
       { icon: 'truck', label: 'US Shipping' },
     ],
   },

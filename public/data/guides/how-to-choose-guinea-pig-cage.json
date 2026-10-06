@@ -3,16 +3,21 @@
   "title": "How to Choose the Right Guinea Pig Cage",
   "excerpt": "A complete guide to selecting the perfect cage size, material, and setup for your guinea pig's health and happiness.",
   "category": "Small Pets",
-  "keywords": ["guinea pig cage", "guinea pig cages"],
+  "keywords": [
+    "guinea pig cage",
+    "guinea pig cages"
+  ],
   "publishedAt": "2025-06-15",
   "updatedAt": "2026-02-10",
   "featuredImage": "/images/guides/guinea-pig-cage.jpg",
   "readingTime": 10,
-  "relatedCategories": ["small-pet-habitats"],
+  "relatedCategories": [
+    "small-pet-habitats"
+  ],
   "sections": [
     {
       "heading": "Why Cage Size Matters for Guinea Pigs",
-      "content": "Guinea pigs are active, social animals that need ample room to move, explore, and exercise. A cage that's too small can lead to stress, obesity, and behavioral issues. The Humane Society recommends a minimum of 7.5 square feet for one guinea pig and 10.5 square feet for two.\n\nWhen evaluating cage size, consider that guinea pigs don't climb well — they need horizontal floor space rather than vertical height. A long, wide enclosure is always preferable to a tall, narrow one.\n\nIf you have multiple guinea pigs (which is recommended, as they're social creatures), you'll want to scale up accordingly. Each additional pig should add roughly 2–3 square feet of space.\n\nJust like dogs need structured [outdoor enrichment games](/guides/outdoor-dog-games-2026) beyond simple walks, guinea pigs need more than just a cage — enrichment through tunnels, hay racks, and exploration time is essential for their wellbeing."
+      "content": "Guinea pigs are active, social animals that need ample room to move, explore, and exercise. A cage that's too small can lead to stress, obesity, and behavioral issues. The Humane Society recommends a minimum of 7.5 square feet for one guinea pig and 10.5 square feet for two.\n\nWhen evaluating cage size, consider that guinea pigs don't climb well — they need horizontal floor space rather than vertical height. A long, wide enclosure is always preferable to a tall, narrow one.\n\nIf you have multiple guinea pigs (which is recommended, as they're social creatures), you'll want to scale up accordingly. Each additional pig should add roughly 2–3 square feet of space.\n\nJust like dogs need structured outdoor enrichment games beyond simple walks, guinea pigs need more than just a cage — enrichment through tunnels, hay racks, and exploration time is essential for their wellbeing."
     },
     {
       "heading": "Common Cage Materials and Their Pros and Cons",
@@ -34,12 +39,30 @@
   "buyingCriteria": {
     "title": "Key Buying Criteria for Guinea Pig Cages",
     "criteria": [
-      { "name": "Floor Space", "description": "Minimum 7.5 sq ft for one pig, 10.5 sq ft for two. More is always better." },
-      { "name": "Material Safety", "description": "Powder-coated wire, non-toxic plastics, or untreated wood only." },
-      { "name": "Ventilation", "description": "Open-top or wire-top designs prevent ammonia buildup from urine." },
-      { "name": "Ease of Cleaning", "description": "Removable base trays and smooth surfaces make weekly cleaning manageable." },
-      { "name": "Bar Spacing", "description": "No wider than 1 inch to prevent escapes and injuries." },
-      { "name": "Expandability", "description": "C&C cages allow future expansion if you add more guinea pigs." }
+      {
+        "name": "Floor Space",
+        "description": "Minimum 7.5 sq ft for one pig, 10.5 sq ft for two. More is always better."
+      },
+      {
+        "name": "Material Safety",
+        "description": "Powder-coated wire, non-toxic plastics, or untreated wood only."
+      },
+      {
+        "name": "Ventilation",
+        "description": "Open-top or wire-top designs prevent ammonia buildup from urine."
+      },
+      {
+        "name": "Ease of Cleaning",
+        "description": "Removable base trays and smooth surfaces make weekly cleaning manageable."
+      },
+      {
+        "name": "Bar Spacing",
+        "description": "No wider than 1 inch to prevent escapes and injuries."
+      },
+      {
+        "name": "Expandability",
+        "description": "C&C cages allow future expansion if you add more guinea pigs."
+      }
     ]
   },
   "prosAndCons": {

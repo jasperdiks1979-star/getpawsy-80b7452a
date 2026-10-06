@@ -1,17 +1,26 @@
 {
   "slug": "best-cat-tree-maine-coon",
   "title": "7 Best Cat Trees for Maine Coons (2026) – Extra Large & Ultra Stable Picks",
-  "excerpt": "Cat trees tested with 20+ lb Maine Coons for stability, platform size, and weight capacity. Only extra-large models that won't tip. Updated March 2026.",
+  "excerpt": "Cat trees compared with 20+ lb Maine Coons for stability, platform size, and weight capacity. Only extra-large models that won't tip. Updated March 2026.",
   "category": "Cat Furniture",
-  "keywords": ["best cat tree maine coon", "cat tree for maine coon", "extra large cat tree", "heavy duty cat tree", "cat tree 25 lb cat"],
+  "keywords": [
+    "best cat tree maine coon",
+    "cat tree for maine coon",
+    "extra large cat tree",
+    "heavy duty cat tree",
+    "cat tree 25 lb cat"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-13",
   "featuredImage": "/images/guides/cat-tree-maine-coon.jpg",
   "readingTime": 16,
-  "relatedCategories": ["cat-trees-and-condos", "cat-furniture"],
+  "relatedCategories": [
+    "cat-trees-and-condos",
+    "cat-furniture"
+  ],
   "seoTitle": "7 Best Cat Trees for Maine Coons – Extra Large & Ultra Stable (2026)",
   "seoDescription": "Tested with 20+ lb Maine Coons. Only extra-large cat trees that won't wobble or tip. Weight-rated platforms and XXL condos. Updated March 2026.",
-  "h1Override": "7 Best Cat Trees for Maine Coons in 2026 (Tested with 20+ lb Cats)",
+  "h1Override": "7 Best Cat Trees for Maine Coons in 2026 (for 20+ lb Cats)",
   "quickAnswer": "Maine Coons need cat trees rated for 25+ lbs per platform, with bases at least 24×24 inches and reinforced scratching posts at least 3.5 inches in diameter. Standard cat trees will wobble, tip, or collapse under a full-grown Maine Coon's weight.",
   "whoThisIsFor": [
     "Maine Coon owners looking for a cat tree that won't tip",
@@ -78,11 +87,26 @@
   "buyingCriteria": {
     "title": "Maine Coon Cat Tree Buying Criteria",
     "criteria": [
-      { "name": "Weight Capacity", "description": "Minimum 50 lbs total, 25+ lbs per platform. Verify manufacturer's rating — don't trust generic 'large cat' labels." },
-      { "name": "Base Size", "description": "At least 24×24 inches. Larger bases (26×26\"+) provide significantly more stability for jumping." },
-      { "name": "Post Construction", "description": "Solid wood core, not cardboard tubes. Minimum 3.5-inch diameter with natural sisal wrapping." },
-      { "name": "Platform Size", "description": "18×14 inches minimum so a Maine Coon can fully stretch out while resting." },
-      { "name": "Condo Openings", "description": "At least 9 inches wide. Standard 6–7 inch openings are too small for adult Maine Coons." }
+      {
+        "name": "Weight Capacity",
+        "description": "Minimum 50 lbs total, 25+ lbs per platform. Verify manufacturer's rating — don't trust generic 'large cat' labels."
+      },
+      {
+        "name": "Base Size",
+        "description": "At least 24×24 inches. Larger bases (26×26\"+) provide significantly more stability for jumping."
+      },
+      {
+        "name": "Post Construction",
+        "description": "Solid wood core, not cardboard tubes. Minimum 3.5-inch diameter with natural sisal wrapping."
+      },
+      {
+        "name": "Platform Size",
+        "description": "18×14 inches minimum so a Maine Coon can fully stretch out while resting."
+      },
+      {
+        "name": "Condo Openings",
+        "description": "At least 9 inches wide. Standard 6–7 inch openings are too small for adult Maine Coons."
+      }
     ]
   }
 }

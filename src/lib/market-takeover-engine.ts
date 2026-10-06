@@ -189,7 +189,7 @@ function buildClusterRoadmap(): ClusterArticle[] {
         { title: 'How to Choose a Cat Tree for Large Cats', type: 'Buying Guide', slug: 'how-to-choose-cat-tree-large-cats', kw: 'cat tree buying guide large cats', words: 1700 },
         { title: '9 Best Cat Trees for Large Cats in 2026', type: 'Best of 2026', slug: 'best-cat-trees-large-cats-2026', kw: 'best cat tree large cats 2026', words: 1900 },
         { title: 'Why Your Cat Tree Keeps Toppling (And How to Fix It)', type: 'Problem-Solution', slug: 'cat-tree-stability-fix', kw: 'cat tree keeps falling over', words: 1400 },
-        { title: 'Sisal vs Carpet Scratching Posts — Durability Tested', type: 'Comparison', slug: 'sisal-vs-carpet-cat-tree', kw: 'sisal vs carpet scratching post', words: 1300 },
+        { title: 'Sisal vs Carpet Scratching Posts — Durability Compared', type: 'Comparison', slug: 'sisal-vs-carpet-cat-tree', kw: 'sisal vs carpet scratching post', words: 1300 },
         { title: 'Best Cat Trees for Maine Coons & Ragdolls', type: 'Use-Case', slug: 'cat-trees-maine-coon-ragdoll', kw: 'cat tree for maine coon', words: 1600 },
         { title: 'Cat Tree FAQ — 12 Questions Answered by Experts', type: 'Expert FAQ', slug: 'cat-tree-faq', kw: 'cat tree faq', words: 2000 },
       ],
@@ -198,7 +198,7 @@ function buildClusterRoadmap(): ClusterArticle[] {
       niche: 'Dog Car Travel Safety',
       articles: [
         { title: 'How to Choose a Dog Car Seat — Complete Safety Guide', type: 'Buying Guide', slug: 'how-to-choose-dog-car-seat', kw: 'how to choose dog car seat', words: 1600 },
-        { title: '5 Best Crash-Tested Dog Car Seats of 2026', type: 'Best of 2026', slug: 'best-crash-tested-dog-car-seats-2026', kw: 'crash tested dog car seat 2026', words: 1800 },
+        { title: '5 Best Safety Dog Car Seats of 2026', type: 'Best of 2026', slug: 'best-crash-tested-dog-car-seats-2026', kw: 'crash tested dog car seat 2026', words: 1800 },
         { title: 'Dog Travel Anxiety? Here\'s How to Keep Them Calm', type: 'Problem-Solution', slug: 'dog-travel-anxiety-solutions', kw: 'dog travel anxiety', words: 1400 },
         { title: 'Booster Seat vs Car Hammock — Which Is Safer?', type: 'Comparison', slug: 'booster-seat-vs-car-hammock', kw: 'dog booster seat vs hammock', words: 1300 },
         { title: 'Best Dog Car Seats for Small Dogs Under 25 lbs', type: 'Use-Case', slug: 'best-car-seats-small-dogs', kw: 'dog car seat small dogs', words: 1500 },

@@ -267,7 +267,7 @@ export const ADDITIONAL_ATTACK_PAGES = [
 
   // Budget vs Premium segmentation (3)
   { type: 'budget', title: 'Best Dog Beds Under $50 (That Actually Last)', keyword: 'dog bed under 50', wordCount: 1400, collection: '/collections/dog-beds' },
-  { type: 'budget', title: 'Best Cat Trees Under $100 (Stability-Tested)', keyword: 'cat tree under 100', wordCount: 1300, collection: '/collections/cat-condos' },
+  { type: 'budget', title: 'Best Cat Trees Under $100 (Stability-Compared)', keyword: 'cat tree under 100', wordCount: 1300, collection: '/collections/cat-condos' },
   { type: 'premium', title: 'Premium Dog Beds Worth the Investment', keyword: 'premium orthopedic dog bed', wordCount: 1400, collection: '/collections/dog-beds' },
 
   // Cross-category authority (3)

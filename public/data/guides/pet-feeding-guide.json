@@ -5,12 +5,22 @@
   "seoDescription": "Complete pet feeding guide covering bowl types, automatic feeders, slow feeders, water fountains, and portion control for dogs and cats. Best picks for 2026.",
   "excerpt": "Everything about feeding equipment for dogs and cats — bowl materials, automatic feeders, slow feeders, water fountains, and portion management for health and convenience.",
   "category": "Pet Feeding",
-  "keywords": ["pet feeding guide", "best pet bowls", "automatic pet feeder", "slow feeder for dogs", "pet water fountain", "cat feeder"],
+  "keywords": [
+    "pet feeding guide",
+    "best pet bowls",
+    "automatic pet feeder",
+    "slow feeder for dogs",
+    "pet water fountain",
+    "cat feeder"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-13",
   "featuredImage": "/guides/pet-feeding-guide.webp",
   "readingTime": 16,
-  "relatedCategories": ["dog-bowls-feeders", "cat-bowls-feeders"],
+  "relatedCategories": [
+    "dog-bowls-feeders",
+    "cat-bowls-feeders"
+  ],
   "h1Override": "Pet Feeding Guide: Bowls, Automatic Feeders & Water Fountains for Dogs & Cats (2026)",
   "quickAnswer": "Use stainless steel or ceramic bowls (avoid plastic — it harbors bacteria and causes chin acne in cats). Elevated bowls benefit large dogs and senior pets. Automatic feeders are excellent for portion control and multi-pet households. Water fountains encourage hydration, especially for cats on dry food diets.",
   "whoThisIsFor": [
@@ -34,7 +44,7 @@
     },
     {
       "heading": "Slow Feeders: Solving Fast Eating Problems",
-      "content": "Fast eating is a common and potentially dangerous behavior. Dogs that eat too fast are at increased risk of bloat (gastric dilatation-volvulus), vomiting, and choking. Cats that eat fast tend to vomit frequently.\n\n**How slow feeders work:** Ridges, mazes, or puzzle patterns force the pet to work around obstacles to access food, slowing eating speed by 5-10× compared to a standard bowl.\n\n**Types of slow feeders:**\n- **Maze bowls:** Ridges and channels the pet must navigate with their tongue. Most common and effective design.\n- **Lick mats:** Flat mats with textured patterns where you spread wet food or puree. Promotes slow licking and releases calming endorphins.\n- **Puzzle feeders:** Interactive toys where the pet must solve a puzzle (flip, slide, spin) to access food. Provides mental enrichment beyond just slowing eating.\n- **Snuffle mats:** Fabric mats with hiding spots where you scatter kibble. Engages the dog's foraging instinct.\n\n**Benefits beyond eating speed:**\n- Reduces bloat risk in deep-chested breeds\n- Provides mental stimulation (equivalent to 15-20 minutes of physical exercise)\n- Reduces food-related aggression (the pet is focused on the puzzle, not guarding)\n- Extends mealtime from 30 seconds to 10-15 minutes\n\nBrowse our [slow feeder collection](/collections/slow-feeders) for all available options."
+      "content": "Fast eating is a common and potentially dangerous behavior. Dogs that eat too fast are at increased risk of bloat (gastric dilatation-volvulus), vomiting, and choking. Cats that eat fast tend to vomit frequently.\n\n**How slow feeders work:** Ridges, mazes, or puzzle patterns force the pet to work around obstacles to access food, slowing eating speed by 5-10× compared to a standard bowl.\n\n**Types of slow feeders:**\n- **Maze bowls:** Ridges and channels the pet must navigate with their tongue. Most common and effective design.\n- **Lick mats:** Flat mats with textured patterns where you spread wet food or puree. Promotes slow licking and releases calming endorphins.\n- **Puzzle feeders:** Interactive toys where the pet must solve a puzzle (flip, slide, spin) to access food. Provides mental enrichment beyond just slowing eating.\n- **Snuffle mats:** Fabric mats with hiding spots where you scatter kibble. Engages the dog's foraging instinct.\n\n**Benefits beyond eating speed:**\n- Reduces bloat risk in deep-chested breeds\n- Provides mental stimulation (equivalent to 15-20 minutes of physical exercise)\n- Reduces food-related aggression (the pet is focused on the puzzle, not guarding)\n- Extends mealtime from 30 seconds to 10-15 minutes\n\nBrowse our slow feeder collection for all available options."
     },
     {
       "heading": "Water Fountains: Why Flowing Water Matters",
@@ -42,25 +52,64 @@
     }
   ],
   "faq": [
-    { "question": "What is the best bowl material for pets?", "answer": "Stainless steel is the veterinary gold standard — it's non-porous, doesn't harbor bacteria, and is virtually indestructible. Ceramic is also excellent if lead-free glazed. Avoid plastic bowls, especially for cats (causes chin acne)." },
-    { "question": "Are elevated dog bowls better?", "answer": "Elevated bowls reduce neck strain for large dogs and senior pets. They can improve posture during eating. The relationship with bloat is debated for giant breeds — consult your vet for breed-specific advice." },
-    { "question": "How do I get my cat to drink more water?", "answer": "Use a water fountain — studies show cats drink 30-50% more from flowing water than still bowls. Also try wider bowls (cats dislike whisker fatigue from narrow bowls) and placing water away from food." },
-    { "question": "Are automatic pet feeders reliable?", "answer": "Quality automatic feeders (with battery backup and jam-proof mechanisms) are very reliable. They provide consistent portion control and are excellent for weight management. Always test for a week before relying on them during travel." },
-    { "question": "Do slow feeders actually work?", "answer": "Yes, slow feeders reduce eating speed by 5-10× and are veterinary-recommended for fast eaters. They reduce vomiting, bloat risk, and provide mental stimulation equivalent to 15-20 minutes of exercise." }
+    {
+      "question": "What is the best bowl material for pets?",
+      "answer": "Stainless steel is the veterinary gold standard — it's non-porous, doesn't harbor bacteria, and is virtually indestructible. Ceramic is also excellent if lead-free glazed. Avoid plastic bowls, especially for cats (causes chin acne)."
+    },
+    {
+      "question": "Are elevated dog bowls better?",
+      "answer": "Elevated bowls reduce neck strain for large dogs and senior pets. They can improve posture during eating. The relationship with bloat is debated for giant breeds — consult your vet for breed-specific advice."
+    },
+    {
+      "question": "How do I get my cat to drink more water?",
+      "answer": "Use a water fountain — studies show cats drink 30-50% more from flowing water than still bowls. Also try wider bowls (cats dislike whisker fatigue from narrow bowls) and placing water away from food."
+    },
+    {
+      "question": "Are automatic pet feeders reliable?",
+      "answer": "Quality automatic feeders (with battery backup and jam-proof mechanisms) are very reliable. They provide consistent portion control and are excellent for weight management. Always test for a week before relying on them during travel."
+    },
+    {
+      "question": "Do slow feeders actually work?",
+      "answer": "Yes, slow feeders reduce eating speed by 5-10× and are veterinary-recommended for fast eaters. They reduce vomiting, bloat risk, and provide mental stimulation equivalent to 15-20 minutes of exercise."
+    }
   ],
   "buyingCriteria": {
     "title": "Pet Feeding Equipment Checklist",
     "criteria": [
-      { "name": "Material Safety", "description": "Stainless steel or ceramic. Avoid plastic. Check for BPA-free and lead-free certifications." },
-      { "name": "Size Appropriateness", "description": "Bowl should be wide enough that whiskers don't touch the sides (especially for cats)." },
-      { "name": "Stability", "description": "Non-slip base or weighted design prevents tipping and sliding during enthusiastic eating." },
-      { "name": "Cleanability", "description": "Dishwasher-safe components. No hard-to-reach crevices where bacteria accumulates." }
+      {
+        "name": "Material Safety",
+        "description": "Stainless steel or ceramic. Avoid plastic. Check for BPA-free and lead-free certifications."
+      },
+      {
+        "name": "Size Appropriateness",
+        "description": "Bowl should be wide enough that whiskers don't touch the sides (especially for cats)."
+      },
+      {
+        "name": "Stability",
+        "description": "Non-slip base or weighted design prevents tipping and sliding during enthusiastic eating."
+      },
+      {
+        "name": "Cleanability",
+        "description": "Dishwasher-safe components. No hard-to-reach crevices where bacteria accumulates."
+      }
     ]
   },
   "commonMistakes": [
-    { "mistake": "Using plastic bowls for cats", "whyItMatters": "Micro-scratches in plastic harbor bacteria that cause feline chin acne — a very common and entirely preventable condition." },
-    { "mistake": "Not cleaning water bowls daily", "whyItMatters": "A biofilm of bacteria forms on standing water within 24 hours. Rinse and refill water bowls at minimum once daily." },
-    { "mistake": "Free-feeding with a gravity feeder", "whyItMatters": "Most pets will overeat when food is constantly available. Timed portion-controlled feeders prevent obesity." },
-    { "mistake": "Using narrow-diameter bowls for cats", "whyItMatters": "Narrow bowls cause whisker fatigue — uncomfortable pressure on sensitive whiskers that makes cats reluctant to eat or drink." }
+    {
+      "mistake": "Using plastic bowls for cats",
+      "whyItMatters": "Micro-scratches in plastic harbor bacteria that cause feline chin acne — a very common and entirely preventable condition."
+    },
+    {
+      "mistake": "Not cleaning water bowls daily",
+      "whyItMatters": "A biofilm of bacteria forms on standing water within 24 hours. Rinse and refill water bowls at minimum once daily."
+    },
+    {
+      "mistake": "Free-feeding with a gravity feeder",
+      "whyItMatters": "Most pets will overeat when food is constantly available. Timed portion-controlled feeders prevent obesity."
+    },
+    {
+      "mistake": "Using narrow-diameter bowls for cats",
+      "whyItMatters": "Narrow bowls cause whisker fatigue — uncomfortable pressure on sensitive whiskers that makes cats reluctant to eat or drink."
+    }
   ]
 }

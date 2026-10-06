@@ -116,7 +116,7 @@ const BlogPostPage = () => {
         .eq('category', post.category)
         .neq('slug', post.slug)
         .order('published_at', { ascending: false })
-        .limit(3);
+        .limit(9);
 
       if (error) {
         // Fallback: get any published posts except current
@@ -139,7 +139,7 @@ const BlogPostPage = () => {
           .neq('slug', post.slug)
           .neq('category', post.category)
           .order('published_at', { ascending: false })
-          .limit(3 - data.length);
+          .limit(9 - data.length);
         
         return [...data, ...(morePosts || [])];
       }
@@ -148,6 +148,11 @@ const BlogPostPage = () => {
     },
     enabled: !!post?.category && !!post?.slug,
   });
+  // Never link retired/merged or noindexed posts from the related list.
+  const visibleRelatedPosts = (relatedPosts || [])
+    .filter((p) => !getBlogRedirectTarget(p.slug) && !isBlogNoindexed(p.slug))
+    .slice(0, 3);
+
 
   // Fetch related products based on blog category
   const { data: relatedProducts } = useQuery({
@@ -548,7 +553,7 @@ const BlogPostPage = () => {
         )}
 
         {/* Related Posts */}
-        {relatedPosts && relatedPosts.length > 0 && (
+        {visibleRelatedPosts.length > 0 && (
           <div className="mt-12 pt-8 border-t">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -568,7 +573,7 @@ const BlogPostPage = () => {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {relatedPosts.map((relatedPost) => (
+              {visibleRelatedPosts.map((relatedPost) => (
                 <Link key={relatedPost.id} to={`/blog/${relatedPost.slug}`}>
                   <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow group">
                     <div className="aspect-video bg-muted relative overflow-hidden">

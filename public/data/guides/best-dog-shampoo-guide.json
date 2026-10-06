@@ -3,17 +3,23 @@
   "title": "Best Dog Shampoo (2026) – Sensitive, Oatmeal & Medicated Picks",
   "seoTitle": "Best Dog Shampoo 2026 – Sensitive & Oatmeal Picks | GetPawsy",
   "seoDescription": "Best dog shampoos for sensitive skin, itchy coats, and general grooming. Oatmeal, medicated, and natural options compared. Vet-backed picks for 2026.",
-  "excerpt": "Comparing the best dog shampoos for sensitive skin, itchy coats, and general grooming. Oatmeal, medicated, and natural formulas tested and reviewed.",
+  "excerpt": "Comparing the best dog shampoos for sensitive skin, itchy coats, and general grooming. Oatmeal, medicated, and natural formulas compared and reviewed.",
   "category": "Dog Grooming",
-  "keywords": ["best dog shampoo", "dog shampoo for itchy skin", "oatmeal dog shampoo"],
+  "keywords": [
+    "best dog shampoo",
+    "dog shampoo for itchy skin",
+    "oatmeal dog shampoo"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-12",
   "readingTime": 8,
-  "relatedCategories": ["dog-grooming-kits"],
+  "relatedCategories": [
+    "dog-grooming-kits"
+  ],
   "sections": [
     {
       "heading": "Why Dog-Specific Shampoo Matters",
-      "content": "Dogs have a different skin pH (6.5-7.5) than humans (4.5-5.5). Using human shampoo disrupts the acid mantle that protects your dog's skin, leading to:\n\n- Dry, flaky skin\n- Itching and irritation\n- Increased vulnerability to bacteria and parasites\n\nAlways use a pH-balanced, dog-specific shampoo. For the complete grooming setup, read our [dog grooming tools guide](/guides/dog-grooming-tools-guide) and browse [grooming kits](/collections/best-dog-grooming-kits)."
+      "content": "Dogs have a different skin pH (6.5-7.5) than humans (4.5-5.5). Using human shampoo disrupts the acid mantle that protects your dog's skin, leading to:\n\n- Dry, flaky skin\n- Itching and irritation\n- Increased vulnerability to bacteria and parasites\n\nAlways use a pH-balanced, dog-specific shampoo. For the complete grooming setup, read our [dog grooming tools guide](/guides/dog-grooming-tools-guide) and browse [grooming kits](/collections/dogs)."
     },
     {
       "heading": "Shampoo Types Explained",
@@ -25,8 +31,14 @@
     }
   ],
   "faq": [
-    { "question": "Can I use dish soap on my dog?", "answer": "No. Dish soap strips all natural oils and is far too harsh for dog skin. It can cause severe dryness and irritation. Use a dog-specific shampoo." },
-    { "question": "How often should I shampoo my dog?", "answer": "Most dogs only need a bath every 4-8 weeks. Over-bathing strips natural oils. Brush regularly between baths to keep the coat clean and healthy." }
+    {
+      "question": "Can I use dish soap on my dog?",
+      "answer": "No. Dish soap strips all natural oils and is far too harsh for dog skin. It can cause severe dryness and irritation. Use a dog-specific shampoo."
+    },
+    {
+      "question": "How often should I shampoo my dog?",
+      "answer": "Most dogs only need a bath every 4-8 weeks. Over-bathing strips natural oils. Brush regularly between baths to keep the coat clean and healthy."
+    }
   ],
   "featuredSnippet": "The best dog shampoo is pH-balanced (6.5-7.5) and dog-specific. For normal coats, use a gentle general-purpose formula. For itchy or dry skin, use oatmeal-based shampoo. For skin conditions, consult your vet about medicated options. Never use human shampoo on dogs."
 }

@@ -22,7 +22,7 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   'dog collars & leashes': [
     { slug: 'dog-leash-control-guide', title: 'Dog Leash Control Guide', description: 'Stop pulling & walk calmly with proven techniques' },
     { slug: 'best-dog-training-collar', title: 'Best Dog Training Collar', description: 'Vet-reviewed collar picks for obedience & recall' },
-    { slug: 'best-dog-training-leash-for-pullers', title: 'Best Training Leash', description: 'Anti-pull leashes tested for all dog sizes' },
+    { slug: 'best-dog-training-leash-for-pullers', title: 'Best Training Leash', description: 'Anti-pull leashes compared for all dog sizes' },
   ],
   'dog collars': [
     { slug: 'best-dog-training-collar', title: 'Best Dog Training Collar', description: 'Vet-reviewed collar picks ranked by safety & effectiveness' },
@@ -30,7 +30,7 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   ],
   'dog leashes': [
     { slug: 'dog-leash-control-guide', title: 'Dog Leash Control Guide', description: 'Stop pulling & walk calmly with proven techniques' },
-    { slug: 'best-dog-training-leash-for-pullers', title: 'Best Training Leash for Pullers', description: 'Anti-pull leashes tested for all dog sizes' },
+    { slug: 'best-dog-training-leash-for-pullers', title: 'Best Training Leash for Pullers', description: 'Anti-pull leashes compared for all dog sizes' },
     { slug: 'leash-training-dog-step-by-step', title: 'Leash Training Step-by-Step', description: 'Complete leash training method for any dog' },
   ],
   // Dog Travel
@@ -41,8 +41,8 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   ],
   'dog car seats': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Complete guide to safe dog travel by car and plane' },
-    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Crash-tested harness picks for every dog size' },
-    { slug: 'crash-tested-dog-car-seat-guide', title: 'Crash-Tested Car Seats', description: 'Safety-rated car seats ranked by crash test data' },
+    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Safety-focused harness picks for every dog size' },
+    { slug: 'crash-tested-dog-car-seat-guide', title: 'Safety Car Seats', description: 'Safety-rated car seats ranked by crash test data' },
   ],
   'dog carriers': [
     { slug: 'dog-travel-safety-guide', title: 'Dog Travel Safety Guide', description: 'Complete guide to safe dog travel' },
@@ -82,7 +82,7 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   // Cat Litter
   'cat litter': [
     { slug: 'cat-litter-solutions-guide', title: 'Cat Litter Solutions Guide', description: 'Best boxes, odor control & placement tips' },
-    { slug: 'best-cat-litter-box-2026', title: 'Best Cat Litter Box 2026', description: '12 tested picks for odor, size & multi-cat use' },
+    { slug: 'best-cat-litter-box-2026', title: 'Best Cat Litter Box 2026', description: '12 compared picks for odor, size & multi-cat use' },
   ],
   'cat litter boxes': [
     { slug: 'cat-litter-solutions-guide', title: 'Cat Litter Solutions Guide', description: 'Complete guide to litter boxes, odor control & setup' },
@@ -121,7 +121,7 @@ const CATEGORY_PILLAR_MAP: Record<string, PillarGuide[]> = {
   // Dog Harnesses
   'dog harnesses': [
     { slug: 'best-no-pull-dog-harness-2026', title: 'Best No-Pull Harness', description: 'Compared & Ranked for pullers — front-clip picks' },
-    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Crash-tested harness picks for safe car travel' },
+    { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide', description: 'Safety-focused harness picks for safe car travel' },
     { slug: 'front-clip-vs-back-clip-harness', title: 'Front-Clip vs Back-Clip', description: 'Which harness style works for your dog' },
   ],
   // Cat Carriers

@@ -5,12 +5,22 @@
   "seoDescription": "Complete pet travel guide for dogs and cats covering airline rules, car safety, road trip planning, anxiety management, and essential gear. Updated for 2026.",
   "excerpt": "Everything you need for stress-free pet travel — airline regulations, car safety equipment, road trip planning, anxiety management, and our recommended travel gear for dogs and cats.",
   "category": "Pet Travel",
-  "keywords": ["pet travel guide", "traveling with pets", "flying with dog", "flying with cat", "road trip with dog", "pet travel tips"],
+  "keywords": [
+    "pet travel guide",
+    "traveling with pets",
+    "flying with dog",
+    "flying with cat",
+    "road trip with dog",
+    "pet travel tips"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-13",
   "featuredImage": "/guides/pet-travel-guide.webp",
   "readingTime": 22,
-  "relatedCategories": ["dog-carriers", "cat-carriers"],
+  "relatedCategories": [
+    "dog-carriers",
+    "cat-carriers"
+  ],
   "h1Override": "Pet Travel Guide: How to Fly, Drive & Road Trip With Dogs & Cats (2026)",
   "quickAnswer": "For airline travel, book your pet fare early, use an airline-approved carrier, and carry health certificates issued within 10 days of travel. For car travel, use a crash-tested carrier or harness restrained by a seatbelt. For road trips, stop every 2 hours for water and bathroom breaks.",
   "whoThisIsFor": [
@@ -30,7 +40,7 @@
     },
     {
       "heading": "Driving With Pets: Car Safety & Road Trip Essentials",
-      "content": "Car travel is more common and generally less stressful than flying, but it comes with its own safety challenges.\n\n**Restraint options (from most to least safe):**\n1. Crash-tested crate in the cargo area or secured on the back seat\n2. Crash-tested car seat (for small dogs, elevated for visibility)\n3. Crash-tested harness attached to the seatbelt system\n4. Pet barrier separating cargo area from passenger compartment\n5. Unrestrained (NOT recommended — dangerous for pet and passengers)\n\n**Road trip schedule:**\n- Stop every 2 hours for water, bathroom, and a 10-minute stretch\n- Never leave a pet in a parked car (interior temperatures can reach 120°F in 10 minutes)\n- Carry at least 1 gallon of fresh water per pet per day of travel\n- Plan pet-friendly gas stations and rest stops in advance\n\n**Car sickness management:**\n- Face the pet forward (reduces vestibular conflict)\n- Keep the car cool with mild airflow\n- No food for 3-4 hours before departure\n- Start with short trips (10 minutes) and gradually increase\n- Ginger treats or vet-prescribed meclizine for persistent nausea\n\nFor car-specific equipment, see [best dog car seat](/guides/best-dog-car-seat), [dog car seat safety guide](/guides/crash-tested-dog-car-seat-guide), and [dog car harness guide](/guides/dog-car-harness-guide)."
+      "content": "Car travel is more common and generally less stressful than flying, but it comes with its own safety challenges.\n\n**Restraint options (from most to least safe):**\n1. Crash-tested crate in the cargo area or secured on the back seat\n2. Crash-tested car seat (for small dogs, elevated for visibility)\n3. Crash-tested harness attached to the seatbelt system\n4. Pet barrier separating cargo area from passenger compartment\n5. Unrestrained (NOT recommended — dangerous for pet and passengers)\n\n**Road trip schedule:**\n- Stop every 2 hours for water, bathroom, and a 10-minute stretch\n- Never leave a pet in a parked car (interior temperatures can reach 120°F in 10 minutes)\n- Carry at least 1 gallon of fresh water per pet per day of travel\n- Plan pet-friendly gas stations and rest stops in advance\n\n**Car sickness management:**\n- Face the pet forward (reduces vestibular conflict)\n- Keep the car cool with mild airflow\n- No food for 3-4 hours before departure\n- Start with short trips (10 minutes) and gradually increase\n- Ginger treats or vet-prescribed meclizine for persistent nausea\n\nFor car-specific equipment, see [best dog car seat](/guides/best-dog-car-seat), [dog car seat safety guide](/guides/safest-dog-car-seat-for-travel), and [dog car harness guide](/guides/dog-car-harness-guide)."
     },
     {
       "heading": "Managing Travel Anxiety in Pets",
@@ -38,29 +48,68 @@
     },
     {
       "heading": "Pet Travel Gear Checklist",
-      "content": "**Essential gear for any trip:**\n- Airline-approved or crash-tested carrier/crate\n- Collar with ID tag + microchip (ensure registration is current)\n- Leash and harness\n- Health certificates and vaccination records\n- Medications (at least 7 extra days' supply)\n- Portable water bowl and bottled water\n- Food (pre-portioned for the trip) + treats\n- Waste bags and paper towels\n- Familiar blanket or bedding from home\n- First aid kit (gauze, styptic powder, tweezers, hydrogen peroxide)\n\n**Nice-to-have extras:**\n- Portable litter box + litter (for cats)\n- Collapsible exercise pen (for rest stops and hotel rooms)\n- GPS pet tracker (in case of escape)\n- Pet-safe sunscreen (for dogs with light-colored noses/ears)\n- Cooling mat (for hot weather travel)\n\nFor a printable version, see our [pet travel checklist](/guides/pet-travel-checklist).\n\nBrowse our [pet travel collection](/collections/dog-carriers) and [cat carriers](/collections/cat-carriers) for all recommended gear."
+      "content": "**Essential gear for any trip:**\n- Airline-approved or crash-tested carrier/crate\n- Collar with ID tag + microchip (ensure registration is current)\n- Leash and harness\n- Health certificates and vaccination records\n- Medications (at least 7 extra days' supply)\n- Portable water bowl and bottled water\n- Food (pre-portioned for the trip) + treats\n- Waste bags and paper towels\n- Familiar blanket or bedding from home\n- First aid kit (gauze, styptic powder, tweezers, hydrogen peroxide)\n\n**Nice-to-have extras:**\n- Portable litter box + litter (for cats)\n- Collapsible exercise pen (for rest stops and hotel rooms)\n- GPS pet tracker (in case of escape)\n- Pet-safe sunscreen (for dogs with light-colored noses/ears)\n- Cooling mat (for hot weather travel)\n\nFor a printable version, see our [pet travel checklist](/guides/pet-travel-checklist).\n\nBrowse our [pet travel collection](/collections/dogs) and [cat carriers](/collections/cats) for all recommended gear."
     }
   ],
   "faq": [
-    { "question": "Can I fly with my dog in the cabin?", "answer": "Yes, most US airlines allow dogs under 20 lbs (including carrier) in the cabin for $95-200 per flight. The carrier must fit under the seat in front of you. Book the pet fare early — airlines limit pets per flight." },
-    { "question": "What documents do I need to fly with a pet?", "answer": "For domestic US flights, you need a health certificate issued by a vet within 10 days of travel and proof of current rabies vaccination. International flights require USDA-endorsed health certificates and destination-specific import permits." },
-    { "question": "Can I sedate my pet for travel?", "answer": "Only under veterinary guidance. Sedation at altitude can cause respiratory and cardiovascular problems. Most vets recommend gabapentin (cats) or trazodone (dogs) for mild anxiety management rather than heavy sedation." },
-    { "question": "How long can a dog be in a car?", "answer": "Dogs can travel for extended periods if you stop every 2 hours for water, bathroom breaks, and 10-15 minutes of stretching. Most dogs tolerate 6-8 hour driving days well with proper breaks." },
-    { "question": "Is it safe to leave a pet in a car?", "answer": "Never leave a pet in a parked car, even briefly. Interior temperatures can reach 120°F in 10 minutes on a 70°F day. This is a leading cause of heat stroke death in pets and is illegal in many states." }
+    {
+      "question": "Can I fly with my dog in the cabin?",
+      "answer": "Yes, most US airlines allow dogs under 20 lbs (including carrier) in the cabin for $95-200 per flight. The carrier must fit under the seat in front of you. Book the pet fare early — airlines limit pets per flight."
+    },
+    {
+      "question": "What documents do I need to fly with a pet?",
+      "answer": "For domestic US flights, you need a health certificate issued by a vet within 10 days of travel and proof of current rabies vaccination. International flights require USDA-endorsed health certificates and destination-specific import permits."
+    },
+    {
+      "question": "Can I sedate my pet for travel?",
+      "answer": "Only under veterinary guidance. Sedation at altitude can cause respiratory and cardiovascular problems. Most vets recommend gabapentin (cats) or trazodone (dogs) for mild anxiety management rather than heavy sedation."
+    },
+    {
+      "question": "How long can a dog be in a car?",
+      "answer": "Dogs can travel for extended periods if you stop every 2 hours for water, bathroom breaks, and 10-15 minutes of stretching. Most dogs tolerate 6-8 hour driving days well with proper breaks."
+    },
+    {
+      "question": "Is it safe to leave a pet in a car?",
+      "answer": "Never leave a pet in a parked car, even briefly. Interior temperatures can reach 120°F in 10 minutes on a 70°F day. This is a leading cause of heat stroke death in pets and is illegal in many states."
+    }
   ],
   "buyingCriteria": {
     "title": "Pet Travel Gear Checklist",
     "criteria": [
-      { "name": "Carrier Compliance", "description": "Must meet airline dimensions for cabin OR be crash-tested for car travel." },
-      { "name": "Documentation", "description": "Health certificate, vaccination records, and microchip registration." },
-      { "name": "Comfort", "description": "Familiar bedding, water access, and proper ventilation." },
-      { "name": "Safety", "description": "Secure restraint in vehicles, escape-proof closures, and visible ID tags." }
+      {
+        "name": "Carrier Compliance",
+        "description": "Must meet airline dimensions for cabin OR be safety-focused for car travel."
+      },
+      {
+        "name": "Documentation",
+        "description": "Health certificate, vaccination records, and microchip registration."
+      },
+      {
+        "name": "Comfort",
+        "description": "Familiar bedding, water access, and proper ventilation."
+      },
+      {
+        "name": "Safety",
+        "description": "Secure restraint in vehicles, escape-proof closures, and visible ID tags."
+      }
     ]
   },
   "commonMistakes": [
-    { "mistake": "Not checking airline pet policies before booking", "whyItMatters": "Policies change frequently. Arriving at the gate with the wrong carrier size means your pet doesn't fly." },
-    { "mistake": "Skipping carrier conditioning", "whyItMatters": "A pet who has never been in a carrier will panic during travel. 2-4 weeks of gradual conditioning prevents this." },
-    { "mistake": "Leaving pets in parked cars", "whyItMatters": "Even on mild days, car interiors heat rapidly. This is the leading cause of preventable pet heat stroke deaths." },
-    { "mistake": "Sedating without vet guidance", "whyItMatters": "Incorrect sedation dosing or using the wrong medication can cause respiratory failure, especially at altitude." }
+    {
+      "mistake": "Not checking airline pet policies before booking",
+      "whyItMatters": "Policies change frequently. Arriving at the gate with the wrong carrier size means your pet doesn't fly."
+    },
+    {
+      "mistake": "Skipping carrier conditioning",
+      "whyItMatters": "A pet who has never been in a carrier will panic during travel. 2-4 weeks of gradual conditioning prevents this."
+    },
+    {
+      "mistake": "Leaving pets in parked cars",
+      "whyItMatters": "Even on mild days, car interiors heat rapidly. This is the leading cause of preventable pet heat stroke deaths."
+    },
+    {
+      "mistake": "Sedating without vet guidance",
+      "whyItMatters": "Incorrect sedation dosing or using the wrong medication can cause respiratory failure, especially at altitude."
+    }
   ]
 }

@@ -3,8 +3,12 @@
   "title": "Best Orthopedic Dog Bed (2026) – Comfort-focused Joint Support Compared & Ranked",
   "seoTitle": "Best Orthopedic Dog Bed (2026) – Comfort-focused Joint Support Compared & Ranked | Free US Shipping",
   "seoDescription": "Popular orthopedic dog beds compared by foam density, thickness & durability. Best picks for senior & large dogs with arthritis. Updated for 2026. Free shipping.",
-  "h1Override": "Best Orthopedic Dog Beds of 2026 – Comfort-focused & Tested",
-  "trustLines": ["Memory foam density ratings compared", "Popular for arthritis & hip dysplasia", "Free US shipping on all picks"],
+  "h1Override": "Best Orthopedic Dog Beds of 2026 – Comfort-focused &",
+  "trustLines": [
+    "Memory foam density ratings compared",
+    "Popular for arthritis & hip dysplasia",
+    "Free US shipping on all picks"
+  ],
   "excerpt": "Memory foam dog beds compared by density, thickness & durability for senior & large dogs with arthritis. Popular picks. Updated for 2026.",
   "quickAnswer": "The best orthopedic dog bed uses at least 4 inches of high-density memory foam (1.8+ lb/ft³) with a waterproof liner and washable cover. For large breeds, go 5-6 inches thick. Foam density matters more than thickness for lasting joint support.",
   "whoThisIsFor": [
@@ -15,21 +19,51 @@
     "Dog owners who want lasting orthopedic support"
   ],
   "jumpNav": [
-    { "label": "Best Overall", "anchor": "best-overall-orthopedic-dog-bed" },
-    { "label": "Foam Guide", "anchor": "memory-foam-thickness-guide-by-dog-weight" },
-    { "label": "Size Chart", "anchor": "how-to-choose-the-right-size" },
-    { "label": "Large Breeds", "anchor": "best-for-large-and-giant-breeds" },
-    { "label": "Senior Dogs", "anchor": "best-for-senior-dogs-with-arthritis" },
-    { "label": "Buying Guide", "anchor": "what-makes-a-good-orthopedic-dog-bed" },
-    { "label": "FAQ", "anchor": "frequently-asked-questions" }
+    {
+      "label": "Best Overall",
+      "anchor": "best-overall-orthopedic-dog-bed"
+    },
+    {
+      "label": "Foam Guide",
+      "anchor": "memory-foam-thickness-guide-by-dog-weight"
+    },
+    {
+      "label": "Size Chart",
+      "anchor": "how-to-choose-the-right-size"
+    },
+    {
+      "label": "Large Breeds",
+      "anchor": "best-for-large-and-giant-breeds"
+    },
+    {
+      "label": "Senior Dogs",
+      "anchor": "best-for-senior-dogs-with-arthritis"
+    },
+    {
+      "label": "Buying Guide",
+      "anchor": "what-makes-a-good-orthopedic-dog-bed"
+    },
+    {
+      "label": "FAQ",
+      "anchor": "frequently-asked-questions"
+    }
   ],
   "category": "Dog Beds",
-  "keywords": ["orthopedic dog bed 2026", "memory foam dog bed", "dog bed for arthritis", "senior dog bed", "joint support dog bed", "large dog bed orthopedic"],
+  "keywords": [
+    "orthopedic dog bed 2026",
+    "memory foam dog bed",
+    "dog bed for arthritis",
+    "senior dog bed",
+    "joint support dog bed",
+    "large dog bed orthopedic"
+  ],
   "publishedAt": "2026-02-12",
   "updatedAt": "2026-02-12",
   "featuredImage": "/images/guides/best-orthopedic-dog-bed-2026.jpg",
   "readingTime": 14,
-  "relatedCategories": ["pet-beds"],
+  "relatedCategories": [
+    "pet-beds"
+  ],
   "featuredSnippet": "The best orthopedic dog bed uses at least 4 inches of high-density memory foam rated at 1.8 lb/ft³ or higher, with a waterproof inner liner and a machine-washable cover. For large breeds over 60 lbs, choose 5–6 inches of foam with a supportive base layer. Gel-infused foam adds cooling for dogs with swollen joints from arthritis.",
   "sections": [
     {
@@ -72,12 +106,30 @@
   "buyingCriteria": {
     "title": "Orthopedic Dog Bed Buying Criteria",
     "criteria": [
-      { "name": "Foam Density", "description": "The most important spec. 1.8+ lb/ft³ for lasting support. Low-density foam loses its benefit within weeks." },
-      { "name": "Foam Thickness", "description": "Match to dog weight: 3\" for small, 4\" for medium, 4-5\" for large, 5-6\" for giant breeds." },
-      { "name": "Waterproof Liner", "description": "Between cover and foam, prevents odor and bacteria from accidents or drool penetrating the foam." },
-      { "name": "Cover Washability", "description": "Must be removable and machine-washable. Air dry to preserve waterproof liner integrity." },
-      { "name": "Non-Slip Base", "description": "Rubber-dot or textured bottom prevents sliding. Critical for senior dogs on hard floors." },
-      { "name": "Size Fit", "description": "Measure nose to tail while lying down, add 6-8\". The bed should allow full stretch-out or natural curl." }
+      {
+        "name": "Foam Density",
+        "description": "The most important spec. 1.8+ lb/ft³ for lasting support. Low-density foam loses its benefit within weeks."
+      },
+      {
+        "name": "Foam Thickness",
+        "description": "Match to dog weight: 3\" for small, 4\" for medium, 4-5\" for large, 5-6\" for giant breeds."
+      },
+      {
+        "name": "Waterproof Liner",
+        "description": "Between cover and foam, prevents odor and bacteria from accidents or drool penetrating the foam."
+      },
+      {
+        "name": "Cover Washability",
+        "description": "Must be removable and machine-washable. Air dry to preserve waterproof liner integrity."
+      },
+      {
+        "name": "Non-Slip Base",
+        "description": "Rubber-dot or textured bottom prevents sliding. Critical for senior dogs on hard floors."
+      },
+      {
+        "name": "Size Fit",
+        "description": "Measure nose to tail while lying down, add 6-8\". The bed should allow full stretch-out or natural curl."
+      }
     ]
   },
   "prosAndCons": {

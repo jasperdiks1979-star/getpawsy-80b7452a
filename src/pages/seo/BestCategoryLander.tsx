@@ -154,7 +154,7 @@ export const BEST_LANDERS: Record<string, BestLanderConfig> = {
     slug: 'best-dog-toys',
     category: 'Dog Toys',
     h1: 'Best Dog Toys (2026)',
-    title: 'Best Dog Toys 2026 — Tested Picks, Fast US Shipping | GetPawsy',
+    title: 'Best Dog Toys 2026 — Compared Picks, Fast US Shipping | GetPawsy',
     description: 'Our top-rated dog toys for 2026, ranked by shipping speed, stock, and customer fit. Fast US shipping, secure checkout, 30-day returns.',
     intro: 'A curated shortlist of the most reliable dog toys in our catalog — chosen for durability, safety and how fast we can get them on your doorstep.',
     collectionHref: '/collections/dog-toys',

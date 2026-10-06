@@ -302,7 +302,7 @@ export function detectTitleTestCandidates(candidates: BoostCandidate[], clusterA
         },
         {
           id: `${c.slug}-list`,
-          title: `Top 7 ${kw} (Tested & Reviewed 2026)`,
+          title: `Top 7 ${kw} (Reviewed 2026)`,
           type: 'list-number',
           impressions: 0, clicks: 0, ctr: 0,
         },

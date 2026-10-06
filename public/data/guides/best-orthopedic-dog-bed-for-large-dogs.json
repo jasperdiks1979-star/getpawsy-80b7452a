@@ -11,14 +11,28 @@
   "updatedAt": "2026-02-21",
   "readingTime": 9,
   "featuredImage": "/og-image.png",
-  "keywords": ["orthopedic dog bed large dogs", "best orthopedic dog bed", "memory foam dog bed", "dog bed for arthritis", "large breed dog bed", "joint support dog bed"],
-  "relatedCategories": ["dog-beds", "orthopedic-dog-beds"],
+  "keywords": [
+    "orthopedic dog bed large dogs",
+    "best orthopedic dog bed",
+    "memory foam dog bed",
+    "dog bed for arthritis",
+    "large breed dog bed",
+    "joint support dog bed"
+  ],
+  "relatedCategories": [
+    "dog-beds",
+    "orthopedic-dog-beds"
+  ],
   "relatedProducts": [
     "memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner",
     "removable-and-washable-extra-thick-all-season-dog-sofa-bed-with-a-plush-sleeping-mat",
     "plush-dog-bed-sofa-pet-mat-for-warmth-in-fall-and-winter"
   ],
-  "relatedGuides": ["do-orthopedic-dog-beds-help-arthritis", "memory-foam-vs-egg-crate-foam-dog-bed", "how-thick-should-a-dog-bed-be"],
+  "relatedGuides": [
+    "do-orthopedic-dog-beds-help-arthritis",
+    "memory-foam-vs-egg-crate-foam-dog-bed",
+    "how-thick-should-a-dog-bed-be"
+  ],
   "sections": [
     {
       "type": "intro",
@@ -40,7 +54,7 @@
     },
     {
       "type": "content",
-      "content": "<p>After testing, our top recommendation is the <a href='/products/memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner'>Memory Foam Pet Bed with Washable Cover</a>. It checks every box: high-density foam, waterproof liner, non-slip base, and a removable cover that survives heavy washing.</p><p>At $69.49 (regularly $84.99), it's also the best value in our test. The foam held its shape after 60 days of daily use by a 75-lb Lab mix — no sagging, no bottoming out.</p><p>Looking for more options? Browse our full <a href='/products?category=Dog%20Beds'>orthopedic dog bed collection</a> or read our <a href='/guides/do-orthopedic-dog-beds-help-arthritis'>guide on how orthopedic beds help arthritis</a>.</p>"
+      "content": "<p>After testing, our top recommendation is the <a href='/products/memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner'>Memory Foam Pet Bed with Washable Cover</a>. It checks every box: high-density foam, waterproof liner, non-slip base, and a removable cover that survives heavy washing.</p><p>At $69.49 (regularly $84.99), it's also the best value in our test. The foam held its shape after 60 days of daily use by a 75-lb Lab mix — no sagging, no bottoming out.</p><p>Looking for more options? Browse our full <a href='/products?category=Dog%20Beds'>orthopedic dog bed collection</a> or read our <a href='/guides/best-orthopedic-dog-bed-2026'>guide on how orthopedic beds help arthritis</a>.</p>"
     },
     {
       "type": "heading",

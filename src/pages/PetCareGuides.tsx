@@ -59,14 +59,14 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     cornerstoneGuide: {
       slug: 'dog-travel-safety-guide',
       title: 'Dog Travel Safety Guide (2026) – Car Seats, Harnesses & Tips',
-      excerpt: 'Complete guide to safe dog travel by car and plane — crash-tested car seats, safety harnesses & expert tips.',
+      excerpt: 'Complete guide to safe dog travel by car and plane — safety-focused car seats, safety harnesses & expert tips.',
     },
     clusterGuides: [
       { slug: 'best-dog-car-seat', title: 'Best Dog Car Seats' },
       { slug: 'traveling-with-dogs-tips', title: 'Traveling With Dogs Tips' },
       { slug: 'dog-travel-safety-equipment-guide', title: 'Dog Travel Safety Equipment' },
       { slug: 'dog-car-harness-guide', title: 'Dog Car Harness Guide' },
-      { slug: 'crash-tested-dog-car-seat-guide', title: 'Crash-Tested Dog Car Seat Guide' },
+      { slug: 'crash-tested-dog-car-seat-guide', title: 'Safety Dog Car Seat Guide' },
       { slug: 'dog-booster-seat-vs-car-hammock', title: 'Booster Seat vs Car Hammock' },
     ],
     collectionLink: { href: '/collections/dogs', label: 'Shop Dog Products' },
@@ -142,7 +142,7 @@ const TOPIC_CLUSTERS: TopicCluster[] = [
     cornerstoneGuide: {
       slug: 'best-cat-trees-small-apartments',
       title: 'Best Cat Trees for Small Apartments (2026) – Space-Saving Picks',
-      excerpt: '7 compact cat trees tested in apartments under 600 sq ft. Space-saving picks for indoor cats.',
+      excerpt: '7 compact cat trees compared in apartments under 600 sq ft. Space-saving picks for indoor cats.',
     },
     clusterGuides: [
       { slug: 'best-cat-trees-2026', title: 'Best Cat Trees 2026' },
@@ -297,7 +297,7 @@ const PetCareGuides = () => {
           {[
             { icon: Shield, label: 'Vet-Reviewed Content', sub: 'Every guide fact-checked' },
             { icon: Award, label: `${totalGuides}+ Expert Guides`, sub: 'Updated for 2026' },
-            { icon: CheckCircle, label: 'Products Tested', sub: 'Hands-on evaluations' },
+            { icon: CheckCircle, label: 'Products Compared', sub: 'Hands-on evaluations' },
           ].map(({ icon: Icon, label, sub }) => (
             <div key={label} className="flex items-center gap-3 rounded-xl border border-border/50 bg-card p-3 pr-5">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

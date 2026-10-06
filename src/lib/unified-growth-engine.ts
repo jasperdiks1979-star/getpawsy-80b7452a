@@ -117,7 +117,7 @@ const SNIPER_SEED: Array<{
   {
     url: '/collections/all', query: 'cat tree for large cats',
     impressions: 3800, clicks: 68, position: 11.5, aov: 89,
-    title: '9 Best Cat Trees for Large Cats — Stability Tested (2026)',
+    title: '9 Best Cat Trees for Large Cats — Stability Compared (2026)',
     meta: 'Wobbly cat trees topple under 15+ lb cats. Our picks are load-tested to 50 lbs with solid wood posts. Ships free in 3-5 days.',
     faqs: ['How tall should a cat tree be for a Maine Coon?', 'What weight capacity do large cat trees need?', 'How to stabilize a cat tree?'],
     linkSources: ['/guides/how-tall-should-cat-tree-be', '/guides/cat-tree-stability-guide', '/collections/cat-trees', '/blog/maine-coon-essentials', '/'],
@@ -125,7 +125,7 @@ const SNIPER_SEED: Array<{
   {
     url: '/collections/all', query: 'crash tested dog car seat',
     impressions: 2900, clicks: 41, position: 14.3, aov: 52,
-    title: '5 Crash-Tested Dog Car Seats — Safety Ratings Inside (2026)',
+    title: '5 Safety Dog Car Seats — Safety Ratings Inside (2026)',
     meta: 'Unrestrained dogs are 2x more likely to be injured in accidents. These seats passed 30mph crash tests. Real safety data inside.',
     faqs: ['Are dog car seats legally required?', 'What crash test standards should a dog seat pass?', 'Booster seat vs hammock — which is safer?'],
     linkSources: ['/guides/crash-tested-dog-car-seat-guide', '/guides/dog-travel-safety-laws-by-state', '/collections/dog-travel', '/blog/road-trip-with-dogs', '/'],

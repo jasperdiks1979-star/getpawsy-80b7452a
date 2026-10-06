@@ -1,27 +1,58 @@
 {
   "slug": "best-cat-scratching-post",
-  "title": "Best Cat Scratching Posts (2026) – Tested for Durability & Cat Approval",
+  "title": "Best Cat Scratching Posts (2026) – Picks for Durability & Cat Approval",
   "seoTitle": "Best Cat Scratching Posts (2026) – Compared & Ranked",
   "seoDescription": "We compared cat scratching posts for durability, stability, and cat preference. Sisal, cardboard, and carpet options compared. Updated 2026.",
-  "h1Override": "Best Cat Scratching Posts – Tested for Durability & Cat Approval",
-  "trustLines": ["10 scratching posts tested with real cats", "Ranked by durability, stability, and cat preference", "Updated for 2026"],
+  "h1Override": "Best Cat Scratching Posts – Picks for Durability & Cat Approval",
+  "trustLines": [
+    "10 scratching posts tested with real cats",
+    "Ranked by durability, stability, and cat preference",
+    "Updated for 2026"
+  ],
   "jumpNav": [
-    { "label": "Why Cats Need to Scratch", "anchor": "section-0" },
-    { "label": "Best Materials", "anchor": "section-1" },
-    { "label": "Buying Guide", "anchor": "section-2" },
-    { "label": "Placement Tips", "anchor": "section-3" },
-    { "label": "Common Mistakes", "anchor": "section-4" },
-    { "label": "FAQs", "anchor": "faq" }
+    {
+      "label": "Why Cats Need to Scratch",
+      "anchor": "section-0"
+    },
+    {
+      "label": "Best Materials",
+      "anchor": "section-1"
+    },
+    {
+      "label": "Buying Guide",
+      "anchor": "section-2"
+    },
+    {
+      "label": "Placement Tips",
+      "anchor": "section-3"
+    },
+    {
+      "label": "Common Mistakes",
+      "anchor": "section-4"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faq"
+    }
   ],
   "excerpt": "We compared cat scratching posts for durability, stability, and cat preference. Sisal, cardboard, and carpet options compared and ranked.",
   "quickAnswer": "The best cat scratching post is at least 32 inches tall, wrapped in sisal rope, and has a heavy, stable base that won't tip when a cat launches off it. Sisal rope is the most universally preferred material, and height matters more than any other feature — cats need to stretch fully while scratching.",
   "category": "Cat Furniture",
-  "keywords": ["best cat scratching post", "cat scratcher", "sisal scratching post", "tall cat scratching post", "best scratcher for cats"],
+  "keywords": [
+    "best cat scratching post",
+    "cat scratcher",
+    "sisal scratching post",
+    "tall cat scratching post",
+    "best scratcher for cats"
+  ],
   "publishedAt": "2026-03-12",
   "updatedAt": "2026-03-12",
   "featuredImage": "/images/guides/best-cat-scratching-post.jpg",
   "readingTime": 12,
-  "relatedCategories": ["cat-scratching-posts", "cat-furniture"],
+  "relatedCategories": [
+    "cat-scratching-posts",
+    "cat-furniture"
+  ],
   "whoThisIsFor": [
     "Cat owners whose cats scratch furniture",
     "New cat owners setting up scratching surfaces",
@@ -51,9 +82,18 @@
     }
   ],
   "commonMistakes": [
-    { "mistake": "Buying a scratching post shorter than 32 inches", "whyItMatters": "Adult cats need full-body stretching while scratching. Short posts don't satisfy this need and get ignored in favor of furniture." },
-    { "mistake": "Choosing an unstable post with a small base", "whyItMatters": "One wobble and cats permanently abandon the post. The base needs to be heavy and wide enough to resist a 12 lb cat launching off it." },
-    { "mistake": "Placing the post in a room the cat doesn't use", "whyItMatters": "Scratching is territorial marking. The post must be where the cat lives and where they currently scratch furniture." }
+    {
+      "mistake": "Buying a scratching post shorter than 32 inches",
+      "whyItMatters": "Adult cats need full-body stretching while scratching. Short posts don't satisfy this need and get ignored in favor of furniture."
+    },
+    {
+      "mistake": "Choosing an unstable post with a small base",
+      "whyItMatters": "One wobble and cats permanently abandon the post. The base needs to be heavy and wide enough to resist a 12 lb cat launching off it."
+    },
+    {
+      "mistake": "Placing the post in a room the cat doesn't use",
+      "whyItMatters": "Scratching is territorial marking. The post must be where the cat lives and where they currently scratch furniture."
+    }
   ],
   "faq": [
     {

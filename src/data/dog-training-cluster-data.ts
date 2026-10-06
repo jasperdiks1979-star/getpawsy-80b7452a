@@ -466,7 +466,7 @@ export const LEASH_CLUSTER: TrainingClusterData[] = [
 export const HIJACK_CLUSTER: TrainingClusterData[] = [
   {
     slug: 'anti-pull-harness-big-dogs',
-    title: 'Anti-Pull Harness for Big Dogs — Heavy-Duty Options Tested (2026)',
+    title: 'Anti-Pull Harness for Big Dogs — Heavy-Duty Options Compared (2026)',
     metaTitle: 'Anti-Pull Harness for Big Dogs — Heavy-Duty Tested 2026 | GetPawsy',
     metaDescription: 'Find the strongest anti-pull harnesses for big dogs (50+ lbs). Metal buckles, 1000D nylon, dual handles. Reduces pulling 40–60% on first walk. Free shipping available.',
     heroSubtitle: 'Standard harnesses fail big dogs. This guide compares tactical-grade anti-pull options built for 50–150 lb breeds that pull hard.',

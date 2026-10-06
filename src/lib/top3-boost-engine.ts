@@ -107,7 +107,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
     meta: 'Relieve arthritis and hip pain with popular orthopedic beds. Memory foam, waterproof covers, all sizes. Ships free to US.',
   },
   'cat tree for large cats': {
-    title: 'Cat Trees for Large Cats (2026) — Heavy-Duty & Tested to 25 lbs',
+    title: 'Cat Trees for Large Cats (2026) — Heavy-Duty & Compared to 25 lbs',
     meta: 'Stop flimsy cat trees from tipping. Compare models for cats over 15 lbs. Solid wood, carpet-free options, wide platforms. Free shipping available.',
   },
   'best harness for large dogs that pull': {
@@ -123,7 +123,7 @@ const TITLE_REWRITES: Record<string, { title: string; meta: string }> = {
     meta: 'The honest comparison most brands won\'t make. See real pull-reduction data, trainer preferences, and breed-specific recommendations.',
   },
   'best interactive dog toys': {
-    title: 'Best Interactive Dog Toys (2026) — Tested by Dogs, Ranked by Experts',
+    title: 'Best Interactive Dog Toys (2026) — Compared by Dogs, Ranked by Experts',
     meta: 'Toys compared on published engagement, durability and enrichment features. See which keep dogs busy longest. Free shipping available.',
   },
   'how to stop dog pulling on leash': {
