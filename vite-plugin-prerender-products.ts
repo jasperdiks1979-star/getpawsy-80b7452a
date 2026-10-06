@@ -599,9 +599,11 @@ export default function prerenderProductsPlugin(): Plugin {
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, 'index.html'), buildListingPage({
           spaHtml, path: `/collections/${slug}`,
-          title: CANONICAL_COLLECTION_META[slug]?.title ?? `${cat.label} | GetPawsy`, h1: cat.label,
+          title: CANONICAL_COLLECTION_META[slug]?.title ?? `${cat.label} | GetPawsy`, h1: CANONICAL_COLLECTION_META[slug]?.h1 ?? cat.label,
           description: CANONICAL_COLLECTION_META[slug]?.description ?? `Browse in-stock ${cat.label.toLowerCase()} at GetPawsy. Free shipping on eligible orders $35+, 30-day returns.`,
-          intro: `${members.length} in-stock products in ${cat.label}.`,
+          intro: CANONICAL_COLLECTION_META[slug]?.intro
+            ? `${CANONICAL_COLLECTION_META[slug].intro} ${members.length} in-stock products.`
+            : `${members.length} in-stock products in ${cat.label}.`,
           crumbs: [{ name: 'Home', path: '/' }, { name: 'Products', path: '/products' }, { name: cat.label, path: `/collections/${slug}` }],
           items: members.map((p) => ({ href: `/products/${p.slug}`, label: p.name, extra: `$${formatPrice(p.price)}` })),
           itemList: true,

@@ -76,12 +76,17 @@ const TRUST = COLLECTION_TRUST_LINE;
  * counts ("400+", "600+"), quality ("premium", "built to last") or features
  * the current range does not evidence. Only category facts + approved policy.
  */
-export const CANONICAL_COLLECTION_META: Record<string, { title: string; description: string }> = {
+export const CANONICAL_COLLECTION_META: Record<string, { title: string; description: string; h1?: string; intro?: string }> = {
   dogs: { title: 'Dog Products | GetPawsy', description: `Shop dog beds, toys and accessories at GetPawsy. ${TRUST}` },
   cats: { title: 'Cat Products | GetPawsy', description: `Shop cat trees, litter boxes, toys and beds at GetPawsy. ${TRUST}` },
   'dog-beds': { title: 'Dog Beds | GetPawsy', description: `Shop dog beds at GetPawsy. ${TRUST}` },
   'cat-trees-and-condos': { title: 'Cat Trees & Condos | GetPawsy', description: `Shop cat trees, towers and condos with scratching posts and perches at GetPawsy. ${TRUST}` },
-  'cat-litter-boxes': { title: 'Cat Litter Boxes | GetPawsy', description: `Shop covered, open and automatic cat litter boxes at GetPawsy. ${TRUST}` },
+  'cat-litter-boxes': {
+    title: 'Cat Litter Boxes – Covered & Stainless Steel | GetPawsy',
+    description: `Shop covered, hooded, fully enclosed and stainless steel cat litter boxes, plus litter mats, at GetPawsy. ${TRUST}`,
+    h1: 'Cat Litter Boxes',
+    intro: `Covered, hooded, fully enclosed and stainless steel litter boxes, plus litter mats. Check each listing for size and entry style, or read our cat litter box buying guide. ${TRUST}`,
+  },
   'cat-toys': { title: 'Cat Toys | GetPawsy', description: `Shop interactive, wand and puzzle cat toys at GetPawsy. ${TRUST}` },
   'cat-beds': { title: 'Cat Beds | GetPawsy', description: `Shop cat beds at GetPawsy. ${TRUST}` },
 };
