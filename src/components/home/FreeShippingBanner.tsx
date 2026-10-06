@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { APPROVED_FREE_SHIPPING_LINE } from '@/config/merchant-policy';
 
 /**
  * Urgency / offer block — free-shipping CTA strip.
@@ -12,7 +13,7 @@ export function FreeShippingBanner() {
         <div className="flex items-center justify-center gap-2 mb-2">
           <Truck className="w-5 h-5 text-primary" />
           <h2 className="text-lg md:text-xl font-display font-bold text-foreground">
-            Free Shipping on Orders Over $35
+            {APPROVED_FREE_SHIPPING_LINE}
           </h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">

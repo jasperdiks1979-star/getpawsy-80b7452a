@@ -1,5 +1,6 @@
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { APPROVED_FREE_SHIPPING_LINE } from '@/config/merchant-policy';
 
 interface FinalCtaBlockProps {
   onAddToCart: () => void;
@@ -67,7 +68,7 @@ export function FinalCtaBlock({ onAddToCart, inStock, price, compareAtPrice, pro
         </Button>
 
         <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
-          <span>✔ Free Shipping</span>
+          <span>✔ {APPROVED_FREE_SHIPPING_LINE}</span>
           <span>✔ 30-Day Returns</span>
           <span>✔ Secure Checkout</span>
         </div>
