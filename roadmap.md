@@ -10,3 +10,6 @@
 - [x] Run focused tests, typecheck, full suite, production build, and database health.
 - [x] Complete one controlled publish.
 - [x] Verify production and report evidence for every finding.
+- [ ] Reconcile live shopper markers with the commercial live-presence counter.
+- [ ] Preserve technical/unconfirmed live locations as a distinct forensic layer.
+- [ ] Add live counter/map parity coverage and run focused analytics validation.

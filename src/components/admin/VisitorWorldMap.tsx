@@ -297,6 +297,7 @@ export const VisitorWorldMap = ({
   const [mapInitAttempt, setMapInitAttempt] = useState(0);
   const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showForensicLive, setShowForensicLive] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
   // Collapsed "Bron-audit" panel gate — see the deferred raw query below.
   const [auditOpen, setAuditOpen] = useState(false);
@@ -773,6 +774,7 @@ export const VisitorWorldMap = ({
     if (!isLiveNow) {
       return {
         markers: [],
+        forensicMarkers: [],
         counts: { browsing: 0, cart: 0, checkout: 0 },
         totalLiveVisitors: 0,
         commercialLiveVisitors: 0,
@@ -1190,7 +1192,10 @@ export const VisitorWorldMap = ({
       // Live mode renders visitor_activity heartbeat features (presence);
       // canonical mode renders analytics-canonical features (business truth).
       const geojsonRaw = isLiveNow
-        ? livePresenceMarkersToGeoJson(liveModel.markers)
+        ? livePresenceMarkersToGeoJson([
+            ...liveModel.markers,
+            ...(showForensicLive ? liveModel.forensicMarkers : []),
+          ])
         : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       // Apply the source-group chip filter to the Mapbox layer too, so the
       // chip parity holds for both DOM and circle-layer markers.
@@ -1272,8 +1277,10 @@ export const VisitorWorldMap = ({
               6, ["+", 8, ["*", ["coalesce", ["get", "weight"], 1], 3]],
             ],
             "circle-opacity": [
-              "interpolate", ["linear"], ["coalesce", ["get", "weight"], 1],
-              1, 0.75, 2, 0.9, 3, 1,
+              "case",
+              ["==", ["get", "verdict"], "commercial"],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+              0.24,
             ],
             "circle-stroke-color": [
               "match", ["coalesce", ["get", "sourceClass"], "unclassified"],
@@ -1320,7 +1327,7 @@ export const VisitorWorldMap = ({
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
+  }, [showHeatmap, showForensicLive, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
