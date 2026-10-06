@@ -183,7 +183,7 @@ export function CatTreesHubContent() {
           Living in a small apartment doesn't mean your cat can't have a proper tree. The key is choosing <strong className="text-foreground">tall but narrow</strong> models — a tree under 24 inches wide but 60+ inches tall gives vertical territory without consuming precious floor space. Wall-mounted cat shelf systems are another excellent option, creating aerial highways along your walls with zero floor footprint.
         </p>
         <p className="text-muted-foreground leading-relaxed">
-          Avoid short, wide trees — they take up floor space without satisfying your cat's vertical instincts. Our <Link to="/collections/best-cat-trees-for-small-apartments" className="text-primary underline">best cat trees for small apartments</Link> collection features space-efficient designs tested in real apartments. For the full height guide, see our <Link to="/guides/cat-tree-buying-guide" className="text-primary underline">cat tree height guide</Link>.
+          Avoid short, wide trees — they take up floor space without satisfying your cat's vertical instincts. Our <Link to="/collections/best-cat-trees-for-small-apartments" className="text-primary underline">best cat trees for small apartments</Link> collection features space-efficient designs sized for real apartments. For the full height guide, see our <Link to="/guides/cat-tree-buying-guide" className="text-primary underline">cat tree height guide</Link>.
         </p>
       </section>
 
@@ -331,7 +331,7 @@ export function CatTreesHubContent() {
         </h2>
         <Accordion type="single" collapsible className="w-full">
           {[
-            { q: 'What is the best cat tree for large cats?', a: 'Heavy-duty free-standing trees with solid wood frames, 4"+ sisal posts, and wall-anchor hardware rated for 40+ lbs. Floor-to-ceiling tension models are the safest option for cats over 20 lbs. Browse our curated large cat trees collection for stability-tested picks.' },
+            { q: 'What is the best cat tree for large cats?', a: 'Heavy-duty free-standing trees with solid wood frames, 4"+ sisal posts, and wall-anchor hardware rated for 40+ lbs. Floor-to-ceiling tension models are the safest option for cats over 20 lbs. Browse our curated large cat trees collection for stable picks.' },
             { q: 'How tall should a cat tree be?', a: 'At least 60 inches for standard adult cats, 72+ inches for multi-cat households. The ideal height is approximately 80% of your ceiling height — around 6.5 feet for standard 8-foot ceilings.' },
             { q: 'Are cat trees worth the money?', a: 'Yes. A quality cat tree ($120–$250) lasts 5–8 years, provides scratching surfaces that protect furniture, vertical exercise territory, and sleeping perches. Budget trees ($30–$60) typically need replacement every 1–2 years, costing more long-term.' },
             { q: 'How do I stop my cat tree from wobbling?', a: 'Three fixes: (1) Anchor it to a wall stud with an L-bracket. (2) Place it in a corner for two-wall support. (3) Add weight to the base with sandbags. Wall anchoring alone eliminates 95% of wobble.' },

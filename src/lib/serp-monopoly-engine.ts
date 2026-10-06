@@ -290,11 +290,11 @@ export function generateCTRTitles(): CTRTitle[] {
       formula: '[KW] (Year) – [Number] [Authority] [Hook]',
     },
     'best-dog-bed-2026': {
-      title: 'Best Dog Beds (2026) – 10 Tested Picks by Foam & Breed',
+      title: 'Best Dog Beds (2026) – 10 Compared Picks by Foam & Breed',
       formula: '[KW] (Year) – [Number] [Method] [Specificity]',
     },
     'best-cat-litter-box-2026': {
-      title: 'Best Cat Litter Box (2026) – 12 Tested for Odor & Size',
+      title: 'Best Cat Litter Box (2026) – 12 Compared for Odor & Size',
       formula: '[KW] (Year) – [Number] [Method] [Benefit]',
     },
     'best-orthopedic-dog-bed': {

@@ -5,16 +5,25 @@
   "seoDescription": "Complete list of dog grooming essentials for home grooming. Brushes, clippers, shampoos, nail tools and grooming tables ranked by value.",
   "excerpt": "Everything you need to groom your dog at home — brushes, clippers, shampoos, nail tools and grooming tables ranked by quality and value.",
   "category": "dog-grooming",
-  "keywords": ["dog grooming essentials", "dog grooming kit", "home dog grooming supplies", "what do you need to groom a dog", "dog grooming tools list"],
+  "keywords": [
+    "dog grooming essentials",
+    "dog grooming kit",
+    "home dog grooming supplies",
+    "what do you need to groom a dog",
+    "dog grooming tools list"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-10",
   "featuredImage": "/images/guides/dog-grooming-essentials.jpg",
   "readingTime": 9,
-  "relatedCategories": ["dog-grooming", "dog-grooming-tools"],
+  "relatedCategories": [
+    "dog-grooming",
+    "dog-grooming-tools"
+  ],
   "sections": [
     {
       "heading": "Why Home Grooming Saves Time and Money",
-      "content": "Professional dog grooming costs $50–$120 per session, and most dogs need grooming every 4–8 weeks. That's $400–$1,500 per year — per dog.\n\nHome grooming with the right tools costs a fraction of that and gives you complete control over your dog's care. You'll also catch skin issues, lumps, ticks and ear problems early because you're examining your dog regularly.\n\nThis guide covers every essential tool and product you need to groom your dog at home, from basic brushing to nail trimming and bathing.\n\nFor detailed tool recommendations, see our [dog grooming tools guide](/guides/dog-grooming-tools-guide). Browse our [dog grooming kits collection](/collections/best-dog-grooming-kits) for complete starter sets."
+      "content": "Professional dog grooming costs $50–$120 per session, and most dogs need grooming every 4–8 weeks. That's $400–$1,500 per year — per dog.\n\nHome grooming with the right tools costs a fraction of that and gives you complete control over your dog's care. You'll also catch skin issues, lumps, ticks and ear problems early because you're examining your dog regularly.\n\nThis guide covers every essential tool and product you need to groom your dog at home, from basic brushing to nail trimming and bathing.\n\nFor detailed tool recommendations, see our [dog grooming tools guide](/guides/dog-grooming-tools-guide). Browse our [dog grooming kits collection](/collections/dogs) for complete starter sets."
     },
     {
       "heading": "Brushes and Combs",
@@ -34,24 +43,57 @@
     },
     {
       "heading": "The Complete Home Grooming Kit Checklist",
-      "content": "**Essential tools** (start with these):\n- Slicker brush or bristle brush (match to coat type)\n- Nail clippers or rotary grinder\n- Styptic powder\n- Dog shampoo\n- Microfiber towels (2–3)\n- Ear cleaning solution\n- Cotton balls\n\n**Intermediate tools** (add as needed):\n- Undercoat rake or deshedding tool\n- Conditioner\n- Rubber bath brush\n- Eye wipes\n- Grooming scissors (blunt-tip safety)\n\n**Advanced tools** (for serious home groomers):\n- Professional clippers with guide combs\n- Grooming table with arm and noose\n- High-velocity pet dryer\n- Thinning shears\n\nBrowse ready-made kits in our [dog grooming kits collection](/collections/best-dog-grooming-kits). For individual tool recommendations, see our [dog grooming tools guide](/guides/dog-grooming-tools-guide)."
+      "content": "**Essential tools** (start with these):\n- Slicker brush or bristle brush (match to coat type)\n- Nail clippers or rotary grinder\n- Styptic powder\n- Dog shampoo\n- Microfiber towels (2–3)\n- Ear cleaning solution\n- Cotton balls\n\n**Intermediate tools** (add as needed):\n- Undercoat rake or deshedding tool\n- Conditioner\n- Rubber bath brush\n- Eye wipes\n- Grooming scissors (blunt-tip safety)\n\n**Advanced tools** (for serious home groomers):\n- Professional clippers with guide combs\n- Grooming table with arm and noose\n- High-velocity pet dryer\n- Thinning shears\n\nBrowse ready-made kits in our [dog grooming kits collection](/collections/dogs). For individual tool recommendations, see our [dog grooming tools guide](/guides/dog-grooming-tools-guide)."
     }
   ],
   "faq": [
-    { "question": "What grooming tools do I need for my dog?", "answer": "At minimum: a breed-appropriate brush, nail clippers, dog shampoo, towels and ear cleaning solution. Add deshedding tools and clippers as your skill grows." },
-    { "question": "How often should I groom my dog at home?", "answer": "Brush 2–3 times per week, trim nails every 2–3 weeks, bathe every 4–8 weeks and clean ears every 2–4 weeks." },
-    { "question": "Is home grooming safe for dogs?", "answer": "Yes, with proper tools and technique. Start with basic brushing and nail trimming. Add more complex grooming tasks as you gain confidence." },
-    { "question": "How much does home grooming cost compared to professional?", "answer": "A complete home grooming kit costs $50–$150 one-time. Professional grooming costs $50–$120 per session, typically needed every 4–8 weeks." }
+    {
+      "question": "What grooming tools do I need for my dog?",
+      "answer": "At minimum: a breed-appropriate brush, nail clippers, dog shampoo, towels and ear cleaning solution. Add deshedding tools and clippers as your skill grows."
+    },
+    {
+      "question": "How often should I groom my dog at home?",
+      "answer": "Brush 2–3 times per week, trim nails every 2–3 weeks, bathe every 4–8 weeks and clean ears every 2–4 weeks."
+    },
+    {
+      "question": "Is home grooming safe for dogs?",
+      "answer": "Yes, with proper tools and technique. Start with basic brushing and nail trimming. Add more complex grooming tasks as you gain confidence."
+    },
+    {
+      "question": "How much does home grooming cost compared to professional?",
+      "answer": "A complete home grooming kit costs $50–$150 one-time. Professional grooming costs $50–$120 per session, typically needed every 4–8 weeks."
+    }
   ],
   "relatedGuides": [
-    { "slug": "dog-grooming-tools-guide", "label": "Dog Grooming Tools Guide" },
-    { "slug": "best-dog-brushes-by-coat-type", "label": "Best Dog Brushes by Coat Type" },
-    { "slug": "dog-nail-trimming-guide", "label": "Dog Nail Trimming Guide" },
-    { "slug": "best-dog-shampoo-guide", "label": "Best Dog Shampoo Guide" },
-    { "slug": "dog-shedding-control-guide", "label": "Dog Shedding Control Guide" }
+    {
+      "slug": "dog-grooming-tools-guide",
+      "label": "Dog Grooming Tools Guide"
+    },
+    {
+      "slug": "best-dog-brushes-by-coat-type",
+      "label": "Best Dog Brushes by Coat Type"
+    },
+    {
+      "slug": "dog-nail-trimming-guide",
+      "label": "Dog Nail Trimming Guide"
+    },
+    {
+      "slug": "best-dog-shampoo-guide",
+      "label": "Best Dog Shampoo Guide"
+    },
+    {
+      "slug": "dog-shedding-control-guide",
+      "label": "Dog Shedding Control Guide"
+    }
   ],
   "relatedCollections": [
-    { "slug": "best-dog-grooming-kits", "label": "Dog Grooming Kits" },
-    { "slug": "dog-grooming-tools", "label": "Dog Grooming Tools" }
+    {
+      "slug": "best-dog-grooming-kits",
+      "label": "Dog Grooming Kits"
+    },
+    {
+      "slug": "dog-grooming-tools",
+      "label": "Dog Grooming Tools"
+    }
   ]
 }

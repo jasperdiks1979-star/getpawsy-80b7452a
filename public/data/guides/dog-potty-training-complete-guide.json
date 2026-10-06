@@ -7,24 +7,61 @@
   "excerpt": "Master potty training with our expert 14-day plan. Covers puppies, adult dogs, apartment setups, and transitioning from pads to outdoor. Positive reinforcement only.",
   "quickAnswer": "Potty training success depends on three things: a consistent schedule, immediate positive reinforcement, and proper cleanup. Most puppies can be reliably housetrained in 10–14 days using a structured approach. Adult dogs often learn faster — typically 5–7 days.",
   "category": "Dog Training",
-  "keywords": ["potty training dog", "house training puppy", "housebreaking guide", "potty training schedule", "dog potty training tips", "how to potty train a puppy"],
+  "keywords": [
+    "potty training dog",
+    "house training puppy",
+    "housebreaking guide",
+    "potty training schedule",
+    "dog potty training tips",
+    "how to potty train a puppy"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-01",
   "featuredImage": "/images/guides/potty-training-guide-2026.jpg",
   "readingTime": 14,
-  "relatedCategories": ["dog-training"],
-  "trustLines": ["Tested with 40+ puppy owners", "Vet-reviewed methods", "Updated March 2026"],
+  "relatedCategories": [
+    "dog-training"
+  ],
+  "trustLines": [
+    "Tested with 40+ puppy owners",
+    "Vet-reviewed methods",
+    "Updated March 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Premium Potty Training Pads", "reason": "Super-absorbent with leak-proof backing. Best for apartment training.", "link": "/collections/dog-potty-training" },
-    "bestBudget": { "name": "Potty Training Bell Set", "reason": "Teaches dogs to signal when they need to go. Under $15.", "link": "/collections/dog-potty-training" },
-    "bestPremium": { "name": "Indoor Dog Potty System", "reason": "Grass-pad system with drainage tray. Perfect for apartments.", "link": "/collections/dog-potty-training" }
+    "bestOverall": {
+      "name": "Premium Potty Training Pads",
+      "reason": "Super-absorbent with leak-proof backing. Best for apartment training.",
+      "link": "/collections/dogs"
+    },
+    "bestBudget": {
+      "name": "Potty Training Bell Set",
+      "reason": "Teaches dogs to signal when they need to go. Under $15.",
+      "link": "/collections/dogs"
+    },
+    "bestPremium": {
+      "name": "Indoor Dog Potty System",
+      "reason": "Grass-pad system with drainage tray. Perfect for apartments.",
+      "link": "/collections/dogs"
+    }
   },
   "comparisonProducts": [],
   "faq": [
-    { "question": "How long does it take to potty train a puppy?", "answer": "Most puppies can be reliably housetrained in 10–14 days with a consistent schedule. Smaller breeds may take longer (up to 4–6 weeks) due to smaller bladders. The key is consistency — same times, same spot, same reward." },
-    { "question": "Should I use potty pads or go straight to outdoor training?", "answer": "If you have yard access, outdoor training from day one is ideal. For apartments or extreme weather, start with pads and transition to outdoor gradually by moving the pad closer to the door each day." },
-    { "question": "Why does my potty trained dog have accidents?", "answer": "Regression usually signals a medical issue (UTI, digestive upset), stress (new environment, schedule change), or incomplete initial training. Rule out medical causes first, then reinforce the schedule." },
-    { "question": "How often should a puppy go outside for potty breaks?", "answer": "A general rule: puppies can hold it for their age in months plus one hour. A 3-month puppy needs a break every 4 hours. Always go out after meals, naps, play, and first thing in the morning." }
+    {
+      "question": "How long does it take to potty train a puppy?",
+      "answer": "Most puppies can be reliably housetrained in 10–14 days with a consistent schedule. Smaller breeds may take longer (up to 4–6 weeks) due to smaller bladders. The key is consistency — same times, same spot, same reward."
+    },
+    {
+      "question": "Should I use potty pads or go straight to outdoor training?",
+      "answer": "If you have yard access, outdoor training from day one is ideal. For apartments or extreme weather, start with pads and transition to outdoor gradually by moving the pad closer to the door each day."
+    },
+    {
+      "question": "Why does my potty trained dog have accidents?",
+      "answer": "Regression usually signals a medical issue (UTI, digestive upset), stress (new environment, schedule change), or incomplete initial training. Rule out medical causes first, then reinforce the schedule."
+    },
+    {
+      "question": "How often should a puppy go outside for potty breaks?",
+      "answer": "A general rule: puppies can hold it for their age in months plus one hour. A 3-month puppy needs a break every 4 hours. Always go out after meals, naps, play, and first thing in the morning."
+    }
   ],
   "sections": [
     {
@@ -41,7 +78,7 @@
     },
     {
       "heading": "Essential Potty Training Tools",
-      "content": "The right tools accelerate the process significantly:\n\n- **Training Pads**: Super-absorbent with leak-proof backing for indoor use\n- **Enzyme Cleaner**: Breaks down urine proteins completely — essential for preventing repeat accidents\n- **Potty Bells**: Door-mounted bells your dog learns to ring when they need out\n- **Treat Pouch**: Keep rewards instantly accessible for immediate reinforcement\n- **Exercise Pen**: Contains your dog in a manageable area during the learning phase\n\nBrowse our complete [potty training collection](/collections/dog-potty-training) for curated tools that work together as a system."
+      "content": "The right tools accelerate the process significantly:\n\n- **Training Pads**: Super-absorbent with leak-proof backing for indoor use\n- **Enzyme Cleaner**: Breaks down urine proteins completely — essential for preventing repeat accidents\n- **Potty Bells**: Door-mounted bells your dog learns to ring when they need out\n- **Treat Pouch**: Keep rewards instantly accessible for immediate reinforcement\n- **Exercise Pen**: Contains your dog in a manageable area during the learning phase\n\nBrowse our complete [potty training collection](/collections/dogs) for curated tools that work together as a system."
     },
     {
       "heading": "Common Mistakes & How to Fix Them",
@@ -49,12 +86,27 @@
     }
   ],
   "relatedGuides": [
-    { "slug": "complete-dog-training-guide-2026", "label": "Complete Dog Training Guide 2026" },
-    { "slug": "top-dog-training-tools-for-puppies", "label": "Top Training Tools for Puppies" }
+    {
+      "slug": "complete-dog-training-guide-2026",
+      "label": "Complete Dog Training Guide 2026"
+    },
+    {
+      "slug": "top-dog-training-tools-for-puppies",
+      "label": "Top Training Tools for Puppies"
+    }
   ],
   "relatedCollections": [
-    { "slug": "dog-potty-training", "label": "Shop Potty Training Gear" },
-    { "slug": "puppy-training-essentials", "label": "Puppy Training Essentials" },
-    { "slug": "dog-training-accessories", "label": "Training Accessories" }
+    {
+      "slug": "dog-potty-training",
+      "label": "Shop Potty Training Gear"
+    },
+    {
+      "slug": "puppy-training-essentials",
+      "label": "Puppy Training Essentials"
+    },
+    {
+      "slug": "dog-training-accessories",
+      "label": "Training Accessories"
+    }
   ]
 }

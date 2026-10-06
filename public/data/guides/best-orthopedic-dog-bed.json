@@ -4,25 +4,58 @@
   "seoTitle": "Best Orthopedic Dog Beds (2026) – What Actually Helps Joints",
   "seoDescription": "We compared orthopedic dog beds by foam density & durability. See which memory foam beds actually reduce joint pain for senior & large dogs.",
   "h1Override": "Best Orthopedic Dog Beds for Large & Senior Dogs (2026)",
-  "trustLines": ["Foam density & thickness tested per weight class", "Comparison: memory foam vs standard fill", "Free US shipping on many picks (where available)"],
+  "trustLines": [
+    "Foam density & thickness tested per weight class",
+    "Comparison: memory foam vs standard fill",
+    "Free US shipping on many picks (where available)"
+  ],
   "jumpNav": [
-    { "label": "Why Orthopedic", "anchor": "section-0" },
-    { "label": "Thickness Guide", "anchor": "section-1" },
-    { "label": "What to Look For", "anchor": "section-2" },
-    { "label": "Size Guide", "anchor": "section-3" },
-    { "label": "Durability", "anchor": "section-4" },
-    { "label": "Verdict", "anchor": "section-5" },
-    { "label": "FAQs", "anchor": "faq" }
+    {
+      "label": "Why Orthopedic",
+      "anchor": "section-0"
+    },
+    {
+      "label": "Thickness Guide",
+      "anchor": "section-1"
+    },
+    {
+      "label": "What to Look For",
+      "anchor": "section-2"
+    },
+    {
+      "label": "Size Guide",
+      "anchor": "section-3"
+    },
+    {
+      "label": "Durability",
+      "anchor": "section-4"
+    },
+    {
+      "label": "Verdict",
+      "anchor": "section-5"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faq"
+    }
   ],
   "excerpt": "Discover the best orthopedic dog beds for senior and large dogs. We compare memory foam thickness, durability and real customer feedback.",
   "quickAnswer": "The best orthopedic dog bed for large and senior dogs uses at least 4 inches of high-density memory foam with a waterproof liner and washable cover. Foam density matters more than thickness — look for 1.8+ lb/ft³ to ensure lasting support.",
   "category": "Dog Beds",
-  "keywords": ["orthopedic dog bed", "memory foam dog bed", "dog bed for large dogs", "dog bed for arthritis", "senior dog bed"],
+  "keywords": [
+    "orthopedic dog bed",
+    "memory foam dog bed",
+    "dog bed for large dogs",
+    "dog bed for arthritis",
+    "senior dog bed"
+  ],
   "publishedAt": "2026-02-10",
   "updatedAt": "2026-02-12",
   "featuredImage": "/images/guides/best-orthopedic-dog-bed.jpg",
   "readingTime": 12,
-  "relatedCategories": ["pet-beds"],
+  "relatedCategories": [
+    "pet-beds"
+  ],
   "sections": [
     {
       "heading": "Why Orthopedic Dog Beds Matter for Large & Senior Dogs",
@@ -46,7 +79,7 @@
     },
     {
       "heading": "Our Final Verdict",
-      "content": "For large and senior dogs, an orthopedic bed isn't a luxury — it's a practical investment in your dog's joint health and sleep quality. The difference between a good orthopedic bed and a cheap one comes down to foam density, and spending a little more on high-density foam pays off in durability and genuine therapeutic benefit.\n\nFor a broader comparison that includes calming beds, elevated cots, and budget options, visit our complete [best dog beds of 2026 guide](/guides/best-dog-bed-2026). If your dog is highly active, pairing a quality orthopedic bed with structured [outdoor enrichment games](/guides/outdoor-dog-games-2026) maximizes both physical activity and recovery.\n\nAnd for cat owners, our approach to thorough product testing is the same — see our [best cat litter box guide](/guides/best-cat-litter-box-2026) for an example."
+      "content": "For large and senior dogs, an orthopedic bed isn't a luxury — it's a practical investment in your dog's joint health and sleep quality. The difference between a good orthopedic bed and a cheap one comes down to foam density, and spending a little more on high-density foam pays off in durability and genuine therapeutic benefit.\n\nFor a broader comparison that includes calming beds, elevated cots, and budget options, visit our complete [best dog beds of 2026 guide](/guides/best-dog-bed-2026). If your dog is highly active, pairing a quality orthopedic bed with structured outdoor enrichment games maximizes both physical activity and recovery.\n\nAnd for cat owners, our approach to thorough product testing is the same — see our [best cat litter box guide](/guides/best-cat-litter-box-2026) for an example."
     },
     {
       "heading": "People Also Ask: Orthopedic Dog Bed Questions",
@@ -56,11 +89,26 @@
   "buyingCriteria": {
     "title": "Key Buying Criteria for Orthopedic Dog Beds",
     "criteria": [
-      { "name": "Foam Density", "description": "The most important spec. Look for 1.8+ lb/ft³ density. Low-density foam loses support within weeks." },
-      { "name": "Foam Thickness", "description": "Match to dog weight: 3\" for small dogs, 4\" for medium, 4-5\" for large, 5-6\" for giant breeds." },
-      { "name": "Waterproof Liner", "description": "Essential between cover and foam. Prevents odor and bacteria from accidents or drool penetrating the foam." },
-      { "name": "Cover Washability", "description": "Must be removable and machine-washable. Air dry or low-heat tumble dry to preserve waterproof liner." },
-      { "name": "Non-Slip Base", "description": "Critical on hardwood and tile. Rubber-dot bottoms prevent sliding, especially important for dogs with limited mobility." }
+      {
+        "name": "Foam Density",
+        "description": "The most important spec. Look for 1.8+ lb/ft³ density. Low-density foam loses support within weeks."
+      },
+      {
+        "name": "Foam Thickness",
+        "description": "Match to dog weight: 3\" for small dogs, 4\" for medium, 4-5\" for large, 5-6\" for giant breeds."
+      },
+      {
+        "name": "Waterproof Liner",
+        "description": "Essential between cover and foam. Prevents odor and bacteria from accidents or drool penetrating the foam."
+      },
+      {
+        "name": "Cover Washability",
+        "description": "Must be removable and machine-washable. Air dry or low-heat tumble dry to preserve waterproof liner."
+      },
+      {
+        "name": "Non-Slip Base",
+        "description": "Critical on hardwood and tile. Rubber-dot bottoms prevent sliding, especially important for dogs with limited mobility."
+      }
     ]
   },
   "prosAndCons": {

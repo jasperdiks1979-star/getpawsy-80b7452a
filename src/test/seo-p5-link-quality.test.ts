@@ -58,3 +58,28 @@ describe('hydrated related-guide cards', () => {
     expect(src).toMatch(/stripUnsupportedTitleClaims\(base\.title\)/);
   });
 });
+
+describe('P6 cleanup', () => {
+  const dir = 'public/data/guides';
+  const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+  it('guide headings make no first-hand testing claims', () => {
+    for (const f of files) {
+      if (f === 'crash-tested-dog-car-seat-guide.json') continue; // explains the term; consolidation stub
+      const d = JSON.parse(readFileSync(`${dir}/${f}`, 'utf8'));
+      for (const k of ['title', 'h1Override', 'seoTitle', 'metaTitle']) if (typeof d[k] === 'string') expect(d[k], `${f} ${k}`).not.toMatch(/tested/i);
+    }
+  });
+  it('dog car seat duplicate consolidates into the static pillar', async () => {
+    const { GUIDE_REDIRECTS } = await import('@/lib/guide-consolidation');
+    expect(GUIDE_REDIRECTS['best-dog-car-seats']).toBe('best-dog-car-seat');
+    expect(GUIDE_REDIRECTS['best-dog-car-seat']).toBeUndefined();
+    expect(canonicalizeInternalHref('/guides/best-dog-car-seats')).toBe('/guides/best-dog-car-seat');
+    expect(canonicalizeInternalHref('/best-dog-car-seat-safety')).toBe('/guides/best-dog-car-seat');
+  });
+  it('stored guide content has no links to retired or merged addresses', () => {
+    for (const f of files) {
+      const s = readFileSync(`${dir}/${f}`, 'utf8');
+      for (const m of s.matchAll(/\]\((\/[^)\s]*)\)/g)) expect(canonicalizeInternalLinks(`[x](${m[1]})`), `${f} ${m[1]}`).toBe(`[x](${m[1]})`);
+    }
+  });
+});

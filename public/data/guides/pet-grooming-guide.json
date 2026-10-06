@@ -5,12 +5,22 @@
   "seoDescription": "Complete pet grooming guide for dogs and cats. Covers brushing, bathing, nail trimming, deshedding, and the best grooming tools for every coat type. Updated 2026.",
   "excerpt": "Everything you need to know about grooming dogs and cats at home — coat-specific brushing, bathing frequency, nail trimming, deshedding, and our top tool recommendations.",
   "category": "Pet Grooming",
-  "keywords": ["pet grooming guide", "dog grooming at home", "cat grooming tips", "best grooming tools", "how to groom a dog", "pet grooming schedule"],
+  "keywords": [
+    "pet grooming guide",
+    "dog grooming at home",
+    "cat grooming tips",
+    "best grooming tools",
+    "how to groom a dog",
+    "pet grooming schedule"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-13",
   "featuredImage": "/guides/pet-grooming-guide.webp",
   "readingTime": 20,
-  "relatedCategories": ["dog-grooming", "cat-grooming"],
+  "relatedCategories": [
+    "dog-grooming",
+    "cat-grooming"
+  ],
   "h1Override": "Pet Grooming Guide: Complete At-Home Grooming for Dogs & Cats (2026)",
   "quickAnswer": "Brush dogs 2-3 times weekly (daily for long coats), bathe monthly with species-appropriate shampoo, trim nails every 2-3 weeks, and clean ears weekly. Cats need brushing 1-2 times weekly (daily for long-haired breeds) and nail trims every 2-3 weeks. Never use dog products on cats.",
   "whoThisIsFor": [
@@ -42,29 +52,68 @@
     },
     {
       "heading": "Grooming Schedules by Pet Type",
-      "content": "**Weekly grooming schedule for dogs:**\n- Monday: Brush coat thoroughly (10-15 minutes)\n- Wednesday: Check and clean ears with comfort-focused ear cleaner\n- Friday: Brush coat again, check for skin issues or parasites\n- Every 2-3 weeks: Trim nails\n- Monthly: Bathe with dog-appropriate shampoo (more frequently for outdoor dogs)\n- Every 6-8 weeks: Professional grooming for breeds that need haircuts\n\n**Weekly grooming schedule for cats:**\n- Daily (long-haired): 10-minute brushing session\n- 2× weekly (short-haired): 5-minute brushing session\n- Every 2-3 weeks: Trim nails\n- Monthly: Check ears and teeth\n- As needed: Bathing (rarely required for healthy cats)\n\n**Seasonal adjustments:**\n- Spring/Fall: Increase brushing frequency for double-coated breeds during shedding season\n- Summer: Check for ticks after outdoor time, consider a shorter clip for heavy-coated breeds\n- Winter: Reduce bathing frequency to prevent dry skin, use a humidifier indoors\n\nFor our top grooming tool picks, see [dog grooming essentials](/guides/dog-grooming-essentials), [best dog brushes by coat type](/guides/best-dog-brushes-by-coat-type), and [best cat grooming brush](/guides/best-cat-grooming-brush).\n\nBrowse our [dog grooming collection](/collections/dog-grooming) and [cat grooming tools](/collections/cat-grooming) for all recommended products."
+      "content": "**Weekly grooming schedule for dogs:**\n- Monday: Brush coat thoroughly (10-15 minutes)\n- Wednesday: Check and clean ears with comfort-focused ear cleaner\n- Friday: Brush coat again, check for skin issues or parasites\n- Every 2-3 weeks: Trim nails\n- Monthly: Bathe with dog-appropriate shampoo (more frequently for outdoor dogs)\n- Every 6-8 weeks: Professional grooming for breeds that need haircuts\n\n**Weekly grooming schedule for cats:**\n- Daily (long-haired): 10-minute brushing session\n- 2× weekly (short-haired): 5-minute brushing session\n- Every 2-3 weeks: Trim nails\n- Monthly: Check ears and teeth\n- As needed: Bathing (rarely required for healthy cats)\n\n**Seasonal adjustments:**\n- Spring/Fall: Increase brushing frequency for double-coated breeds during shedding season\n- Summer: Check for ticks after outdoor time, consider a shorter clip for heavy-coated breeds\n- Winter: Reduce bathing frequency to prevent dry skin, use a humidifier indoors\n\nFor our top grooming tool picks, see [dog grooming essentials](/guides/dog-grooming-essentials), [best dog brushes by coat type](/guides/best-dog-brushes-by-coat-type), and [best cat grooming brush](/guides/best-cat-grooming-brush).\n\nBrowse our [dog grooming collection](/collections/dogs) and cat grooming tools for all recommended products."
     }
   ],
   "faq": [
-    { "question": "How often should I brush my dog?", "answer": "Short coats: 1-2 times weekly. Double coats: 2-3 times weekly (daily during shedding season). Long/silky and curly coats: daily. Regular brushing prevents mats, distributes oils, and reduces shedding." },
-    { "question": "Do cats need to be groomed?", "answer": "Yes. Short-haired cats need brushing 1-2 times weekly. Long-haired cats need daily brushing to prevent mats. All indoor cats need nail trims every 2-3 weeks." },
-    { "question": "How often should I bathe my dog?", "answer": "Once a month for most dogs. More frequently for dogs that swim, roll in dirt, or have skin conditions. Less frequently for dogs with dry skin. Always use dog-specific shampoo." },
-    { "question": "Can I use dog shampoo on my cat?", "answer": "Never. Many dog shampoos contain ingredients toxic to cats, including essential oils (tea tree, eucalyptus) and permethrin. Always use cat-specific products or plain warm water." },
-    { "question": "How do I trim my dog's nails without cutting the quick?", "answer": "Trim small amounts at a 45° angle. For dark nails, look for the chalky white center — stop before reaching the darker, moist quick. Use a nail grinder for more control. Keep styptic powder on hand in case of accidents." }
+    {
+      "question": "How often should I brush my dog?",
+      "answer": "Short coats: 1-2 times weekly. Double coats: 2-3 times weekly (daily during shedding season). Long/silky and curly coats: daily. Regular brushing prevents mats, distributes oils, and reduces shedding."
+    },
+    {
+      "question": "Do cats need to be groomed?",
+      "answer": "Yes. Short-haired cats need brushing 1-2 times weekly. Long-haired cats need daily brushing to prevent mats. All indoor cats need nail trims every 2-3 weeks."
+    },
+    {
+      "question": "How often should I bathe my dog?",
+      "answer": "Once a month for most dogs. More frequently for dogs that swim, roll in dirt, or have skin conditions. Less frequently for dogs with dry skin. Always use dog-specific shampoo."
+    },
+    {
+      "question": "Can I use dog shampoo on my cat?",
+      "answer": "Never. Many dog shampoos contain ingredients toxic to cats, including essential oils (tea tree, eucalyptus) and permethrin. Always use cat-specific products or plain warm water."
+    },
+    {
+      "question": "How do I trim my dog's nails without cutting the quick?",
+      "answer": "Trim small amounts at a 45° angle. For dark nails, look for the chalky white center — stop before reaching the darker, moist quick. Use a nail grinder for more control. Keep styptic powder on hand in case of accidents."
+    }
   ],
   "buyingCriteria": {
     "title": "Pet Grooming Tool Checklist",
     "criteria": [
-      { "name": "Coat-Appropriate Brush", "description": "Match the brush to your pet's coat type. Using the wrong brush is ineffective and can cause skin irritation." },
-      { "name": "Nail Clipper Quality", "description": "Sharp, clean-cutting clippers prevent crushing. Replace when they stop cutting cleanly." },
-      { "name": "Shampoo Safety", "description": "Species-appropriate, pH-balanced, and free of harsh chemicals. Never use human or dog products on cats." },
-      { "name": "Ergonomic Design", "description": "Comfortable grip reduces hand fatigue during longer grooming sessions." }
+      {
+        "name": "Coat-Appropriate Brush",
+        "description": "Match the brush to your pet's coat type. Using the wrong brush is ineffective and can cause skin irritation."
+      },
+      {
+        "name": "Nail Clipper Quality",
+        "description": "Sharp, clean-cutting clippers prevent crushing. Replace when they stop cutting cleanly."
+      },
+      {
+        "name": "Shampoo Safety",
+        "description": "Species-appropriate, pH-balanced, and free of harsh chemicals. Never use human or dog products on cats."
+      },
+      {
+        "name": "Ergonomic Design",
+        "description": "Comfortable grip reduces hand fatigue during longer grooming sessions."
+      }
     ]
   },
   "commonMistakes": [
-    { "mistake": "Shaving double-coated breeds in summer", "whyItMatters": "The undercoat provides insulation against heat AND cold. Shaving damages the coat permanently and increases sunburn risk." },
-    { "mistake": "Using human shampoo on pets", "whyItMatters": "Human shampoo has a different pH (5.5) than dog skin (6.5-7.5). It strips natural oils and can cause irritation and dryness." },
-    { "mistake": "Brushing over mats instead of removing them", "whyItMatters": "Brushing over mats tightens them and pulls painfully on the skin. Use a mat splitter or dematting tool, working from the tips inward." },
-    { "mistake": "Skipping ear cleaning", "whyItMatters": "Floppy-eared breeds are especially prone to ear infections. Weekly cleaning with a comfort-focused solution prevents costly vet visits." }
+    {
+      "mistake": "Shaving double-coated breeds in summer",
+      "whyItMatters": "The undercoat provides insulation against heat AND cold. Shaving damages the coat permanently and increases sunburn risk."
+    },
+    {
+      "mistake": "Using human shampoo on pets",
+      "whyItMatters": "Human shampoo has a different pH (5.5) than dog skin (6.5-7.5). It strips natural oils and can cause irritation and dryness."
+    },
+    {
+      "mistake": "Brushing over mats instead of removing them",
+      "whyItMatters": "Brushing over mats tightens them and pulls painfully on the skin. Use a mat splitter or dematting tool, working from the tips inward."
+    },
+    {
+      "mistake": "Skipping ear cleaning",
+      "whyItMatters": "Floppy-eared breeds are especially prone to ear infections. Weekly cleaning with a comfort-focused solution prevents costly vet visits."
+    }
   ]
 }

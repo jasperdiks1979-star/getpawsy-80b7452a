@@ -118,7 +118,7 @@ export interface AttackPage {
 export const ATTACK_CONTENT_PLAN: AttackPage[] = [
   // Pillars (5)
   { type: 'pillar', title: 'The Complete Guide to Orthopedic Dog Beds: What Vets Recommend', primaryKeyword: 'orthopedic dog bed guide', wordCount: 2200, targetCollection: '/collections/dog-beds', internalLinksRequired: 8, faqCount: 8 },
-  { type: 'pillar', title: 'Dog Car Safety: The Ultimate Crash-Tested Seat & Harness Guide', primaryKeyword: 'dog car safety guide', wordCount: 2000, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 8, faqCount: 7 },
+  { type: 'pillar', title: 'Dog Car Safety: The Ultimate Safety Seat & Harness Guide', primaryKeyword: 'dog car safety guide', wordCount: 2000, targetCollection: '/collections/best-dog-car-seats', internalLinksRequired: 8, faqCount: 7 },
   { type: 'pillar', title: 'Cat Trees Decoded: How to Choose the Perfect One for Your Cat', primaryKeyword: 'how to choose cat tree', wordCount: 2000, targetCollection: '/collections/cat-condos', internalLinksRequired: 8, faqCount: 8 },
   { type: 'pillar', title: 'Pet Grooming at Home: The Complete Vacuum Grooming Guide', primaryKeyword: 'pet grooming vacuum guide', wordCount: 1800, targetCollection: '/collections/pet-grooming-vacuum-kits', internalLinksRequired: 6, faqCount: 6 },
   { type: 'pillar', title: 'Interactive Cat Enrichment: Stop Boredom, Start Thriving', primaryKeyword: 'cat enrichment guide', wordCount: 1800, targetCollection: '/collections/interactive-cat-toys', internalLinksRequired: 6, faqCount: 6 },

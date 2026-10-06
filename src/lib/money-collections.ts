@@ -96,7 +96,7 @@ export const MONEY_COLLECTIONS: MoneyCollection[] = [
     name: 'Best Dog Car Seats',
     shortName: 'Dog Car Seats',
     icon: '🚗',
-    description: 'Crash-tested dog car seats and booster seats for safe travel with your pet.',
+    description: 'Safety-focused dog car seats and booster seats for safe travel with your pet.',
     primaryKeyword: 'best dog car seats',
     cluster: 'dog',
     crossLinks: ['dogs', 'dog-beds'],

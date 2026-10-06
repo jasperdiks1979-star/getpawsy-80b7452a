@@ -33,7 +33,7 @@ const faqJsonLd = {
     {
       '@type': 'Question',
       name: 'Are dog car seats safe?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yes, crash-tested dog car seats significantly reduce injury risk during travel. Look for seats with steel-frame construction and tether attachment points.' },
+      acceptedAnswer: { '@type': 'Answer', text: 'Yes, safety-focused dog car seats significantly reduce injury risk during travel. Look for seats with steel-frame construction and tether attachment points.' },
     },
     {
       '@type': 'Question',
@@ -48,7 +48,7 @@ const faqJsonLd = {
     {
       '@type': 'Question',
       name: 'Do dogs need a special harness for car travel?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yes. A crash-tested car harness that connects to the seatbelt system is safer than a regular walking harness. Look for Center for Pet Safety (CPS) certification.' },
+      acceptedAnswer: { '@type': 'Answer', text: 'Yes. A safety-focused car harness that connects to the seatbelt system is safer than a regular walking harness. Look for Center for Pet Safety (CPS) certification.' },
     },
   ],
 };

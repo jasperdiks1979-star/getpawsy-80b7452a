@@ -230,7 +230,7 @@ const dogCarSeats: NicheProfile = {
     { title: 'Booster Seat vs Car Hammock for Dogs', slug: 'dog-booster-seat-vs-car-hammock', status: 'published', linksToCategory: 3, linksToProducts: 2 },
     { title: 'Dog Travel Safety Laws by State', slug: 'dog-travel-safety-laws-by-state', status: 'published', linksToCategory: 3, linksToProducts: 2 },
     { title: 'Best Dog Car Seats for Small Dogs', slug: 'best-dog-car-seat-for-small-dogs', status: 'published', linksToCategory: 3, linksToProducts: 2 },
-    { title: 'Crash-Tested Dog Car Seat Guide', slug: 'crash-tested-dog-car-seat-guide', status: 'published', linksToCategory: 3, linksToProducts: 2 },
+    { title: 'Safety Dog Car Seat Guide', slug: 'crash-tested-dog-car-seat-guide', status: 'published', linksToCategory: 3, linksToProducts: 2 },
   ],
   competitorGaps: [
     { competitor: 'Kurgo', domain: 'kurgo.com', wordCount: 2200, hasFaq: true, hasComparison: true, structuredData: ['Product', 'FAQ', 'Review'], weakness: 'Brand-focused, limited third-party comparison', ourAdvantage: 'Multi-brand comparison, crash-test data aggregation' },
@@ -260,7 +260,7 @@ const dogCarSeats: NicheProfile = {
   internalLinkMap: [
     { from: '/', to: '/collections/all', anchor: 'dog car travel safety', type: 'exact' },
     { from: '/guides/dog-booster-seat-vs-car-hammock', to: '/collections/all', anchor: 'dog car safety gear', type: 'partial' },
-    { from: '/guides/dog-travel-safety-laws-by-state', to: '/collections/all', anchor: 'crash-tested car seats', type: 'partial' },
+    { from: '/guides/dog-travel-safety-laws-by-state', to: '/collections/all', anchor: 'safety-focused car seats', type: 'partial' },
     { from: '/guides/crash-tested-dog-car-seat-guide', to: '/collections/all', anchor: 'safest dog car seats', type: 'exact' },
     { from: '/guides/best-dog-car-seat-for-small-dogs', to: '/collections/all', anchor: 'full car safety collection', type: 'natural' },
     { from: '/collections/all', to: '/collections/all', anchor: 'Dog Car Travel Safety', type: 'natural' },

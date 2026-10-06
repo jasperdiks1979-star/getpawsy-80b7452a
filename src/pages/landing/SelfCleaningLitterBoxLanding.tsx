@@ -391,7 +391,7 @@ export default function SelfCleaningLitterBoxLanding() {
             <h2 className="text-lg font-bold text-foreground mb-4 text-center">Learn More About Self-Cleaning Litter Boxes</h2>
             <div className="grid gap-2">
               {[
-                { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Best Self-Cleaning Litter Box 2026 — Top Picks Tested' },
+                { path: '/guides/best-self-cleaning-litter-box-2026', title: 'Best Self-Cleaning Litter Box 2026 — Top Picks Compared' },
                 { path: '/guides/how-does-self-cleaning-litter-box-work', title: 'How Do Self-Cleaning Litter Boxes Work?' },
                 { path: '/guides/self-cleaning-litter-box-pros-cons', title: 'Self-Cleaning Litter Box: Pros & Cons' },
                 { path: '/guides/litter-box-odor-control-solutions', title: 'Litter Box Odor Control Solutions' },

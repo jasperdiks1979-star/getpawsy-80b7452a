@@ -317,6 +317,8 @@ export const GUIDE_REDIRECTS: Record<string, string> = {
   'cat-tree-stability-guide': 'choosing-safe-cat-tree-indoor',
   'signs-your-dog-has-joint-pain': 'signs-dog-needs-joint-support',
   'crash-tested-dog-car-seat-guide': 'safest-dog-car-seat-for-travel',
+  // Same "best dog car seats" intent; the static guide links store products and has more inbound links.
+  'best-dog-car-seats': 'best-dog-car-seat',
 };
 
 

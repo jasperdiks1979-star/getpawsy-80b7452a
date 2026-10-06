@@ -25,14 +25,14 @@ const CORNERSTONE_GUIDES = [
   {
     slug: 'best-cat-trees-small-apartments',
     anchor: 'Best Cat Trees for Large Cats',
-    description: 'Space-saving cat trees tested in real apartments. Heavy-duty picks for Maine Coons & large breeds.',
+    description: 'Space-saving cat trees compared in real apartments. Heavy-duty picks for Maine Coons & large breeds.',
     category: 'Cat Furniture',
     readTime: '11 min',
   },
   {
     slug: 'best-dog-car-seats-safe-travel',
     anchor: 'Best Dog Car Seats',
-    description: 'safety-focused car seats & boosters to protect your dog on every journey.',
+    description: 'Safety-focused car seats & boosters to protect your dog on every journey.',
     category: 'Dog Travel',
     readTime: '11 min',
   },

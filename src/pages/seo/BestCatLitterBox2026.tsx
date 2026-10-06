@@ -236,7 +236,7 @@ export default function BestCatLitterBox2026() {
       ]}
       relatedGuides={[
         { title: 'Best Cat Litter Box Reddit Recommends (2026)', description: 'Reddit\'s most recommended litter boxes from r/cats, r/CatAdvice, and r/Pets.', href: '/best-cat-litter-box-reddit', badge: '🔥 Trending' },
-        { title: 'Best Litter Box for Odor Control (Tested)', description: 'Litter boxes tested specifically for smell elimination and ammonia control.', href: '/best-litter-box-for-smell', badge: '⭐ Expert Pick' },
+        { title: 'Best Litter Box for Odor Control (Compared)', description: 'Litter boxes compared specifically for smell elimination and ammonia control.', href: '/best-litter-box-for-smell', badge: '⭐ Expert Pick' },
         { title: 'Best Litter Box for Large Cats', description: 'Oversized litter boxes for Maine Coons, Ragdolls, and 15+ lb cats.', href: '/best-litter-box-large-cats' },
         { title: 'Best Litter Boxes for Apartments 2026', description: 'Compact, low-odor litter boxes for studios and small apartments.', href: '/best-litter-boxes-apartments-2026' },
         { title: 'Best Interactive Cat Toys 2026', description: 'carefully selected toys to keep indoor cats mentally stimulated and active.', href: '/best-interactive-cat-toys' },

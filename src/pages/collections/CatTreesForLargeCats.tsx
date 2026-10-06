@@ -93,7 +93,7 @@ export default function CatTreesForLargeCats() {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     '@id': `${CANONICAL}#collection`,
-    name: 'Best Cat Trees for Large Cats — Heavy Duty & Stability Tested',
+    name: 'Best Cat Trees for Large Cats — Heavy Duty & Stability Compared',
     description: META_DESC,
     url: CANONICAL,
     mainEntity: {

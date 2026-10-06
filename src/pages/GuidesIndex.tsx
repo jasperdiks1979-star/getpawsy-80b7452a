@@ -43,7 +43,7 @@ const CATEGORY_HUBS: Record<string, { description: string; shopCategory: string;
     shopLabel: 'Shop Cat Feeders',
   },
   'Cat Beds': {
-    description: 'Cozy, calming, and heated cat beds tested for comfort and durability.',
+    description: 'Cozy, calming, and heated cat beds compared for comfort and durability.',
     shopCategory: 'cat-beds',
     shopLabel: 'Shop Cat Beds',
   },

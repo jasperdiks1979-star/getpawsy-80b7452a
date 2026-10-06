@@ -1,27 +1,58 @@
 {
   "slug": "best-dog-stroller",
-  "title": "Best Dog Strollers (2026) – Tested for Comfort, Safety & Maneuverability",
+  "title": "Best Dog Strollers (2026) – Picks for Comfort, Safety & Maneuverability",
   "seoTitle": "Best Dog Strollers (2026) – Compared & Ranked for Every Size",
   "seoDescription": "We compared dog strollers for stability, comfort and ease of use. Best picks for small dogs, senior dogs, and multi-pet families. Updated 2026.",
-  "h1Override": "Best Dog Strollers – Tested for Comfort, Safety & Maneuverability",
-  "trustLines": ["10 dog strollers tested in real-world conditions", "Ranked by stability, comfort, and folding ease", "Updated for 2026"],
+  "h1Override": "Best Dog Strollers – Picks for Comfort, Safety & Maneuverability",
+  "trustLines": [
+    "10 dog strollers tested in real-world conditions",
+    "Ranked by stability, comfort, and folding ease",
+    "Updated for 2026"
+  ],
   "jumpNav": [
-    { "label": "Why Use a Dog Stroller", "anchor": "section-0" },
-    { "label": "Types of Strollers", "anchor": "section-1" },
-    { "label": "Buying Guide", "anchor": "section-2" },
-    { "label": "Size Recommendations", "anchor": "section-3" },
-    { "label": "Common Mistakes", "anchor": "section-4" },
-    { "label": "FAQs", "anchor": "faq" }
+    {
+      "label": "Why Use a Dog Stroller",
+      "anchor": "section-0"
+    },
+    {
+      "label": "Types of Strollers",
+      "anchor": "section-1"
+    },
+    {
+      "label": "Buying Guide",
+      "anchor": "section-2"
+    },
+    {
+      "label": "Size Recommendations",
+      "anchor": "section-3"
+    },
+    {
+      "label": "Common Mistakes",
+      "anchor": "section-4"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faq"
+    }
   ],
   "excerpt": "We compared dog strollers for stability, comfort, and ease of folding. Best picks for small dogs, senior dogs, and multi-pet households.",
   "quickAnswer": "The best dog stroller combines a sturdy aluminum frame, lockable swivel wheels, adequate ventilation mesh, and one-hand folding. For small dogs under 25 lbs, a standard 3-wheel jogger works well. For medium dogs or multi-pet use, choose a 4-wheel model rated for 50+ lbs with reinforced stitching.",
   "category": "Pet Travel",
-  "keywords": ["best dog stroller", "pet stroller", "dog stroller for small dogs", "dog stroller for senior dogs", "pet stroller for 2 dogs"],
+  "keywords": [
+    "best dog stroller",
+    "pet stroller",
+    "dog stroller for small dogs",
+    "dog stroller for senior dogs",
+    "pet stroller for 2 dogs"
+  ],
   "publishedAt": "2026-03-12",
   "updatedAt": "2026-03-12",
   "featuredImage": "/images/guides/best-dog-stroller.jpg",
   "readingTime": 14,
-  "relatedCategories": ["pet-strollers", "dog-travel-accessories"],
+  "relatedCategories": [
+    "pet-strollers",
+    "dog-travel-accessories"
+  ],
   "whoThisIsFor": [
     "Owners of senior or injured dogs needing mobility assistance",
     "Small dog owners wanting safe outdoor exploration",
@@ -51,9 +82,18 @@
     }
   ],
   "commonMistakes": [
-    { "mistake": "Buying a stroller rated at your dog's exact weight", "whyItMatters": "No engineering buffer means premature frame and stitching failure. Always buy 10+ lbs above your dog's weight." },
-    { "mistake": "Choosing an enclosed stroller without mesh ventilation", "whyItMatters": "Dogs overheat quickly in enclosed spaces, even in moderate weather. At least 3 mesh panels are essential." },
-    { "mistake": "Skipping the hand brake feature", "whyItMatters": "Parking brakes alone don't help on slopes or hills. Hand brakes on the handlebar are a critical safety feature." }
+    {
+      "mistake": "Buying a stroller rated at your dog's exact weight",
+      "whyItMatters": "No engineering buffer means premature frame and stitching failure. Always buy 10+ lbs above your dog's weight."
+    },
+    {
+      "mistake": "Choosing an enclosed stroller without mesh ventilation",
+      "whyItMatters": "Dogs overheat quickly in enclosed spaces, even in moderate weather. At least 3 mesh panels are essential."
+    },
+    {
+      "mistake": "Skipping the hand brake feature",
+      "whyItMatters": "Parking brakes alone don't help on slopes or hills. Hand brakes on the handlebar are a critical safety feature."
+    }
   ],
   "faq": [
     {

@@ -27,6 +27,7 @@ export const CONTENT_PATH_REWRITES: Readonly<Record<string, string>> = {
   '/cat/cat-trees-for-large-cats': '/guides/best-cat-trees-large-cats-2026',
   '/how-to-stop-dog-anxiety-in-car': '/blog/how-to-stop-dog-anxiety-in-car',
   '/lp/self-cleaning-litter-box': '/products/automatic-cat-litter-box-self-cleaning-app-control',
+  '/best-dog-car-seat-safety': '/guides/best-dog-car-seat',
 };
 
 export interface InternalLinkContext {

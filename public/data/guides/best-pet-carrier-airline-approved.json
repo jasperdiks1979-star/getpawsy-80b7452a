@@ -3,12 +3,21 @@
   "title": "7 Best Airline-Approved Pet Carriers (2026) – Under-Seat Buying Guide",
   "excerpt": "Airline-approved pet carriers with under-seat sizing to check against current airline requirements. Updated March 2026.",
   "category": "Pet Travel",
-  "keywords": ["airline approved pet carrier", "best pet carrier for flying", "TSA approved pet carrier", "under seat pet carrier", "airline pet carrier"],
+  "keywords": [
+    "airline approved pet carrier",
+    "best pet carrier for flying",
+    "TSA approved pet carrier",
+    "under seat pet carrier",
+    "airline pet carrier"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-13",
   "featuredImage": "/images/guides/airline-pet-carrier.jpg",
   "readingTime": 18,
-  "relatedCategories": ["pet-carriers", "pet-travel"],
+  "relatedCategories": [
+    "pet-carriers",
+    "pet-travel"
+  ],
   "seoTitle": "7 Best Airline-Approved Pet Carriers – Under-Seat Buying Guide (2026)",
   "seoDescription": "Compare carrier dimensions with current Delta, United, Southwest and American requirements before flying. TSA tips included. Updated 2026.",
   "h1Override": "7 Best Airline-Approved Pet Carriers in 2026 (Under-Seat Buying Guide)",
@@ -50,7 +59,7 @@
     },
     {
       "heading": "Product Recommendations",
-      "content": "Find airline-approved carriers on GetPawsy:\n\n→ Browse our [Pet Carrier collection](/collections/pet-carriers) for all travel carriers\n→ Read the complete [Pet Carrier Buying Guide](/guides/pet-carrier-guide) for size comparisons\n→ See [Pet Travel Guide](/guides/pet-travel-guide) for flight preparation tips\n→ Compare [Best Dog Car Seats](/guides/best-dog-car-seat) for road trip alternatives\n→ Check our [Pet Travel Checklist](/guides/pet-travel-checklist) for packing essentials"
+      "content": "Find airline-approved carriers on GetPawsy:\n\n→ Browse our Pet Carrier collection for all travel carriers\n→ Read the complete [Pet Carrier Buying Guide](/guides/pet-carrier-guide) for size comparisons\n→ See [Pet Travel Guide](/guides/pet-travel-guide) for flight preparation tips\n→ Compare [Best Dog Car Seats](/guides/best-dog-car-seat) for road trip alternatives\n→ Check our [Pet Travel Checklist](/guides/pet-travel-checklist) for packing essentials"
     }
   ],
   "faq": [
@@ -78,11 +87,26 @@
   "buyingCriteria": {
     "title": "Airline Pet Carrier Buying Criteria",
     "criteria": [
-      { "name": "Airline Size Compliance", "description": "Verify dimensions against your specific airline. United is the strictest (7.5\" height). Soft-sided carriers with compression frames offer the most flexibility." },
-      { "name": "Ventilation", "description": "Minimum 3-side mesh panels. 4-side mesh is ideal for anxious pets and longer flights." },
-      { "name": "Security", "description": "Locking zippers that a stressed pet can't paw open. Dual-zipper design with interior flap is most secure." },
-      { "name": "Comfort", "description": "Machine-washable fleece liner, adequate headroom for sitting, and enough floor space to turn around." },
-      { "name": "Durability", "description": "Reinforced stitching, metal hardware, and leak-proof bottom. Should survive 50+ trips without failure." }
+      {
+        "name": "Airline Size Compliance",
+        "description": "Verify dimensions against your specific airline. United is the strictest (7.5\" height). Soft-sided carriers with compression frames offer the most flexibility."
+      },
+      {
+        "name": "Ventilation",
+        "description": "Minimum 3-side mesh panels. 4-side mesh is ideal for anxious pets and longer flights."
+      },
+      {
+        "name": "Security",
+        "description": "Locking zippers that a stressed pet can't paw open. Dual-zipper design with interior flap is most secure."
+      },
+      {
+        "name": "Comfort",
+        "description": "Machine-washable fleece liner, adequate headroom for sitting, and enough floor space to turn around."
+      },
+      {
+        "name": "Durability",
+        "description": "Reinforced stitching, metal hardware, and leak-proof bottom. Should survive 50+ trips without failure."
+      }
     ]
   }
 }

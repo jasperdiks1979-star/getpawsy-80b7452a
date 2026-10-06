@@ -135,7 +135,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
       { question: 'How do I get my dog used to a car seat?', answer: 'Gradual acclimation over 1–2 weeks: (1) Let them sniff and sit in the seat indoors with treats; (2) 5-minute stationary car sessions; (3) Short 5-minute drives with praise; (4) Gradually extend trip length. Use their favorite blanket and avoid feeding 2 hours before travel. Forcing a dog into a car seat creates lasting fear — patience is essential.' },
     ],
     guideLinks: [
-      { slug: 'dog-car-safety-guide', anchor: 'crash-tested dog car seats', anchorType: 'exact' },
+      { slug: 'dog-car-safety-guide', anchor: 'safety-focused dog car seats', anchorType: 'exact' },
       { slug: 'dog-travel-essentials', anchor: 'best dog car safety gear', anchorType: 'partial' },
       { slug: 'road-trip-with-dog', anchor: 'keep your dog safe on every ride', anchorType: 'natural' },
       { slug: 'dog-harness-guide', anchor: 'dog car travel safety harnesses', anchorType: 'partial' },
@@ -143,12 +143,12 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
       { slug: 'dog-anxiety-car-rides', anchor: 'dog car seats for nervous dogs', anchorType: 'partial' },
       { slug: 'dog-booster-seat-guide', anchor: 'dog booster seats', anchorType: 'exact' },
       { slug: 'car-seat-installation-guide', anchor: 'how to install a dog car seat', anchorType: 'natural' },
-      { slug: 'state-pet-travel-laws', anchor: 'crash-tested dog car safety', anchorType: 'exact' },
+      { slug: 'state-pet-travel-laws', anchor: 'safety-focused dog car safety', anchorType: 'exact' },
       { slug: 'best-dog-travel-crate', anchor: 'travel crates vs car seats explained', anchorType: 'natural' },
     ],
     productLinks: [
       { href: '/collections/all', anchor: 'dog car seats', anchorType: 'exact' },
-      { href: '/collections/all', anchor: 'crash-tested dog harnesses for cars', anchorType: 'partial' },
+      { href: '/collections/all', anchor: 'safety-focused dog harnesses for cars', anchorType: 'partial' },
       { href: '/collections/all', anchor: 'see our booster seat collection', anchorType: 'natural' },
       { href: '/collections/dog-car-seat-cover', anchor: 'dog car seat covers', anchorType: 'exact' },
       { href: '/collections/dog-travel-accessories', anchor: 'travel accessories for dogs', anchorType: 'natural' },
@@ -156,7 +156,7 @@ export const PRIORITY_CATEGORIES: CategorySerpConfig[] = [
     clusterGuides: [
       { title: 'Safest Dog Travel Options Compared', slug: 'safest-dog-travel-options', keywords: ['safest dog car', 'dog travel safety', 'best way to travel with dog'] },
       { title: 'Dog Booster Seat vs Harness – Expert Comparison', slug: 'dog-booster-seat-vs-harness', keywords: ['dog booster seat vs harness', 'dog car seat vs harness', 'best dog car restraint'] },
-      { title: 'Crash-Tested Dog Car Safety – What Certifications Mean', slug: 'crash-tested-dog-car-safety', keywords: ['crash tested dog seat', 'dog car seat safety rating'] },
+      { title: 'Safety Dog Car Safety – What Certifications Mean', slug: 'crash-tested-dog-car-safety', keywords: ['crash tested dog seat', 'dog car seat safety rating'] },
     ],
   },
 ];

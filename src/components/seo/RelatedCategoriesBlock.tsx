@@ -130,7 +130,7 @@ const RELATED_CATEGORIES: Record<string, RelatedCategory[]> = {
 
   // ── Dog Travel Cluster ──
   'dog-travel-accessories': [
-    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'Crash-tested car seats & boosters' },
+    { slug: 'best-dog-car-seats', label: 'Dog Car Seats', description: 'Safety-focused car seats & boosters' },
     { slug: 'best-pet-strollers', label: 'Pet Strollers', description: 'Heavy-duty strollers for dogs' },
     { slug: 'best-dog-harnesses', label: 'Dog Harnesses', description: 'Travel-safe no-pull harnesses' },
   ],

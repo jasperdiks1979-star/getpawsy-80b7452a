@@ -11,13 +11,13 @@ const MONEY_PAGES = [
   },
   {
     path: '/best-dog-car-seat-safety',
-    title: 'Best Dog Car Seats 2026 (Crash-Tested & Safe)',
+    title: 'Best Dog Car Seats 2026 (Safety & Safe)',
     description: 'Dog car seats for all sizes, compared by fit and safety features.',
     emoji: '🚗',
   },
   {
     path: '/guides/best-interactive-cat-toys-that-work',
-    title: 'Best Interactive Cat Toys 2026 (Top Picks Tested)',
+    title: 'Best Interactive Cat Toys 2026 (Top Picks Compared)',
     description: 'Toys that actually hold attention beyond 5 minutes. carefully selected.',
     emoji: '🎯',
   },

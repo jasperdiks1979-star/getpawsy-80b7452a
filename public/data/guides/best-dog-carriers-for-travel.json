@@ -1,9 +1,9 @@
 {
   "slug": "best-dog-carriers-for-travel",
   "title": "Best Dog Carriers for Travel (2026) – Airline-Approved Picks Compared & Ranked",
-  "seoTitle": "Best Dog Carriers for Travel (2026) – Airline-Approved & Crash-Tested",
+  "seoTitle": "Best Dog Carriers for Travel (2026) – Travel-Ready Picks",
   "seoDescription": "We compared dog carriers for airline travel, car trips & everyday use. Comfort-focused picks with size guides, crash-test ratings & honest reviews. Updated 2026.",
-  "h1Override": "Best Dog Carriers for Travel – 2026 Tested & Compared",
+  "h1Override": "Best Dog Carriers for Travel – 2026 Buyer's Guide",
   "trustLines": [
     "10 carriers tested for durability, comfort & airline compliance",
     "Side-by-side comparison: size, weight limits & ventilation",
@@ -18,20 +18,47 @@
     "Frequent travelers who need a durable, TSA-friendly option"
   ],
   "jumpNav": [
-    { "label": "Best Overall", "anchor": "best-overall-dog-carrier" },
-    { "label": "Best for Airlines", "anchor": "best-airline-approved-carrier" },
-    { "label": "Best for Cars", "anchor": "best-car-travel-carrier" },
-    { "label": "Best Budget", "anchor": "best-budget-dog-carrier" },
-    { "label": "Size Guide", "anchor": "dog-carrier-size-guide" },
-    { "label": "Buying Guide", "anchor": "how-to-choose-a-dog-travel-carrier" }
+    {
+      "label": "Best Overall",
+      "anchor": "best-overall-dog-carrier"
+    },
+    {
+      "label": "Best for Airlines",
+      "anchor": "best-airline-approved-carrier"
+    },
+    {
+      "label": "Best for Cars",
+      "anchor": "best-car-travel-carrier"
+    },
+    {
+      "label": "Best Budget",
+      "anchor": "best-budget-dog-carrier"
+    },
+    {
+      "label": "Size Guide",
+      "anchor": "dog-carrier-size-guide"
+    },
+    {
+      "label": "Buying Guide",
+      "anchor": "how-to-choose-a-dog-travel-carrier"
+    }
   ],
   "category": "Dog Travel",
-  "keywords": ["best dog carrier", "dog travel carrier", "airline approved dog carrier", "dog carrier for small dogs", "crash tested dog carrier 2026"],
+  "keywords": [
+    "best dog carrier",
+    "dog travel carrier",
+    "airline approved dog carrier",
+    "dog carrier for small dogs",
+    "crash tested dog carrier 2026"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-06",
   "featuredImage": "/guides/default-guide.webp",
   "readingTime": 16,
-  "relatedCategories": ["dog-car-seats", "dog-carriers"],
+  "relatedCategories": [
+    "dog-car-seats",
+    "dog-carriers"
+  ],
   "quickRecommendation": {
     "bestOverall": {
       "name": "Expandable Airline-Approved Dog Carrier",
@@ -44,7 +71,7 @@
       "link": "/collections/dogs"
     },
     "bestPremium": {
-      "name": "Crash-Tested Hard-Shell Dog Carrier",
+      "name": "Safety Hard-Shell Dog Carrier",
       "reason": "Center for Pet Safety certified, reinforced shell with impact-absorbing liner. The safest option for car travel.",
       "link": "/collections/dogs"
     }
@@ -54,12 +81,30 @@
   "buyingCriteria": {
     "title": "How to Choose the Right Dog Travel Carrier",
     "criteria": [
-      { "name": "Size & Weight Limit", "description": "Measure your dog standing and lying down. The carrier should allow them to stand, turn, and lie flat. Check airline dimension limits (typically 18\"x11\"x11\")." },
-      { "name": "Airline Compliance", "description": "Look for carriers that meet IATA and TSA requirements. Must fit under the seat in front of you. Check your specific airline's pet policy." },
-      { "name": "Ventilation", "description": "At least 3-side mesh panels ensure airflow. Top-loading options reduce stress during security checks." },
-      { "name": "Crash Safety", "description": "For car travel, look for carriers tested by the Center for Pet Safety (CPS). Seatbelt loops and reinforced frames add protection." },
-      { "name": "Comfort Features", "description": "Padded floor inserts, fleece liners, and shoulder straps reduce fatigue for both you and your dog during long trips." },
-      { "name": "Durability & Cleaning", "description": "Machine-washable liners, water-resistant exteriors, and reinforced zippers extend the carrier's lifespan." }
+      {
+        "name": "Size & Weight Limit",
+        "description": "Measure your dog standing and lying down. The carrier should allow them to stand, turn, and lie flat. Check airline dimension limits (typically 18\"x11\"x11\")."
+      },
+      {
+        "name": "Airline Compliance",
+        "description": "Look for carriers that meet IATA and TSA requirements. Must fit under the seat in front of you. Check your specific airline's pet policy."
+      },
+      {
+        "name": "Ventilation",
+        "description": "At least 3-side mesh panels ensure airflow. Top-loading options reduce stress during security checks."
+      },
+      {
+        "name": "Crash Safety",
+        "description": "For car travel, look for carriers compared by the Center for Pet Safety (CPS). Seatbelt loops and reinforced frames add protection."
+      },
+      {
+        "name": "Comfort Features",
+        "description": "Padded floor inserts, fleece liners, and shoulder straps reduce fatigue for both you and your dog during long trips."
+      },
+      {
+        "name": "Durability & Cleaning",
+        "description": "Machine-washable liners, water-resistant exteriors, and reinforced zippers extend the carrier's lifespan."
+      }
     ]
   },
   "prosAndCons": {
@@ -77,10 +122,22 @@
     ]
   },
   "commonMistakes": [
-    { "mistake": "Buying based on breed weight alone", "whyItMatters": "Two dogs at the same weight can have very different body lengths. Always measure your dog's length, height, and width before choosing a carrier size." },
-    { "mistake": "Assuming all carriers are airline-approved", "whyItMatters": "Each airline has specific dimension requirements. A carrier that fits Delta may not fit United. Always verify with your airline before flying." },
-    { "mistake": "Skipping the acclimation period", "whyItMatters": "Dogs need 1–2 weeks to get comfortable in a carrier. Start with short sessions at home before travel day." },
-    { "mistake": "Ignoring ventilation in warm weather", "whyItMatters": "Poor airflow can cause overheating, especially in cargo or hot cars. Choose carriers with mesh on at least 3 sides." }
+    {
+      "mistake": "Buying based on breed weight alone",
+      "whyItMatters": "Two dogs at the same weight can have very different body lengths. Always measure your dog's length, height, and width before choosing a carrier size."
+    },
+    {
+      "mistake": "Assuming all carriers are airline-approved",
+      "whyItMatters": "Each airline has specific dimension requirements. A carrier that fits Delta may not fit United. Always verify with your airline before flying."
+    },
+    {
+      "mistake": "Skipping the acclimation period",
+      "whyItMatters": "Dogs need 1–2 weeks to get comfortable in a carrier. Start with short sessions at home before travel day."
+    },
+    {
+      "mistake": "Ignoring ventilation in warm weather",
+      "whyItMatters": "Poor airflow can cause overheating, especially in cargo or hot cars. Choose carriers with mesh on at least 3 sides."
+    }
   ],
   "sections": [
     {
@@ -105,21 +162,45 @@
     },
     {
       "heading": "How to Choose a Dog Travel Carrier",
-      "content": "Start with your primary use case. Frequent flyers should prioritize airline compliance and compactness. Road trippers need crash-test certification. Weekend adventurers want a versatile carrier that works everywhere.\n\n**Checklist before buying:**\n- ✅ Does it fit your dog's measurements (with 2–3\" clearance)?\n- ✅ Does it meet your airline's specific size requirements?\n- ✅ Is the base leak-proof and easy to clean?\n- ✅ Does it have adequate ventilation (3+ mesh sides)?\n- ✅ Are the zippers reinforced and escape-proof?\n- ✅ Does it include a seatbelt strap or luggage sleeve?\n\nBudget carriers ($30–$50) work for occasional vet visits but often have weak zippers and thin padding. Mid-range ($50–$100) covers most needs. Premium ($100–$200) adds crash testing, expandable design, and premium materials.\n\nExplore our [dog car safety collection](/collections/dog-car-seats) for crash-tested carriers and booster seats."
+      "content": "Start with your primary use case. Frequent flyers should prioritize airline compliance and compactness. Road trippers need crash-test certification. Weekend adventurers want a versatile carrier that works everywhere.\n\n**Checklist before buying:**\n- ✅ Does it fit your dog's measurements (with 2–3\" clearance)?\n- ✅ Does it meet your airline's specific size requirements?\n- ✅ Is the base leak-proof and easy to clean?\n- ✅ Does it have adequate ventilation (3+ mesh sides)?\n- ✅ Are the zippers reinforced and escape-proof?\n- ✅ Does it include a seatbelt strap or luggage sleeve?\n\nBudget carriers ($30–$50) work for occasional vet visits but often have weak zippers and thin padding. Mid-range ($50–$100) covers most needs. Premium ($100–$200) adds crash testing, expandable design, and premium materials.\n\nExplore our [dog car safety collection](/collections/dogs) for crash-tested carriers and booster seats."
     },
     {
       "heading": "Related Guides",
-      "content": "Looking for more travel gear advice? Check out these related guides:\n\n- [Dog Car Seat Safety Guide](/guides/crash-tested-dog-car-seat-guide) — Best car seats for dogs who prefer to ride in a booster\n- [Dog Travel Safety Laws by State](/guides/dog-travel-safety-laws-by-state) — Know the rules before your road trip\n- [Best Dog Car Seat for Small Dogs](/guides/best-dog-car-seat-for-small-dogs) — Under-15-lb picks\n- [How to Train Your Dog to Use a Car Seat](/guides/how-to-train-dog-to-use-car-seat) — Step-by-step acclimation guide"
+      "content": "Looking for more travel gear advice? Check out these related guides:\n\n- [Dog Car Seat Safety Guide](/guides/safest-dog-car-seat-for-travel) — Best car seats for dogs who prefer to ride in a booster\n- [Dog Travel Safety Laws by State](/guides/dog-travel-safety-laws-by-state) — Know the rules before your road trip\n- [Best Dog Car Seat for Small Dogs](/guides/best-dog-car-seat-for-small-dogs) — Under-15-lb picks\n- [How to Train Your Dog to Use a Car Seat](/guides/how-to-train-dog-to-use-car-seat) — Step-by-step acclimation guide"
     }
   ],
   "faq": [
-    { "question": "What size dog carrier fits under an airplane seat?", "answer": "Most US airlines accept soft-sided carriers up to 18\" long x 11\" wide x 11\" high. Always check your specific airline's pet policy, as dimensions can vary by aircraft type." },
-    { "question": "Are hard-shell or soft-sided carriers better for dogs?", "answer": "Soft-sided carriers are better for airline travel (flexible, lightweight, fits under seats). Hard-shell carriers are better for car travel (crash protection, structural integrity). Many dog owners keep one of each." },
-    { "question": "How do I get my dog used to a travel carrier?", "answer": "Start 1–2 weeks before travel. Place the carrier open at home with treats inside. Gradually increase time spent in the carrier. Take short car rides. Never force your dog in — positive association is key." },
-    { "question": "Can I use a dog carrier as a crate at home?", "answer": "Yes! Many travel carriers work as comfortable resting spots at home. Expandable carriers are especially good for this — zip out the sides to give your dog extra room when you're not traveling." },
-    { "question": "What's the weight limit for airline dog carriers?", "answer": "Most airlines allow combined pet + carrier weight of 20 lbs in-cabin. The dog itself is typically limited to 15–18 lbs. Larger dogs must fly in the cargo hold with an IATA-compliant hard-shell crate." },
-    { "question": "Are crash-tested dog carriers worth the extra cost?", "answer": "Yes, if you drive with your dog regularly. In a 30 mph collision, an unsecured 20-lb dog generates roughly 600 lbs of force. Crash-tested carriers can prevent serious injuries." },
-    { "question": "How do I clean a dog travel carrier?", "answer": "Remove the liner and wash on a gentle cycle. Wipe the interior with pet-safe cleaner. For soft-sided carriers, spot-clean the exterior with a damp cloth. Air dry completely before reuse to prevent mildew." },
-    { "question": "Can two small dogs share one carrier on a flight?", "answer": "Most US airlines allow two small dogs (combined weight under 20 lbs) in one carrier, but policies vary. Southwest and JetBlue typically allow it; Delta and United may require separate carriers. Always confirm before booking." }
+    {
+      "question": "What size dog carrier fits under an airplane seat?",
+      "answer": "Most US airlines accept soft-sided carriers up to 18\" long x 11\" wide x 11\" high. Always check your specific airline's pet policy, as dimensions can vary by aircraft type."
+    },
+    {
+      "question": "Are hard-shell or soft-sided carriers better for dogs?",
+      "answer": "Soft-sided carriers are better for airline travel (flexible, lightweight, fits under seats). Hard-shell carriers are better for car travel (crash protection, structural integrity). Many dog owners keep one of each."
+    },
+    {
+      "question": "How do I get my dog used to a travel carrier?",
+      "answer": "Start 1–2 weeks before travel. Place the carrier open at home with treats inside. Gradually increase time spent in the carrier. Take short car rides. Never force your dog in — positive association is key."
+    },
+    {
+      "question": "Can I use a dog carrier as a crate at home?",
+      "answer": "Yes! Many travel carriers work as comfortable resting spots at home. Expandable carriers are especially good for this — zip out the sides to give your dog extra room when you're not traveling."
+    },
+    {
+      "question": "What's the weight limit for airline dog carriers?",
+      "answer": "Most airlines allow combined pet + carrier weight of 20 lbs in-cabin. The dog itself is typically limited to 15–18 lbs. Larger dogs must fly in the cargo hold with an IATA-compliant hard-shell crate."
+    },
+    {
+      "question": "Are crash-tested dog carriers worth the extra cost?",
+      "answer": "Yes, if you drive with your dog regularly. In a 30 mph collision, an unsecured 20-lb dog generates roughly 600 lbs of force. Crash-tested carriers can prevent serious injuries."
+    },
+    {
+      "question": "How do I clean a dog travel carrier?",
+      "answer": "Remove the liner and wash on a gentle cycle. Wipe the interior with pet-safe cleaner. For soft-sided carriers, spot-clean the exterior with a damp cloth. Air dry completely before reuse to prevent mildew."
+    },
+    {
+      "question": "Can two small dogs share one carrier on a flight?",
+      "answer": "Most US airlines allow two small dogs (combined weight under 20 lbs) in one carrier, but policies vary. Southwest and JetBlue typically allow it; Delta and United may require separate carriers. Always confirm before booking."
+    }
   ]
 }

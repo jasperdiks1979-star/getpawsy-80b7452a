@@ -198,12 +198,12 @@ export default function BestDogAnxietySolutions() {
         { question: 'Does CBD oil work for dog anxiety?', answer: 'Some studies show promise, but FDA has not approved CBD for pets. If you want to try, use only products with third-party lab testing and consult your vet first. Hemp-based calming chews with L-theanine are a safer regulated alternative.' },
       ]}
       relatedGuides={[
-        { title: 'Best Dog Car Seats 2026', description: 'Crash-tested car seats — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety', badge: '🔥 Trending' },
+        { title: 'Best Dog Car Seats 2026', description: 'Safety-focused car seats — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety', badge: '🔥 Trending' },
         { title: 'Dog Training Accessories Guide', description: 'Essential training tools for building confidence and reducing anxiety.', href: '/collections/dog-training-accessories', badge: '⭐ Expert Pick' },
         { title: 'Dog Travel Safety Equipment', description: 'Complete gear checklist for safe and stress-free road trips.', href: '/guides/dog-travel-safety-equipment-guide' },
       ]}
       crossLinks={[
-        { title: 'Best Dog Car Seats 2026', description: 'Crash-tested car seats and harnesses — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety' },
+        { title: 'Best Dog Car Seats 2026', description: 'Safety-focused car seats and harnesses — essential for dogs with travel anxiety.', href: '/best-dog-car-seat-safety' },
         { title: 'Dog Training Accessories', description: 'Professional-grade training tools for building calm, confident dogs.', href: '/collections/dog-training-accessories' },
       ]}
       internalLinks={[

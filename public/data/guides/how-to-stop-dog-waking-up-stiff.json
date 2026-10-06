@@ -4,24 +4,56 @@
   "seoTitle": "How to Stop Your Dog Waking Up Stiff – Vet Solutions (2026)",
   "seoDescription": "Is your dog stiff in the morning? Learn 5 vet-backed solutions to reduce joint pain and improve mobility. Includes sleep surface, exercise, and supplement tips.",
   "h1Override": "How to Stop Your Dog from Waking Up Stiff — Proven Solutions",
-  "trustLines": ["Vet-reviewed solutions", "5 actionable steps", "Updated for 2026"],
+  "trustLines": [
+    "Vet-reviewed solutions",
+    "5 actionable steps",
+    "Updated for 2026"
+  ],
   "jumpNav": [
-    { "label": "Why Dogs Wake Stiff", "anchor": "section-0" },
-    { "label": "The Sleep Surface Fix", "anchor": "section-1" },
-    { "label": "Movement & Exercise", "anchor": "section-2" },
-    { "label": "Supplements That Help", "anchor": "section-3" },
-    { "label": "When to See a Vet", "anchor": "section-4" },
-    { "label": "FAQs", "anchor": "faq" }
+    {
+      "label": "Why Dogs Wake Stiff",
+      "anchor": "section-0"
+    },
+    {
+      "label": "The Sleep Surface Fix",
+      "anchor": "section-1"
+    },
+    {
+      "label": "Movement & Exercise",
+      "anchor": "section-2"
+    },
+    {
+      "label": "Supplements That Help",
+      "anchor": "section-3"
+    },
+    {
+      "label": "When to See a Vet",
+      "anchor": "section-4"
+    },
+    {
+      "label": "FAQs",
+      "anchor": "faq"
+    }
   ],
   "excerpt": "Morning stiffness in dogs isn't just 'getting old.' It's often a sign of poor sleep support, early arthritis, or both. Here are 5 proven fixes.",
   "quickAnswer": "The most common cause of morning stiffness in dogs is sleeping on a flat, unsupportive surface. Switching to a high-density memory foam bed reduces joint pressure by 30–40% and improves morning mobility within 1–2 weeks for most dogs. Combined with gentle warm-up exercises and joint supplements, most dogs show significant improvement.",
   "category": "Dog Health",
-  "keywords": ["dog waking up stiff", "dog stiff in morning", "dog joint pain morning", "dog mobility", "dog arthritis morning stiffness", "memory foam dog bed stiffness"],
+  "keywords": [
+    "dog waking up stiff",
+    "dog stiff in morning",
+    "dog joint pain morning",
+    "dog mobility",
+    "dog arthritis morning stiffness",
+    "memory foam dog bed stiffness"
+  ],
   "publishedAt": "2026-02-21",
   "updatedAt": "2026-02-21",
   "featuredImage": "/og-image.png",
   "readingTime": 10,
-  "relatedCategories": ["dog-beds", "orthopedic-dog-beds"],
+  "relatedCategories": [
+    "dog-beds",
+    "orthopedic-dog-beds"
+  ],
   "sections": [
     {
       "heading": "Why Dogs Wake Up Stiff (It's Not Just Age)",
@@ -29,7 +61,7 @@
     },
     {
       "heading": "Fix #1: Upgrade the Sleep Surface (Biggest Impact)",
-      "content": "If you do ONE thing from this article, replace your dog's bed with a genuine orthopedic memory foam bed.\n\nHere's why it works: high-density memory foam (1.8+ lb/ft³) conforms to your dog's body shape, distributing weight evenly across the entire surface. This eliminates pressure points on hips, shoulders, and elbows — the exact joints that cause morning stiffness.\n\n**What to look for:**\n- Memory foam density of at least 1.8 lb/ft³ (anything lower compresses flat within weeks)\n- Minimum 3-inch thickness for dogs under 50 lbs, 4+ inches for larger dogs\n- Waterproof liner under the cover (protects the foam, extends lifespan to 3–5 years)\n- Non-slip base (critical for senior dogs with mobility issues)\n- Machine-washable removable cover\n\nOur tested recommendation: the [Memory Foam Pet Bed with Washable Cover](/products/memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner) checks every box at $69.49 — orthopedic foam, waterproof liner, non-slip base, and a cover that survives heavy washing.\n\nMost pet parents report noticeable improvement in morning mobility within 7–14 days of switching. That's faster than any supplement.\n\nFor a deeper dive on foam types, read our [memory foam vs egg crate foam comparison](/guides/memory-foam-vs-egg-crate-foam-dog-bed) or our guide on [whether orthopedic dog beds are worth it](/guides/are-orthopedic-dog-beds-worth-it)."
+      "content": "If you do ONE thing from this article, replace your dog's bed with a genuine orthopedic memory foam bed.\n\nHere's why it works: high-density memory foam (1.8+ lb/ft³) conforms to your dog's body shape, distributing weight evenly across the entire surface. This eliminates pressure points on hips, shoulders, and elbows — the exact joints that cause morning stiffness.\n\n**What to look for:**\n- Memory foam density of at least 1.8 lb/ft³ (anything lower compresses flat within weeks)\n- Minimum 3-inch thickness for dogs under 50 lbs, 4+ inches for larger dogs\n- Waterproof liner under the cover (protects the foam, extends lifespan to 3–5 years)\n- Non-slip base (critical for senior dogs with mobility issues)\n- Machine-washable removable cover\n\nOur tested recommendation: the [Memory Foam Pet Bed with Washable Cover](/products/memory-foam-pet-bed-for-small-dogs-cats-with-washable-removable-cover-non-slip-base-waterproof-liner) checks every box at $69.49 — orthopedic foam, waterproof liner, non-slip base, and a cover that survives heavy washing.\n\nMost pet parents report noticeable improvement in morning mobility within 7–14 days of switching. That's faster than any supplement.\n\nFor a deeper dive on foam types, read our [memory foam vs egg crate foam comparison](/guides/best-dog-bed-materials-explained) or our guide on [whether orthopedic dog beds are worth it](/guides/best-orthopedic-dog-bed-2026)."
     },
     {
       "heading": "Fix #2: Gentle Morning Warm-Up Routine",

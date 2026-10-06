@@ -137,7 +137,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       answer: 'The best cat tree for large cats uses solid wood or engineered wood frames with 4"+ diameter sisal posts, 18"+ wide platforms, and anti-tip wall anchors. Standard cat trees fail for cats over 15 lbs — heavy-duty models rated for 40–60+ lbs cost $120–$300 and last 5–8 years with proper maintenance.',
     },
     bulletUSPs: [
-      { icon: '✅', text: 'Stability-tested for cats 25+ lbs (Maine Coons, Ragdolls)' },
+      { icon: '✅', text: 'Stability-compared for cats 25+ lbs (Maine Coons, Ragdolls)' },
       { icon: '🇺🇸', text: 'US warehouse shipping — 5–10 day delivery' },
       { icon: '🔄', text: '30-day return policy on all cat furniture' },
     ],
@@ -213,7 +213,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       answer: 'The best dog car seat combines crash-tested restraint straps, a raised booster design for window viewing, and a non-slip base. For dogs under 30 lbs, booster seats provide the safest ride. For larger dogs, crash-tested harness-and-tether systems are recommended. All picks ship from US warehouses with 30-day returns.',
     },
     bulletUSPs: [
-      { icon: '✅', text: 'Crash-tested designs for dogs up to 75 lbs' },
+      { icon: '✅', text: 'Safety-focused designs for dogs up to 75 lbs' },
       { icon: '🇺🇸', text: 'US shipping — 5–10 business days' },
       { icon: '🔄', text: '30-day return policy on all travel gear' },
     ],
@@ -238,7 +238,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
       description: 'Step-by-step guide to selecting the safest car restraint for your dog\'s size and travel needs.',
       totalTime: 'PT7M',
       steps: [
-        { name: 'Weigh your dog', text: 'Dogs under 25 lbs: booster seat. 25–35 lbs: XL booster or harness. Over 35 lbs: crash-tested harness system.' },
+        { name: 'Weigh your dog', text: 'Dogs under 25 lbs: booster seat. 25–35 lbs: XL booster or harness. Over 35 lbs: safety-focused harness system.' },
         { name: 'Check crash test certification', text: 'Look for Center for Pet Safety (CPS) certification or FMVSS 213 testing. Uncertified seats may fail in collisions.' },
         { name: 'Verify vehicle compatibility', text: 'Check that the seat fits your vehicle\'s back seat and is compatible with your seatbelt or LATCH system.' },
         { name: 'Install and test', text: 'Thread straps through headrest posts, attach to seatbelt anchor. Pull-test firmly before placing your dog.' },

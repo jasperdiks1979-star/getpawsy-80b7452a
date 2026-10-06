@@ -29,28 +29,28 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
   'litter': {
     anchor: 'Best Cat Litter Box Furniture 2026',
     slug: 'best-cat-litter-box-furniture-enclosures-2026',
-    description: 'Hidden litter box enclosures tested for odor control and décor.',
+    description: 'Hidden litter box enclosures compared for odor control and décor.',
   },
   // ── Cat Furniture cluster ──
   'cat-trees-and-condos': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
-    description: '9 cat trees tested for stability, enrichment & value. Large cats, budget picks & more.',
+    description: '9 cat trees compared for stability, enrichment & value. Large cats, budget picks & more.',
   },
   'cat-furniture': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
-    description: '9 cat trees tested for stability, enrichment & value. carefully selected picks.',
+    description: '9 cat trees compared for stability, enrichment & value. carefully selected picks.',
   },
   'cat furniture': {
     anchor: 'Best Cat Trees (2026) — Complete Buyer\'s Guide',
     slug: 'best-cat-trees-2026',
-    description: '9 cat trees tested for stability, enrichment & value. carefully selected picks.',
+    description: '9 cat trees compared for stability, enrichment & value. carefully selected picks.',
   },
   'cat-scratching-posts': {
     anchor: 'Best Cat Scratching Posts for Large Cats',
     slug: 'best-cat-trees-2026',
-    description: 'Heavy-duty scratching posts tested for stability and durability.',
+    description: 'Heavy-duty scratching posts compared for stability and durability.',
   },
   'cat-hammocks': {
     anchor: 'Wall-Mounted Cat Shelves & Perches Guide',
@@ -61,12 +61,12 @@ const CATEGORY_GUIDE_MAP: Record<string, GuideMapping> = {
   'cat-toys': {
     anchor: 'Best Cat Toys for Indoor Cats 2026',
     slug: 'best-cat-toys-for-indoor-cats',
-    description: 'Interactive toys tested to beat boredom and keep indoor cats active.',
+    description: 'Interactive toys compared to beat boredom and keep indoor cats active.',
   },
   'cat toys': {
     anchor: 'Best Cat Toys for Indoor Cats 2026',
     slug: 'best-cat-toys-for-indoor-cats',
-    description: 'Interactive toys tested to beat boredom and keep indoor cats active.',
+    description: 'Interactive toys compared to beat boredom and keep indoor cats active.',
   },
   // ── Dog Enrichment cluster ──
   'dog-toys': {

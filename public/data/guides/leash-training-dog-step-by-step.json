@@ -7,24 +7,61 @@
   "excerpt": "A structured 7-day plan to stop leash pulling using positive reinforcement. Covers harness selection, heel position training, and managing reactive behavior.",
   "quickAnswer": "Stop leash pulling in 7 days: (1) Switch to a front-clip no-pull harness, (2) Practice the 'be a tree' technique — stop walking every time the leash goes taut, (3) Reward loose-leash walking every 5 steps initially, gradually increasing the interval.",
   "category": "Dog Training",
-  "keywords": ["leash training dog", "stop dog pulling on leash", "loose leash walking", "how to leash train", "no pull harness training"],
+  "keywords": [
+    "leash training dog",
+    "stop dog pulling on leash",
+    "loose leash walking",
+    "how to leash train",
+    "no pull harness training"
+  ],
   "publishedAt": "2026-03-01",
   "updatedAt": "2026-03-01",
   "featuredImage": "/images/guides/leash-training-step-by-step-2026.jpg",
   "readingTime": 13,
-  "relatedCategories": ["dog-training", "dog-collars-and-leashes"],
-  "trustLines": ["7-day protocol tested with 50+ dogs", "Certified trainer-reviewed", "Updated March 2026"],
+  "relatedCategories": [
+    "dog-training",
+    "dog-collars-and-leashes"
+  ],
+  "trustLines": [
+    "7-day protocol tested with 50+ dogs",
+    "Certified trainer-reviewed",
+    "Updated March 2026"
+  ],
   "quickRecommendation": {
-    "bestOverall": { "name": "Tactical No-Pull Harness", "reason": "Front-clip design redirects pulling momentum. 4-point adjustable.", "link": "/collections/dog-leash-control" },
-    "bestBudget": { "name": "Adjustable Dog Harness", "reason": "Affordable front-clip option with padded chest plate.", "link": "/collections/dog-leash-control" },
-    "bestPremium": { "name": "Professional Training Harness Set", "reason": "Harness + 6ft leash + training guide. Complete system.", "link": "/collections/dog-leash-control" }
+    "bestOverall": {
+      "name": "Tactical No-Pull Harness",
+      "reason": "Front-clip design redirects pulling momentum. 4-point adjustable.",
+      "link": "/collections/dogs"
+    },
+    "bestBudget": {
+      "name": "Adjustable Dog Harness",
+      "reason": "Affordable front-clip option with padded chest plate.",
+      "link": "/collections/dogs"
+    },
+    "bestPremium": {
+      "name": "Professional Training Harness Set",
+      "reason": "Harness + 6ft leash + training guide. Complete system.",
+      "link": "/collections/dogs"
+    }
   },
   "comparisonProducts": [],
   "faq": [
-    { "question": "How long does leash training take?", "answer": "Most dogs show significant improvement within 7 days with consistent practice. Full reliability (walking past distractions without pulling) typically takes 3–4 weeks. Older dogs with established pulling habits may need 4–6 weeks." },
-    { "question": "Is a harness or collar better for leash training?", "answer": "A front-clip harness is best for training. It redirects your dog's momentum toward you when they pull, naturally discouraging the behavior. Collars put pressure on the throat, which can cause tracheal damage in dogs that pull hard." },
-    { "question": "Why does my dog pull on the leash?", "answer": "Dogs pull because walking faster gets them to exciting things — smells, other dogs, the park. Pulling 'works' from the dog's perspective. Training teaches them that walking next to you gets rewards, while pulling stops forward progress." },
-    { "question": "Should I use a retractable leash for training?", "answer": "Never. Retractable leashes teach dogs that pulling extends their range — the exact opposite of what you want. Use a standard 6-foot fixed leash for all training. Save retractable leashes for fully trained dogs in open areas." }
+    {
+      "question": "How long does leash training take?",
+      "answer": "Most dogs show significant improvement within 7 days with consistent practice. Full reliability (walking past distractions without pulling) typically takes 3–4 weeks. Older dogs with established pulling habits may need 4–6 weeks."
+    },
+    {
+      "question": "Is a harness or collar better for leash training?",
+      "answer": "A front-clip harness is best for training. It redirects your dog's momentum toward you when they pull, naturally discouraging the behavior. Collars put pressure on the throat, which can cause tracheal damage in dogs that pull hard."
+    },
+    {
+      "question": "Why does my dog pull on the leash?",
+      "answer": "Dogs pull because walking faster gets them to exciting things — smells, other dogs, the park. Pulling 'works' from the dog's perspective. Training teaches them that walking next to you gets rewards, while pulling stops forward progress."
+    },
+    {
+      "question": "Should I use a retractable leash for training?",
+      "answer": "Never. Retractable leashes teach dogs that pulling extends their range — the exact opposite of what you want. Use a standard 6-foot fixed leash for all training. Save retractable leashes for fully trained dogs in open areas."
+    }
   ],
   "sections": [
     {
@@ -33,7 +70,7 @@
     },
     {
       "heading": "Day 1–2: Equipment Setup & Indoor Foundation",
-      "content": "**Harness Selection:**\n- Front-clip no-pull harness (redirects pulling momentum)\n- Must fit snugly but allow two fingers under any strap\n- [Browse our curated harness collection →](/collections/dog-leash-control)\n\n**Indoor Exercises (Before Going Outside):**\n1. Put on harness → treat. Build positive association\n2. Stand still indoors. Click/treat every time your dog stands beside you (either side)\n3. Take 3 steps. If dog walks with you → treat. If they rush ahead → stop and wait\n4. Practice 5-minute sessions, 3–4 times throughout the day\n\nThe goal isn't perfection — it's establishing the concept: 'next to human = rewards, pulling = nothing happens.'"
+      "content": "**Harness Selection:**\n- Front-clip no-pull harness (redirects pulling momentum)\n- Must fit snugly but allow two fingers under any strap\n- [Browse our curated harness collection →](/collections/dogs)\n\n**Indoor Exercises (Before Going Outside):**\n1. Put on harness → treat. Build positive association\n2. Stand still indoors. Click/treat every time your dog stands beside you (either side)\n3. Take 3 steps. If dog walks with you → treat. If they rush ahead → stop and wait\n4. Practice 5-minute sessions, 3–4 times throughout the day\n\nThe goal isn't perfection — it's establishing the concept: 'next to human = rewards, pulling = nothing happens.'"
     },
     {
       "heading": "Day 3–5: The 'Be A Tree' Protocol",
@@ -41,23 +78,47 @@
     },
     {
       "heading": "Day 5–7: Adding Duration & Distractions",
-      "content": "Your dog should now be offering loose-leash walking for short stretches. Time to generalize:\n\n1. **Increase distance between treats** — reward every 10 steps instead of 5\n2. **Add mild distractions** — practice on a slightly busier street\n3. **Practice direction changes** — randomly turn 180° and reward your dog for following\n4. **Introduce 'heel' cue** — when dog is in perfect position, say 'heel' then treat. This names the behavior\n\n**For Reactive Dogs (lunging at other dogs/people):**\n- Maintain at least 30 feet of distance from triggers initially\n- When your dog notices a trigger but DOESN'T react → treat heavily\n- Gradually decrease distance over weeks (this is counter-conditioning, not a 7-day fix)\n- Consider a [double-clip harness](/collections/dog-leash-control) for extra control with reactive dogs"
+      "content": "Your dog should now be offering loose-leash walking for short stretches. Time to generalize:\n\n1. **Increase distance between treats** — reward every 10 steps instead of 5\n2. **Add mild distractions** — practice on a slightly busier street\n3. **Practice direction changes** — randomly turn 180° and reward your dog for following\n4. **Introduce 'heel' cue** — when dog is in perfect position, say 'heel' then treat. This names the behavior\n\n**For Reactive Dogs (lunging at other dogs/people):**\n- Maintain at least 30 feet of distance from triggers initially\n- When your dog notices a trigger but DOESN'T react → treat heavily\n- Gradually decrease distance over weeks (this is counter-conditioning, not a 7-day fix)\n- Consider a [double-clip harness](/collections/dogs) for extra control with reactive dogs"
     },
     {
       "heading": "Maintaining Success After Day 7",
-      "content": "The 7-day protocol builds the foundation, but consistency is everything:\n\n- **Never allow pulling to 'work'** — if you let them pull to the park 'just this once,' you've reinforced 100 training sessions\n- **Gradually reduce treats** to intermittent reinforcement (random rewards are actually MORE motivating long-term)\n- **Practice in new environments** — dogs don't generalize well. Train on different routes\n- **Add a long training line** for recall practice — [browse training accessories →](/collections/dog-training-accessories)\n\n**When to Seek Professional Help:**\n- Dog becomes aggressive when corrected\n- Pulling is fear-based (trying to flee, not explore)\n- No improvement after 3 weeks of consistent practice"
+      "content": "The 7-day protocol builds the foundation, but consistency is everything:\n\n- **Never allow pulling to 'work'** — if you let them pull to the park 'just this once,' you've reinforced 100 training sessions\n- **Gradually reduce treats** to intermittent reinforcement (random rewards are actually MORE motivating long-term)\n- **Practice in new environments** — dogs don't generalize well. Train on different routes\n- **Add a long training line** for recall practice — [browse training accessories →](/collections/dogs)\n\n**When to Seek Professional Help:**\n- Dog becomes aggressive when corrected\n- Pulling is fear-based (trying to flee, not explore)\n- No improvement after 3 weeks of consistent practice"
     }
   ],
   "relatedGuides": [
-    { "slug": "complete-dog-training-guide-2026", "label": "Complete Dog Training Guide 2026" },
-    { "slug": "puppy-training-first-30-days", "label": "Puppy Training First 30 Days" },
-    { "slug": "best-anti-bark-training-methods", "label": "Anti-Bark Training Methods" }
+    {
+      "slug": "complete-dog-training-guide-2026",
+      "label": "Complete Dog Training Guide 2026"
+    },
+    {
+      "slug": "puppy-training-first-30-days",
+      "label": "Puppy Training First 30 Days"
+    },
+    {
+      "slug": "best-anti-bark-training-methods",
+      "label": "Anti-Bark Training Methods"
+    }
   ],
   "relatedCollections": [
-    { "slug": "dog-leash-control", "label": "Shop Leash & Control Tools" },
-    { "slug": "dog-training-accessories", "label": "Training Accessories" },
-    { "slug": "puppy-training-essentials", "label": "Puppy Essentials" },
-    { "slug": "dog-anti-bark", "label": "Anti-Bark Solutions" },
-    { "slug": "dog-potty-training", "label": "Potty Training Gear" }
+    {
+      "slug": "dog-leash-control",
+      "label": "Shop Leash & Control Tools"
+    },
+    {
+      "slug": "dog-training-accessories",
+      "label": "Training Accessories"
+    },
+    {
+      "slug": "puppy-training-essentials",
+      "label": "Puppy Essentials"
+    },
+    {
+      "slug": "dog-anti-bark",
+      "label": "Anti-Bark Solutions"
+    },
+    {
+      "slug": "dog-potty-training",
+      "label": "Potty Training Gear"
+    }
   ]
 }

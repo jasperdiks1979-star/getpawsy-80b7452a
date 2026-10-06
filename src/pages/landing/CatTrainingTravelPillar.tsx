@@ -28,7 +28,7 @@ const faqJsonLd = {
     {
       '@type': 'Question',
       name: 'What is the best cat tree for large cats?',
-      acceptedAnswer: { '@type': 'Answer', text: 'For large cats (15+ lbs), look for cat trees with wide platforms (18"+), thick sisal posts (4.5"+), and a heavy base (30+ lbs). Stability-tested trees for breeds like Maine Coons should support 50+ lbs total weight.' },
+      acceptedAnswer: { '@type': 'Answer', text: 'For large cats (15+ lbs), look for cat trees with wide platforms (18"+), thick sisal posts (4.5"+), and a heavy base (30+ lbs). Stability-compared trees for breeds like Maine Coons should support 50+ lbs total weight.' },
     },
     {
       '@type': 'Question',

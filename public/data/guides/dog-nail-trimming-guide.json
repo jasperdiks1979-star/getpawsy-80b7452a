@@ -5,15 +5,21 @@
   "seoDescription": "Step-by-step guide to trimming dog nails safely at home. Learn to identify the quick, choose the right tool, and make nail trimming stress-free for your dog.",
   "excerpt": "A step-by-step guide to safe nail trimming at home. Learn the right technique, how to avoid the quick, and which tools work best for your dog's size.",
   "category": "Dog Grooming",
-  "keywords": ["how to trim dog nails", "dog nail clipping guide", "cut dog nails at home"],
+  "keywords": [
+    "how to trim dog nails",
+    "dog nail clipping guide",
+    "cut dog nails at home"
+  ],
   "publishedAt": "2026-03-10",
   "updatedAt": "2026-03-12",
   "readingTime": 8,
-  "relatedCategories": ["dog-grooming-kits"],
+  "relatedCategories": [
+    "dog-grooming-kits"
+  ],
   "sections": [
     {
       "heading": "Why Regular Nail Trimming Matters",
-      "content": "Overgrown nails aren't just uncomfortable — they cause real health problems:\n\n- **Splayed toes** that affect walking gait\n- **Joint stress** from altered posture\n- **Painful curling** where nails grow into paw pads\n- **Increased injury risk** from nails catching on surfaces\n\nTrim nails every 2-3 weeks. If you can hear clicking on hard floors, they're overdue.\n\nFor the complete grooming toolkit, read our [dog grooming tools guide](/guides/dog-grooming-tools-guide) and browse [grooming kits](/collections/best-dog-grooming-kits)."
+      "content": "Overgrown nails aren't just uncomfortable — they cause real health problems:\n\n- **Splayed toes** that affect walking gait\n- **Joint stress** from altered posture\n- **Painful curling** where nails grow into paw pads\n- **Increased injury risk** from nails catching on surfaces\n\nTrim nails every 2-3 weeks. If you can hear clicking on hard floors, they're overdue.\n\nFor the complete grooming toolkit, read our [dog grooming tools guide](/guides/dog-grooming-tools-guide) and browse [grooming kits](/collections/dogs)."
     },
     {
       "heading": "Step-by-Step Nail Trimming",
@@ -25,9 +31,18 @@
     }
   ],
   "faq": [
-    { "question": "How short should I cut my dog's nails?", "answer": "Trim until the nails don't touch the ground when your dog is standing. For dark nails, cut in small increments until you see a chalky white ring in the nail cross-section — stop there." },
-    { "question": "What if I cut the quick?", "answer": "Apply styptic powder or cornstarch to the nail to stop bleeding. Keep your dog calm. The bleeding usually stops within 5 minutes. It's painful but not dangerous." },
-    { "question": "My dog hates nail trimming. What do I do?", "answer": "Start slow — touch paws with treats for a few days. Then clip one nail per session. Gradually increase. Use a nail grinder instead of clippers — they're quieter and less jarring." }
+    {
+      "question": "How short should I cut my dog's nails?",
+      "answer": "Trim until the nails don't touch the ground when your dog is standing. For dark nails, cut in small increments until you see a chalky white ring in the nail cross-section — stop there."
+    },
+    {
+      "question": "What if I cut the quick?",
+      "answer": "Apply styptic powder or cornstarch to the nail to stop bleeding. Keep your dog calm. The bleeding usually stops within 5 minutes. It's painful but not dangerous."
+    },
+    {
+      "question": "My dog hates nail trimming. What do I do?",
+      "answer": "Start slow — touch paws with treats for a few days. Then clip one nail per session. Gradually increase. Use a nail grinder instead of clippers — they're quieter and less jarring."
+    }
   ],
   "featuredSnippet": "To trim dog nails safely: use guillotine clippers for small dogs or scissor clippers for large dogs. Cut at a 45-degree angle in small increments. Stop when you see a chalky white ring on dark nails, or before the pink quick on light nails. Have styptic powder ready."
 }
