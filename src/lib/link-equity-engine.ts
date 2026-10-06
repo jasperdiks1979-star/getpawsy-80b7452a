@@ -230,7 +230,7 @@ const TP20_PRODUCTS: TP20Product[] = [
     anchors: {
       exact: ['large cat tree', 'multi-level cat tower'],
       partial: ['sturdy tower for big cats', 'cat tree with multiple levels'],
-      natural: ['our stability-tested tower', 'GetPawsy large cat pick'],
+      natural: ['our stable tower pick', 'GetPawsy large cat pick'],
     },
     injections: [],
   },
