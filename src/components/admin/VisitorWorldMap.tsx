@@ -297,6 +297,7 @@ export const VisitorWorldMap = ({
   const [mapInitAttempt, setMapInitAttempt] = useState(0);
   const [renderedMapboxSourceFeatureCount, setRenderedMapboxSourceFeatureCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showForensicLive, setShowForensicLive] = useState(false);
   const [mapContainerReady, setMapContainerReady] = useState(false);
   // Collapsed "Bron-audit" panel gate — see the deferred raw query below.
   const [auditOpen, setAuditOpen] = useState(false);
@@ -773,6 +774,7 @@ export const VisitorWorldMap = ({
     if (!isLiveNow) {
       return {
         markers: [],
+        forensicMarkers: [],
         counts: { browsing: 0, cart: 0, checkout: 0 },
         totalLiveVisitors: 0,
         commercialLiveVisitors: 0,
@@ -1190,7 +1192,10 @@ export const VisitorWorldMap = ({
       // Live mode renders visitor_activity heartbeat features (presence);
       // canonical mode renders analytics-canonical features (business truth).
       const geojsonRaw = isLiveNow
-        ? livePresenceMarkersToGeoJson(liveModel.markers)
+        ? livePresenceMarkersToGeoJson([
+            ...liveModel.markers,
+            ...(showForensicLive ? liveModel.forensicMarkers : []),
+          ])
         : markerFeaturesToGeoJsonWithCanonical(markerFeatures, canonicalSessionIdSet);
       // Apply the source-group chip filter to the Mapbox layer too, so the
       // chip parity holds for both DOM and circle-layer markers.
@@ -1226,6 +1231,7 @@ export const VisitorWorldMap = ({
           type: "heatmap",
           source: "visitor-map-source",
           layout: { visibility: showHeatmap ? "visible" : "none" },
+          filter: ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
           paint: {
             "heatmap-weight": ["get", "weight"],
             "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
@@ -1272,8 +1278,10 @@ export const VisitorWorldMap = ({
               6, ["+", 8, ["*", ["coalesce", ["get", "weight"], 1], 3]],
             ],
             "circle-opacity": [
-              "interpolate", ["linear"], ["coalesce", ["get", "weight"], 1],
-              1, 0.75, 2, 0.9, 3, 1,
+              "case",
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+              0.24,
             ],
             "circle-stroke-color": [
               "match", ["coalesce", ["get", "sourceClass"], "unclassified"],
@@ -1295,8 +1303,18 @@ export const VisitorWorldMap = ({
         "visitor-markers",
         "circle-opacity",
         showHeatmap
-          ? ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85]
-          : ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+          ? [
+              "case",
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85],
+              0.18,
+            ]
+          : [
+              "case",
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+              0.24,
+            ],
       );
       markersRef.current.forEach((marker) => {
         const elStyle = (marker.getElement() as HTMLElement).style;
@@ -1320,14 +1338,15 @@ export const VisitorWorldMap = ({
 
     applyCanonicalFeatures();
     return () => { cancelled = true; };
-  }, [showHeatmap, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
+  }, [showHeatmap, showForensicLive, markerFeatures, mapLoaded, canonicalSessionIdSet, isLiveNow, liveModel, markerGroupFilter]);
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const activeMarkers = isLiveNow ? liveModel.markers : markerFeatures;
+    if (!map.current || !mapLoaded || activeMarkers.length === 0) return;
     if (sourceFilter === "all") return; // Don't auto-fly for "all"
 
-    const withCoords = markerFeatures;
+    const withCoords = activeMarkers;
 
     // Calculate bounding box
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
@@ -1351,20 +1370,21 @@ export const VisitorWorldMap = ({
       zoom,
       duration: 1500,
     });
-  }, [sourceFilter, markerFeatures, mapLoaded]);
+  }, [sourceFilter, markerFeatures, liveModel.markers, isLiveNow, mapLoaded]);
 
   // Keep canonical geo features in view after the canonical response loads.
   useEffect(() => {
-    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const activeMarkers = isLiveNow ? liveModel.markers : markerFeatures;
+    if (!map.current || !mapLoaded || activeMarkers.length === 0) return;
     const bounds = new mapboxgl.LngLatBounds();
-    markerFeatures.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
+    activeMarkers.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
     if (bounds.isEmpty()) return;
     map.current.fitBounds(bounds, {
       padding: isFullscreen ? 80 : 60,
       maxZoom: markerFeatures.length === 1 ? 5 : 3.5,
       duration: 900,
     });
-  }, [markerFeatures, mapLoaded, isFullscreen]);
+  }, [markerFeatures, liveModel.markers, isLiveNow, mapLoaded, isFullscreen]);
 
   // Update markers when activities change
   useEffect(() => {
@@ -1696,7 +1716,9 @@ export const VisitorWorldMap = ({
     hotSpotMarkersRef.current.forEach((marker) => marker.remove());
     hotSpotMarkersRef.current = [];
 
-    if (!showHotSpots || showHeatmap) return;
+    // Hot spots are historical conversion summaries. Never overlay them in
+    // Live now, where they could be mistaken for current shopper presence.
+    if (isLiveNow || !showHotSpots || showHeatmap) return;
 
     // Add hot spot markers after topLocations is calculated (we'll use a timeout to ensure calculation is done)
     const addHotSpotMarkers = () => {
@@ -1862,7 +1884,7 @@ export const VisitorWorldMap = ({
     };
 
     addHotSpotMarkers();
-  }, [filteredActivities, mapLoaded, showHotSpots, showHeatmap]);
+  }, [filteredActivities, isLiveNow, mapLoaded, showHotSpots, showHeatmap]);
 
   // Counters — derived from truth.sessions when available, so badges here
   // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
@@ -2756,17 +2778,30 @@ export const VisitorWorldMap = ({
               </Label>
             </div>
 
+            {isLiveNow && (
+              <div className="flex items-center gap-2 px-2 border-l border-border">
+                <Switch
+                  id="forensic-live-toggle"
+                  checked={showForensicLive}
+                  onCheckedChange={setShowForensicLive}
+                />
+                <Label htmlFor="forensic-live-toggle" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                  Forensic context
+                </Label>
+              </div>
+            )}
+
             {/* Hot Spots Toggle */}
             <div className="flex items-center gap-2 px-2 border-l border-border">
               <Switch
                 id="hotspots-toggle"
                 checked={showHotSpots}
                 onCheckedChange={setShowHotSpots}
-                disabled={showHeatmap}
+                disabled={isLiveNow || showHeatmap}
               />
               <Label htmlFor="hotspots-toggle" className="flex items-center gap-1.5 cursor-pointer">
                 <Sparkles className={`w-4 h-4 ${showHotSpots && !showHeatmap ? "text-green-500" : "text-muted-foreground"}`} />
-                <span className="text-sm">Hot Spots</span>
+                <span className="text-sm">Historical Hot Spots</span>
               </Label>
             </div>
 
@@ -3039,6 +3074,18 @@ export const VisitorWorldMap = ({
             </span>
           ))}
           <span className="opacity-70">· size / glow = activity intensity</span>
+          {isLiveNow && (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                shopper dot
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-full border border-dashed border-muted-foreground opacity-40" aria-hidden="true" />
+                technical/unconfirmed (optional)
+              </span>
+            </>
+          )}
         </div>
 
         {/* Stats Row */}
@@ -3051,7 +3098,7 @@ export const VisitorWorldMap = ({
             >
               <Radio className="w-4 h-4 animate-pulse text-green-600 dark:text-green-400" />
               <span className="font-semibold">Live presence</span>
-              <span>— realtime bezoekers (heartbeat &lt; 120s). Dit is GEEN canonieke KPI. Voor omzet / conversie: gebruik Laatste 5h / 10h / 24h.</span>
+              <span>— shopper dots match “Nu online”; technical/unconfirmed locations are optional forensic context. Dit is GEEN canonieke KPI.</span>
             </div>
           )}
           <Badge variant="secondary" className="flex items-center gap-1">

@@ -334,6 +334,7 @@ export interface LivePresenceMarker {
   activity_type: "browsing" | "cart" | "checkout";
   isCanonical: boolean;
   canonicalMatchBy: "session" | "visitor" | null;
+  verdict: "commercial" | "technical" | "unverified";
 }
 
 export interface LivePresenceDiagnostics {
@@ -346,7 +347,10 @@ export interface LivePresenceDiagnostics {
 }
 
 export interface LivePresenceModel {
+  /** Prominent live-shopper markers; exactly the same eligible population as the counter. */
   markers: LivePresenceMarker[];
+  /** Geo-tagged technical/unverified presence retained for the optional forensic layer. */
+  forensicMarkers: LivePresenceMarker[];
   diagnostics: LivePresenceDiagnostics;
   counts: { browsing: number; cart: number; checkout: number };
   /** RAW forensic presence: every deduped live session, incl. technical. */
@@ -402,10 +406,21 @@ export function buildLivePresenceModel(
   let overlapSession = 0;
   let overlapVisitor = 0;
   const markers: LivePresenceMarker[] = [];
+  const forensicMarkers: LivePresenceMarker[] = [];
+  const liveBreakdown = { commercial: 0, technical: 0, unverified: 0 };
 
   for (const a of deduped) {
     if (opts.canonicalSessionIds.has(a.session_id)) overlapSession += 1;
     if (a.visitor_id && opts.canonicalVisitorIds.has(a.visitor_id)) overlapVisitor += 1;
+    const ev = opts.evidenceBySession?.get(a.session_id);
+    const verdict = classifyLiveSession({
+      ...ev,
+      is_internal: a.is_internal === true || ev?.is_internal === true,
+      is_bot_suspect: a.is_bot_suspect === true || ev?.is_bot_suspect === true,
+      country: ev?.country ?? a.country,
+      activity_type: a.activity_type ?? null,
+    });
+    liveBreakdown[verdict] += 1;
     if (!isValidLatLng(a.latitude, a.longitude)) continue;
     liveWithGeo += 1;
     const { activity_type, matchBy } = resolveLiveActivityType(
@@ -414,7 +429,7 @@ export function buildLivePresenceModel(
       opts.canonicalBySession,
       opts.canonicalByVisitor,
     );
-    markers.push({
+    const marker: LivePresenceMarker = {
       session_id: a.session_id,
       visitor_id: a.visitor_id ?? null,
       latitude: a.latitude as number,
@@ -427,20 +442,10 @@ export function buildLivePresenceModel(
       activity_type,
       isCanonical: opts.canonicalSessionIds.has(a.session_id) || (!!a.visitor_id && opts.canonicalVisitorIds.has(a.visitor_id)),
       canonicalMatchBy: matchBy,
-    });
-  }
-
-  const liveBreakdown = { commercial: 0, technical: 0, unverified: 0 };
-  for (const a of deduped) {
-    const ev = opts.evidenceBySession?.get(a.session_id);
-    const verdict = classifyLiveSession({
-      ...ev,
-      is_internal: a.is_internal === true || ev?.is_internal === true,
-      is_bot_suspect: a.is_bot_suspect === true || ev?.is_bot_suspect === true,
-      country: ev?.country ?? a.country,
-      activity_type: a.activity_type ?? null,
-    });
-    liveBreakdown[verdict] += 1;
+      verdict,
+    };
+    if (verdict === "commercial") markers.push(marker);
+    else forensicMarkers.push(marker);
   }
 
   const counts = {
@@ -451,6 +456,7 @@ export function buildLivePresenceModel(
 
   return {
     markers,
+    forensicMarkers,
     counts,
     totalLiveVisitors: deduped.length,
     commercialLiveVisitors: liveBreakdown.commercial,
@@ -509,6 +515,7 @@ export function livePresenceMarkersToGeoJson(markers: LivePresenceMarker[]): Geo
           is_internal: false,
           canonical: m.isCanonical,
           mode: "live",
+          verdict: m.verdict,
           last_seen_at: m.last_seen_at,
           country: m.country,
           city: m.city,

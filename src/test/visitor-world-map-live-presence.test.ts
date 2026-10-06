@@ -57,11 +57,11 @@ describe("Live presence model", () => {
     expect(model.diagnostics.liveActivityRows).toBe(5);
     expect(model.diagnostics.activeLiveVisitors).toBe(4);
     expect(model.diagnostics.liveWithGeo).toBe(3);
-    expect(model.diagnostics.liveMarkersRendered).toBe(3);
+    expect(model.diagnostics.liveMarkersRendered).toBe(0);
     expect(model.diagnostics.overlapSession).toBe(1);
     expect(model.diagnostics.overlapVisitor).toBe(2);
 
-    const bySession = new Map(model.markers.map((m) => [m.session_id, m]));
+    const bySession = new Map(model.forensicMarkers.map((m) => [m.session_id, m]));
     expect(bySession.get("a")?.activity_type).toBe("cart");
     expect(bySession.get("a")?.isCanonical).toBe(true);
     expect(bySession.get("a")?.canonicalMatchBy).toBe("session");
@@ -72,7 +72,7 @@ describe("Live presence model", () => {
     expect(bySession.get("d")?.activity_type).toBe("checkout");
     expect(bySession.get("d")?.canonicalMatchBy).toBe("visitor");
 
-    expect(model.counts).toEqual({ browsing: 1, cart: 1, checkout: 1 });
+    expect(model.counts).toEqual({ browsing: 0, cart: 0, checkout: 0 });
     expect(model.totalLiveVisitors).toBe(4);
   });
 
@@ -86,10 +86,11 @@ describe("Live presence model", () => {
       canonicalSessionIds: new Set(),
       canonicalVisitorIds: new Set(),
     });
-    const geojson = livePresenceMarkersToGeoJson(model.markers);
+    const geojson = livePresenceMarkersToGeoJson(model.forensicMarkers);
     expect(geojson.features).toHaveLength(1);
     expect(geojson.features[0].properties?.mode).toBe("live");
     expect(geojson.features[0].properties?.canonical).toBe(false);
+    expect(geojson.features[0].properties?.verdict).toBe("unverified");
     expect(geojson.features[0].geometry.coordinates).toEqual([20, 10]);
   });
 });
