@@ -606,7 +606,7 @@ const SeoCollection = () => {
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={collection.meta_title || collection.name} />
-        <meta name="twitter:description" content={collection.meta_description || collection.seo_intro.substring(0, 155)} />
+        <meta name="twitter:description" content={CANONICAL_COLLECTION_META[collection.slug]?.description || collection.meta_description || collection.seo_intro.substring(0, 155)} />
         
         {collectionJsonLd && (
           <script type="application/ld+json">
@@ -671,10 +671,10 @@ const SeoCollection = () => {
             {collection.primary_keyword}
           </Badge>
           <h1 className="text-2xl md:text-4xl font-display font-bold mb-1">
-            {collection.name}
+            {CANONICAL_COLLECTION_META[collection.slug]?.h1 || collection.name}
           </h1>
           <p className="text-muted-foreground text-sm md:text-base max-w-3xl line-clamp-2">
-            {(collection.meta_description || collection.seo_intro || '').substring(0, 300).replace(/<[^>]*>/g, '')}
+            {(CANONICAL_COLLECTION_META[collection.slug]?.intro || collection.meta_description || collection.seo_intro || '').substring(0, 300).replace(/<[^>]*>/g, '')}
           </p>
         </header>
 
@@ -856,7 +856,7 @@ const SeoCollection = () => {
         </section>
 
         {/* ── SEO GUIDE CONTENT — below products, always collapsed ── */}
-        {collection.seo_intro && collection.seo_intro.length > 200 && (
+        {!CANONICAL_COLLECTION_META[collection.slug]?.intro && collection.seo_intro && collection.seo_intro.length > 200 && (
           <section id="seo-content" className="mb-12">
             <Accordion type="single" collapsible>
               <AccordionItem value="guide-content" className="border rounded-xl">
