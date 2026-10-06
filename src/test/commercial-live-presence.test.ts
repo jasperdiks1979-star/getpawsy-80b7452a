@@ -22,6 +22,8 @@ describe("commercial live presence (6 Oct burst pattern)", () => {
     }
     const m = buildLivePresenceModel(rows, { ...empty, evidenceBySession: ev });
     expect(m.commercialLiveVisitors).toBe(0);
+    expect(m.markers).toHaveLength(0);
+    expect(m.forensicMarkers).toHaveLength(0); // burst has no valid geo
     expect(m.totalLiveVisitors).toBe(40); // forensic raw view preserved
     expect(m.liveBreakdown).toEqual({ commercial: 0, technical: 20, unverified: 20 });
   });
@@ -35,6 +37,30 @@ describe("commercial live presence (6 Oct burst pattern)", () => {
     ]);
     const m = buildLivePresenceModel(rows, { ...empty, evidenceBySession: ev });
     expect(m.commercialLiveVisitors).toBe(1);
+    expect(m.markers.map((marker) => marker.session_id)).toEqual(["h1"]);
+    expect(m.forensicMarkers).toHaveLength(0);
+  });
+
+  it("keeps geo-tagged technical and unverified sessions only in the forensic marker layer", () => {
+    const rows: LivePresenceActivity[] = [
+      { session_id: "verifier", latitude: 47.61, longitude: -122.33, country: "US", city: "Seattle", created_at: now, activity_type: "browsing", is_bot_suspect: true },
+      { session_id: "unknown", latitude: 34.05, longitude: -118.24, country: "US", city: "Los Angeles", created_at: now, activity_type: "browsing" },
+      { session_id: "shopper", latitude: 29.76, longitude: -95.37, country: "US", city: "Houston", created_at: now, activity_type: "product_view" },
+    ];
+    const ev = new Map<string, LiveSessionEvidence>([
+      ["verifier", { traffic_class: "VERIFIER", country: "US" }],
+      ["unknown", { traffic_class: "UNKNOWN", country: "US", interaction_count: 0 }],
+      ["shopper", { traffic_class: "HUMAN_PROBABLE", country: "US", has_product_view: true }],
+    ]);
+
+    const m = buildLivePresenceModel(rows, { ...empty, evidenceBySession: ev });
+    expect(m.commercialLiveVisitors).toBe(1);
+    expect(m.markers.map((marker) => marker.session_id)).toEqual(["shopper"]);
+    expect(m.forensicMarkers.map((marker) => [marker.session_id, marker.verdict])).toEqual([
+      ["verifier", "technical"],
+      ["unknown", "unverified"],
+    ]);
+    expect(m.diagnostics.liveMarkersRendered).toBe(m.commercialLiveVisitors);
   });
 
   it("UNKNOWN with only a pageview is never promoted to shopper", () => {

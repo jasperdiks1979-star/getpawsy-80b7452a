@@ -1,12 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { buildLivePresenceModel } from "@/lib/visitorWorldMapCanonicalFeatures";
 
-// Stage 5b regression invariant: whenever the live buffer contains at least
-// one activity row with valid geo, the live presence model MUST emit at
-// least one marker feature. If this ever regresses, live visitors silently
-// disappear from the map even though the diagnostics panel shows presence.
+// Live shopper markers and the shopper counter must use identical eligibility.
+// Geo-tagged non-shoppers remain available through the forensic marker layer.
 describe("live map render invariant", () => {
-  it("sessions_with_geo > 0 => markerFeatures > 0", () => {
+  it("commercial shopper count equals prominent live markers", () => {
     const now = new Date().toISOString();
     const model = buildLivePresenceModel(
       [
@@ -36,10 +34,11 @@ describe("live map render invariant", () => {
         canonicalByVisitor: new Map(),
         canonicalSessionIds: new Set(),
         canonicalVisitorIds: new Set(),
+        evidenceBySession: new Map([["s1", { traffic_class: "HUMAN_PROBABLE", country: "US" }]]),
       },
     );
     expect(model.diagnostics.liveWithGeo).toBeGreaterThan(0);
-    expect(model.markers.length).toBeGreaterThan(0);
+    expect(model.markers.length).toBe(model.commercialLiveVisitors);
     expect(model.diagnostics.liveMarkersRendered).toBe(model.markers.length);
   });
 

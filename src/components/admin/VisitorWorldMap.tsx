@@ -1231,6 +1231,7 @@ export const VisitorWorldMap = ({
           type: "heatmap",
           source: "visitor-map-source",
           layout: { visibility: showHeatmap ? "visible" : "none" },
+          filter: ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
           paint: {
             "heatmap-weight": ["get", "weight"],
             "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
@@ -1278,7 +1279,7 @@ export const VisitorWorldMap = ({
             ],
             "circle-opacity": [
               "case",
-              ["==", ["get", "verdict"], "commercial"],
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
               ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
               0.24,
             ],
@@ -1302,8 +1303,18 @@ export const VisitorWorldMap = ({
         "visitor-markers",
         "circle-opacity",
         showHeatmap
-          ? ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85]
-          : ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+          ? [
+              "case",
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.55, 2, 0.7, 3, 0.85],
+              0.18,
+            ]
+          : [
+              "case",
+              ["any", ["!", ["has", "verdict"]], ["==", ["get", "verdict"], "commercial"]],
+              ["interpolate", ["linear"], ["coalesce", ["get", "weight"], 1], 1, 0.75, 2, 0.9, 3, 1],
+              0.24,
+            ],
       );
       markersRef.current.forEach((marker) => {
         const elStyle = (marker.getElement() as HTMLElement).style;
@@ -2763,6 +2774,19 @@ export const VisitorWorldMap = ({
               </Label>
             </div>
 
+            {isLiveNow && (
+              <div className="flex items-center gap-2 px-2 border-l border-border">
+                <Switch
+                  id="forensic-live-toggle"
+                  checked={showForensicLive}
+                  onCheckedChange={setShowForensicLive}
+                />
+                <Label htmlFor="forensic-live-toggle" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                  Forensic context
+                </Label>
+              </div>
+            )}
+
             {/* Hot Spots Toggle */}
             <div className="flex items-center gap-2 px-2 border-l border-border">
               <Switch
@@ -3046,6 +3070,18 @@ export const VisitorWorldMap = ({
             </span>
           ))}
           <span className="opacity-70">· size / glow = activity intensity</span>
+          {isLiveNow && (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                shopper dot
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-full border border-dashed border-muted-foreground opacity-40" aria-hidden="true" />
+                technical/unconfirmed (optional)
+              </span>
+            </>
+          )}
         </div>
 
         {/* Stats Row */}
@@ -3058,7 +3094,7 @@ export const VisitorWorldMap = ({
             >
               <Radio className="w-4 h-4 animate-pulse text-green-600 dark:text-green-400" />
               <span className="font-semibold">Live presence</span>
-              <span>— realtime bezoekers (heartbeat &lt; 120s). Dit is GEEN canonieke KPI. Voor omzet / conversie: gebruik Laatste 5h / 10h / 24h.</span>
+              <span>— shopper dots match “Nu online”; technical/unconfirmed locations are optional forensic context. Dit is GEEN canonieke KPI.</span>
             </div>
           )}
           <Badge variant="secondary" className="flex items-center gap-1">
