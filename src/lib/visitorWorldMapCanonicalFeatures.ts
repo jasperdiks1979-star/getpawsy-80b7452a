@@ -1,3 +1,4 @@
+import { classifyLiveSession, type LiveSessionEvidence } from "@/lib/commercialLivePresence";
 import { resolveCanonicalSource, type CanonicalSource } from "@/lib/canonicalSource";
 import type { TruthSession } from "@/hooks/useAnalyticsTruth";
 import { resolveMarkerVisual } from "@/lib/visitorWorldMapMarkerColor";
@@ -308,6 +309,9 @@ export interface LivePresenceActivity {
   utm_campaign?: string | null;
   last_seen_at?: string;
   created_at: string;
+  is_internal?: boolean | null;
+  is_bot_suspect?: boolean | null;
+  activity_type?: string | null;
 }
 
 export interface CanonicalFunnelFlags {
@@ -345,7 +349,11 @@ export interface LivePresenceModel {
   markers: LivePresenceMarker[];
   diagnostics: LivePresenceDiagnostics;
   counts: { browsing: number; cart: number; checkout: number };
+  /** RAW forensic presence: every deduped live session, incl. technical. */
   totalLiveVisitors: number;
+  /** Customer/commercial "Now online": see src/lib/commercialLivePresence.ts. */
+  commercialLiveVisitors: number;
+  liveBreakdown: { commercial: number; technical: number; unverified: number };
 }
 
 function resolveLiveActivityType(
@@ -377,6 +385,8 @@ export function buildLivePresenceModel(
     canonicalByVisitor: ReadonlyMap<string, CanonicalFunnelFlags>;
     canonicalSessionIds: ReadonlySet<string>;
     canonicalVisitorIds: ReadonlySet<string>;
+    /** Per-session classification evidence (canonical envelope). */
+    evidenceBySession?: ReadonlyMap<string, LiveSessionEvidence>;
   },
 ): LivePresenceModel {
   // Dedupe by session_id, keep the row with the latest last_seen_at.
@@ -420,6 +430,19 @@ export function buildLivePresenceModel(
     });
   }
 
+  const liveBreakdown = { commercial: 0, technical: 0, unverified: 0 };
+  for (const a of deduped) {
+    const ev = opts.evidenceBySession?.get(a.session_id);
+    const verdict = classifyLiveSession({
+      ...ev,
+      is_internal: a.is_internal === true || ev?.is_internal === true,
+      is_bot_suspect: a.is_bot_suspect === true || ev?.is_bot_suspect === true,
+      country: ev?.country ?? a.country,
+      activity_type: a.activity_type ?? null,
+    });
+    liveBreakdown[verdict] += 1;
+  }
+
   const counts = {
     browsing: markers.filter((m) => m.activity_type === "browsing").length,
     cart: markers.filter((m) => m.activity_type === "cart").length,
@@ -430,6 +453,8 @@ export function buildLivePresenceModel(
     markers,
     counts,
     totalLiveVisitors: deduped.length,
+    commercialLiveVisitors: liveBreakdown.commercial,
+    liveBreakdown,
     diagnostics: {
       liveActivityRows: activities.length,
       activeLiveVisitors: deduped.length,

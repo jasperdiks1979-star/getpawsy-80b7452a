@@ -54,6 +54,7 @@ import {
   type LivePresenceActivity,
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
+import type { LiveSessionEvidence } from "@/lib/commercialLivePresence";
 import {
   clusterMarkers,
   computeBoundsForMarkers,
@@ -774,6 +775,8 @@ export const VisitorWorldMap = ({
         markers: [],
         counts: { browsing: 0, cart: 0, checkout: 0 },
         totalLiveVisitors: 0,
+        commercialLiveVisitors: 0,
+        liveBreakdown: { commercial: 0, technical: 0, unverified: 0 },
         diagnostics: { liveActivityRows: 0, activeLiveVisitors: 0, liveWithGeo: 0, liveMarkersRendered: 0, overlapSession: 0, overlapVisitor: 0 },
       };
     }
@@ -792,14 +795,33 @@ export const VisitorWorldMap = ({
       utm_campaign: a.utm_campaign ?? null,
       last_seen_at: a.last_seen_at,
       created_at: a.created_at,
+      is_internal: (a as { is_internal?: boolean | null }).is_internal ?? null,
+      is_bot_suspect: (a as { is_bot_suspect?: boolean | null }).is_bot_suspect ?? null,
+      activity_type: a.activity_type ?? null,
     }));
+    const evidenceBySession = new Map<string, LiveSessionEvidence>();
+    for (const s of truth?.sessions ?? []) {
+      evidenceBySession.set(s.session_id, {
+        traffic_class: s.traffic_quality_class_v3 ?? null,
+        crawler_verified: s.crawler_verified ?? null,
+        is_internal: s.is_internal,
+        country: s.country,
+        has_product_view: s.has_product_view,
+        has_add_to_cart: s.has_add_to_cart,
+        has_view_cart: s.has_view_cart,
+        has_checkout: s.has_checkout,
+        has_purchase: s.has_purchase,
+        interaction_count: s.interaction_count ?? null,
+      });
+    }
     return buildLivePresenceModel(activityRows, {
+      evidenceBySession,
       canonicalBySession: canonicalFunnelBySession,
       canonicalByVisitor: canonicalFunnelByVisitor,
       canonicalSessionIds: canonicalSessionIdSet,
       canonicalVisitorIds: canonicalVisitorIdSet,
     });
-  }, [isLiveNow, activities, canonicalFunnelBySession, canonicalFunnelByVisitor, canonicalSessionIdSet, canonicalVisitorIdSet]);
+  }, [isLiveNow, activities, truth, canonicalFunnelBySession, canonicalFunnelByVisitor, canonicalSessionIdSet, canonicalVisitorIdSet]);
 
   // Overlap diagnostics — how many session_ids / visitor_ids from the raw
   // `visitor_activity` stream also appear in the canonical truth envelope.
@@ -1868,7 +1890,7 @@ export const VisitorWorldMap = ({
   // In live mode the counters show REALTIME PRESENCE only. They are labeled
   // as such in the UI so operators cannot confuse them with canonical KPIs.
   const counts = isLiveNow ? liveModel.counts : canonicalCounts;
-  const totalVisitors = isLiveNow ? liveModel.totalLiveVisitors : canonicalTotalVisitors;
+  const totalVisitors = isLiveNow ? liveModel.commercialLiveVisitors : canonicalTotalVisitors;
 
   if (import.meta.env.DEV && truth && filteredActivities) {
     if (!assertWorldMapRenderInvariant(mapDiagnostics)) {
@@ -2350,9 +2372,13 @@ export const VisitorWorldMap = ({
                 {totalVisitors}
               </div>
               <div className="text-xs text-gray-400 mt-0.5">
-                {timeRange === "live" ? "Nu online" : "Ruwe visitor-ID's"}
-
+                {timeRange === "live" ? "Nu online (shoppers)" : "Ruwe visitor-ID's"}
               </div>
+              {timeRange === "live" && (
+                <div className="text-[10px] text-gray-500 mt-0.5" data-live-raw-visitors={liveModel.totalLiveVisitors}>
+                  ruw {liveModel.totalLiveVisitors} · technisch {liveModel.liveBreakdown.technical} · onbevestigd {liveModel.liveBreakdown.unverified}
+                </div>
+              )}
             </div>
           </div>
           {counts.checkout > 0 && (
