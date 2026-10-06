@@ -1342,10 +1342,11 @@ export const VisitorWorldMap = ({
 
   // Auto-fly map to show filtered visitors when source filter changes
   useEffect(() => {
-    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const activeMarkers = isLiveNow ? liveModel.markers : markerFeatures;
+    if (!map.current || !mapLoaded || activeMarkers.length === 0) return;
     if (sourceFilter === "all") return; // Don't auto-fly for "all"
 
-    const withCoords = markerFeatures;
+    const withCoords = activeMarkers;
 
     // Calculate bounding box
     let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
@@ -1369,20 +1370,21 @@ export const VisitorWorldMap = ({
       zoom,
       duration: 1500,
     });
-  }, [sourceFilter, markerFeatures, mapLoaded]);
+  }, [sourceFilter, markerFeatures, liveModel.markers, isLiveNow, mapLoaded]);
 
   // Keep canonical geo features in view after the canonical response loads.
   useEffect(() => {
-    if (!map.current || !mapLoaded || markerFeatures.length === 0) return;
+    const activeMarkers = isLiveNow ? liveModel.markers : markerFeatures;
+    if (!map.current || !mapLoaded || activeMarkers.length === 0) return;
     const bounds = new mapboxgl.LngLatBounds();
-    markerFeatures.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
+    activeMarkers.forEach((feature) => bounds.extend([feature.longitude, feature.latitude]));
     if (bounds.isEmpty()) return;
     map.current.fitBounds(bounds, {
       padding: isFullscreen ? 80 : 60,
       maxZoom: markerFeatures.length === 1 ? 5 : 3.5,
       duration: 900,
     });
-  }, [markerFeatures, mapLoaded, isFullscreen]);
+  }, [markerFeatures, liveModel.markers, isLiveNow, mapLoaded, isFullscreen]);
 
   // Update markers when activities change
   useEffect(() => {
@@ -1714,7 +1716,9 @@ export const VisitorWorldMap = ({
     hotSpotMarkersRef.current.forEach((marker) => marker.remove());
     hotSpotMarkersRef.current = [];
 
-    if (!showHotSpots || showHeatmap) return;
+    // Hot spots are historical conversion summaries. Never overlay them in
+    // Live now, where they could be mistaken for current shopper presence.
+    if (isLiveNow || !showHotSpots || showHeatmap) return;
 
     // Add hot spot markers after topLocations is calculated (we'll use a timeout to ensure calculation is done)
     const addHotSpotMarkers = () => {
@@ -1880,7 +1884,7 @@ export const VisitorWorldMap = ({
     };
 
     addHotSpotMarkers();
-  }, [filteredActivities, mapLoaded, showHotSpots, showHeatmap]);
+  }, [filteredActivities, isLiveNow, mapLoaded, showHotSpots, showHeatmap]);
 
   // Counters — derived from truth.sessions when available, so badges here
   // ≡ CSV totals ≡ Summary totals ≡ Clean Analytics Panel. Fallback to the
@@ -2793,11 +2797,11 @@ export const VisitorWorldMap = ({
                 id="hotspots-toggle"
                 checked={showHotSpots}
                 onCheckedChange={setShowHotSpots}
-                disabled={showHeatmap}
+                disabled={isLiveNow || showHeatmap}
               />
               <Label htmlFor="hotspots-toggle" className="flex items-center gap-1.5 cursor-pointer">
                 <Sparkles className={`w-4 h-4 ${showHotSpots && !showHeatmap ? "text-green-500" : "text-muted-foreground"}`} />
-                <span className="text-sm">Hot Spots</span>
+                <span className="text-sm">Historical Hot Spots</span>
               </Label>
             </div>
 
