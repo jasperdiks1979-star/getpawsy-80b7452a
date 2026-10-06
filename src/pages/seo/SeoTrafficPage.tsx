@@ -263,7 +263,7 @@ function BestOverallHero({ pick, products, categories, species }: { pick: BestOv
             {pick.productSlug ? (
               <Link to={`/products/${pick.productSlug}`}>
                 <Button className="gap-2 bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white">
-                  <ShoppingCart className="w-4 h-4" /> Buy Now — Free Shipping
+                  <ShoppingCart className="w-4 h-4" /> Buy Now — Free Shipping $35+
                 </Button>
               </Link>
             ) : (
@@ -1017,7 +1017,7 @@ export default function SeoTrafficPage(props: SeoTrafficPageProps) {
         <section className="bg-muted/50 border border-border rounded-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
           <div>
             <Truck className="w-6 h-6 mx-auto mb-2 text-primary" />
-            <p className="font-semibold text-foreground">Free Shipping</p>
+            <p className="font-semibold text-foreground">Free Shipping $35+</p>
             <p className="text-muted-foreground text-xs">Orders over $35</p>
           </div>
           <div>

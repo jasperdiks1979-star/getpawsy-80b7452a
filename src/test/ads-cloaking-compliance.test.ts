@@ -13,6 +13,7 @@ import {
   BUSINESS_LOCATION,
   BUSINESS_OPERATOR,
 } from '@/lib/shipping-constants';
+import { APPROVED_FREE_SHIPPING_LINE } from '@/config/merchant-policy';
 
 function walk(dir: string, exts: RegExp, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -48,6 +49,22 @@ describe('authoritative policy values', () => {
   });
   it('trust strip free-shipping label matches the configured threshold', () => {
     expect(TRUST_LABELS.free_shipping).toBe(`Free shipping over $${FREE_SHIPPING_THRESHOLD}`);
+    expect(APPROVED_FREE_SHIPPING_LINE).toBe(`Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+`);
+  });
+
+  it('shopper-visible free-shipping promises state the configured threshold', () => {
+    const files = [...PUBLIC_CONTENT, ...STOREFRONT_SRC];
+    const unqualified = /(?:buy now\s*[—-]\s*)?free (?:us )?shipping(?![^\n"'<]{0,60}(?:\$\{?FREE_SHIPPING_THRESHOLD\}?|\$35|eligible|qualif|available|unlocked|remaining|threshold))/gi;
+    const allowNonPromise = /(?:question:\s*['"]Do you offer free shipping|label:\s*['"]Free Shipping['"]|aria-label=['"]Free shipping offer)/i;
+    const hits: string[] = [];
+    for (const f of files) {
+      const lines = readFileSync(f, 'utf8').split('\n');
+      lines.forEach((line, index) => {
+        if (unqualified.test(line) && !allowNonPromise.test(line)) hits.push(`${f}:${index + 1}`);
+        unqualified.lastIndex = 0;
+      });
+    }
+    expect(hits).toEqual([]);
   });
 });
 

@@ -271,7 +271,7 @@ export default function TikTokPdpVariant({ product, reviews }: Props) {
         <div className="mt-3 grid grid-cols-3 gap-2">
           <div className="flex flex-col items-center text-center gap-1 rounded-lg bg-muted/50 py-2 px-1">
             <Truck className="w-4 h-4 text-foreground/70" aria-hidden />
-            <span className="text-[10px] font-semibold leading-tight">Free US Shipping</span>
+            <span className="text-[10px] font-semibold leading-tight">Free US Shipping $35+</span>
           </div>
           <div className="flex flex-col items-center text-center gap-1 rounded-lg bg-muted/50 py-2 px-1">
             <RotateCcw className="w-4 h-4 text-foreground/70" aria-hidden />

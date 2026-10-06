@@ -89,7 +89,7 @@ const LitterBoxFunnel = () => {
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>Self-Cleaning Cat Litter Box | GetPawsy</title>
-        <meta name="description" content="Make cat care easier with our automatic self-cleaning litter box. App-controlled, odor-free, and designed for busy pet owners. Free shipping." />
+        <meta name="description" content="Make cat care easier with our automatic self-cleaning litter box. App-controlled and designed for busy pet owners. Free US shipping on orders $35+." />
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
@@ -99,7 +99,7 @@ const LitterBoxFunnel = () => {
           <Link to="/" className="text-lg font-display font-bold text-foreground">GetPawsy</Link>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Secure Checkout</span>
-            <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" /> Free Shipping</span>
+            <span className="flex items-center gap-1"><Truck className="w-3.5 h-3.5 text-primary" /> Free Shipping $35+</span>
           </div>
         </div>
       </header>

@@ -222,7 +222,7 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
           Get Yours Today
         </Button>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-4 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" aria-hidden="true" /> Free Shipping</span>
+          <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" aria-hidden="true" /> Free Shipping $35+</span>
           <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" aria-hidden="true" /> 30-Day Returns</span>
           <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" aria-hidden="true" /> Secure Checkout</span>
         </div>
