@@ -1,41 +1,11 @@
-# GETPAWSY revenue-critical repair roadmap
+# Roadmap
 
-- [ ] Verify and improve live cat-toy guide picks and guide-card click tracking; publish only below 75% DB memory.
-- [ ] Authorized three-pin US organic Pinterest relaunch — prepare three product-faithful creatives, preflight, publish each once through PCIE2, and verify public pins; no other publishing.
-
-- [x] P0 — volume discount parity, fake tax removed, discount fail-closed, Pinterest bot classification, tiered incentive UI
-- [x] P1 — Stripe key unification, payment-method claims, stable cart_id on funnel events, abandoned-cart idempotency, 5–10 day ETA
-- [x] P2 — closed as not-applicable: no P2 scope exists in project history; the intended work was absorbed by Security A / Commerce J–N
-- [x] Security A — admin/internal guard on create-cj-order, audit-warehouse-shipping, analytics-health-probe, visitor-map-stabilization-monitor; legacy admin/diagnostics routes behind AdminRouteGuard; hardcoded-email auth removed
-- [x] Security A follow-up — DONE: all 19 pg_cron schedules now send `x-internal-secret` (via `internal_config.warmer_auth`); `requireMonitorCaller` added in `_shared/monitor-auth.ts`; anon/bad-secret verified 401
-- [x] Commerce J — authoritative payment state, webhook event dedupe, server-verified success page, atomic exactly-once fulfillment claim, paid-state reconciliation
-- [x] Commerce K — exact variant identity preserved cart → checkout → order → fulfillment, server-authoritative price with fail-closed mismatch, no variant substitution
-- [x] Commerce L — server-side inventory + shipping eligibility before checkout, fail closed on sold out / unshippable, 5–10 business-day promise preserved
-- [x] Commerce M — payment/fulfillment/refund state separated, refund ledger + dry-run refund execution architecture, exception + deterministic recovery queue, guest lookup ownership fail-closed, /my-claims and /track-order routes restored
-- [x] Commerce N — settlement gated on authoritative Stripe paid state (one shared routine for sync + async), retry-safe leased webhook dedupe (only `processed` terminal), ONE pricing engine (PDP 15/25% path removed), exact-variant canonical price + stock, explicit variant selection before ATC, locked fulfillment warehouse (UNKNOWN fails closed), mandatory destination country, Stripe idempotency key, order-before-session commit, minimal success-page payload (no guest token/PII)
-- [x] Batch B — route/navigation cleanup: 6 duplicate admin paths resolved (shadowed pages given distinct paths, one exact-duplicate route removed), orphan pathless /why-trust-our-reviews route restored, duplicate Pinterest Health sidebar entry (and duplicate React key) removed, legacy storefront redirects preserved
-- [x] Batch C — truth labelling: shared provenance vocabulary (`src/lib/truthLabels.ts` + `TruthLabel`), Edge Functions Health relabelled DIAGNOSTIC / "Boots OK" (no end-to-end success claim), Tracking Health labelled LIVE TRUTH
-- [x] Batch G — monitoring semantics: Tracking Health reports "no activity" instead of "broken" when the window had zero storefront activity; analytics-canonical 90d window no longer silently clamped to 30d and reports `window_hours_requested` / `window_clamped`; cache freshness fields preserved
-- [x] Batch H — authorization: /__ops/growth-verification and /merchant-fix-checklist moved behind AdminOnly (AdminRouteGuard); /pinterest-tag-health and /founder-mode reviewed and left public (client-only state, no privileged data)
-- [x] Batch I — storefront/admin boundary: /dashboard, /live-map, /diagnostics/*, /debug/*, /__ops/*, /merchant-fix-checklist, /founder-mode, /pinterest-tag-health and /admin excluded from commercial analytics (client + edge mirrors); Pinterest tag no longer initialises or fires on technical routes; unused global window.open/fetch monkeypatching (legacy-link-guard) removed from storefront runtime
-- [x] Batch D — admin information architecture: sidebar moved to shared `src/components/admin/admin-nav.ts` (8 titled sections, 60 links, each path exactly once), decorative `★` prefixes dropped, regression test asserts uniqueness + that every link resolves to a registered route (no dead links found — prior "dead nav link" finding resolved as no-op)
-- [x] Batch E — operational write-safety: shared risk vocabulary (`src/lib/riskyActions.ts`: safe / destructive / external / financial, typed confirm phrases, fail-closed `evaluateActionGate` where an UNKNOWN precondition blocks) + `RiskyActionButton` dialog; ad-hoc `window.confirm` replaced on live-Pinterest publish (CinematicAdsSafetyPanel), live pin publish+delete (PinterestLivePinRepair) and destructive merchant cleanup (MerchantCleanupDiagnostics)
-- [x] Batch F — cadence-aware freshness: `src/lib/freshness.ts` (fresh/aging/stale/expired/unknown vs the job's own cadence, `canClaimLive`, `healthWording` that never says "healthy" from stale data) + `FreshnessBadge`; Analytics Health status pill now reads "(last known)" instead of green when the probe is older than its cadence
-- [x] Cleanup pass — admin surfaces scanned for fabricated/mock data: no fabricated dashboard data found (all `Math.random()` uses were id generation or React keys) — prior "mock dashboards" finding resolved as no-op; `Math.random()` React keys removed in PinterestExperiments and FunnelHealth (remount-on-render regression); route table re-checked: zero duplicate paths remain after Batch B
-- [x] Deploy DONE: create-checkout, check-klarna-eligibility, stripe-webhook, create-cj-order, lookup-guest-order, verify-payment-session, analytics-canonical require deploy; new functions admin-refund-order, order-recovery-queue require first deploy; storefront requires publish
-- [x] Deploy-time note RESOLVED — `verify-payment-session` is live: must be live before the storefront is published, otherwise the success page shows "couldn't confirm" for every order
-- [ ] Deploy-time note: real refunds stay disabled until the `REFUNDS_ENABLED` secret is set to `true`; until then admin-refund-order is dry-run only
-- [x] DB overload repair — 70 recurring jobs retimed + 1 duplicate disabled (`canonical-ingest-2min`), analytics warmer family (`acw-*`) stretched, stats refreshed with ANALYZE on canonical_events/canonical_sessions/visitor_activity/products; revenue/safety-critical jobs untouched. Before: catalog reads 4–80 s with repeated 500/503/504. After: 90/90 reads succeeded across three rounds incl. the top of the hour — catalog p50 141 ms / p95 209 ms, PDP p50 74 ms, admin analytics p50 65 ms, 0 failures. Full reversible ledger in `docs/db-load-repair-ledger.md`
-- [x] Live smoke test — $2.00 live Stripe payment verified end-to-end (paid, both webhooks processed once, zero customer orders / CJ orders / emails / marketing conversions), refund `re_3UGGnN…UJ` verified, and the smoke run's bookkeeping is now `status='refunded'` + `refunded_at` + `refund_id` (terminal; no later writer can downgrade it). `admin-payments` and `stripe-webhook` deployed with that guard.
-- [x] Analytics dedup — one purchase source event can only ever produce one canonical purchase row + one revenue amount (shared `_shared/canonicalDedup.ts`, mirrored by `canonical_ingest_recent`); the single duplicate smoke row removed.
-- [x] Final closure — the 7 long-standing failures were stale tests, now repaired: FunnelHealthCenter (missing query provider), Pinterest Market Intelligence (engine legitimately writes its own tables; now asserts source signal tables are never mutated), Visitor World Map Pro (strict-v3 removed the unqualified `kpi-visitors`), plus security-a (cron monitors use `requireMonitorCaller`). Suite: 931 passed / 1 skipped / 0 failing; typecheck clean; build OK.
-
-- [x] xlsx 0.20.2 upgrade reverted to 0.18.5 (user chose Option 2: scanner can't parse tarball lock entry); never published; export tests kept
-- [x] xlsx removed; admin exports use src/utils/excelExport.ts (JSZip); published build-mukeg2ey-rw7i, verified live 27 Sep
-
-- [ ] react-router-dom 6.30.1 -> 6.30.6 (isolated patch): implemented + all gates passed; awaiting separate publish approval
-
-- [x] Google Ads compliance patch (shipping claims, CPS claims, /feed.xml, bestseller one-hop, robots note, Pinterest tagline)
-- [x] /admin-reports/ removed from public hosting (moved to archive/admin-reports/, 2026-09-28)
-- [x] Homepage featured slot 1 replaced with a visible, sellable cat product after the prior item was found merchandising-blocked with a 404 primary image (2026-09-28)
-- [ ] Litter-box cluster internal links wired into 5 pages + published (2026-10-03)
+- [x] Confirm P0 backend, auth, and catalog recovery remains healthy.
+- [ ] Audit all five reported findings against live behavior, source, and current schema.
+- [ ] Prevent completed orders from being reused while preserving unpaid-attempt retries.
+- [ ] Ensure multi-option grid actions require an explicit option and invalid lines cannot persist.
+- [ ] Verify and retain only the required current Merchant feed endpoints.
+- [ ] Verify product-video storefront access and narrowly repair it only if needed.
+- [ ] Repair AOS integration only if it remains active and its schema contract is broken.
+- [ ] Run focused tests, typecheck, full suite, production build, database health, and one controlled publish.
+- [ ] Verify production and report evidence for every finding.
