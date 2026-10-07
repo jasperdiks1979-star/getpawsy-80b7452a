@@ -46,7 +46,7 @@ export function CategoryClusterLinks({ categoryName, categorySlug, relatedSlugs,
             </Link>
           </span>
         ))} collections for specialized picks. 
-        Each product is tested by our editorial team and reviewed by US pet owners before making our list.
+        Products are selected using supplier-documented specifications and available product information.
       </p>
       
       {/* Additional contextual links */}
