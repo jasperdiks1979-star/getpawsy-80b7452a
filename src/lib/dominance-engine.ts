@@ -196,7 +196,7 @@ function generateBacklinkAssets(candidates: BoostCandidate[]): BacklinkAsset[] {
       position: c.position,
       impressions: c.impressions,
       assetType: 'outreach-pitch',
-      content: `Hi [Name], I noticed your article on [topic]. We recently published a comprehensive guide on ${kw} with comparison tables and real product testing data. Would you consider linking to it as a resource for your readers?`,
+      content: `Hi [Name], I noticed your article on [topic]. We recently published a comprehensive guide on ${kw} with comparison tables based on documented product specifications. Would you consider linking to it as a resource for your readers?`,
       status: 'generated',
     });
     assets.push({

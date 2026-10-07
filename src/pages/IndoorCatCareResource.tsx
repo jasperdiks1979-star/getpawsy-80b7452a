@@ -17,7 +17,7 @@ const CAT_TREE_GUIDES = [
   { title: 'Cat Condo vs Cat Tree — Key Differences', href: '/guides/cat-condo-vs-cat-tower', desc: 'Which one does your cat actually need?' },
   { title: 'Are Cat Condos Worth It?', href: '/guides/are-cat-condos-worth-it', desc: 'Honest breakdown of cat condo benefits for indoor cats.' },
   { title: 'Best Cat Condos for Multiple Cats', href: '/guides/best-cat-condo-for-multiple-cats', desc: 'Multi-cat household guide for shared vertical territory.' },
-  { title: 'Best Cat Condos for Small Apartments', href: '/guides/best-cat-condo-small-apartments', desc: 'Compact picks tested in real small living spaces.' },
+  { title: 'Best Cat Condos for Small Apartments', href: '/guides/best-cat-condo-small-apartments', desc: 'Compact picks for small living spaces.' },
 ];
 
 const LITTER_BOX_GUIDES = [

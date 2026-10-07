@@ -20,7 +20,7 @@ const niches = [
   {
     slug: 'dog-car-travel-safety-seats',
     title: 'Dog Car Safety Seats',
-    benefit: 'Crash-tested comfort so every car ride is safe and stress-free.',
+    benefit: 'Car seats and travel gear for calmer car rides.',
     trust: 'Safety-certified • Free shipping over $35',
     image: carSafetySeatsImg,
     alt: 'Happy dog safely secured in premium car safety seat with golden sunlight',
@@ -37,7 +37,7 @@ const niches = [
     slug: 'indestructible-dog-chew-toys',
     title: 'Indestructible Chew Toys',
     benefit: 'Heavy-duty toys built for power chewers. Designed for dental health.',
-    trust: 'Pet-tested • 30-day returns',
+    trust: '30-day returns',
     image: chewToysImg,
     alt: 'Strong dog playing with durable rubber chew toy outdoors in sunny backyard',
   },

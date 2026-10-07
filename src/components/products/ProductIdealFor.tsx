@@ -1,122 +1,71 @@
 import { Users } from 'lucide-react';
+import { detectPdpCategory, type PdpCategory } from '@/lib/pdp-category';
 
 interface Props {
   productName: string;
   category: string;
 }
 
-interface IdealForData {
-  audiences: string[];
-}
-
-function getIdealFor(name: string, cat: string): IdealForData {
-  const c = `${name} ${cat}`.toLowerCase();
-
-  if (/litter/i.test(c) && /self[\s-]*clean|automatic|robot/i.test(c)) {
-    return {
-      audiences: [
-        'Multi-cat households looking for hands-free litter management',
-        'Busy pet owners who want a consistently clean litter area',
-        'Cat parents sensitive to litter box odors',
-        'Anyone switching from manual scooping to automated cleaning',
-      ],
-    };
-  }
-
-  if (/cat\s*tree|cat\s*condo|scratching/i.test(c)) {
-    return {
-      audiences: [
-        'Indoor cats who need vertical climbing and scratching space',
-        'Multi-cat homes where pets compete for territory',
-        'Owners looking to protect furniture from scratching damage',
-        'Shy or anxious cats who benefit from elevated hiding spots',
-      ],
-    };
-  }
-
-  if (/bed|mattress|cushion/i.test(c)) {
-    return {
-      audiences: [
-        'Senior dogs or dogs with joint stiffness',
-        'Active breeds recovering after long walks or play',
-        'Puppies building healthy sleep habits from day one',
-        'Pet owners who want a machine-washable, durable sleep surface',
-      ],
-    };
-  }
-
-  if (/harness|leash|collar/i.test(c)) {
-    return {
-      audiences: [
-        'Dogs that pull on walks or need better leash control',
-        'Owners training puppies to walk calmly',
-        'Breeds prone to throat sensitivity from collars',
-        'Active pet parents who walk daily in varied conditions',
-      ],
-    };
-  }
-
-  if (/car.*seat|car.*cover|travel/i.test(c) && !/stroller/i.test(c)) {
-    return {
-      audiences: [
-        'Pet owners who travel with dogs in the car regularly',
-        'Families wanting to protect vehicle upholstery',
-        'Dogs that get anxious during car rides',
-        'Anyone planning road trips with their pet',
-      ],
-    };
-  }
-
-  if (/stroller/i.test(c)) {
-    return {
-      audiences: [
-        'Senior dogs or pets recovering from surgery who need outdoor time',
-        'Small breed owners navigating busy urban environments',
-        'Multi-dog households where one pet tires faster',
-        'Pet parents who enjoy farmers markets, festivals, and outdoor dining',
-      ],
-    };
-  }
-
-  if (/carrier|backpack/i.test(c)) {
-    return {
-      audiences: [
-        'Pet owners who travel by air with small dogs or cats',
-        'Hikers and outdoor enthusiasts who bring their pet along',
-        'Urban commuters who use public transit with their pet',
-        'Frequent vet visitors looking for a calming transport solution',
-      ],
-    };
-  }
-
-  if (/bowl|feeder|slow/i.test(c)) {
-    return {
-      audiences: [
-        'Dogs or cats that eat too quickly',
-        'Pet owners managing healthy portions at mealtime',
-        'Households with multiple pets needing organized feeding',
-        'Anyone looking for spill-resistant, easy-to-clean bowls',
-      ],
-    };
-  }
-
-  // Generic fallback
-  return {
-    audiences: [
-      'Dog and cat owners looking for everyday quality products',
-      'Pet parents who prioritize comfort and safety',
-      'First-time pet owners building their essentials kit',
-      'Anyone looking for a trusted, US-shipped pet product',
-    ],
-  };
-}
+/**
+ * Category-level audiences only. These describe who a product TYPE commonly
+ * suits; they never assert a feature of this product (no "machine-washable",
+ * or "durable" unless evidenced elsewhere). Detection is
+ * shared and word-based, so a "Dog Ramp for Bed" is a ramp, not a bed.
+ */
+export const IDEAL_FOR: Record<PdpCategory, string[] | null> = {
+  ramp: [
+    'Pets that find jumping onto beds, sofas or into cars difficult',
+    'Small or short-legged breeds',
+    'Owners who want to limit repeated jumping',
+  ],
+  'litter box': [
+    'Cat owners setting up or replacing a litter area',
+    'Homes comparing box size and entry height for their cat',
+  ],
+  'cat tree': [
+    'Indoor cats that like to climb, scratch and perch',
+    'Owners looking to give cats a scratching spot other than furniture',
+  ],
+  bed: [
+    'Pets that need a dedicated resting spot',
+    'Owners replacing a worn or undersized bed',
+  ],
+  harness: [
+    'Owners comparing walking gear for fit and control',
+    'Puppies and dogs learning to walk on a leash',
+  ],
+  'car seat': [
+    'Owners who travel with their pet by car',
+  ],
+  stroller: [
+    'Pets that cannot manage long walks',
+    'Owners who want to bring a small pet on longer outings',
+  ],
+  carrier: [
+    'Owners transporting a pet to the vet or on trips',
+  ],
+  bowl: [
+    'Owners looking for a dedicated feeding setup',
+  ],
+  fountain: [
+    'Owners who want to offer their pet moving water',
+  ],
+  toy: [
+    'Pets that need regular play and activity',
+  ],
+  grooming: [
+    'Owners managing shedding and coat care at home',
+  ],
+  generic: null,
+};
 
 /**
  * "Who Is This For?" — clear audience targeting for PDP authority
  * and Google trust signals. No vague claims.
  */
 export function ProductIdealFor({ productName, category }: Props) {
-  const { audiences } = getIdealFor(productName, category);
+  const audiences = IDEAL_FOR[detectPdpCategory(productName, category)];
+  if (!audiences) return null;
 
   return (
     <section className="mt-12 scroll-mt-20" aria-labelledby="ideal-for-heading">

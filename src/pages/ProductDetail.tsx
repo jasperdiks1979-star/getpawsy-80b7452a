@@ -1257,6 +1257,9 @@ const ProductDetail = () => {
           seo_tier: (product as any).seo_tier || null,
           product_type: (product as any).product_type || null,
           google_product_category: (product as any).google_product_category || null,
+          brand: (product as any).brand ?? null,
+          gtin: (product as any).gtin ?? null,
+          mpn: (product as any).mpn ?? null,
         }}
         reviews={reviews}
       />

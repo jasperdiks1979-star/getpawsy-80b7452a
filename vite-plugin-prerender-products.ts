@@ -4,6 +4,8 @@ import { clampMetaDescription } from './src/lib/seo-title';
 export { clampMetaDescription };
 import { CANONICAL_COLLECTION_META, clusterForCollection, type SeoCluster } from './src/lib/seo-clusters';
 import path from 'path';
+import { resolveProductIdentifiers } from './src/lib/product-identifiers';
+import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import type { Plugin } from 'vite';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
@@ -28,6 +30,10 @@ interface ProductRecord {
   seo_noindex?: boolean | null;
   seo_tier?: string | null;
   merch_hidden?: boolean | null;
+  sku?: string | null;
+  brand?: string | null;
+  gtin?: string | null;
+  mpn?: string | null;
 }
 
 function escapeHtml(value: string): string {
@@ -128,6 +134,7 @@ function buildProductSchema(product: ProductRecord, canonical: string, descripti
   const inStock = product.is_active !== false && Number(product.stock || 0) > 0;
   const priceValidUntil = new Date();
   priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
+  const ids = resolveProductIdentifiers(product);
 
   return {
     '@context': 'https://schema.org',
@@ -136,8 +143,10 @@ function buildProductSchema(product: ProductRecord, canonical: string, descripti
     name: product.name,
     image: productImages(product),
     description,
-    sku: product.id,
-    brand: { '@type': 'Brand', name: 'GetPawsy' },
+    sku: product.sku || product.id,
+    ...(ids.gtin ? { gtin: ids.gtin } : {}),
+    ...(ids.mpn ? { mpn: ids.mpn } : {}),
+    ...(ids.brand ? { brand: { '@type': 'Brand', name: ids.brand } } : {}),
     offers: {
       '@type': 'Offer',
       '@id': `${canonical}#offer`,
@@ -150,6 +159,11 @@ function buildProductSchema(product: ProductRecord, canonical: string, descripti
       shippingDetails: {
         '@type': 'OfferShippingDetails',
         shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'US' },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: { '@type': 'QuantitativeValue', minValue: US_HANDLING_DAYS.min, maxValue: US_HANDLING_DAYS.max, unitCode: 'DAY' },
+          transitTime: { '@type': 'QuantitativeValue', minValue: US_TRANSIT_DAYS.min, maxValue: US_TRANSIT_DAYS.max, unitCode: 'DAY' },
+        },
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
@@ -229,7 +243,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden,sku,brand,gtin,mpn&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {

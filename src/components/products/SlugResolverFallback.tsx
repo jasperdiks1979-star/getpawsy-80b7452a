@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import NotFound from "@/pages/NotFound";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
 import { Layout } from "@/components/layout/Layout";
+import { Helmet } from "react-helmet-async";
 
 type Phase = "resolving" | "redirecting" | "not_found";
 
@@ -72,8 +73,14 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
           return;
         }
 
-        // Resolver explicitly returned not_found (or errored) → soft-recover
-        // to /collections/all instead of rendering the 404 template.
+        // Resolver explicitly returned not_found → real not-found page
+        // (noindex + prerender-status-code 404). Soft-redirecting every dead
+        // slug to /collections/all made retired URLs look like live pages.
+        if (!error && step === "not_found") {
+          setPhase("not_found");
+          return;
+        }
+        // Resolver errored (transient) → soft-recover; never index this URL.
         setPhase("redirecting");
         navigate(`/collections/all${search}${hash}`, { replace: true });
         return;
@@ -91,6 +98,12 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
   if (phase === "not_found") return <NotFound />;
   return (
     <Layout>
+      {/* Unmatched slug: never let the homepage shell metadata stand as an
+          indexable page while the resolver runs or redirects. */}
+      <Helmet>
+        <title>Finding this product | GetPawsy</title>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <ProductDetailSkeleton />
     </Layout>
   );

@@ -47,7 +47,7 @@ const About = () => {
                 GetPawsy is an online pet supply store focused on high-quality products for dogs and cats in the United States.
               </p>
               <p className="text-base text-muted-foreground max-w-2xl mx-auto mb-2">
-                We started because we were tired of generic pet stores with endless listings and zero curation. Instead, we hand-select a focused range of high-quality products for dogs and cats — tested for comfort, safety, and real everyday use — and ship them directly to pet owners across the United States.
+                We started because we were tired of generic pet stores with endless listings and zero curation. Instead, we hand-select a focused range of products for dogs and cats — chosen using supplier-documented specifications and available product information — and ship them directly to pet owners across the United States.
               </p>
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
                 GetPawsy is an online-only business. We do not operate physical retail stores.

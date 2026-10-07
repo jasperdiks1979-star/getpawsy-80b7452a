@@ -7,8 +7,8 @@ import { BookOpen, ArrowRight } from 'lucide-react';
 
 const HOMEPAGE_GUIDES = [
   { href: '/guides/best-cat-litter-box-2026', label: 'Cat Litter Box Guide', desc: 'Compare self-cleaning, enclosed & furniture-style options' },
-  { href: '/guides/best-cat-trees-small-apartments', label: 'Best Cat Trees for Large Cats', desc: 'Space-saving picks tested for stability' },
-  { href: '/guides/safest-dog-car-seat-for-travel', label: 'Dog Car Seat Safety Guide', desc: 'Crash-tested picks for safe travel' },
+  { href: '/guides/best-cat-trees-small-apartments', label: 'Best Cat Trees for Large Cats', desc: 'Space-saving picks compared' },
+  { href: '/guides/safest-dog-car-seat-for-travel', label: 'Dog Car Seat Safety Guide', desc: 'How to choose a safer car seat' },
   { href: '/guides/complete-dog-training-guide-2026', label: 'Dog Training Guide', desc: 'Stop pulling, barking & bad habits' },
   { href: '/guides/best-interactive-cat-toys-that-work', label: 'Best Cat Toys for Indoor Cats', desc: 'our picks for solo play & stimulation' },
   { href: '/guides/how-to-groom-a-dog-at-home', label: 'Dog Grooming at Home', desc: 'Brushes, nail trimmers & techniques' },

@@ -158,7 +158,9 @@ export function validateFeedItem(item: FeedItemLike | null | undefined): string[
     return typeof v === 'string' && v.trim().length > 0;
   };
 
-  for (const field of ['id', 'title', 'description', 'link', 'image_link', 'price', 'availability', 'brand', 'condition'] as const) {
+  // brand is optional: it is emitted only when documented (product-identifiers.ts);
+  // generic items without a documented brand ship with identifier_exists=no.
+  for (const field of ['id', 'title', 'description', 'link', 'image_link', 'price', 'availability', 'condition'] as const) {
     if (!req(field)) issues.push(`missing_${field}`);
   }
 

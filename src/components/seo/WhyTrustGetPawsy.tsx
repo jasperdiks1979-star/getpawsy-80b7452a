@@ -12,13 +12,13 @@ interface Props {
 
 const TRUST_POINTS = {
   guide: [
-    { icon: Award, label: 'Carefully researched', desc: 'Every recommendation is based on real product testing and common pet owner needs.' },
+    { icon: Award, label: 'Carefully researched', desc: 'Recommendations are based on supplier-documented specifications, available product information and common pet owner needs.' },
     { icon: Users, label: 'US customer focus', desc: 'All products ship to the United States. Our support team responds within 24 hours.' },
-    { icon: Shield, label: 'Independent reviews', desc: 'Our recommendations are never influenced by affiliate commissions or brand partnerships.' },
+    { icon: Shield, label: 'Transparent method', desc: 'We explain how products are selected on our How We Select Products page.' },
   ],
   pdp: [
-    { icon: Award, label: 'Quality selected', desc: 'Hand-selected for materials, durability, and real-world performance.' },
-    { icon: Users, label: 'Made for everyday pet care', desc: 'Selected to fit common pet care needs based on product research and owner feedback.' },
+    { icon: Award, label: 'Selected from documented specs', desc: 'Chosen using supplier-documented specifications and available product information.' },
+    { icon: Users, label: 'Made for everyday pet care', desc: 'Selected to fit common pet care needs based on product research.' },
     { icon: Shield, label: 'Secure & supported', desc: '30-day returns, secure checkout, and responsive US customer support.' },
   ],
 };

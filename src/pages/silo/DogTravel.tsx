@@ -32,7 +32,7 @@ const DogTravel = () => {
     <Layout>
       <Helmet>
         <title>Dog Travel Safety Gear – Car Seats & Carriers | GetPawsy</title>
-        <meta name="description" content="Crash-tested dog car seats, travel carriers, harnesses & back seat hammocks. Keep your dog safe on every trip. US 5–10 day shipping." /><meta name="robots" content="index, follow" />
+        <meta name="description" content="Dog car seats, travel carriers, harnesses & back seat hammocks. Keep your dog safe on every trip. US 5–10 day shipping." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <section className="py-16 md:py-20 bg-sand/30">
@@ -43,7 +43,7 @@ const DogTravel = () => {
               Dog Travel Safety Gear
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              Crash-tested car seats, travel carriers, safety harnesses, and back seat hammocks — because your dog deserves safe travel too. Shipping to the US in 5–10 business days.
+              Car seats, travel carriers, safety harnesses, and back seat hammocks — because your dog deserves safe travel too. Shipping to the US in 5–10 business days.
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
               <span>📦 US Shipping 5–10 Days</span>

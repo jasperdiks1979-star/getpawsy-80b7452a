@@ -7,14 +7,14 @@ const TRENDING_GUIDES = [
     path: '/guides/best-cat-litter-box-2026',
     title: 'Best Cat Litter Box 2026',
     badge: '🔥 Trending Now',
-    desc: 'Top-rated odor-control picks, tested & reviewed.',
+    desc: 'Odor-control picks compared.',
     emoji: '🐱',
   },
   {
     path: '/guides/safest-dog-car-seat-for-travel',
     title: 'Best Dog Car Seat Safety',
     badge: '🔥 Trending Now',
-    desc: 'Crash-tested seats for safe travel with your dog.',
+    desc: 'How to choose a car seat for your dog.',
     emoji: '🚗',
   },
   {

@@ -29,7 +29,7 @@ const INTROS: Record<ClusterId, {
   },
   'dog-comfort-recovery': {
     text: (name) =>
-      `Your dog deserves comfort that supports their health at every life stage. This ${name.toLowerCase()} collection features products tested for quality materials, ergonomic design, and long-term durability. From orthopedic beds for senior dogs to travel carriers built for safety, each product is evaluated against real pet-owner feedback and veterinary recommendations. We prioritize items that genuinely improve your dog's daily comfort.`,
+      `Your dog deserves comfort that supports their health at every life stage. This ${name.toLowerCase()} collection brings together beds, carriers and comfort products for dogs at every life stage. Products are selected using supplier-documented specifications and available product information — check each product page for what is documented.`,
     links: [
       { label: 'Orthopedic Dog Bed Guide', href: '/guides/best-orthopedic-dog-bed-2026' },
       { label: 'Dog Travel Safety Tips', href: '/collections/all' },

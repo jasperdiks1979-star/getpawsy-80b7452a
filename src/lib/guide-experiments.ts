@@ -94,7 +94,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Cat Litter Box Furniture & Enclosures (2026) – Reviewed for Every Home',
-      metaDescription: 'This guide reviews the best litter box furniture and enclosures for 2026. Hidden designs, real owner feedback, and picks for small apartments to large homes.',
+      metaDescription: 'This guide reviews the best litter box furniture and enclosures for 2026. Hidden designs and picks for small apartments to large homes.',
     },
     variantB: {
       id: 'B',
@@ -136,7 +136,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantA: {
       id: 'A',
       title: 'Best Extra Large Litter Boxes for Big Cats (2026) – Picks for Maine Coons & Large Breeds',
-      metaDescription: 'Need a bigger litter box? This guide compares extra-large options for Maine Coons and large breeds. Compare dimensions, materials & real owner feedback.',
+      metaDescription: 'Need a bigger litter box? This guide compares extra-large options for Maine Coons and large breeds. Compare dimensions and materials.',
     },
     variantB: {
       id: 'B',
@@ -162,7 +162,7 @@ export const GUIDE_EXPERIMENTS: GuideExperiment[] = [
     variantB: {
       id: 'B',
       title: '10 Best Cat Trees for Small Spaces (2026) – Compared in Real Apartments | Pros & Cons',
-      metaDescription: '10 cat trees tested in real small apartments. Find the best space-saving cat tree for your home. Includes wall-mounted, corner & compact floor models.',
+      metaDescription: '10 cat trees for small apartments compared. Find the best space-saving cat tree for your home. Includes wall-mounted, corner & compact floor models.',
     },
     metrics: {
       A: { impressions: 0, clicks: 0, ctr: 0, avgPosition: 0, startDate: '2026-02-10', endDate: '' },
