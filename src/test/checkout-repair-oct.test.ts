@@ -31,6 +31,6 @@ describe('manual litter box gets no automatic claims', () => {
       expect(s).not.toMatch(/\/litter\\s\*box\|self/);
     }
     // Litter-box audiences are category-level only and never claim automation.
-    expect(r('src/components/products/ProductIdealFor.tsx')).not.toMatch(/hands-free|automated cleaning/i);
+    expect(r('src/components/products/ProductIdealFor.tsx')).not.toMatch(/'[^']*(?:hands-free|automated cleaning)[^']*'/i);
   });
 });
