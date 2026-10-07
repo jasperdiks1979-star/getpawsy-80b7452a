@@ -129,13 +129,8 @@ export const getCartIncentiveState = (subtotal: number, unitCount: number): Cart
 /** Flat shipping rate for orders under threshold in USD */
 export const FLAT_SHIPPING_RATE = 5.99;
 
-/**
- * Numeric US shipping windows (business days). Single source for the shopper
- * copy below, Product/Offer JSON-LD and the Merchant feed — never hard-code
- * these numbers elsewhere.
- */
-export const US_HANDLING_DAYS = { min: 1, max: 2 } as const;
-export const US_TRANSIT_DAYS = { min: 5, max: 10 } as const;
+import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './shipping-windows';
+export { US_HANDLING_DAYS, US_TRANSIT_DAYS };
 
 /** Standard delivery time for US orders */
 export const DELIVERY_TIME_STANDARD = `${US_TRANSIT_DAYS.min}–${US_TRANSIT_DAYS.max} business days`;

@@ -19,6 +19,9 @@ import {
   assertReleasableCatalog,
 } from './src/lib/merchant/releaseIntegrity';
 
+import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
+import { resolveProductIdentifiers } from './src/lib/product-identifiers';
+
 const BASE_URL = 'https://getpawsy.pet';
 // Feed generation must target the SAME backend as the app being built. Prefer
 // the build environment's project; the production project is only the fallback
@@ -376,6 +379,8 @@ interface MerchantProduct {
   weight: number | null;
   is_active: boolean;
   brand?: string | null;
+  gtin?: string | null;
+  mpn?: string | null;
 }
 
 
@@ -760,9 +765,10 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
   const marginTier = margin >= 40 ? 'High-Margin' : margin >= 20 ? 'Mid-Margin' : 'Low-Margin';
   const isBestseller = bestsellersSet.has(p.id);
 
-  // Brand truth: the catalog stores no per-product brand, and every item is
-  // sold under the store's own brand, so GetPawsy is the accurate value.
-  const brand = (p.brand && p.brand.trim()) || 'GetPawsy';
+  // Identifier truth (src/lib/product-identifiers.ts): brand/GTIN/MPN only
+  // when documented; GetPawsy is the retailer, never a fill-in brand, and
+  // internal ids / supplier SKUs are never emitted as MPNs.
+  const ids = resolveProductIdentifiers(p);
 
   const tags: XmlNode[] = [
     xmlNode('g:id', [xmlText(p.id)]),
@@ -772,7 +778,7 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
     xmlNode('g:image_link', [xmlText(img)]),
     xmlNode('g:availability', [xmlText(avail)]),
     xmlNode('g:price', [xmlText(priceStr(p.price))]),
-    xmlNode('g:brand', [xmlText(brand)]),
+    ...(ids.brand ? [xmlNode('g:brand', [xmlText(ids.brand)])] : []),
     xmlNode('g:condition', [xmlText('new')]),
     xmlNode('g:google_product_category', [xmlText(getGoogleProductCategory(p.name, p.category))]),
     xmlNode('g:shipping_weight', [xmlText(shippingWeight)]),
@@ -783,10 +789,10 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
       xmlNode('g:service', [xmlText('Standard')]),
       xmlNode('g:price', [xmlText(priceStr(p.price >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_RATE))]),
     ]),
-    xmlNode('g:min_handling_time', [xmlText('1')]),
-    xmlNode('g:max_handling_time', [xmlText('2')]),
-    xmlNode('g:min_transit_time', [xmlText('5')]),
-    xmlNode('g:max_transit_time', [xmlText('10')]),
+    xmlNode('g:min_handling_time', [xmlText(String(US_HANDLING_DAYS.min))]),
+    xmlNode('g:max_handling_time', [xmlText(String(US_HANDLING_DAYS.max))]),
+    xmlNode('g:min_transit_time', [xmlText(String(US_TRANSIT_DAYS.min))]),
+    xmlNode('g:max_transit_time', [xmlText(String(US_TRANSIT_DAYS.max))]),
   ];
 
   // No g:sale_price is emitted. The catalog's compare_at_price values are
@@ -794,12 +800,9 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
   // must not be advertised as a discount.
 
 
-  if (p.sku) {
-    tags.push(xmlNode('g:mpn', [xmlText(p.sku)]));
-  } else {
-    tags.push(xmlNode('g:identifier_exists', [xmlText('no')]));
-    tags.push(xmlNode('g:mpn', [xmlText(p.id)]));
-  }
+  if (ids.gtin) tags.push(xmlNode('g:gtin', [xmlText(ids.gtin)]));
+  if (ids.mpn) tags.push(xmlNode('g:mpn', [xmlText(ids.mpn)]));
+  if (!ids.identifierExists) tags.push(xmlNode('g:identifier_exists', [xmlText('no')]));
 
   tags.push(xmlNode('g:product_type', [xmlText(getProductType(p.category))]));
   tags.push(xmlNode('g:custom_label_0', [xmlText(marginTier)]));
@@ -833,7 +836,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProducts, bestsellers] = await Promise.all([
     supaRestPaged<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,brand,gtin,mpn&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
@@ -914,7 +917,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     image_link: sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null),
     price: `${p.price.toFixed(2)} USD`,
     availability: getAvailability(p.stock, p.is_active),
-    brand: (p.brand && p.brand.trim()) || 'GetPawsy',
+    brand: resolveProductIdentifiers(p).brand ?? '',
     condition: 'new',
   }));
   const { valid, rejected } = partitionFeedItems(candidates);
@@ -936,7 +939,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
 async function buildMerchantDiagnostics(): Promise<string> {
   const products = await supaRestPaged<MerchantProduct>(
     'products_public',
-    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false'
+    'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,brand,gtin,mpn&is_active=eq.true&is_duplicate=eq.false'
   );
 
   const issues: string[] = [];
