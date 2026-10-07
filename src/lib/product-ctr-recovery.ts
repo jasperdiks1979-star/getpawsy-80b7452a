@@ -36,7 +36,7 @@ function humanize(slug: string): string {
 
 function buildSeoIntro(slug: string): string {
   const name = humanize(slug).toLowerCase();
-  return `Discover the ${name} that pet owners across the US trust. Products are selected using supplier-documented specifications and available product information. Backed by our 30-day return policy and free shipping on eligible orders over $35. Check the product details for documented specifications.`;
+  return `Discover the ${name} at GetPawsy. Products are selected using supplier-documented specifications and available product information. Backed by our 30-day return policy and free shipping on eligible orders over $35. Check the product details for documented specifications.`;
 }
 
 function buildProductFaq(slug: string): Array<{ question: string; answer: string }> {
