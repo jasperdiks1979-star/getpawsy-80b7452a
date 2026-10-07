@@ -11,30 +11,13 @@ interface FinalCtaBlockProps {
   category?: string;
 }
 
-function getCtaCopy(name: string, category: string): { headline: string; subtext: string } {
-  const c = `${name} ${category}`.toLowerCase();
-  if (/self[\s-]*clean|automatic\s*litter|robot/i.test(c)) {
-    return { headline: 'Upgrade Your Cat\'s Hygiene Today', subtext: 'Less work. Less smell. More comfort.' };
-  }
-  if (/cat\s*tree|cat\s*condo|scratching/i.test(c)) {
-    return { headline: 'Give Your Cat the Space They Deserve', subtext: 'Climbing, scratching, and napping — all in one.' };
-  }
-  if (c.includes('harness')) {
-    return { headline: 'Ready for Stress-Free Walks?', subtext: 'Enjoy relaxed walks again — without pulling or choking.' };
-  }
-  if (c.includes('bed') || c.includes('cushion')) {
-    return { headline: 'Give Your Dog the Sleep They Deserve', subtext: 'Better rest. Less pain. More energy every morning.' };
-  }
-  if (c.includes('carrier') || c.includes('crate')) {
-    return { headline: 'Travel Stress-Free With Your Pet', subtext: 'Safe, comfortable, and airline-ready.' };
-  }
-  if (c.includes('car seat') || c.includes('car')) {
-    return { headline: 'Make Every Car Ride Safer', subtext: 'Comfort and safety for your dog on the road.' };
-  }
-  if (c.includes('paw') || c.includes('cleaner')) {
-    return { headline: 'Keep Your Home Clean in Seconds', subtext: 'No more muddy paw prints on your floors.' };
-  }
-  return { headline: 'Your Pet Deserves the Best', subtext: 'Quality products that make a real difference.' };
+/**
+ * Neutral closing copy. Category headlines used to promise outcomes
+ * ("Less pain", "airline-ready", "Less smell") that no product evidence
+ * supports, and keyword matching misfiled ramps as beds.
+ */
+export function getCtaCopy(_name: string, _category: string): { headline: string; subtext: string } {
+  return { headline: 'Ready to Order?', subtext: 'Check the product details and size information above before you buy.' };
 }
 
 export function FinalCtaBlock({ onAddToCart, inStock, price, compareAtPrice, productName = '', category = '' }: FinalCtaBlockProps) {
