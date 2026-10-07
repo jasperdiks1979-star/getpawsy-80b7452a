@@ -129,14 +129,22 @@ export const getCartIncentiveState = (subtotal: number, unitCount: number): Cart
 /** Flat shipping rate for orders under threshold in USD */
 export const FLAT_SHIPPING_RATE = 5.99;
 
+/**
+ * Numeric US shipping windows (business days). Single source for the shopper
+ * copy below, Product/Offer JSON-LD and the Merchant feed — never hard-code
+ * these numbers elsewhere.
+ */
+export const US_HANDLING_DAYS = { min: 1, max: 2 } as const;
+export const US_TRANSIT_DAYS = { min: 5, max: 10 } as const;
+
 /** Standard delivery time for US orders */
-export const DELIVERY_TIME_STANDARD = '5–10 business days';
+export const DELIVERY_TIME_STANDARD = `${US_TRANSIT_DAYS.min}–${US_TRANSIT_DAYS.max} business days`;
 
 /** Delivery disclaimer for compliance */
 export const DELIVERY_DISCLAIMER = 'Delivery times may vary depending on location';
 
 /** Processing time before shipping */
-export const PROCESSING_TIME = '1–2 business days';
+export const PROCESSING_TIME = `${US_HANDLING_DAYS.min}–${US_HANDLING_DAYS.max} business days`;
 
 /** Sitewide trust freshness timestamp */
 export const SITE_LAST_UPDATED = 'August 25, 2026';
