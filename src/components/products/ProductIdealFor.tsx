@@ -9,7 +9,7 @@ interface Props {
 /**
  * Category-level audiences only. These describe who a product TYPE commonly
  * suits; they never assert a feature of this product (no "machine-washable",
- * "durable", "automated cleaning" unless evidenced elsewhere). Detection is
+ * or "durable" unless evidenced elsewhere). Detection is
  * shared and word-based, so a "Dog Ramp for Bed" is a ramp, not a bed.
  */
 export const IDEAL_FOR: Record<PdpCategory, string[] | null> = {
