@@ -72,8 +72,14 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
           return;
         }
 
-        // Resolver explicitly returned not_found (or errored) → soft-recover
-        // to /collections/all instead of rendering the 404 template.
+        // Resolver explicitly returned not_found → real not-found page
+        // (noindex + prerender-status-code 404). Soft-redirecting every dead
+        // slug to /collections/all made retired URLs look like live pages.
+        if (!error && step === "not_found") {
+          setPhase("not_found");
+          return;
+        }
+        // Resolver errored (transient) → soft-recover; never index this URL.
         setPhase("redirecting");
         navigate(`/collections/all${search}${hash}`, { replace: true });
         return;
