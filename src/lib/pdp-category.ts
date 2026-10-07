@@ -16,9 +16,9 @@ export type PdpCategory =
   | 'harness' | 'bed' | 'bowl' | 'fountain' | 'toy' | 'grooming' | 'generic';
 
 const RULES: Array<[PdpCategory, RegExp]> = [
-  ['ramp', /\b(?:ramps?|stairs?|steps?)\b/],
   ['litter box', /\blitter\b/],
   ['cat tree', /\bcat\s*(?:trees?|condos?|towers?)\b|\bscratch(?:er|ing)\b/],
+  ['ramp', /\b(?:ramps?|stairs?|steps?)\b/],
   ['stroller', /\bstrollers?\b/],
   ['carrier', /\b(?:carriers?|crates?|backpacks?)\b/],
   ['car seat', /\bcar\s*(?:seats?|covers?|booster)\b/],
