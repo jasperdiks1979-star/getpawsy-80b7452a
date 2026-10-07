@@ -4,6 +4,8 @@ import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
 import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
 import type { MerchantProduct } from '@/lib/merchant-safe-product';
 import { buildStructuredProductName } from '@/lib/structured-product-name';
+import { resolveProductIdentifiers } from '@/lib/product-identifiers';
+import { US_HANDLING_DAYS, US_TRANSIT_DAYS, DELIVERY_TIME_STANDARD, FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_RATE } from '@/lib/shipping-constants';
 
 interface ProductSchemaProps {
   product: {
@@ -23,6 +25,9 @@ interface ProductSchemaProps {
     seo_tier?: string | null;
     product_type?: string | null;
     google_product_category?: string | null;
+    brand?: string | null;
+    gtin?: string | null;
+    mpn?: string | null;
   };
   reviews?: Array<{
     rating: number;
@@ -54,7 +59,7 @@ export function ProductSchema({
   // Ensure description is always populated with benefit-driven copy
   const cleanDescription = rawDescription && rawDescription.length > 50 
     ? rawDescription 
-    : `Shop ${product.name} at GetPawsy. Quality pet product designed for comfort and durability. Estimated delivery: 5–10 business days. 30-day return policy.`;
+    : `Shop ${product.name} at GetPawsy. Quality pet product designed for comfort and durability. Estimated delivery: ${DELIVERY_TIME_STANDARD}. 30-day return policy.`;
 
   // Only use real reviews — no fallback fake data
   const hasRealReviews = reviews.length >= 3;
@@ -119,6 +124,7 @@ export function ProductSchema({
   const priceValidUntilStr = priceValidUntil.toISOString().split('T')[0];
 
   // JSON-LD Product Schema - Google Rich Results & Merchant Center compliant
+  const ids = resolveProductIdentifiers(product);
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -127,11 +133,9 @@ export function ProductSchema({
     description: cleanDescription,
     image: images.length > 0 ? images : [primaryImage],
     sku: product.sku || product.id,
-    mpn: product.id,
-    brand: {
-      '@type': 'Brand',
-      name: 'GetPawsy',
-    },
+    ...(ids.gtin ? { gtin: ids.gtin } : {}),
+    ...(ids.mpn ? { mpn: ids.mpn } : {}),
+    ...(ids.brand ? { brand: { '@type': 'Brand', name: ids.brand } } : {}),
     // category is conveyed via additionalProperty and OG meta — not a valid schema.org Product field
     ...(product.product_type ? {
       additionalProperty: [{
@@ -173,22 +177,22 @@ export function ProductSchema({
         },
         shippingRate: {
           '@type': 'MonetaryAmount',
-          value: canonicalSchemaPrice >= 35 ? '0.00' : '5.99',
+          value: canonicalSchemaPrice >= FREE_SHIPPING_THRESHOLD ? '0.00' : FLAT_SHIPPING_RATE.toFixed(2),
           currency: 'USD',
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',
           handlingTime: {
             '@type': 'QuantitativeValue',
-            minValue: 1,
-            maxValue: 2,
-            unitCode: 'd',
+            minValue: US_HANDLING_DAYS.min,
+            maxValue: US_HANDLING_DAYS.max,
+            unitCode: 'DAY',
           },
           transitTime: {
             '@type': 'QuantitativeValue',
-            minValue: 3,
-            maxValue: 7,
-            unitCode: 'd',
+            minValue: US_TRANSIT_DAYS.min,
+            maxValue: US_TRANSIT_DAYS.max,
+            unitCode: 'DAY',
           },
         },
       },
