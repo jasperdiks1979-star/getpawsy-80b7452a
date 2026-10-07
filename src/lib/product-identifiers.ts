@@ -26,6 +26,7 @@ export interface ResolvedIdentifiers {
 }
 
 const PLACEHOLDER = /^(?:n\/?a|none|null|unknown|unbranded|generic|no ?brand|-|0)$/i;
+const RETAILER_BRAND = /^get\s*pawsy$/i;
 
 function clean(v: unknown): string | null {
   if (typeof v !== 'string') return null;
@@ -47,7 +48,10 @@ export function isValidGtin(value: string): boolean {
 }
 
 export function resolveProductIdentifiers(p: IdentifierInput): ResolvedIdentifiers {
-  const brand = clean(p.brand);
+  // Stored "GetPawsy" on supplier-sourced (CJ) products is a retailer fill-in,
+  // not a documented private label — no private-label evidence exists.
+  const rawBrand = clean(p.brand);
+  const brand = rawBrand && RETAILER_BRAND.test(rawBrand) ? null : rawBrand;
   const rawGtin = clean(p.gtin)?.replace(/[\s-]/g, '') ?? null;
   const gtin = rawGtin && isValidGtin(rawGtin) ? rawGtin : null;
   let mpn = clean(p.mpn);

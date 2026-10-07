@@ -89,6 +89,9 @@ describe('P0-3 truthful identifiers', () => {
   it('rejects invalid GTINs and placeholder brands', () => {
     expect(isValidGtin('4006381333932')).toBe(false);
     expect(resolveProductIdentifiers({ brand: 'Unbranded', gtin: '123' }).brand).toBeNull();
+    // Real catalog: 253 CJ-sourced rows store "GetPawsy" as a retailer fill-in.
+    expect(resolveProductIdentifiers({ sku: 'CJFT2398190', brand: 'GetPawsy' }).brand).toBeNull();
+    expect(resolveProductIdentifiers({ sku: 'CJFT2398190', brand: 'GetPawsy' }).identifierExists).toBe(false);
   });
   it('JSON-LD, prerender and feed never default brand to GetPawsy or use ids as MPN', () => {
     for (const f of ['src/components/seo/ProductSchema.tsx', 'vite-plugin-prerender-products.ts', 'vite-plugin-sitemaps.ts']) {
@@ -148,5 +151,18 @@ describe('P0-5 dead product slugs are real not-found pages', () => {
     invoke.mockResolvedValue({ data: { step: 'slug_history', product_slug: 'new-slug' }, error: null });
     const r = await mount();
     await waitFor(() => expect(r.getByText('NEW PDP')).toBeTruthy());
+  });
+  it('the resolver catch-all (collection_all) is a miss, not a redirect', async () => {
+    invoke.mockResolvedValue({ data: { step: 'collection_all', target: 'https://getpawsy.pet/collections/all' }, error: null });
+    const r = await mount();
+    await waitFor(() => expect(r.getByTestId('nf')).toBeTruthy());
+    expect(r.queryByText('ALL')).toBeNull();
+  });
+  it('a resolver outage shows a temporary state, not not-found or another page', async () => {
+    invoke.mockResolvedValue({ data: null, error: new Error('522') });
+    const r = await mount();
+    await waitFor(() => expect(r.getByText(/couldn't load this product/i)).toBeTruthy());
+    expect(r.queryByText('ALL')).toBeNull();
+    expect(r.queryByTestId('nf')).toBeNull();
   });
 });

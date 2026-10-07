@@ -15,7 +15,7 @@ import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkelet
 import { Layout } from "@/components/layout/Layout";
 import { Helmet } from "react-helmet-async";
 
-type Phase = "resolving" | "redirecting" | "not_found";
+type Phase = "resolving" | "redirecting" | "not_found" | "unavailable";
 
 export default function SlugResolverFallback({ slug }: { slug: string }) {
   const navigate = useNavigate();
@@ -40,7 +40,10 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
         const search = typeof window !== "undefined" ? window.location.search : "";
         const hash = typeof window !== "undefined" ? window.location.hash : "";
         const currentPath = typeof window !== "undefined" ? window.location.pathname : `/products/${slug}`;
-        if (!error && step && step !== "not_found") {
+        // The resolver's last rung ("collection_all") means no product or
+        // category match — that is a miss, not a replacement.
+        const isMiss = step === "not_found" || step === "collection_all";
+        if (!error && step && !isMiss) {
           // Prefer routing to a sibling PDP when we have one.
           if (targetSlug && targetSlug !== slug) {
             setPhase("redirecting");
@@ -76,26 +79,42 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
         // Resolver explicitly returned not_found → real not-found page
         // (noindex + prerender-status-code 404). Soft-redirecting every dead
         // slug to /collections/all made retired URLs look like live pages.
-        if (!error && step === "not_found") {
+        if (!error && isMiss) {
           setPhase("not_found");
           return;
         }
-        // Resolver errored (transient) → soft-recover; never index this URL.
-        setPhase("redirecting");
-        navigate(`/collections/all${search}${hash}`, { replace: true });
+        // Resolver errored (transient): validity unknown. Show a temporary,
+        // non-indexable state on this URL — never a permanent not-found and
+        // never another page presented in place of the requested product.
+        setPhase("unavailable");
         return;
       } catch {
-        // Network/resolver failure — soft-recover instead of NotFound.
-        const search = typeof window !== "undefined" ? window.location.search : "";
-        const hash = typeof window !== "undefined" ? window.location.hash : "";
-        setPhase("redirecting");
-        navigate(`/collections/all${search}${hash}`, { replace: true });
+        // Network/resolver failure — temporary non-indexable state.
+        setPhase("unavailable");
         return;
       }
     })();
   }, [slug, navigate]);
 
   if (phase === "not_found") return <NotFound />;
+  if (phase === "unavailable") {
+    return (
+      <Layout>
+        <Helmet>
+          <title>Product temporarily unavailable | GetPawsy</title>
+          <meta name="robots" content="noindex, follow" />
+        </Helmet>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h1 className="text-2xl font-semibold text-foreground">We couldn't load this product right now</h1>
+          <p className="mt-3 text-muted-foreground">This is temporary — please try again in a moment.</p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button type="button" onClick={() => window.location.reload()} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">Try again</button>
+            <a href="/collections/all" className="rounded-md border border-border px-4 py-2 text-foreground">Browse all products</a>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       {/* Unmatched slug: never let the homepage shell metadata stand as an

@@ -7,7 +7,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-10-07T00:12:18.521Z</lastBuildDate>",
+    "    <lastBuildDate>2026-10-07T09:27:16.931Z</lastBuildDate>",
     "    <item>",
     "      <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>",
     "      <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>",
@@ -16,11 +16,11 @@
     "      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/00996613-2cdc-41ae-87a0-6e9248293d75/09d2d8ad36bd0a96.jpg</g:image_link>",
     "      <g:availability>in stock</g:availability>",
     "      <g:price>157.99 USD</g:price>",
-    "      <g:brand>GetPawsy</g:brand>",
     "      <g:condition>new</g:condition>",
     "      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>",
     "      <g:shipping_weight>10 kg</g:shipping_weight>",
-    "      <g:shipping>"
+    "      <g:shipping>",
+    "        <g:country>US</g:country>"
   ],
   "contains_rss": true,
   "contains_channel": true,
@@ -33,7 +33,7 @@
     "    <title>GetPawsy Product Feed</title>",
     "    <link>https://getpawsy.pet</link>",
     "    <description>Google Merchant product feed</description>",
-    "    <lastBuildDate>2026-10-07T00:12:18.521Z</lastBuildDate>",
+    "    <lastBuildDate>2026-10-07T09:27:16.931Z</lastBuildDate>",
     "    <item>",
     "      <g:id>00996613-2cdc-41ae-87a0-6e9248293d75</g:id>",
     "      <g:title><![CDATA[Elevated Dog Bowl Set – Dual Dish Feeding Station with Storage for Large Dogs]]></g:title>",
@@ -42,13 +42,13 @@
     "      <g:image_link>https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/00996613-2cdc-41ae-87a0-6e9248293d75/09d2d8ad36bd0a96.jpg</g:image_link>",
     "      <g:availability>in stock</g:availability>",
     "      <g:price>157.99 USD</g:price>",
-    "      <g:brand>GetPawsy</g:brand>",
     "      <g:condition>new</g:condition>",
     "      <g:google_product_category>Animals &amp; Pet Supplies &gt; Pet Supplies &gt; Dog Supplies &gt; Dog Bowls &amp; Feeders</g:google_product_category>",
     "      <g:shipping_weight>10 kg</g:shipping_weight>",
-    "      <g:shipping>"
+    "      <g:shipping>",
+    "        <g:country>US</g:country>"
   ],
   "contains_rss_tag": true,
   "contains_item_tag": true,
-  "deployed_at": "2026-10-07T00:12:18.557Z"
+  "deployed_at": "2026-10-07T09:27:16.975Z"
 }
