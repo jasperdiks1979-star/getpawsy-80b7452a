@@ -20,7 +20,7 @@ export const CATEGORY_CONTEXT: Record<PdpCategory, string | null> = {
   'litter box': 'When choosing a litter box, owners usually compare interior size against their cat, entry height, how waste and odor are managed, and how much cleaning the design requires.',
   'cat tree': 'Indoor cats use vertical space to climb, scratch and rest. Owners usually compare overall height, platform size, base footprint and stability for the size of their cat.',
   stroller: 'Pet strollers are often used for pets that cannot manage long walks. Owners usually compare the weight limit, fold size, wheel type and ventilation.',
-  carrier: 'For trips and vet visits, owners usually compare interior dimensions, ventilation, how the carrier opens, and whether it meets the size rules of their airline or vehicle.',
+  carrier: 'For trips and vet visits, owners usually compare interior dimensions, ventilation, how the carrier opens, and whether it fits the size rules of their transport.',
   'car seat': 'For car travel, owners usually compare how the seat or cover attaches, the size against their pet, and how it is cleaned.',
   harness: 'Walking gear is usually chosen by fit, adjustability and where the leash attaches. Measure your pet against the listed size range before ordering.',
   bed: 'Pets spend much of the day resting. Owners usually compare bed size against their pet, filling, edge height and how the cover is cleaned.',
