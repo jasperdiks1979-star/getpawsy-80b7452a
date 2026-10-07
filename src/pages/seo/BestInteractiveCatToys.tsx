@@ -4,7 +4,7 @@ export default function BestInteractiveCatToys() {
   return (
     <SeoTrafficPage
       slug="best-interactive-cat-toys"
-      title="Best Interactive Cat Toys 2026 (Top Picks Tested)"
+      title="Best Interactive Cat Toys 2026 (Top Picks)"
       metaDescription="Your cat ignores every toy you buy? We found 5 interactive toys that actually hold attention beyond 5 minutes. carefully selected with real cats."
       h1="Best Interactive Cat Toys — Popular Picks to Stop Boredom"
       subtitle="A comparison of interactive toys by play mechanism, published features and the kind of cat each one suits."

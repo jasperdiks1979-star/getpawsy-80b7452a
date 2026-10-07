@@ -125,7 +125,7 @@ const WhyTrustOurReviews = () => {
               {[
                 { icon: Star, title: 'Build Quality', desc: 'Materials, durability, and construction standards' },
                 { icon: Shield, title: 'Pet Safety', desc: 'Non-toxic materials, stability, and age-appropriate design' },
-                { icon: Users, title: 'Customer Satisfaction', desc: 'Verified review scores and long-term owner feedback' },
+                { icon: Users, title: 'Customer Satisfaction', desc: 'Customer reviews shown only when real review data exists' },
                 { icon: BarChart3, title: 'Value for Money', desc: 'Price-to-quality ratio compared to category averages' },
                 { icon: Eye, title: 'Design & Usability', desc: 'Ease of setup, cleaning, and daily use for pet owners' },
                 { icon: BookOpen, title: 'Brand Reputation', desc: 'Company track record, warranty support, and return policies' },

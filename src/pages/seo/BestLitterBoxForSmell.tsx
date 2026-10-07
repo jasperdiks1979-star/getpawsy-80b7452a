@@ -4,8 +4,8 @@ export default function BestLitterBoxForSmell() {
   return (
     <SeoClusterPage
       slug="best-litter-box-for-smell"
-      title="Best Litter Box for Smell 2026 (No Odor — Tested)"
-      metaDescription="Top litter boxes that eliminate odor completely. Self-cleaning, carbon-filtered, and high-sided options tested for smell control in 2026."
+      title="Best Litter Box for Smell 2026 for Odor Control"
+      metaDescription="Top litter boxes that eliminate odor completely. Self-cleaning, carbon-filtered, and high-sided options for smell control in 2026."
       h1="Best Litter Box for Smell — Picks for Odor Control"
       subtitle="A comparison of enclosed litter boxes based on each manufacturer's published odor-control design and features."
       introText="Odor is the #1 complaint from cat owners, and the right litter box can eliminate it almost entirely. The best odor-control litter boxes use a combination of enclosed designs, carbon filters, crystal litter absorption, and sealed waste compartments. This guide compares each box on its published odor-control specifications. GetPawsy does not test products in-house."
