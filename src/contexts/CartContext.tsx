@@ -332,35 +332,39 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cartLineHasVariant(item.id)) return;
     const productId = cartLineProductId(item.id);
     if (!productId) return;
-    try {
-      const supabase = await getSupabase();
-      // `product_option_metadata` is the id-scoped option RPC: unlike
-      // `products_public` it also covers active products the catalog hides
-      // (e.g. stock = 0), so the option-required state is always knowable
-      // before checkout. It returns option descriptors only.
-      const { data, error } = await supabase.rpc('product_option_metadata', {
-        p_ids: [productId],
-      });
-      const row = Array.isArray(data)
-        ? (data[0] as { slug?: string | null; variants?: unknown } | undefined)
-        : undefined;
-      if (error || !row) throw error ?? new Error('Option metadata unavailable');
-      if (!cartLineNeedsVariantChoice(item.id, row.variants)) return;
-
-
-      setItems(prev => prev.filter(i => i.id !== item.id));
-      showErrorToast('Choose an option to continue');
-      const url = quickAddProductUrl({ id: productId, slug: row.slug ?? null });
-      if (typeof window !== 'undefined' && window.location.pathname !== url) {
-        window.location.assign(url);
+    // Only PROOF that the product needs an option may undo the add. A
+    // transient verification failure (timeout, 5xx, offline) keeps the line:
+    // the cart/checkout re-check (useCartVariantIssues) and the server's
+    // fail-closed `variant_required` stay authoritative for invalid lines.
+    let row: { slug?: string | null; variants?: unknown } | undefined;
+    for (let attempt = 0; attempt < 2 && !row; attempt++) {
+      try {
+        const supabase = await getSupabase();
+        // `product_option_metadata` is the id-scoped option RPC (covers
+        // catalog-hidden active products); option descriptors only.
+        const { data, error } = await supabase.rpc('product_option_metadata', {
+          p_ids: [productId],
+        });
+        if (error) throw error;
+        row = Array.isArray(data)
+          ? (data[0] as { slug?: string | null; variants?: unknown } | undefined)
+          : undefined;
+        if (!row) return; // unknown product: server decides at checkout
+      } catch {
+        if (attempt === 0) await new Promise(r => setTimeout(r, 800));
       }
-    } catch {
-      setItems(prev => prev.filter(i => i.id !== item.id));
-      showErrorToast('Choose an option to continue');
-      const url = quickAddProductUrl({ id: productId, slug: item.slug ?? null });
-      if (typeof window !== 'undefined' && window.location.pathname !== url) {
-        window.location.assign(url);
-      }
+    }
+    if (!row) {
+      console.warn('[cart] option verification unavailable; line kept, checkout re-verifies');
+      return;
+    }
+    if (!cartLineNeedsVariantChoice(item.id, row.variants)) return;
+
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    showErrorToast('Choose an option to continue');
+    const url = quickAddProductUrl({ id: productId, slug: row.slug ?? null });
+    if (typeof window !== 'undefined' && window.location.pathname !== url) {
+      window.location.assign(url);
     }
   }, []);
 

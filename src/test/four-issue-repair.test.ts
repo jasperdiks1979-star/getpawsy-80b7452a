@@ -56,17 +56,17 @@ describe('central variant-safe cart guard', () => {
     expect(ctx).toContain('cartLineNeedsVariantChoice');
   });
 
-  it('removes the malformed line and routes to the product page', () => {
+  it('removes the malformed line and routes to the product page only on proof', () => {
     const fn = ctx.slice(ctx.indexOf('const enforceVariantSafety'), ctx.indexOf('const addItem'));
-    expect(fn.match(/setItems\(prev => prev\.filter/g)?.length).toBe(2);
+    expect(fn.match(/setItems\(prev => prev\.filter/g)?.length).toBe(1);
     expect(fn).toContain('quickAddProductUrl');
     expect(fn).toContain('Choose an option to continue');
   });
 
-  it('fails closed when option metadata cannot be verified', () => {
+  it('a transient verification failure keeps the line (checkout re-verifies)', () => {
     const fn = ctx.slice(ctx.indexOf('const enforceVariantSafety'), ctx.indexOf('const addItem'));
-    expect(fn).toContain("throw error ?? new Error('Option metadata unavailable')");
-    expect(fn).not.toContain('Failure to verify fails OPEN');
+    expect(fn).toContain('line kept, checkout re-verifies');
+    expect(fn).not.toContain("throw error ?? new Error('Option metadata unavailable')");
   });
 
   it('keeps cart and checkout recovery paths wired', () => {
