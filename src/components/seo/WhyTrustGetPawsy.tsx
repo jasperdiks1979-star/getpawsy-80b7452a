@@ -12,7 +12,7 @@ interface Props {
 
 const TRUST_POINTS = {
   guide: [
-    { icon: Award, label: 'Carefully researched', desc: 'Recommendations are based on supplier-documented specifications, available product information and common pet owner needs — we do not claim hands-on testing.' },
+    { icon: Award, label: 'Carefully researched', desc: 'Recommendations are based on supplier-documented specifications, available product information and common pet owner needs.' },
     { icon: Users, label: 'US customer focus', desc: 'All products ship to the United States. Our support team responds within 24 hours.' },
     { icon: Shield, label: 'Transparent method', desc: 'We explain how products are selected on our How We Select Products page.' },
   ],
