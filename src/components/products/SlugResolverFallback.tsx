@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import NotFound from "@/pages/NotFound";
 import { ProductDetailSkeleton } from "@/components/products/ProductDetailSkeleton";
 import { Layout } from "@/components/layout/Layout";
+import { Helmet } from "react-helmet-async";
 
 type Phase = "resolving" | "redirecting" | "not_found";
 
@@ -97,6 +98,12 @@ export default function SlugResolverFallback({ slug }: { slug: string }) {
   if (phase === "not_found") return <NotFound />;
   return (
     <Layout>
+      {/* Unmatched slug: never let the homepage shell metadata stand as an
+          indexable page while the resolver runs or redirects. */}
+      <Helmet>
+        <title>Finding this product | GetPawsy</title>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <ProductDetailSkeleton />
     </Layout>
   );
