@@ -131,7 +131,8 @@ describe('feed item validation', () => {
   it('rejects missing required fields', () => {
     expect(validateFeedItem(feedItem({ title: '' }))).toContain('missing_title');
     expect(validateFeedItem(feedItem({ image_link: null }))).toContain('missing_image_link');
-    expect(validateFeedItem(feedItem({ brand: '' }))).toContain('missing_brand');
+    // brand is optional: emitted only when documented (product-identifiers.ts)
+    expect(validateFeedItem(feedItem({ brand: '' }))).not.toContain('missing_brand');
   });
 
   it('rejects malformed price, link and availability', () => {

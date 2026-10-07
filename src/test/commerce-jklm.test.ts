@@ -198,8 +198,8 @@ describe("L — inventory and shipping truth", () => {
   });
 
   it("keeps the 5–10 business-day customer promise", () => {
-    const src = read("src/lib/shipping-constants.ts");
-    expect(src).toMatch(/5[–-]10 business days/);
+    const src = read("src/lib/shipping-windows.ts");
+    expect(src).toMatch(/US_TRANSIT_DAYS = \{ min: 5, max: 10 \}/);
   });
 });
 
