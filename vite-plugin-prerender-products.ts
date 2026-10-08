@@ -7,6 +7,7 @@ import path from 'path';
 import { resolveProductIdentifiers } from './src/lib/product-identifiers';
 import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import type { Plugin } from 'vite';
+import { buildConsolidationStub } from './vite-plugin-prerender-guides';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
 import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, crawlerCollectionMembers, isCrawlerListable, MIN_INDEXABLE_COLLECTION_PRODUCTS, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
@@ -588,6 +589,21 @@ export default function prerenderProductsPlugin(): Plugin {
       }
 
       updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
+
+      // ── Legacy /product/<slug> aliases ──
+      // Hosting ignores _redirects, so /product/<slug> used to serve the raw
+      // homepage shell (homepage title, robots=index, empty canonical) to
+      // non-rendering crawlers. Emit a noindex,follow stub whose canonical is
+      // the real /products/<slug> URL; the SPA still client-redirects.
+      let legacyCount = 0;
+      for (const product of safeProducts) {
+        const slug = product.slug || product.id;
+        const legacyDir = path.join(distDir, 'product', slug);
+        fs.mkdirSync(legacyDir, { recursive: true });
+        fs.writeFileSync(path.join(legacyDir, 'index.html'), buildConsolidationStub(spaHtml, `/products/${slug}`), 'utf-8');
+        legacyCount += 1;
+      }
+      console.log(`[prerender-products] Legacy /product/ alias stubs: ${legacyCount} (noindex,follow → /products/)`);
 
       // ── /products hub (dist/products/index.html) ──
       const listable = safeProducts.filter((p) => isListable(p) && isMerchVisible(p)).sort((a, b) => a.name.localeCompare(b.name));
