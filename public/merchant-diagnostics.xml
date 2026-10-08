@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<merchant_diagnostics generated="2026-10-07T21:47:55.344Z" total_products="299">
+<merchant_diagnostics generated="2026-10-08T07:06:13.960Z" total_products="302">
   <summary>
     <missing_gtin>22</missing_gtin>
     <missing_image>0</missing_image>
     <overlength_title>11</overlength_title>
-    <short_title>6</short_title>
+    <short_title>7</short_title>
     <out_of_stock>0</out_of_stock>
     <duplicate_titles>5</duplicate_titles>
     <duplicate_images>0</duplicate_images>
@@ -15,6 +15,7 @@
     <issue type="missing_compare_at_price" product_id="07ad844f-3a96-4fef-b8cd-8a6309d3bee4" name="Automatic Cat Water Fountain – Circulating Filter Pet Drinker for Cats" />
     <issue type="missing_gtin" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
     <issue type="missing_compare_at_price" product_id="0b041496-f7a3-480c-83bb-fdba8ae840f3" name="Cat Wall Perch – Wooden Mounted Climbing Shelf for Indoor Cats" />
+    <issue type="short_title" product_id="0cd8dec3-c4ce-4dd8-a8cb-cc2ad040f9b1" name="Cat Recliner" length="12" />
     <issue type="missing_gtin" product_id="10ba8425-750b-44b7-90e3-167c6736bdac" name="Enclosed Pet Bed – Warm Sleeping Bag for Cats &amp; Small Dogs" />
     <issue type="missing_gtin" product_id="1aff8014-ce29-4232-82a7-3c94d44f1e8e" name="Pet Cleaning Wipes – Gentle Grooming Wipes for Dogs &amp; Cats" />
     <issue type="overlength_title" product_id="22c97654-a505-489f-bf96-81d4ceb17d71" name="Halloween Cat Climbing Frame Gothic Cat Tree, Cat Tower With Spacious Cat Con..." length="174" />
@@ -54,10 +55,10 @@
     <issue type="short_title" product_id="e718aa2a-77d5-462e-ac29-2736f220acf7" name="Cat Scratch-proof Spray" length="23" />
     <issue type="missing_gtin" product_id="f5e91024-1a87-47b1-bd5d-ac9547640e06" name="Double-sided All-Season Dog Bed Mat Made Of Chew-Resistant Leather For Pets" />
     <issue type="short_title" product_id="f87b5c9a-fa1f-4fa4-ab0e-84b849005743" name="Double-Layer Sisal Cat Scratcher" length="32" />
+    <issue type="duplicate_title" product_ids="0bfdc4cf-0631-4a35-8192-74451faa5444,39e9b068-c393-4b47-90b7-5e1fd5abb831,ceb05898-f029-44f2-b4a3-156356007034,ebe7dc66-7f02-4897-a9db-e58c89c2c08a" count="4" />
     <issue type="duplicate_title" product_ids="0d81c870-510a-47f7-9407-b8b7d18a7b43,4cee1de1-bad2-449c-afad-94a482394545" count="2" />
     <issue type="duplicate_title" product_ids="3e16b666-187a-4a60-afe4-55adea8d06c4,6f44ee1c-251c-4895-b281-50f3320eb98b" count="2" />
     <issue type="duplicate_title" product_ids="c15e7914-ab30-4b05-a8bd-2b94a056e00f,d5046917-bdb3-49fd-88ac-850e639d283c" count="2" />
-    <issue type="duplicate_title" product_ids="ceb05898-f029-44f2-b4a3-156356007034,ebe7dc66-7f02-4897-a9db-e58c89c2c08a" count="2" />
     <issue type="duplicate_title" product_ids="d20bbcc2-007b-486d-89c3-635e0ce7cda8,dd370d50-f6a9-4d8f-b44c-06295cb7cd1a" count="2" />
   </issues>
 </merchant_diagnostics>
