@@ -50,6 +50,12 @@ export interface TruthSession {
   interaction_count?: number | null;
   engagement_ms?: number | null;
   classification_reason?: string | null;
+  /** Stored canonical_sessions verdicts — explicit bot/internal/exclude wins. */
+  stored_traffic_class_v2?: string | null;
+  stored_exclude_from_commercial?: boolean | null;
+  stored_is_bot?: boolean | null;
+  stored_is_internal?: boolean | null;
+  stored_technical_path?: boolean | null;
   traffic_quality_class_v3?: string | null;
   commercial_eligible_v3_strict?: boolean;
   commercial_eligible_v3_expanded?: boolean;

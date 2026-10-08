@@ -807,7 +807,13 @@ export const VisitorWorldMap = ({
       evidenceBySession.set(s.session_id, {
         traffic_class: s.traffic_quality_class_v3 ?? null,
         crawler_verified: s.crawler_verified ?? null,
-        is_internal: s.is_internal,
+        is_internal: s.is_internal || s.stored_is_internal === true
+          || /^INTERNAL/i.test(s.stored_traffic_class_v2 ?? ""),
+        // Explicit stored bot/technical/excluded verdicts win over commerce events.
+        // UNKNOWN / missing UA / ?cb= are not verdicts and are not set here.
+        is_bot_suspect: s.stored_is_bot === true || s.stored_technical_path === true
+          || s.stored_exclude_from_commercial === true
+          || /^(BOT_|CRAWLER|VERIFIER|AUTOMATION|TECHNICAL)/i.test(s.stored_traffic_class_v2 ?? ""),
         country: s.country,
         has_product_view: s.has_product_view,
         has_add_to_cart: s.has_add_to_cart,

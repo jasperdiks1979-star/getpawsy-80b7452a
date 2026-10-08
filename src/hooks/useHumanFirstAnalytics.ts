@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from "react";
 import { useAnalyticsTruth, type TruthResponse, type TruthSession } from "./useAnalyticsTruth";
+import { resolveSessionDurationSeconds } from "@/lib/sessionDuration";
 import {
   buildHumanFirstView,
   DEFAULT_TRAFFIC_MODE,
@@ -59,7 +60,7 @@ export function toHumanFirstSessions(sessions: TruthSession[]): HumanFirstSessio
     page_path: s.page_path,
     page_views: s.page_views,
     interaction_count: s.interaction_count ?? null,
-    session_duration_seconds: s.effective_duration_seconds ?? s.reported_duration_seconds ?? null,
+    session_duration_seconds: resolveSessionDurationSeconds(s),
     has_product_view: s.has_product_view,
     has_add_to_cart: s.has_add_to_cart,
     has_view_cart: s.has_view_cart,
@@ -68,6 +69,11 @@ export function toHumanFirstSessions(sessions: TruthSession[]): HumanFirstSessio
     order_value: s.order_value,
     is_internal: s.is_internal,
     classification_reason: s.classification_reason ?? null,
+    stored_traffic_class_v2: s.stored_traffic_class_v2 ?? null,
+    stored_exclude_from_commercial: s.stored_exclude_from_commercial ?? null,
+    stored_is_bot: s.stored_is_bot ?? null,
+    stored_is_internal: s.stored_is_internal ?? null,
+    stored_technical_path: s.stored_technical_path ?? null,
   }));
 }
 
