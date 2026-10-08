@@ -291,6 +291,29 @@ function isPinterestInApp(): boolean {
   return ua.includes('pinterest');
 }
 
+/** Safe hostname parse; accepts full URLs or bare hosts. Lowercased, no "www.". */
+export function referrerHostname(raw: string | null | undefined): string {
+  const s = (raw || '').trim();
+  if (!s) return '';
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(s) ? s : `https://${s}`);
+    return u.hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+/** getpawsy.pet (+ subdomains) or the page's own host. */
+export function isFirstPartyHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/^www\./, '');
+  if (h === 'getpawsy.pet' || h.endsWith('.getpawsy.pet')) return true;
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const own = window.location.hostname.toLowerCase().replace(/^www\./, '');
+    if (own && h === own) return true;
+  }
+  return false;
+}
+
 /** Inference rules used when neither URL nor session carry an explicit source. */
 export function inferUtm(opts?: {
   internalReferrer?: string | null;
@@ -349,8 +372,12 @@ export function inferUtm(opts?: {
   // events fired from Google/Bing/Facebook/Instagram/etc land with a
   // populated utm_source/utm_medium instead of being reported as
   // "missing UTM" by the CEO report.
-  const ref = (externalReferrer || '').toLowerCase();
-  if (ref) {
+  // Match on the parsed HOSTNAME (a full URL like "https://duckduckgo.com/"
+  // never matched the `(^|\.)host\.` patterns). First-party referrers
+  // (getpawsy.pet, its subdomains, the current host) are navigation, not a
+  // referral source — no inference from them.
+  const ref = referrerHostname(externalReferrer);
+  if (ref && !isFirstPartyHost(ref)) {
     const searchEngines: Array<[RegExp, string]> = [
       [/(?:^|\.)google\./, 'google'],
       [/(?:^|\.)bing\./, 'bing'],
