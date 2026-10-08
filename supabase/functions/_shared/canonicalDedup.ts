@@ -70,3 +70,24 @@ export function semanticDedupKey(input: {
   else if (canonical === "CANONICAL_ENGAGEMENT") { anchor = page_path; }
   return dedup([source, canonical, session_id, anchor, bucketISO(occurred_at, windowSec)]);
 }
+
+/**
+ * Source-event dedup key for NON-purchase cci rows — mirrors the SQL writer
+ * `public.canonical_ingest_recent` byte-for-byte:
+ *   concat_ws('|', 'cci', e.id::text, e.session_id, <canonical>, COALESCE(e.product_id,''))
+ * concat_ws skips NULL arguments (but keeps empty strings), so a NULL
+ * session_id is omitted, never rendered as "". Both writers therefore land
+ * the same source row on the same key and ON CONFLICT DO NOTHING collapses it.
+ * Distinct source rows (genuine repeated events) keep distinct keys.
+ */
+export function cciSourceDedupKey(input: {
+  id: string;
+  session_id?: string | null;
+  canonical: Canon;
+  product_id?: string | null;
+}): string {
+  const parts: string[] = ["cci", String(input.id)];
+  if (input.session_id !== null && input.session_id !== undefined) parts.push(input.session_id);
+  parts.push(input.canonical, input.product_id ?? "");
+  return parts.join("|");
+}

@@ -2206,7 +2206,7 @@ export const VisitorWorldMap = ({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `bezoekers-${timeRange}-${new Date().toISOString().split("T")[0]}.csv`,
+        `bezoekers-${timeRange}-${usOnly ? "VS" : "alle"}-${activityFilter}-${sourceFilter}-${(truth?.generated_at ?? new Date().toISOString()).replace(/[:.]/g, "-")}-${truthSessions.length}rijen.csv`,
       );
       document.body.appendChild(link);
       link.click();
@@ -2227,7 +2227,7 @@ export const VisitorWorldMap = ({
     } finally {
       setIsExporting(false);
     }
-  }, [timeRange, truthSessions, truthCounters]);
+  }, [timeRange, truthSessions, truthCounters, truth, usOnly, activityFilter, sourceFilter]);
 
   // ---------------------------------------------------------------------------
   // Summary report — kort .md rapport met totalen per land, per bron en
@@ -2299,6 +2299,8 @@ export const VisitorWorldMap = ({
       lines.push(`# Bezoekersrapport — ${periodLabel}`);
       lines.push("");
       lines.push(`_Gegenereerd: ${new Date().toLocaleString("nl-NL")} · Bron: analytics-canonical (truth envelope)_`);
+      lines.push(`_Scope: ${periodLabel} · ${usOnly ? "Alleen VS" : "Alle landen"} · activiteit=${activityFilter} · bron=${sourceFilter} · intern ${excludeInternal ? "uitgesloten" : "inbegrepen"} · snapshot ${truth?.generated_at ?? "—"}_`);
+      lines.push(`_Ruwe sessies: ${truthSessions.length} · waarvan shoppers (strict v3): ${truthSessions.filter((s) => s.commercial_eligible_v3_strict === true).length} — CSV met dezelfde snapshot bevat exact deze ${truthSessions.length} rijen_`);
       lines.push("");
       lines.push("## Totalen");
       lines.push("");
@@ -2355,7 +2357,7 @@ export const VisitorWorldMap = ({
     } finally {
       setIsSummarizing(false);
     }
-  }, [timeRange, truthSessions, truthCounters]);
+  }, [timeRange, truthSessions, truthCounters, truth, usOnly, activityFilter, sourceFilter, excludeInternal]);
 
   // Minimal fullscreen mode - only map with floating close button
   if (isFullscreen && fullscreenMinimal) {

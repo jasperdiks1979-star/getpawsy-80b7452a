@@ -86,6 +86,12 @@ export interface ClassifierSession {
   is_internal?: boolean | null;
   is_bot?: boolean | null;
   bot_reason?: string | null;
+  /** Explicit stored verdicts from canonical_sessions — take precedence. */
+  stored_traffic_class_v2?: string | null;
+  stored_exclude_from_commercial?: boolean | null;
+  stored_is_bot?: boolean | null;
+  stored_is_internal?: boolean | null;
+  stored_technical_path?: boolean | null;
 }
 
 export interface ClassifiedSession {
@@ -373,6 +379,26 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
   if (s.is_internal === true) {
     reasons.push("explicit_internal_flag");
     return finish("INTERNAL_OR_TEST", 1);
+  }
+  // 1b. Explicit STORED verdicts (canonical_sessions) take precedence over
+  // behavioural/commerce signals. Missing UA, UNKNOWN or ?cb= are NOT verdicts.
+  {
+    const sc = (s.stored_traffic_class_v2 ?? "").toUpperCase();
+    if (s.stored_is_internal === true || sc.startsWith("INTERNAL")) {
+      reasons.push("stored_internal_verdict");
+      return finish("INTERNAL_OR_TEST", 1);
+    }
+    if (
+      s.stored_is_bot === true || s.stored_technical_path === true ||
+      /^(BOT_|CRAWLER|VERIFIER|AUTOMATION|TECHNICAL)/.test(sc)
+    ) {
+      reasons.push(sc ? `stored_verdict:${sc}` : "stored_bot_or_technical_flag");
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.99);
+    }
+    if (s.stored_exclude_from_commercial === true) {
+      reasons.push("stored_exclude_from_commercial");
+      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.9);
+    }
   }
   if (landingLower.includes("__lovable_sha") || landingLower.includes("__lovable_load_id")) {
     reasons.push("internal:lovable_preview_param");

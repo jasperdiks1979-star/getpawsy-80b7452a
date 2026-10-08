@@ -49,7 +49,7 @@ async function detect(sb: ReturnType<typeof admin>): Promise<Detection[]> {
     const { count, error } = await sb
       .from("canonical_events")
       .select("id", { count: "exact", head: true })
-      .gte("event_ts", since);
+      .gte("occurred_at", since);
     if (error) {
       out.push({
         subsystem: "tracking",
@@ -184,7 +184,11 @@ function rootCauseFor(d: Detection) {
   const chain: Array<{ step: number; why: string; evidence: unknown }> = [];
   let root = "unknown";
   let confidence = 40;
-  if (d.subsystem === "tracking" && d.metric === "canonical_events_24h") {
+  if (d.subsystem === "tracking" && d.metric === "canonical_events_24h" && d.severity === "unknown") {
+    chain.push({ step: 1, why: "Detection query failed — volume could not be measured", evidence: d.evidence });
+    root = "detection query error (not an ingest halt)";
+    confidence = 20;
+  } else if (d.subsystem === "tracking" && d.metric === "canonical_events_24h") {
     chain.push({ step: 1, why: "No canonical events reached the warehouse in 24h", evidence: d.evidence });
     chain.push({ step: 2, why: "Either emitter (frontend), ingest edge function, or cron promotion failed", evidence: { fn: "canonical-ingest" } });
     chain.push({ step: 3, why: "Most common: pg_cron canonical-ingest-recent-3min disabled or edge function 5xx", evidence: { job: "canonical-ingest-recent-3min" } });
@@ -216,7 +220,10 @@ function planFor(d: Detection, root: string, confidence: number) {
   // NOT invent code changes — it schedules safe re-invocations and queues
   // risky changes for human approval.
   const safeSubsystems = new Set(["tracking", "bhi", "revenue_war_room", "revenue_audit"]);
-  const auto_safe = safeSubsystems.has(d.subsystem) && d.severity !== "emergency" && confidence >= 60;
+  // A failed probe (severity "unknown" / no observed value) is a QUERY ERROR,
+  // not evidence of an outage — never auto-trigger recovery on it.
+  const probeFailed = d.severity === "unknown" || d.observed_value === null || d.observed_value === undefined;
+  const auto_safe = !probeFailed && safeSubsystems.has(d.subsystem) && d.severity !== "emergency" && confidence >= 60;
   const plan = {
     action: `re-invoke ${d.subsystem} recovery playbook`,
     root_cause: root,
@@ -264,14 +271,18 @@ async function executePlan(sb: ReturnType<typeof admin>, planId: string, detecti
       if (!r.ok) outcome = "failed";
       await r.text();
     } else if (detection.subsystem === "tracking") {
-      log("invoke canonical-ingest?window=1h");
-      const r = await fetch(`${SUPABASE_URL}/functions/v1/canonical-ingest`, {
+      log("invoke canonical-ingest?hours=1");
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/canonical-ingest?hours=1`, {
         method: "POST",
         headers: { Authorization: `Bearer ${SERVICE_KEY}`, "content-type": "application/json" },
-        body: JSON.stringify({ window: 60 }),
+        body: "{}",
       });
       after.ingest_status = r.status;
-      await r.text();
+      const bodyText = await r.text();
+      let bodyOk = false;
+      try { bodyOk = JSON.parse(bodyText)?.ok === true; } catch { bodyOk = false; }
+      after.ingest_ok = bodyOk;
+      if (!r.ok || !bodyOk) outcome = "failed";
     } else {
       log(`no auto playbook — logged for approval`);
       outcome = "failed";

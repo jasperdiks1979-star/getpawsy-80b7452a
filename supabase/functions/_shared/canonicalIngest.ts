@@ -103,6 +103,43 @@ function hardBucket(r: ClassifiableRow): Bucket | null {
 
 const minIdx = (a: number | null, b: number | null) => (a == null ? b : b == null ? a : Math.min(a, b));
 
+
+/**
+ * READ-TIME duplicate guard (no rows are ever deleted).
+ *  1. Same source row ingested twice (source_system + source_event_id +
+ *     canonical_name) — counted once.
+ *  2. Semantic overlap: page_view / homepage_view / collection_view for one
+ *     page load (same session + path within PV_OVERLAP_MS) count as one view.
+ * Genuine repeated events have distinct source ids and are kept.
+ */
+export const PV_OVERLAP_MS = 5_000;
+interface DedupState { seen: Set<string>; pvAt: Map<string, number[]> }
+const dedupStates = new WeakMap<object, DedupState>();
+function dedupStateFor(p: object): DedupState {
+  let st = dedupStates.get(p);
+  if (!st) { st = { seen: new Set(), pvAt: new Map() }; dedupStates.set(p, st); }
+  return st;
+}
+export function isDuplicateCanonicalRow(p: object, r: any): boolean {
+  const st = dedupStateFor(p);
+  if (r.source_system && r.source_event_id) {
+    const k = `${r.source_system}|${r.source_event_id}|${r.canonical_name}`;
+    if (st.seen.has(k)) return true;
+    st.seen.add(k);
+  }
+  if (r.canonical_name === "CANONICAL_PAGE_VIEW" && r.session_id) {
+    const k = `${r.session_id}|${r.page_path ?? ""}`;
+    const t = new Date(r.occurred_at).getTime();
+    if (Number.isFinite(t)) {
+      const list = st.pvAt.get(k) ?? [];
+      if (list.some((x) => Math.abs(x - t) <= PV_OVERLAP_MS)) return true;
+      list.push(t);
+      st.pvAt.set(k, list);
+    }
+  }
+  return false;
+}
+
 /**
  * Fold one page of canonical_events rows (ordered occurred_at DESC, newest
  * first — the same order the single-pass scan used) into the partial.
@@ -116,6 +153,7 @@ export function foldEvents(
   for (const r of rows) {
     if (p.sample_event == null) p.sample_event = r;
     p.raw_events += 1;
+    if (isDuplicateCanonicalRow(p, r)) continue;
 
     // v2 bucket state (mirrors aggregateBuckets, ATC applied at finalize)
     const v2key = r.session_id || `no-session:${r.visitor_id ?? randomId()}`;

@@ -199,7 +199,7 @@ interface ComputeOpts {
 const EVENT_COLUMNS =
   "canonical_name,occurred_at,visitor_id,session_id,order_id,product_id,page_path,landing_page," +
   "utm_source,utm_medium,utm_campaign,utm_content,referrer,country,city,device," +
-  "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version";
+  "ingested_at,is_internal,technical_path,is_bot,bot_confidence,traffic_quality,classification_version,source_system,source_event_id";
 
 async function loadAtcMap(supabase: any, sids: string[]): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
