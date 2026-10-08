@@ -2,7 +2,7 @@
 // Pulls last N hours from source tables, normalizes to canonical_events.
 // Idempotent via dedup_key UNIQUE.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { type Canon, semanticDedupKey } from "../_shared/canonicalDedup.ts";
+import { type Canon, semanticDedupKey, cciSourceDedupKey } from "../_shared/canonicalDedup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,14 +119,19 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
         device: e.device,
         meta,
 
-        dedup_key: semanticDedupKey({
-          source: "cci",
-          canonical,
-          session_id: e.session_id,
-          product_id: e.product_id ?? null,
-          page_path: e.page_path ?? null,
-          occurred_at: e.created_at,
-        }),
+        // Purchase: order/session-anchored semantic key (same as SQL writer).
+        // Everything else: stable source-event key, identical to the SQL
+        // cron writer, so the two pipelines can never double-insert one row.
+        dedup_key: canonical === "CANONICAL_PURCHASE"
+          ? semanticDedupKey({
+              source: "cci",
+              canonical,
+              session_id: e.session_id,
+              product_id: e.product_id ?? null,
+              page_path: e.page_path ?? null,
+              occurred_at: e.created_at,
+            })
+          : cciSourceDedupKey({ id: e.id, session_id: e.session_id, canonical, product_id: e.product_id ?? null }),
       };
     })
     .filter(Boolean);
