@@ -155,3 +155,13 @@ describe("Stored verdict pass-through to dashboard / map / CSV", () => {
     expect(src).toContain("stored_traffic_class_v2: f?.traffic_class ?? null,\n          stored_exclude_from_commercial");
   });
 });
+
+describe("Live map honours stored verdicts", () => {
+  it("map evidence maps stored bot/exclude to technical, not UNKNOWN", async () => {
+    const src = readFileSync("src/components/admin/VisitorWorldMap.tsx", "utf8");
+    expect(src).toContain("s.stored_exclude_from_commercial === true");
+    const { classifyLiveSession } = await import("@/lib/commercialLivePresence");
+    expect(classifyLiveSession({ traffic_class: "HUMAN_PROBABLE", country: "US", has_checkout: true, is_bot_suspect: true })).toBe("technical");
+    expect(classifyLiveSession({ traffic_class: "UNKNOWN", country: "US", has_add_to_cart: true })).not.toBe("technical");
+  });
+});
