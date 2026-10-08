@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from "react";
 import { useAnalyticsTruth, type TruthResponse, type TruthSession } from "./useAnalyticsTruth";
+import { resolveSessionDurationSeconds } from "@/lib/sessionDuration";
 import {
   buildHumanFirstView,
   DEFAULT_TRAFFIC_MODE,
@@ -59,7 +60,7 @@ export function toHumanFirstSessions(sessions: TruthSession[]): HumanFirstSessio
     page_path: s.page_path,
     page_views: s.page_views,
     interaction_count: s.interaction_count ?? null,
-    session_duration_seconds: s.effective_duration_seconds ?? s.reported_duration_seconds ?? null,
+    session_duration_seconds: resolveSessionDurationSeconds(s),
     has_product_view: s.has_product_view,
     has_add_to_cart: s.has_add_to_cart,
     has_view_cart: s.has_view_cart,

@@ -127,3 +127,31 @@ describe("Payment integrity untouched", () => {
       .toBe("cci|CANONICAL_PURCHASE|s");
   });
 });
+
+describe("Stored verdict pass-through to dashboard / map / CSV", () => {
+  it("TruthSession → dashboard view: excluded bot with checkout is not human and adds no commerce", async () => {
+    const { toHumanFirstSessions } = await import("@/hooks/useHumanFirstAnalytics");
+    const { buildHumanFirstView } = await import("@/lib/humanFirstAnalytics");
+    const base = {
+      visitor_id: "v", first_seen_at: "2026-10-01T10:00:00Z", last_seen_at: "2026-10-01T10:04:00Z",
+      country: "US", city: "Austin", device: "mobile", referrer: null, source: "direct",
+      utm_source: null, utm_medium: null, utm_campaign: null, page_path: "/", page_views: 4,
+      has_product_view: true, has_add_to_cart: true, has_view_cart: true, has_checkout: true, has_purchase: false,
+      order_value: 0, is_internal: false, effective_duration_seconds: 240,
+    };
+    const rows = toHumanFirstSessions([
+      { ...base, session_id: "old-bot", stored_traffic_class_v2: "BOT_CONFIRMED", stored_exclude_from_commercial: true, stored_is_bot: false },
+      { ...base, session_id: "old-excluded", stored_exclude_from_commercial: true },
+      { ...base, session_id: "old-internal", stored_traffic_class_v2: "INTERNAL_TEST" },
+    ] as any);
+    expect(rows[0].stored_traffic_class_v2).toBe("BOT_CONFIRMED");
+    expect(rows[0].session_duration_seconds).toBe(240);
+    const v = buildHumanFirstView(rows, "human");
+    expect(v.metrics.checkout_started).toBe(0);
+    expect(v.metrics.add_to_cart).toBe(0);
+  });
+  it("server response carries stored verdict fields per session", () => {
+    const src = readFileSync("supabase/functions/analytics-canonical/index.ts", "utf8");
+    expect(src).toContain("stored_traffic_class_v2: f?.traffic_class ?? null,\n          stored_exclude_from_commercial");
+  });
+});
