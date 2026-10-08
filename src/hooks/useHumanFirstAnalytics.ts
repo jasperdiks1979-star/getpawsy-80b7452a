@@ -68,6 +68,11 @@ export function toHumanFirstSessions(sessions: TruthSession[]): HumanFirstSessio
     order_value: s.order_value,
     is_internal: s.is_internal,
     classification_reason: s.classification_reason ?? null,
+    stored_traffic_class_v2: s.stored_traffic_class_v2 ?? null,
+    stored_exclude_from_commercial: s.stored_exclude_from_commercial ?? null,
+    stored_is_bot: s.stored_is_bot ?? null,
+    stored_is_internal: s.stored_is_internal ?? null,
+    stored_technical_path: s.stored_technical_path ?? null,
   }));
 }
 

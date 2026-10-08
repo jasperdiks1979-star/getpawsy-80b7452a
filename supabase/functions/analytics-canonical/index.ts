@@ -799,6 +799,12 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
           interaction_count: f?.interaction_count ?? null,
           engagement_ms: f?.engagement_ms ?? null,
           classification_reason: f?.classification_reason ?? null,
+          // Stored verdicts (read-only) so client classifiers honour them.
+          stored_traffic_class_v2: f?.traffic_class ?? null,
+          stored_exclude_from_commercial: f?.exclude_from_commercial ?? null,
+          stored_is_bot: f?.is_bot ?? null,
+          stored_is_internal: f?.is_internal ?? null,
+          stored_technical_path: f?.technical_path ?? null,
           country_iso2: toIso2(s.country),
 
           traffic_quality_class_v3: e?.traffic_quality_class_v3 ?? null,
