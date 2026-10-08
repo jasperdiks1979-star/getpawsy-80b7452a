@@ -55,6 +55,7 @@ import {
   type WorldMapMarkerFeature,
 } from "@/lib/visitorWorldMapCanonicalFeatures";
 import type { LiveSessionEvidence } from "@/lib/commercialLivePresence";
+import { resolveSessionDurationSeconds } from "@/lib/sessionDuration";
 import {
   clusterMarkers,
   computeBoundsForMarkers,
@@ -2181,9 +2182,7 @@ export const VisitorWorldMap = ({
       // Additive classifier columns — raw source fields stay untouched.
       const classified = classifySessions(truthSessions);
       const rows = truthSessions.map((s, i) => {
-        const dur = Math.max(0, Math.round(
-          (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
-        ));
+        const dur = resolveSessionDurationSeconds(s);
         return [
           s.session_id, s.visitor_id ?? "", s.first_seen_at, s.last_seen_at,
           dur, s.page_views,
@@ -2259,9 +2258,7 @@ export const VisitorWorldMap = ({
       const summaryClassified = classifySessions(truthSessions);
       for (let i = 0; i < truthSessions.length; i++) {
         const s = truthSessions[i];
-        const dur = Math.max(0, Math.round(
-          (new Date(s.last_seen_at).getTime() - new Date(s.first_seen_at).getTime()) / 1000,
-        ));
+        const dur = resolveSessionDurationSeconds(s);
         durations.push(dur);
         const country = s.country || "Onbekend";
         const c = byCountry.get(country) || { sessions: 0, cart: 0, checkout: 0, revenue: 0 };
@@ -2313,7 +2310,7 @@ export const VisitorWorldMap = ({
       lines.push(`- Checkout gestart: **${truthCounters.checkout_started}** (${fmtPct(truthCounters.checkout_started, truthCounters.sessions)})`);
       lines.push(`- Purchases: **${truthCounters.purchases}**`);
       lines.push(`- Omzet: ${fmtRev(truthCounters.revenue)}`);
-      lines.push(`- Gem. sessieduur: **${fmtDur(avgDuration)}** (mediaan ${fmtDur(medianDuration)})`);
+      lines.push(`- Gem. gemeten sessieduur: **${fmtDur(avgDuration)}** (mediaan ${fmtDur(medianDuration)}) — verstreken sessietijd, geen actieve leestijd`);
       lines.push("");
       lines.push("## Top landen");
       lines.push("");
