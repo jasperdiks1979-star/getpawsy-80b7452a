@@ -85,7 +85,8 @@ describe("P0 stored bot verdict precedence", () => {
       session_id: "z", user_agent: "", landing_page: "/?cb=1791409010366", stored_traffic_class_v2: "UNKNOWN",
       page_views: 1,
     } as any);
-    expect(c.reasons.some((r) => r.startsWith("stored_"))).toBe(false);
+    expect(c.classification_reasons.some((r) => r.startsWith("stored_"))).toBe(false);
+    expect(c.traffic_quality_class).not.toBe("INTERNAL_OR_TEST");
   });
 });
 
