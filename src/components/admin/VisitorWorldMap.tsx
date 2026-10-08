@@ -2227,7 +2227,7 @@ export const VisitorWorldMap = ({
     } finally {
       setIsExporting(false);
     }
-  }, [timeRange, truthSessions, truthCounters]);
+  }, [timeRange, truthSessions, truthCounters, truth, usOnly, activityFilter, sourceFilter]);
 
   // ---------------------------------------------------------------------------
   // Summary report — kort .md rapport met totalen per land, per bron en
@@ -2357,7 +2357,7 @@ export const VisitorWorldMap = ({
     } finally {
       setIsSummarizing(false);
     }
-  }, [timeRange, truthSessions, truthCounters]);
+  }, [timeRange, truthSessions, truthCounters, truth, usOnly, activityFilter, sourceFilter, excludeInternal]);
 
   // Minimal fullscreen mode - only map with floating close button
   if (isFullscreen && fullscreenMinimal) {
