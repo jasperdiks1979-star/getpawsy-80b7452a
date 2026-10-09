@@ -201,7 +201,7 @@ const Checkout = () => {
   const [email, setEmail] = useState('');
   // Pre-accepted by default — never block checkout because users missed a checkbox.
   // Users can still uncheck. Terms remain visible & linkable for compliance.
-  const [acceptedTerms, setAcceptedTerms] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false); // explicit, never pre-checked consent
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState<string | null>(null);
   const [discountError, setDiscountError] = useState<string | null>(null);
