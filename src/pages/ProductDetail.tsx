@@ -1,4 +1,5 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
+import { initialDisplayPrice } from "@/lib/initialDisplayPrice";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
@@ -1542,7 +1543,7 @@ const ProductDetail = () => {
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
                     <span className="text-3xl md:text-4xl font-display font-bold text-primary">
-                      ${displayPrice.toFixed(2)}
+                      {showFromPrefix && <span className="text-lg font-medium mr-1">From</span>}${displayPrice.toFixed(2)}
                     </span>
                     {showCompare && (
                       <>
