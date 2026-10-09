@@ -300,7 +300,7 @@ const LitterBoxFunnel = () => {
           </h2>
           <div className="space-y-4">
             {[
-              { q: 'How long does shipping take?', a: 'Orders typically arrive within 5–10 business days to anywhere in the US.' },
+              { q: 'How long does shipping take?', a: 'Orders are processed in 1–2 business days, then typically take 5–10 business days in US transit (about 6–12 business days total, estimated).' },
               { q: 'Can I return it?', a: 'Yes — we offer a 30-day return policy on all products. Contact us at info@getpawsy.pet to start a return.' },
               { q: 'Does it work with all litter types?', a: 'It works best with clumping litter. The automatic rake system requires clumping litter to function properly.' },
               { q: 'Is it safe for my cat?', a: 'Yes — built-in sensors detect your cat and pause the cleaning cycle until your pet exits safely.' },

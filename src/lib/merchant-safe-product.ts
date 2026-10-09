@@ -8,6 +8,7 @@
  * No component may compute its own price, discount, or availability inline.
  */
 
+import { listingPrice } from './listingPrice';
 import { PRICING_DISPLAY_MODE, ALLOW_VARIANT_PRICE_OVERRIDE } from '@/config/pricing-policy';
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -87,7 +88,10 @@ export function getDisplayPrice(product: MerchantProduct): DisplayPriceResult {
   let price: number;
 
   if (PRICING_DISPLAY_MODE === 'base_price') {
-    price = Number(product.price) || 0;
+    // Advertised price = what the shopper can buy (shared listingPrice rule,
+    // same as PDP, prerender schema and Merchant feed). Without loaded
+    // variant data this is products.price — never an invented value.
+    price = listingPrice(Number(product.price) || 0, product.variants).price;
   } else {
     // default_variant_price mode
     const firstVariantPrice = extractFirstVariantPrice(product.variants);

@@ -161,7 +161,7 @@ const CatTrainingTravelPillar = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-4">Shipping & Returns</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              All cat products ship with 5–10 business day estimated delivery to the United States. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
+              All cat products ship with 1–2 business days processing plus 5–10 business days estimated US transit to the United States. Free shipping on orders over $35. Every purchase is covered by our 30-day return policy — items must be unused and in original condition.
             </p>
           </section>
 

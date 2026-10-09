@@ -77,3 +77,21 @@ describe("shipping: handling 1–2 + transit 5–10 = estimated 6–12", () => {
     expect(PRODUCT_SHIPPING_INFO.deliveryTime).toMatch(/Processing 1–2 business days, then 5–10 business days US transit/);
   });
 });
+
+import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
+import { getDisplayPrice } from "@/lib/merchant-safe-product";
+describe("cards and runtime ProductSchema use the shared listing price", () => {
+  const v = { variantSellPrice: 97.95, variantCostPrice: 40 };
+  it("card price and schema price = listingPrice when variants loaded", () => {
+    expect(getCanonicalCardPrice({ price: 96.99, variants: [v, v, v] }).price).toBe(97.95);
+    expect(getDisplayPrice({ price: 96.99, variants: [v, v, v] } as never).price).toBe(97.95);
+  });
+  it("without variant data falls back to products.price (no invented value)", () => {
+    expect(getCanonicalCardPrice({ price: 96.99 }).price).toBe(96.99);
+  });
+  it("shopper copy no longer labels transit as total delivery", () => {
+    for (const f of ["src/components/products/ConversionBlock.tsx", "src/components/home/FreeShippingBanner.tsx", "src/pages/BestsellerDetail.tsx", "src/components/home/WhyShopGetPawsy.tsx"]) {
+      expect(readFileSync(f, "utf8")).not.toContain("Estimated delivery: 5–10 business days");
+    }
+  });
+});

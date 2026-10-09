@@ -43,10 +43,10 @@ const DogTraining = () => {
               Dog Training Essentials
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mb-6">
-              No-pull harnesses, training leashes, and behavior tools — everything you need to build a better bond with your dog. Estimated delivery: 5–10 business days.
+              No-pull harnesses, training leashes, and behavior tools — everything you need to build a better bond with your dog. Processing 1–2 business days, then 5–10 business days US transit (estimate).
             </p>
             <div className="flex flex-wrap gap-3 text-sm font-medium text-muted-foreground">
-              <span>📦 Estimated delivery: 5–10 business days</span>
+              <span>📦 Processing 1–2 business days, then 5–10 business days US transit (estimate)</span>
               <span>🛡️ 30-Day Return Policy</span>
             </div>
           </FadeInView>

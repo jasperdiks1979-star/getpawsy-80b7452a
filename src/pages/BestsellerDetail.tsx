@@ -948,7 +948,7 @@ const BestsellerDetail = () => {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-primary" />
-                    <span>Estimated delivery: 5–10 business days</span>
+                    <span>Processing 1–2 business days, then 5–10 business days US transit (estimate)</span>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <RotateCcw className="w-4 h-4 text-primary" />
@@ -1653,7 +1653,7 @@ const BestsellerDetail = () => {
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
                 Find the right products for your pet. Browse our selection and enjoy free shipping on eligible orders over $35.
-                <span className="block mt-2 text-primary font-medium">Estimated delivery: 5–10 business days.</span>
+                <span className="block mt-2 text-primary font-medium">Processing 1–2 business days, then 5–10 business days US transit (estimate).</span>
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

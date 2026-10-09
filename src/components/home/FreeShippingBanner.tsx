@@ -17,7 +17,7 @@ export function FreeShippingBanner() {
           </h2>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Shipping to the United States · Estimated delivery: 5–10 business days
+          Shipping to the United States · Processing 1–2 business days + 5–10 business days transit (estimate)
         </p>
         <Button asChild size="lg" className="rounded-xl px-8 font-bold">
           <Link to="/products">Browse Bestsellers</Link>

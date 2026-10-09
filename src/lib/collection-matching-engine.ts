@@ -14,6 +14,7 @@ export interface CollectionProduct {
   updated_at: string;
   primary_species?: string | null;
   primary_intent?: string | null;
+  variants?: unknown;
 }
 
 export interface CollectionMatchResult {
@@ -198,7 +199,7 @@ export async function resolveCollectionProducts(
   if (collection.slug === 'all') {
     const { data: allProducts, error: allErr } = await supabase
       .from('products_public')
-      .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent')
+      .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent, variants')
       .eq('is_active', true)
       .eq('is_duplicate', false)
       .gt('price', 0)
@@ -244,7 +245,7 @@ export async function resolveCollectionProducts(
   const restrictToMerchandised = PRIMARY_MERCHANDISED_COLLECTIONS.has(collection.slug);
   let poolQuery = supabase
     .from('products_public')
-    .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent')
+    .select('id, name, price, compare_at_price, image_url, slug, category, stock, created_at, updated_at, primary_species, primary_intent, variants')
     .eq('is_active', true)
     .eq('is_duplicate', false)
     .gt('price', 0)

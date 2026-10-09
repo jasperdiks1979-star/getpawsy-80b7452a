@@ -84,7 +84,7 @@ export const ConversionBlock = memo(function ConversionBlock({ productName, cate
       {!trustCompact && <div className="flex items-center gap-2">
         <Clock className="w-4 h-4 text-primary flex-shrink-0" />
         <p className="text-sm text-muted-foreground">
-          Estimated delivery: 5–10 business days
+          Processing 1–2 business days, then 5–10 business days US transit (estimate)
         </p>
       </div>}
 

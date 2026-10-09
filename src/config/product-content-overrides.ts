@@ -93,7 +93,7 @@ const AUTOMATIC_CAT_LITTER_BOX: ProductContentOverride = {
   intro:
     'A self-cleaning litter box for busy cat homes, with a 60 L interior, app scheduling, usage monitoring, and an infrared exit sensor that starts cleaning only after your cat leaves.',
   inStockLine: 'In stock — ships to United States',
-  verifiedShippingLine: 'Estimated delivery: 5–10 business days',
+  verifiedShippingLine: 'Processing 1–2 business days, then 5–10 business days US transit (estimate)',
   supportLabel: 'Customer Support',
   suppressUrgencyLine: true,
   hideAdIntentHeadline: true,
@@ -259,7 +259,7 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
   intro:
     'An enclosed litter box built to keep litter and mess inside: a front flip door for your cat, a second top opening for you, anti-splash walls, and an odor-locking lid.',
   inStockLine: 'In stock — ships to United States',
-  verifiedShippingLine: 'Estimated delivery: 5–10 business days',
+  verifiedShippingLine: 'Processing 1–2 business days, then 5–10 business days US transit (estimate)',
   supportLabel: 'Customer Support',
   suppressUrgencyLine: true,
   hideAdIntentHeadline: true,
@@ -320,7 +320,7 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
     { q: 'What about odor?', a: 'The box has an odor-locking lid that keeps it covered between visits. Regular scooping is still needed to keep it fresh.' },
     { q: 'Is it suitable for more than one cat?', a: 'It is positioned for multi-cat households and apartment living. In most multi-cat homes we still recommend having a second box available elsewhere.' },
     { q: 'What litter can I use?', a: 'Your cat’s usual litter — there is no mechanism that restricts litter type.' },
-    { q: 'How long does shipping take?', a: 'We ship to the United States. Estimated delivery is 5–10 business days, and shipping options are confirmed at checkout.' },
+    { q: 'How long does shipping take?', a: 'We ship to the United States. Orders are processed in 1–2 business days, then estimated US transit is 5–10 business days, and shipping options are confirmed at checkout.' },
     { q: 'What is the return policy?', a: 'GetPawsy offers a 30-day return policy. Items must be unused and in original condition — contact support to start a return.' },
   ],
   hideSections: [
