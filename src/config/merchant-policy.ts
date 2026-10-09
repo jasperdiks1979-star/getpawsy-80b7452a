@@ -48,7 +48,7 @@ export {
 // ============= APPROVED MICROCOPY =============
 
 /** Approved shipping microcopy for product cards / CTAs */
-export const APPROVED_SHIPPING_LINE = 'Estimated delivery: 5–10 business days';
+export const APPROVED_SHIPPING_LINE = 'Processing 1–2 business days, then 5–10 business days US transit (estimate)';
 
 /** Approved free-shipping line: checkout applies the rule to every US cart at this subtotal. */
 export const APPROVED_FREE_SHIPPING_LINE = 'Free US shipping on orders $35+';

@@ -59,7 +59,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Popular memory foam for joint pain relief' },
-      { icon: '🇺🇸', text: 'Ships from US warehouses in 5–10 business days' },
+      { icon: '🇺🇸', text: 'Processing 1–2 business days + 5–10 business days US transit' },
       { icon: '🔄', text: '30-day return policy — full refund if your dog doesn\'t love it' },
     ],
     quickComparison: [
@@ -214,7 +214,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Safety-focused designs for dogs up to 75 lbs' },
-      { icon: '🇺🇸', text: 'US shipping — 5–10 business days' },
+      { icon: '🇺🇸', text: 'US shipping — 1–2 days processing + 5–10 business days transit' },
       { icon: '🔄', text: '30-day return policy on all travel gear' },
     ],
     quickComparison: [
@@ -261,7 +261,7 @@ export const DOMINATION_PAGES: Record<string, DominationPageConfig> = {
     },
     bulletUSPs: [
       { icon: '✅', text: 'Cooling airflow design for hot weather and outdoor use' },
-      { icon: '🇺🇸', text: 'Ships from US warehouses in 5–10 business days' },
+      { icon: '🇺🇸', text: 'Processing 1–2 business days + 5–10 business days US transit' },
       { icon: '🔄', text: '30-day return policy on all elevated beds' },
     ],
     quickComparison: [

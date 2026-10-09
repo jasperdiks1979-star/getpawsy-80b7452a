@@ -8,7 +8,7 @@ const pillars = [
   {
     icon: Truck,
     title: 'US Delivery',
-    description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Estimated delivery: 5–10 business days to the United States.`,
+    description: `Free shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Processing 1–2 business days, then 5–10 business days transit to the United States (estimate).`,
   },
   {
     icon: RotateCcw,
