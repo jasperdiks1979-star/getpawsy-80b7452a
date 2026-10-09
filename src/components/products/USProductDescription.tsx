@@ -3,6 +3,7 @@ import { CheckCircle, Truck, RotateCcw, Shield, Heart, Package } from 'lucide-re
 import {
   FREE_SHIPPING_THRESHOLD,
   DELIVERY_TIME_STANDARD,
+  PROCESSING_TIME,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 import { getProductContentOverride } from '@/config/product-content-overrides';
@@ -49,11 +50,13 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
   return (
     <div className={`space-y-8 ${className}`}>
       {/* Section 1: Short Benefit Intro */}
-      <section>
-        <p className="text-lg text-foreground leading-relaxed">
-          {parsed.benefitIntro}
-        </p>
-      </section>
+      {parsed.benefitIntro && (
+        <section>
+          <p className="text-lg text-foreground leading-relaxed">
+            {parsed.benefitIntro}
+          </p>
+        </section>
+      )}
 
       {/* Section 2: Key Benefits */}
       {parsed.keyBenefits.length > 0 && (
@@ -74,7 +77,7 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
       )}
 
       {/* Section 3: Why Pet Parents Love It — hidden for SKUs whose override suppresses unverified emotional social proof */}
-      {!override?.hideSections?.includes('whyPetParentsLoveIt') && (
+      {parsed.whyLoveIt && !override?.hideSections?.includes('whyPetParentsLoveIt') && (
         <section className="bg-primary/5 rounded-xl p-5 border border-primary/10">
           <h3 className="text-lg font-display font-semibold text-foreground mb-3 flex items-center gap-2">
             <Heart className="w-5 h-5 text-primary" />
@@ -113,14 +116,14 @@ const USProductDescription: React.FC<USProductDescriptionProps> = ({
           <div className="flex items-start gap-3">
             <Truck className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
              <div>
-              <p className="font-medium text-foreground text-sm">US Shipping</p>
-              <p className="text-xs text-muted-foreground">Estimated delivery: 5–10 business days</p>
+              <p className="font-medium text-foreground text-sm">Processing</p>
+              <p className="text-xs text-muted-foreground">{PROCESSING_TIME}</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <Shield className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
             <div>
-              <p className="font-medium text-foreground text-sm">Estimated Delivery</p>
+              <p className="font-medium text-foreground text-sm">US Transit (after processing)</p>
               <p className="text-xs text-muted-foreground">{DELIVERY_TIME_STANDARD}</p>
             </div>
           </div>
@@ -204,7 +207,7 @@ function extractBenefitIntro(desc: string, name: string, type: string): string {
     
     // If first sentence is too long or too short, generate one
     if (intro.length > 200 || intro.length < 30) {
-      return generateIntro(name, type);
+      return '';
     }
     
     // Ensure it ends with period
@@ -215,7 +218,9 @@ function extractBenefitIntro(desc: string, name: string, type: string): string {
     return intro;
   }
   
-  return generateIntro(name, type);
+  // No sourced sentence → omit; never synthesize a name/category-based intro.
+  void generateIntro; void name; void type;
+  return '';
 }
 
 /**
@@ -385,7 +390,9 @@ function extractWhyLoveIt(desc: string, name: string, type: string): string {
     accessory: 'A practical everyday item designed to fit into your pet care routine.',
   };
   
-  return whyLoveByType[type] || whyLoveByType.accessory;
+  // No sourced sentence → omit; never synthesize category-guessed praise.
+  void whyLoveByType; void name; void type;
+  return '';
 }
 
 /**

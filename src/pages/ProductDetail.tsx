@@ -1,5 +1,5 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
-import { initialDisplayPrice } from "@/lib/initialDisplayPrice";
+import { listingPrice } from "@/lib/listingPrice";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
@@ -1190,10 +1190,7 @@ const ProductDetail = () => {
   // DISPLAY PRICE POLICY: before an explicit option click, show the price the
   // shopper can actually buy (variants are already resolved through
   // customerUnitPrice); a range shows the lowest with "From". No auto-select.
-  const initialPrice = initialDisplayPrice(
-    Number(product.price),
-    variants.map((v) => v.variantSellPrice),
-  );
+  const initialPrice = listingPrice(Number(product.price), product.variants);
   const activePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
     ? Number(selectedVariant.variantSellPrice)
     : initialPrice.price;

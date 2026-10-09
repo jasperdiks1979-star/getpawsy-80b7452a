@@ -42,7 +42,7 @@ export const DeliveryReassurance: React.FC<DeliveryReassuranceProps> = ({ classN
         <div className="flex items-start gap-3">
           <Package className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium text-foreground text-sm">Delivery</p>
+            <p className="font-medium text-foreground text-sm">US transit (after processing)</p>
             <p className="text-sm text-muted-foreground">{DELIVERY_TIME_STANDARD}</p>
           </div>
         </div>
