@@ -256,15 +256,12 @@ function extractKeyBenefits(desc: string, type: string): string[] {
     });
   }
   
-  // If not enough benefits found, generate based on type
-  if (benefits.length < 3) {
-    const typeBenefits = getTypeBenefits(type);
-    typeBenefits.forEach(b => {
-      if (!benefits.some(existing => existing.toLowerCase().includes(b.toLowerCase().slice(0, 10)))) {
-        benefits.push(b);
-      }
-    });
-  }
+  // Never pad with category-guessed benefits: name-based type detection
+  // (e.g. "Scoop and Mat Included" → "mat") produced false product claims.
+  // Only bullets present in the product's own description (or a verified
+  // override, applied by the caller) may appear as Key Benefits.
+  void type;
+  void getTypeBenefits;
   
   return benefits.slice(0, 5);
 }
