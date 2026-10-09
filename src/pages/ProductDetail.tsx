@@ -358,7 +358,13 @@ async function fetchExistingProduct(productIdentifier: string): Promise<ProductR
     if (import.meta.env.DEV) {
       console.warn(`[PDP] fetchExistingProduct fallback for ${productIdentifier}:`, err);
     }
-    return getLocalFallback();
+    // A network/timeout/gateway failure is NOT "product does not exist".
+    // Returning null here sent valid URLs to the slug resolver and then to a
+    // visible 404 during backend outages. Rethrow so the query enters its
+    // error state (bounded retry + "Try again"), unless a local copy exists.
+    const local = getLocalFallback();
+    if (local) return local;
+    throw err instanceof Error ? err : new Error(String(err));
   }
 }
 
@@ -447,8 +453,8 @@ const ProductDetail = () => {
     // Cap retries so the PDP can never stay in skeleton longer than ~3s
     // before resolving to product, replacement (via SlugResolverFallback),
     // or visible error/retry state.
-    retry: 1,
-    retryDelay: 600,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 3000),
     // Do NOT keep failed results around for 10 minutes — that keeps the page
     // broken even after a network blip recovers.
     staleTime: 1000 * 60 * 10,
