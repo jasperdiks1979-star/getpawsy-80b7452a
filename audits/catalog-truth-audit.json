@@ -4,10 +4,13 @@
     "source": "bounded read-only snapshot of products_public (active, non-duplicate, slug, price>0) + live merchant-feed.xml",
     "examined": 432,
     "in_live_feed": 273,
-    "live_feed_price_mismatches_fixed_by_code": 17,
     "price_ranges": 29,
     "stored_description_template_phrase_products": 26,
-    "stored_description_divergent_logistics_products": 1
+    "stored_description_divergent_logistics_products": 0,
+    "live_feed_price_mismatches_pending_build_and_live_verification": 17,
+    "examined_note": "432 active, non-duplicate catalog records with slug and price>0 in a read-only snapshot. Not all are publicly purchasable: 273 are in the live feed, and the rest are excluded there by feed rules such as stock, image, description or niche.",
+    "evidence_status_note": "evidence_status only says whether option data was present; it is not a fact-check or certification.",
+    "logistics_false_positive": "1set-990ft-range-dog-wireless-fence-remote-trainin: \"3-5 days\" and \"10-15 days\" are battery working and standby times, not shipping claims."
   },
   "products": [
     {
@@ -77,7 +80,7 @@
       "live_feed_price": 37.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -421,7 +424,7 @@
       "live_feed_price": 46.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -891,7 +894,7 @@
       "live_feed_price": 38.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -909,7 +912,7 @@
       "live_feed_price": 96.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -1091,7 +1094,7 @@
       "live_feed_price": 33.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -2087,7 +2090,7 @@
       "live_feed_price": 40.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -2181,11 +2184,7 @@
       "live_feed_mismatch": false,
       "expected_after_fix": "feed+schema+PDP = effective_price",
       "stored_description_template_phrases": [],
-      "stored_description_logistics_claims": [
-        "3-5days",
-        "3-5 Days",
-        "10-15 Days"
-      ],
+      "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
     },
     {
@@ -2381,7 +2380,7 @@
       "live_feed_price": 16.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [
         "durable, pet-safe materials"
       ],
@@ -2455,7 +2454,7 @@
       "live_feed_price": 40.95,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -3487,7 +3486,7 @@
       "live_feed_price": 15.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -3797,7 +3796,7 @@
       "live_feed_price": 45.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -3961,7 +3960,7 @@
       "live_feed_price": 16.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -4143,7 +4142,7 @@
       "live_feed_price": 36.95,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -5051,7 +5050,7 @@
       "live_feed_price": 39.95,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -5411,7 +5410,7 @@
       "live_feed_price": 158.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -6749,7 +6748,7 @@
       "live_feed_price": 16.99,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -7237,7 +7236,7 @@
       "live_feed_price": 16.49,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
@@ -7819,7 +7818,7 @@
       "live_feed_price": 33.95,
       "in_live_feed": true,
       "live_feed_mismatch": true,
-      "expected_after_fix": "feed+schema+PDP = effective_price",
+      "expected_after_fix": "pending build + live verification: feed/schema/PDP = effective_price",
       "stored_description_template_phrases": [],
       "stored_description_logistics_claims": [],
       "evidence_status": "variant_data_present"
