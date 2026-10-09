@@ -89,7 +89,7 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
       // Fetch full product details for co-purchased products
       const { data: productDetails, error: productsError } = await supabase
         .from('products_shop')
-        .select('id, name, price, image_url, slug, category')
+        .select('id, name, price, image_url, slug, category, variants')
         .in('id', sortedProductIds)
         .gt('stock', 0);
 

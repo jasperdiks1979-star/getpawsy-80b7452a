@@ -27,7 +27,7 @@ async function fetchManualProducts() {
 
   const { data, error } = await supabase
     .from('products_shop')
-    .select('id, name, slug, image_url, price, category')
+    .select('id, name, slug, image_url, price, category, variants')
     .in('slug', slugs)
     .eq('is_active', true);
 
@@ -73,7 +73,7 @@ async function fetchAutoProducts() {
   // Try scored winners first (future: a dedicated 'product_scores' table)
   const { data, error } = await supabase
     .from('products_shop')
-    .select('id, name, slug, image_url, price, category')
+    .select('id, name, slug, image_url, price, category, variants')
     .eq('is_active', true)
     .gte('price', MIN_PRICE)
     .order('price', { ascending: false })
