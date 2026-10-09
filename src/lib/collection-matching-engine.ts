@@ -14,6 +14,7 @@ export interface CollectionProduct {
   updated_at: string;
   primary_species?: string | null;
   primary_intent?: string | null;
+  variants?: unknown;
 }
 
 export interface CollectionMatchResult {

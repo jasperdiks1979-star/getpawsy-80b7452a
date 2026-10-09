@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { listingPrice } from '@/lib/listingPrice';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
 
@@ -103,12 +104,12 @@ export const useCustomersAlsoBought = (productId: string, limit = 4) => {
       
       if (productDetails && Array.isArray(productDetails)) {
         for (const product of productDetails) {
-          const p = product as { id: string | null; name: string | null; price: number | null; image_url: string | null; slug: string | null; category: string | null };
+          const p = product as { id: string | null; name: string | null; price: number | null; image_url: string | null; slug: string | null; category: string | null; variants?: unknown };
           if (p.id) {
             enrichedProducts.push({
               id: p.id,
               name: p.name || '',
-              price: p.price || 0,
+              price: listingPrice(p.price || 0, p.variants).price,
               image_url: p.image_url || null,
               slug: p.slug || null,
               category: p.category || null,
