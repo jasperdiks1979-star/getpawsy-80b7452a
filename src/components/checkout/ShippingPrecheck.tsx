@@ -7,6 +7,14 @@ import {
   type CartShippingCheck,
   type CountryCode,
 } from "@/lib/cj-shipping-matrix";
+import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from "@/lib/shipping-windows";
+
+/** US promise = handling + transit, in business days (shared shipping policy). */
+export const US_ARRIVAL = {
+  min: US_HANDLING_DAYS.min + US_TRANSIT_DAYS.min,
+  max: US_HANDLING_DAYS.max + US_TRANSIT_DAYS.max,
+} as const;
+
 
 interface CartItemLite {
   id: string;
@@ -158,16 +166,26 @@ export function ShippingPrecheck({ items, initialCountry, onChange }: Props) {
       ) : check?.ok ? (
         <div className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium">
-              Arrives {formatArrivalRange(check.daysMin, check.daysMax)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Estimated {check.daysMin}–{check.daysMax} business days · standard shipping
-              {" "}
-              {/* Customer charge is the storefront flat rate ($5.99 / free over $35) */}
-            </p>
-          </div>
+          {country === "US" ? (
+            <div>
+              <p className="font-medium">
+                Estimated arrival {formatArrivalRange(US_ARRIVAL.min, US_ARRIVAL.max)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Processing {US_HANDLING_DAYS.min}–{US_HANDLING_DAYS.max} business days ·
+                transit {US_TRANSIT_DAYS.min}–{US_TRANSIT_DAYS.max} business days · standard shipping
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p className="font-medium">
+                Arrives {formatArrivalRange(check.daysMin, check.daysMax)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Estimated {check.daysMin}–{check.daysMax} business days · standard shipping
+              </p>
+            </div>
+          )}
         </div>
       ) : check ? (
         <div className="flex items-start gap-2 text-sm text-destructive">
