@@ -14,7 +14,7 @@ const VALUE_POINTS = [
   {
     icon: Truck,
     title: 'Fast & Reliable US Shipping',
-    desc: 'Free shipping on orders over $35. Every order includes tracking and is delivered within 5–10 business days.',
+    desc: 'Free shipping on orders over $35. Every order includes tracking and ships after 1–2 business days processing, then 5–10 business days US transit (estimate).',
   },
   {
     icon: RotateCcw,

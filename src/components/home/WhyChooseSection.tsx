@@ -6,7 +6,7 @@ const REASONS = [
   {
     icon: Truck,
     title: 'US Shipping',
-    desc: 'Free on orders over $35. Delivery in 5–10 business days.',
+    desc: 'Free on orders over $35. Processing 1–2 business days, then 5–10 business days US transit.',
   },
   {
     icon: RotateCcw,
