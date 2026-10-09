@@ -1186,12 +1186,17 @@ const ProductDetail = () => {
     }
   };
 
-  // DISPLAY PRICE POLICY: Always show product.price (base price) unless the
-  // user has explicitly clicked a variant.  This prevents the Google Merchant
-  // mismatch where cards show $268.99 but PDP auto-selects variant at $193.67.
+  // DISPLAY PRICE POLICY: before an explicit option click, show the price the
+  // shopper can actually buy (variants are already resolved through
+  // customerUnitPrice); a range shows the lowest with "From". No auto-select.
+  const initialPrice = initialDisplayPrice(
+    Number(product.price),
+    variants.map((v) => v.variantSellPrice),
+  );
   const activePrice = userHasSelectedVariant && selectedVariant?.variantSellPrice
     ? Number(selectedVariant.variantSellPrice)
-    : Number(product.price);
+    : initialPrice.price;
+  const showFromPrefix = !userHasSelectedVariant && initialPrice.isRange;
   const compareAtPrice = product.compare_at_price ? Number(product.compare_at_price) : null;
   // Merchant-safe: only surface a compare-at price when the shared guard accepts
   // it. Today that is never, because the catalog holds generated anchors only.
