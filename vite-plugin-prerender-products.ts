@@ -8,6 +8,7 @@ import { resolveProductIdentifiers } from './src/lib/product-identifiers';
 import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import type { Plugin } from 'vite';
 import { buildConsolidationStub } from './vite-plugin-prerender-guides';
+import { listingPrice } from './src/lib/listingPrice';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
 import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, crawlerCollectionMembers, isCrawlerListable, MIN_INDEXABLE_COLLECTION_PRODUCTS, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
@@ -22,6 +23,7 @@ interface ProductRecord {
   name: string;
   description: string | null;
   price: number;
+  variants?: unknown;
   image_url: string | null;
   images: string[] | null;
   category: string | null;
@@ -244,7 +246,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,variants,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {
@@ -258,7 +260,8 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
       }
 
       if (!page.length) break;
-      all.push(...page.filter((product) => product.slug));
+      // Schema/meta price = PDP advertised price (shared listingPrice rule).
+      all.push(...page.filter((product) => product.slug).map((product) => ({ ...product, price: listingPrice(product.price, product.variants).price })));
       if (page.length < size) break;
       offset += size;
     }

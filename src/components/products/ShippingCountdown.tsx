@@ -25,7 +25,7 @@ export const ShippingCountdown = ({ className = '' }: ShippingCountdownProps) =>
       <div className="flex items-center gap-2">
         <Truck className="h-4 w-4 text-primary flex-shrink-0" />
         <p className="text-sm text-foreground">
-          <span className="font-medium">Estimated Delivery:</span>{' '}
+          <span className="font-medium">US transit (after processing):</span>{' '}
           <span className="text-muted-foreground">{DELIVERY_TIME_STANDARD}</span>
         </p>
       </div>

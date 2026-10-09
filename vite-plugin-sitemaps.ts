@@ -21,6 +21,7 @@ import {
 
 import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import { resolveProductIdentifiers } from './src/lib/product-identifiers';
+import { listingPrice } from './src/lib/listingPrice';
 
 const BASE_URL = 'https://getpawsy.pet';
 // Feed generation must target the SAME backend as the app being built. Prefer
@@ -378,6 +379,7 @@ interface MerchantProduct {
   slug: string | null;
   weight: number | null;
   is_active: boolean;
+  variants?: unknown;
   brand?: string | null;
   gtin?: string | null;
   mpn?: string | null;
@@ -833,13 +835,16 @@ function isOffNicheProduct(slug: string | null, name: string | null): boolean {
 async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const feedStartedAt = Date.now();
   console.log('[xml-plugin][feed] ▶ buildMerchantFeed() starting…');
-  const [rawProducts, bestsellers] = await Promise.all([
+  const [rawProductsDb, bestsellers] = await Promise.all([
     supaRestPaged<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,variants&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
+  // Advertised price = PDP price: lowest purchasable option resolved through
+  // customerUnitPrice (same rule as checkout), else products.price.
+  const rawProducts = rawProductsDb.map((p) => ({ ...p, price: listingPrice(p.price, p.variants).price }));
 
   // Safety post-filter: exclude products missing required fields, plus any
   // product the public RLS policy hides (stock <= 0) — those URLs have no

@@ -141,6 +141,9 @@ export const DELIVERY_DISCLAIMER = 'Delivery times may vary depending on locatio
 /** Processing time before shipping */
 export const PROCESSING_TIME = `${US_HANDLING_DAYS.min}–${US_HANDLING_DAYS.max} business days`;
 
+/** Estimated total (handling + transit) — an estimate, never a guaranteed date. */
+export const DELIVERY_TIME_TOTAL_ESTIMATE = `${US_HANDLING_DAYS.min + US_TRANSIT_DAYS.min}–${US_HANDLING_DAYS.max + US_TRANSIT_DAYS.max} business days`;
+
 /** Sitewide trust freshness timestamp */
 export const SITE_LAST_UPDATED = 'August 25, 2026';
 
@@ -258,7 +261,7 @@ export const FLAT_RATE_MESSAGE = `Orders under $${FREE_SHIPPING_THRESHOLD} ship 
 /** Product page shipping info */
 export const PRODUCT_SHIPPING_INFO = {
   freeShipping: `Free shipping on eligible orders $${FREE_SHIPPING_THRESHOLD}+`,
-  deliveryTime: `Estimated delivery: ${DELIVERY_TIME_STANDARD}`,
+  deliveryTime: `Processing ${PROCESSING_TIME}, then ${DELIVERY_TIME_STANDARD} US transit (estimate)`,
   usFulfillment: US_FULFILLMENT_NOTE,
   returns: RETURNS_POLICY_SHORT,
 };

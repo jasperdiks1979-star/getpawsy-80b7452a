@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
-import { getShortBenefits } from './ClarityIntro';
 import { getProductContentOverride } from '@/config/product-content-overrides';
 
 interface WhyPetParentsLoveThisProps {
@@ -28,14 +27,14 @@ export const WhyPetParentsLoveThis: React.FC<WhyPetParentsLoveThisProps> = ({
   className = '',
 }) => {
   const override = getProductContentOverride(productId);
+  // Only verified per-product overrides; name/category templates stated
+  // unverified product facts and are no longer rendered.
+  void productName; void category;
   const allBenefits = override?.benefits && override.benefits.length > 0
     ? override.benefits.slice(0, 5)
-    : [
-        ...getShortBenefits(productName, category),
-        'Designed with your pet\'s comfort in mind',
-        'Easy to incorporate into daily routines',
-      ].slice(0, 5);
-  
+    : [];
+  if (allBenefits.length === 0) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
