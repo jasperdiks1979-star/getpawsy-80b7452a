@@ -25,7 +25,7 @@ const HERO_PRODUCT_IDS = [
 const CATEGORIES = [
   { href: '/collections/cat-litter-boxes', title: 'Litter boxes', copy: 'Options for cleaner indoor spaces', image: '/categories/litter-boxes.jpg' },
   { href: '/collections/cat-trees-and-condos', title: 'Cat trees', copy: 'Climbing, resting and scratching spaces', image: '/categories/cat-trees.jpg' },
-  { href: '/collections/cats', title: 'Cat toys', copy: 'Play and enrichment for indoor cats', image: '/categories/toys.jpg' },
+  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'Play and enrichment for indoor cats', image: '/categories/cats.jpg' },
 ];
 
 const REASSURANCE = [
@@ -195,7 +195,7 @@ export function V2HomePage() {
                 <h2 id="featured-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
                    Five featured essentials
                 </h2>
-                 <p className="mt-2 text-sm text-muted-foreground">The five hero products selected in our commercial range.</p>
+                 <p className="mt-2 text-sm text-muted-foreground">A few of our most popular cat products.</p>
               </div>
               <Link
                 to="/products"

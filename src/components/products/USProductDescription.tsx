@@ -402,14 +402,18 @@ function extractProductDetails(desc: string): string[] {
   const details: string[] = [];
   
   // Look for specification patterns
+  // Value runs to a sentence end; decimals ("15.9") and hyphenated words
+  // ("non-sticky", "anti-leak") stay intact. Word boundaries keep e.g.
+  // "oversize" from matching "size". Packaging stays a separate line.
+  const V = String.raw`((?:[^.]|\.(?=\d))+)`;
   const specPatterns = [
-    /material[s]?:?\s*([^.]+)/i,
-    /size[s]?:?\s*([^.]+)/i,
-    /dimension[s]?:?\s*([^.]+)/i,
-    /weight:?\s*([^.]+)/i,
-    /color[s]?:?\s*([^.]+)/i,
-    /include[sd]?:?\s*([^.]+)/i,
-    /package:?\s*([^.]+)/i,
+    new RegExp(String.raw`\bmaterials?\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\bsizes?\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\bdimensions?\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\bweight\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\bcolou?rs?\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\binclude[sd]?\b:?\s*` + V, 'i'),
+    new RegExp(String.raw`\bpackag(?:e|ing)(?: size)?\b:?\s*` + V, 'i'),
   ];
   
   specPatterns.forEach(pattern => {

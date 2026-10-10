@@ -3,6 +3,7 @@ import Truck from 'lucide-react/dist/esm/icons/truck';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check';
 import MapPin from 'lucide-react/dist/esm/icons/map-pin';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import { isGdprRegion } from '@/lib/geoConsent';
 
 /**
@@ -20,7 +21,7 @@ export function UsOnlyTrustStrip() {
   if (!show) return null;
 
   const items = [
-    { icon: Truck, text: 'Free US Shipping over $35' },
+    { icon: Truck, text: `Free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+` },
     { icon: RotateCcw, text: '30-Day Returns' },
     { icon: ShieldCheck, text: 'Secure Checkout' },
     { icon: MapPin, text: 'Ships to all 50 US states' },
