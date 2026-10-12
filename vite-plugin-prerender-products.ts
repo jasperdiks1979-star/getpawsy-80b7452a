@@ -9,6 +9,7 @@ import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import type { Plugin } from 'vite';
 import { buildConsolidationStub } from './vite-plugin-prerender-guides';
 import { listingPrice } from './src/lib/listingPrice';
+import { retiredStubSlugs } from './src/lib/retired-product-slugs';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
 import { isProductIndexable, isCrawlerExcludedProduct, loadPrimaryMerchandisedCollections, crawlerCollectionMembers, isCrawlerListable, MIN_INDEXABLE_COLLECTION_PRODUCTS, CANONICAL_SITEMAP_COLLECTIONS } from './scripts/seo-indexability.mjs';
