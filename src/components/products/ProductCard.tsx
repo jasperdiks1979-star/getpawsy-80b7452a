@@ -16,6 +16,7 @@ import { safeString, safePrice } from "@/lib/safe-render";
 import { computeAvailability } from "@/lib/availability";
 import { getProductDiscount } from "@/lib/discount";
 import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
+import { useListingPrice } from "@/hooks/useListingPrice";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 import { getConversionFlag } from "@/lib/conversionFlags";
 import { displayName } from "@/lib/displayName";
@@ -102,7 +103,18 @@ export const ProductCard = memo(
 
     const isOutOfStock = !computeAvailability(product).isInStock;
 
-    const cardCanonical = getCanonicalCardPrice(product);
+    const baseCanonical = getCanonicalCardPrice(product);
+    const lp = useListingPrice(product as { id?: string; price?: number | null; variants?: unknown });
+    const cardCanonical = lp
+      ? {
+          ...baseCanonical,
+          price: lp.price,
+          displayPrice: `${lp.isRange ? 'From ' : ''}$${lp.price.toFixed(2)}`,
+          // A compare-at below the charged price would be a false discount.
+          compareAtPrice: baseCanonical.compareAtPrice && baseCanonical.compareAtPrice > lp.price ? baseCanonical.compareAtPrice : null,
+          displayCompareAt: baseCanonical.compareAtPrice && baseCanonical.compareAtPrice > lp.price ? baseCanonical.displayCompareAt : null,
+        }
+      : baseCanonical;
     const cardPrice = cardCanonical.price;
 
     const handleCardClick = () => {
