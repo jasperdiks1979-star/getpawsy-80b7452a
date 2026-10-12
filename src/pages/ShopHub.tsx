@@ -57,7 +57,7 @@ export default function ShopHub() {
     <Layout>
       <Helmet>
         <title>Shop Cat Supplies — Litter Boxes, Trees, Toys | GetPawsy</title>
-        <meta name="description" content="Browse cat litter boxes, cat trees and condos, beds, toys and feeders at GetPawsy. Every item ships from a US warehouse." /><meta name="robots" content="index, follow" />
+        <meta name="description" content="Browse cat litter boxes, cat trees and condos, beds, toys and feeders at GetPawsy. Ships to the US; free shipping on orders $35+." /><meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
