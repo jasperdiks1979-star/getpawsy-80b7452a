@@ -41,8 +41,14 @@ function getBestFor(name: string, category?: string): string[] {
     return ['Active indoor cats', 'Multi-cat households', 'Scratching & climbing'];
   if (/litter/i.test(c))
     return ['Busy cat owners', 'Multi-cat homes', 'Odor-sensitive spaces'];
-  if (/toy|chew/i.test(c))
-    return ['Active & bored dogs', 'Aggressive chewers', 'Mental stimulation'];
+  // Audience only — never durability claims (e.g. "aggressive chewers")
+  // that no product evidence backs.
+  if (/toy/i.test(c) && /\bcats?\b|kitten/i.test(c))
+    return ['Indoor cats', 'Play & enrichment'];
+  if (/toy|chew/i.test(c) && /\bdogs?\b|pupp/i.test(c))
+    return ['Dogs', 'Play & enrichment'];
+  if (/toy/i.test(c))
+    return ['Play & enrichment'];
 
   return ['Pet comfort', 'Daily use', 'US pet owners'];
 }

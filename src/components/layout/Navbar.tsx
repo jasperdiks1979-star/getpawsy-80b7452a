@@ -74,7 +74,7 @@ const navLinks = [
 // free shipping is conditional on the threshold, so the threshold is shown.
 const promoItems = [
   { label: `Free shipping over $${FREE_SHIPPING_THRESHOLD}`, icon: Truck, href: '/shipping' },
-  { label: 'Ships from a US warehouse', icon: Gift, href: '/shipping' },
+  { label: 'US shipping · free on orders $35+', icon: Gift, href: '/shipping' },
 ];
 
 // Category item component for mega menu (uses canonical registry)
