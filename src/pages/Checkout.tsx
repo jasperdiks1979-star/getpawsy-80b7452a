@@ -1107,9 +1107,7 @@ const Checkout = () => {
                       <Link to="/returns" target="_blank" className="text-primary hover:underline font-medium">
                         Return Policy
                       </Link>
-                      . I understand that GetPawsy is not the manufacturer of the products and I 
-                      accept full responsibility for the use of products purchased, including any 
-                      risks to myself, others, or my pets.
+                      .
                     </span>
                     
                     {/* Mobile: stacked/split text for guaranteed no clipping */}
@@ -1134,11 +1132,6 @@ const Checkout = () => {
                       Return Policy
                     </Link>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    I understand that GetPawsy is not the manufacturer of the products and I 
-                    accept full responsibility for the use of products purchased, including any 
-                    risks to myself, others, or my pets.
-                  </p>
                 </div>
                 
                 {!acceptedTerms && (
