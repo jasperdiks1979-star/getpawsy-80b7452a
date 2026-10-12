@@ -153,13 +153,18 @@ export default function AnalyticsTruthPage() {
                   {snap.metric_explanations?.trust_score ?? "Score breakdown unavailable."}
                 </div>
               </div>
+              {(isRowCapped(snap.total_events) || isRowCapped(snap.total_sessions)) && (
+                <p data-testid="truth-sample-note" className="mt-4 text-xs text-muted-foreground border border-border rounded-md p-2">
+                  {SAMPLE_NOTE}
+                </p>
+              )}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
-                <Metric label="Human %" value={`${snap.human_pct}%`} why={snap.metric_explanations.human_pct} />
+                <Metric label={HUMAN_LABEL} value={`${snap.human_pct}%`} why={snap.metric_explanations.human_pct} />
                 <Metric label="Bot %" value={`${snap.bot_pct}%`} why={snap.metric_explanations.bot_pct} />
                 <Metric label="Pinterest attribution" value={`${snap.pinterest_attribution_pct ?? 0}%`} why={snap.metric_explanations.pinterest_attribution_pct} />
                 <Metric label="Direct share" value={`${snap.direct_pct ?? 0}%`} why={snap.metric_explanations.direct_pct} />
-                <Metric label="Events" value={snap.total_events} />
-                <Metric label="Sessions" value={snap.total_sessions} />
+                <Metric label={countLabel("Events", snap.total_events)} value={snap.total_events} />
+                <Metric label={countLabel("Sessions", snap.total_sessions)} value={snap.total_sessions} />
                 <Metric label="Duplicate events" value={snap.duplicate_events} why={snap.metric_explanations.duplicate_events} />
                 <Metric label="Broken funnels" value={snap.broken_funnels} why={snap.metric_explanations.broken_funnels} />
               </div>
