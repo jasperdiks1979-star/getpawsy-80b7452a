@@ -93,12 +93,12 @@ const Bestsellers = () => {
     {
       question: 'How is this list chosen?',
       answer:
-        'We choose it ourselves. These are the indoor-cat products we keep in the core range because they are in stock in our US warehouse, we can ship them reliably, and they cover a clear problem. It is not a sales ranking and it is not based on customer votes.',
+        'We choose it ourselves. These are the indoor-cat products we keep in the core range because they are in stock, ship to US addresses, and they cover a clear problem. It is not a sales ranking and it is not based on customer votes.',
     },
     {
       question: 'Where do these items ship from?',
       answer:
-        'From a US warehouse. Transit time is estimated at ' + DELIVERY_TIME_STANDARD + ' and is confirmed at checkout.',
+        'Shipped to US addresses. Transit time is estimated at ' + DELIVERY_TIME_STANDARD + ' and is confirmed at checkout.',
     },
     {
       question: 'What does shipping cost?',
@@ -150,13 +150,13 @@ const Bestsellers = () => {
         <title>Our Picks — Cat Essentials We Stock | GetPawsy</title>
         <meta
           name="description"
-          content="The indoor-cat products we keep in our core range: litter boxes, cat trees, beds, toys and feeders, in stock and shipped from our US warehouse."
+          content="The indoor-cat products we keep in our core range: litter boxes, cat trees, beds, toys and feeders, in stock and shipped to US addresses."
         />
         <meta name="robots" content="index, follow, max-image-preview:large" />
         <meta property="og:title" content="Our Picks — Cat Essentials We Stock | GetPawsy" />
         <meta
           property="og:description"
-          content="The indoor-cat products we keep in our core range, in stock and shipped from our US warehouse."
+          content="The indoor-cat products we keep in our core range, in stock and shipped to US addresses."
         />
         <meta property="og:url" content="https://getpawsy.pet/bestsellers" />
         <meta property="og:type" content="website" />
@@ -190,7 +190,7 @@ const Bestsellers = () => {
           </h1>
           <p className="text-muted-foreground leading-relaxed">
             This is our own selection, not a sales chart. Every product below is part of the core
-            indoor-cat range: it solves a specific problem, it is in stock in our US warehouse, and
+            indoor-cat range: it solves a specific problem, it is in stock, it ships to US addresses, and
             we can ship it. Estimated transit is {DELIVERY_TIME_STANDARD}, confirmed at checkout.
             Free shipping over ${FREE_SHIPPING_THRESHOLD}.
           </p>

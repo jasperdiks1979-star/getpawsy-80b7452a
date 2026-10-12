@@ -17,7 +17,7 @@ const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' 
  */
 export function V2ProductCard({ product, priority = false }: { product: V2CardProduct; priority?: boolean }) {
   const lp = useListingPrice({ id: product.id, price: product.price });
-  const shown = lp ? `${lp.isRange ? 'From ' : ''}${usd.format(lp.price)}` : usd.format(product.price);
+  const shown = lp === 'loading' ? '\u00a0' : lp ? `${lp.isRange ? 'From ' : ''}${usd.format(lp.price)}` : usd.format(product.price);
   return (
     <article className="group h-full">
       <Link
