@@ -136,6 +136,7 @@ import {
 import { useTikTokLanding } from "@/hooks/useTikTokLanding";
 import TikTokPdpVariant from "@/components/product/TikTokPdpVariant";
 import { useGuidesList } from "@/hooks/useGuides";
+import { selectRelatedGuides } from "@/lib/related-guides";
 import {
   DELIVERY_TIME_STANDARD,
   FREE_SHIPPING_THRESHOLD,
@@ -598,35 +599,8 @@ const ProductDetail = () => {
   const { data: allGuides } = useGuidesList();
   const relatedGuides = useMemo(() => {
     if (!allGuides || !product?.category) return [];
-    const cat = product.category.toLowerCase().replace(/-/g, " ");
-    const animalType = cat.includes("dog") ? "dog" : cat.includes("cat") ? "cat" : "";
-
-    return allGuides
-      .filter((g) => {
-        // Match by relatedCategories (strongest signal)
-        const catMatch = g.relatedCategories?.some((rc) => {
-          const rcNorm = rc.replace(/-/g, " ").toLowerCase();
-          return cat.includes(rcNorm) || rcNorm.includes(cat);
-        });
-        if (catMatch) return true;
-
-        // Match by keywords against product category
-        const kwMatch = g.keywords?.some((kw) => {
-          const kwNorm = kw.toLowerCase();
-          return cat.split(" ").some((w) => w.length > 3 && kwNorm.includes(w));
-        });
-        if (kwMatch) return true;
-
-        // Match by animal type + guide category
-        if (animalType && g.category?.toLowerCase().includes(animalType)) {
-          const guideCategory = g.category.toLowerCase();
-          return cat.split(" ").some((w) => w.length > 3 && guideCategory.includes(w));
-        }
-
-        return false;
-      })
-      .slice(0, 4);
-  }, [allGuides, product?.category]);
+    return selectRelatedGuides(allGuides, product.category, (product as { primary_species?: string | null }).primary_species);
+  }, [allGuides, product]);
 
   // Fetch product reviews
   const { data: reviews = [] } = useQuery({

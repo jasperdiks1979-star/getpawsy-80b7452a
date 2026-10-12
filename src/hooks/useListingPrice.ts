@@ -46,9 +46,9 @@ function loadRow(id: string): Promise<Row | null> {
 
 export function useListingPrice(
   product: { id?: string; price?: number | null; variants?: unknown },
-): ListingPrice | null {
+): ListingPrice | null | 'loading' {
   const hasVariants = product.variants !== undefined;
-  const { data } = useQuery({
+  const { data, isPending, isError } = useQuery({
     queryKey: ['listing-price-row', product.id],
     queryFn: () => loadRow(product.id as string),
     enabled: Boolean(product.id) && !hasVariants,
@@ -56,6 +56,10 @@ export function useListingPrice(
     retry: false,
   });
   if (hasVariants) return listingPrice(Number(product.price), product.variants);
+  // While loading, callers render a neutral placeholder instead of the base
+  // price (which can differ from the charged price). Errors/missing rows fall
+  // back to null → caller shows products.price, never blocking the card.
+  if (isPending && !isError && product.id) return 'loading';
   if (!data) return null;
   return listingPrice(Number(data.price), data.variants);
 }

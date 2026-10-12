@@ -105,7 +105,8 @@ export const ProductCard = memo(
 
     const baseCanonical = getCanonicalCardPrice(product);
     const lp = useListingPrice(product as { id?: string; price?: number | null; variants?: unknown });
-    const cardCanonical = lp
+    const priceLoading = lp === 'loading';
+    const cardCanonical = lp && lp !== 'loading'
       ? {
           ...baseCanonical,
           price: lp.price,
@@ -353,9 +354,9 @@ export const ProductCard = memo(
 
               <div className={premium ? "flex items-baseline gap-2 pt-0.5" : "flex items-center gap-2"}>
                 <span className={premium ? "text-[17px] md:text-lg font-semibold text-foreground tracking-tight" : "text-lg font-bold text-primary"}>
-                  {cardCanonical.displayPrice}
+                  {priceLoading ? <span className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
                 </span>
-                {cardCanonical.displayCompareAt && (
+                {!priceLoading && cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
                     {cardCanonical.displayCompareAt}
                   </span>

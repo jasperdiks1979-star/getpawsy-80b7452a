@@ -228,7 +228,7 @@ export default function OrthopedicDogBeds() {
             {/* Trust badges */}
             <div className="flex flex-wrap gap-3 mb-8">
               {[
-                { icon: <Truck className="w-4 h-4" />, text: 'Ships from a US warehouse' },
+                { icon: <Truck className="w-4 h-4" />, text: 'Ships to US addresses' },
                 { icon: <Truck className="w-4 h-4" />, text: 'Free Shipping on Orders $35+' },
                 { icon: <ShieldCheck className="w-4 h-4" />, text: '30-Day Returns' },
                 { icon: <Lock className="w-4 h-4" />, text: 'Secure Checkout' },

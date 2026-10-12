@@ -41,8 +41,8 @@ const REASSURANCE = [
   },
   {
     icon: PackageCheck,
-    title: 'US warehouse range',
-    copy: 'Featured products are selected from the verified US-stock catalog.',
+    title: 'US delivery',
+    copy: 'Orders ship to US addresses; delivery time is confirmed at checkout.',
   },
 ];
 
@@ -103,7 +103,7 @@ export function V2HomePage() {
         <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 md:py-20">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Indoor cat essentials · US warehouse range
+              Indoor cat essentials · Shipped to the US
             </p>
             <h1
               id="hero-heading"
