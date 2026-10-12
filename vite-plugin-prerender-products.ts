@@ -593,6 +593,15 @@ export default function prerenderProductsPlugin(): Plugin {
 
       updateRedirectsManifest(distDir, safeProducts.map((product) => product.slug || product.id));
 
+      // ── Retired product URLs → noindex 404 page instead of the indexable shell ──
+      const retired = retiredStubSlugs(products.map((p) => p.slug || p.id));
+      for (const slug of retired) {
+        const dir = path.join(distProductDir, slug);
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'index.html'), buildNotFoundPage(spaHtml), 'utf-8');
+      }
+      console.log(`[prerender-products] Retired product 404 stubs: ${retired.length} (noindex)`);
+
       // ── Legacy /product/<slug> aliases ──
       // Hosting ignores _redirects, so /product/<slug> used to serve the raw
       // homepage shell (homepage title, robots=index, empty canonical) to
