@@ -1,3 +1,4 @@
+import { isRowCapped, countLabel, HUMAN_LABEL, SAMPLE_NOTE } from "@/lib/truth-snapshot-labels";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
