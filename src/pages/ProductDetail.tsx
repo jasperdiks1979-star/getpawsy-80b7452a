@@ -1045,6 +1045,9 @@ const ProductDetail = () => {
   // We never order variant #1 on the shopper's behalf.
   const requiresExplicitVariant = variants.length > 1;
   const variantChoiceMissing = requiresExplicitVariant && !userHasSelectedVariant;
+  // The internally pre-picked variant (images/SKU) is never shown as the
+  // shopper's choice while Add to Cart still requires one.
+  const shownVariant = variantChoiceMissing ? null : selectedVariant;
 
 
   const handleAddToCart = () => {
@@ -1550,9 +1553,9 @@ const ProductDetail = () => {
               )}
 
               {/* Selected variant badge */}
-              {selectedVariant && (
+              {shownVariant && (
                 <Badge variant="outline" className="mt-3">
-                  {selectedVariant.variantKey}
+                  {shownVariant.variantKey}
                 </Badge>
               )}
             </motion.div>
@@ -1632,11 +1635,11 @@ const ProductDetail = () => {
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Package className="w-4 h-4 text-primary" />
                   Choose your option:{" "}
-                  <span className="text-primary">{selectedVariant ? selectedVariant.variantKey : "Select one"}</span>
+                  <span className="text-primary">{shownVariant ? shownVariant.variantKey : "Select one"}</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((variant) => {
-                    const isSelected = selectedVariant?.vid === variant.vid;
+                    const isSelected = shownVariant?.vid === variant.vid;
                     const displayValue = variant.variantKey || variant.variantNameEn || "Option";
 
                     // Detect if this is a color variant
