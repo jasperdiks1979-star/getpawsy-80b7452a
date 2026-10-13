@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { CartProvider, useCart } from '@/contexts/CartContext';
 import React from 'react';
 
@@ -21,13 +21,32 @@ vi.mock('sonner', () => ({
   }
 }));
 
+// Deterministic stubs for the lazily imported tracking modules. Without these
+// the test could finish while the heavy real modules were still being loaded,
+// which made Vitest report "Closing rpc while fetch was pending" at teardown.
+vi.mock('@/lib/analytics', () => ({
+  trackAddToCart: vi.fn(), trackRemoveFromCart: vi.fn(), trackGoogleAdsAddToCart: vi.fn(),
+}));
+vi.mock('@/lib/tiktok-pixel', () => ({ ttTrackAddToCart: vi.fn() }));
+vi.mock('@/lib/funnelEvents', () => ({
+  fireUserAddToCart: vi.fn(), fireUserRemoveFromCart: vi.fn(), fireCartRestored: vi.fn(),
+}));
+vi.mock('@/lib/marketingClient', () => ({ fireMarketingAsync: vi.fn(), MARKETING_FLAGS: {} }));
+vi.mock('@/hooks/useVisitorTracking', () => ({ trackVisitorEvent: vi.fn() }));
+vi.mock('@/lib/analyticsFunnel', () => ({ recordFunnelStep: vi.fn() }));
+vi.mock('@/lib/pinterestTracker', () => ({}));
+vi.mock('@/lib/pinterest-conversion-intel', () => ({}));
+vi.mock('@/hooks/usePinterestTracking', () => ({ trackPinterestEvent: vi.fn() }));
+
+afterEach(() => { localStorage.clear(); });
+
 describe('Issue #4 Repro: multi-option product quick-add', () => {
   it('should remove a bare product ID from cart if it requires variants', async () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <CartProvider>{children}</CartProvider>
     );
-    
-    const { result } = renderHook(() => useCart(), { wrapper });
+
+    const { result, unmount } = renderHook(() => useCart(), { wrapper });
 
     await act(async () => {
       result.current.addItem({
@@ -41,13 +60,9 @@ describe('Issue #4 Repro: multi-option product quick-add', () => {
     // The item is added optimistically first
     expect(result.current.items.length).toBe(1);
 
-    // Wait for the async enforceVariantSafety to run
-    // We need to wait for the next tick/microtask
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
+    // Removed by enforceVariantSafety once the option check resolves
+    await waitFor(() => expect(result.current.items.length).toBe(0));
 
-    // It should be removed by enforceVariantSafety
-    expect(result.current.items.length).toBe(0);
+    unmount();
   });
 });
