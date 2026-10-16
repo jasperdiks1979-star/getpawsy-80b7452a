@@ -4,8 +4,9 @@
 - [x] Audit post-registration CJ records without credentials, payload disclosure or synthetic deliveries.
 - [x] Probe representative HTTP statuses and indexable guide-product links read-only.
 - [x] Inspect a bounded recent commercial US funnel sample and exercise pre-payment shopping.
-- [ ] Correct unknown-option handling in listing quick-add callers and validate it end-to-end.
-- [ ] Complete release gates and publish at most once if every required signal is available and healthy.
+- [x] Correct unknown-option handling in listing quick-add callers and validate explicit selection through US checkout on desktop and mobile.
+- [x] Complete release gates and request exactly one publish at RAM 71%.
+- [ ] Confirm the new production ProductCard chunk; hosting still served the previous code at the latest check.
 
 - [x] Confirm P0 backend, auth, and catalog recovery remains healthy.
 - [x] Audit all five reported findings against live behavior, source, and current schema.
