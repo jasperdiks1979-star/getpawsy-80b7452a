@@ -95,18 +95,28 @@ Deno.serve(async (req) => {
       const vaBySid = new Map<string, any>();
       const vaByVid = new Map<string, any>();
       let vaJoinHits = 0;
+      // visitor_activity has no user_agent column; selecting it made the whole
+      // query fail and silently dropped every bot hint. UA lives on canonical_sessions.
+      const VA_COLS = "session_id, visitor_id, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path, traffic_quality";
+      const uaBySid = new Map<string, string>();
       if (sessionIds.length > 0) {
         const { data: va } = await supabase
           .from("visitor_activity")
-          .select("session_id, visitor_id, user_agent, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path, traffic_quality")
+          .select(VA_COLS)
           .in("session_id", sessionIds)
           .limit(20000);
         for (const row of (va ?? [])) if (row.session_id) vaBySid.set(row.session_id, row);
+        const { data: cs } = await supabase
+          .from("canonical_sessions")
+          .select("session_id, user_agent")
+          .in("session_id", sessionIds)
+          .limit(20000);
+        for (const row of (cs ?? [])) if (row.session_id && row.user_agent) uaBySid.set(row.session_id, row.user_agent);
       }
       if (visitorIds.length > 0) {
         const { data: va2 } = await supabase
           .from("visitor_activity")
-          .select("session_id, visitor_id, user_agent, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path, traffic_quality")
+          .select(VA_COLS)
           .in("visitor_id", visitorIds)
           .limit(20000);
         for (const row of (va2 ?? [])) if (row.visitor_id) vaByVid.set(row.visitor_id, row);
@@ -150,7 +160,7 @@ Deno.serve(async (req) => {
         for (const ev of evs) {
           const cls = classifyTraffic({
             page_path: ev.page_path,
-            user_agent: va?.user_agent ?? null,
+            user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
             is_internal_hint: va?.is_internal ?? va?.is_admin_path ?? null,
             is_bot_suspect_hint: va?.is_bot_suspect ?? null,
             bot_suspect_reason: va?.bot_suspect_reason ?? null,
@@ -170,7 +180,7 @@ Deno.serve(async (req) => {
               technical_path: cls.technical_path,
               bot_confidence: cls.bot_confidence,
               bot_reason: cls.bot_reason,
-              source_user_agent: va?.user_agent ?? null,
+              source_user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
             });
           }
         }
@@ -253,7 +263,7 @@ Deno.serve(async (req) => {
           const w = sessionWrites.get(sid)!;
           return supabase.from("canonical_sessions").update({
             ...w,
-            classification_version: `${CLASSIFIER_VERSION}-shadow`,
+            classifier_version: `${CLASSIFIER_VERSION}-shadow`,
           }).eq("session_id", sid);
         }));
         totalSessionsWritten += slice.length;
