@@ -57,8 +57,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
+const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
+const WARMER_SECRET = Deno.env.get("ANALYTICS_WARMER_SECRET") ?? "";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // Same shared-secret gate as analytics-canonical-warmer; empty secrets never match. Never logged.
+  const provided = req.headers.get("x-internal-secret") ?? "";
+  const accepted = [INTERNAL_SECRET, WARMER_SECRET].filter((s) => s.length > 0);
+  if (!provided || !accepted.includes(provided)) return json({ ok: false, error: "unauthorized" }, 401);
   try {
     const url = new URL(req.url);
     const dryRun = url.searchParams.get("dry_run") === "true";
