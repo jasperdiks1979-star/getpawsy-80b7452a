@@ -16,3 +16,4 @@
 - US handling/transit day windows live in src/lib/shipping-windows.ts and feed shopper copy, Product JSON-LD and the feed. Why: one shipping promise everywhere.
 - Generic PDP sections choose context via src/lib/pdp-category.ts and must never state product attributes; facts come from product-evidence or verified overrides. Why: category guesses leaked false features (ramp → bed).
 - Quick-add callers must preserve missing variant data rather than defaulting it to an empty array. Why: lean listing queries omit variants and must route to explicit option selection instead of adding a bare cart line.
+- Bot labels: analytics-shadow-classifier classifies per canonical_sessions row (stored UA/stage), keyset batches, lease+checkpoint in analytics_job_leases, its own version in shadow_classifier_version (classifier_version is overwritten by a trigger); never reads/writes canonical_events. Why: event-based pass hit caps and its version was clobbered.
