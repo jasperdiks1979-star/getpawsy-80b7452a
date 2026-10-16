@@ -148,7 +148,7 @@ export const ProductCard = memo(
           price: cardPrice,
           image_url: product.image_url,
           category: product.category ?? undefined,
-          variants: product.variants ?? [],
+          variants: product.variants,
         },
         { displayPrice: cardPrice },
       );

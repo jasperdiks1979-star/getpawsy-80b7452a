@@ -1,5 +1,13 @@
 # Roadmap
 
+- [x] Check October 16 commit, visible agent processes, live bundle, database health and credit reserve.
+- [x] Audit post-registration CJ records without credentials, payload disclosure or synthetic deliveries.
+- [x] Probe representative HTTP statuses and indexable guide-product links read-only.
+- [x] Inspect a bounded recent commercial US funnel sample and exercise pre-payment shopping.
+- [x] Correct unknown-option handling in listing quick-add callers and validate explicit selection through US checkout on desktop and mobile.
+- [x] Complete release gates and request exactly one publish at RAM 71%.
+- [ ] Confirm the new production ProductCard chunk; hosting still served the previous code at the latest check.
+
 - [x] Confirm P0 backend, auth, and catalog recovery remains healthy.
 - [x] Audit all five reported findings against live behavior, source, and current schema.
 - [x] Prevent completed orders from being reused while preserving unpaid-attempt retries.

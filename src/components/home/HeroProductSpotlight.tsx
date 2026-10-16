@@ -122,7 +122,7 @@ export function HeroProductSpotlight() {
                       price,
                       image_url: heroImage,
                       category: (product as { category?: string }).category,
-                      variants: (product as { variants?: unknown }).variants ?? [],
+                      variants: (product as { variants?: unknown }).variants,
                     },
                     { displayPrice: price },
                   );

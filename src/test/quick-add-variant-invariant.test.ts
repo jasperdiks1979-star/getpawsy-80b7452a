@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
 import {
   resolveQuickAddPlan,
   cartLineProductId,
@@ -85,6 +86,18 @@ describe('quick add — variant invariant (non-PDP entry points)', () => {
   it('unloaded variants fail safe to the product page', () => {
     expect(resolveQuickAddPlan(product(undefined)).kind).toBe('choose');
     expect(resolveQuickAddPlan(product(null)).kind).toBe('choose');
+  });
+
+  it('listing callers preserve unknown variants instead of inventing an empty option list', () => {
+    for (const path of [
+      'src/components/products/ProductCard.tsx',
+      'src/components/home/ProductRail.tsx',
+      'src/components/home/CuratedProductSection.tsx',
+      'src/components/home/BestsellersSection.tsx',
+      'src/components/home/HeroProductSpotlight.tsx',
+    ]) {
+      expect(fs.readFileSync(path, 'utf8')).not.toMatch(/variants:\s*[^\n]*\?\?\s*\[\]/);
+    }
   });
 
   it('a variant without an exact supplier id is sent to the product page', () => {

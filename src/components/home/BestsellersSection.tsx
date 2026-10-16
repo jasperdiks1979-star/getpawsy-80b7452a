@@ -181,7 +181,7 @@ export const BestsellersSection = () => {
                           name: product.name || 'Product',
                           price,
                           image_url: imageUrl,
-                          variants: (product as { variants?: unknown }).variants ?? [],
+                          variants: (product as { variants?: unknown }).variants,
                         },
                         { displayPrice: price },
                       );
