@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { decideDedup, type ExistingLog } from "../_shared/cj-webhook-dedup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -236,14 +237,44 @@ serve(async (req) => {
     
     console.log(`[CJ-WEBHOOK] Received ${payload.type} webhook:`, JSON.stringify(payload));
 
-    // Log the webhook event
-    await supabaseAdmin.from("cj_webhook_logs").insert({
-      message_id: payload.messageId,
-      webhook_type: payload.type,
-      message_type: payload.messageType,
-      payload: payload.params,
-      processed: false,
+    // Log the webhook event idempotently (message_id is UNIQUE): no
+    // unique-violation on redelivery; existing rows are never overwritten.
+    const { data: insertedRows, error: insertError } = await supabaseAdmin
+      .from("cj_webhook_logs")
+      .upsert({
+        message_id: payload.messageId,
+        webhook_type: payload.type,
+        message_type: payload.messageType,
+        payload: payload.params,
+        processed: false,
+      }, { onConflict: "message_id", ignoreDuplicates: true })
+      .select("id");
+    if (insertError) throw insertError;
+
+    const inserted = Array.isArray(insertedRows) && insertedRows.length > 0;
+    let existing: ExistingLog | null = null;
+    if (!inserted) {
+      const { data } = await supabaseAdmin
+        .from("cj_webhook_logs")
+        .select("processed, webhook_type, message_type, payload")
+        .eq("message_id", payload.messageId)
+        .maybeSingle();
+      existing = (data as ExistingLog | null) ?? null;
+    }
+    const decision = decideDedup(inserted, existing, {
+      type: payload.type, messageType: payload.messageType, params: payload.params,
     });
+    if (decision.action === "skip") {
+      if (decision.conflicting) {
+        console.warn(`[CJ-WEBHOOK] Duplicate messageId ${payload.messageId} with DIFFERENT payload; original kept, not reprocessed`);
+      } else {
+        console.log(`[CJ-WEBHOOK] Duplicate messageId ${payload.messageId} already processed; skipped`);
+      }
+      return new Response(JSON.stringify({ success: true, messageId: payload.messageId, duplicate: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Process based on webhook type
     switch (payload.type) {

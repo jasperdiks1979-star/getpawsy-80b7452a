@@ -92,6 +92,13 @@
       "when": 1791230942985,
       "tag": "0012_analytics_p0_legacy_self_referrer",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792133283206,
+      "tag": "0013_drop_redundant_cj_webhook_message_id_index",
+      "breakpoints": true
     }
   ]
 }
