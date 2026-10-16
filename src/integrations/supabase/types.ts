@@ -16171,6 +16171,24 @@ export type Database = {
         }
         Relationships: []
       }
+      cj_webhook_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       cj_webhook_logs: {
         Row: {
           created_at: string

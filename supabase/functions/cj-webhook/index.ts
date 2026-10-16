@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { decideDedup, type ExistingLog } from "../_shared/cj-webhook-dedup.ts";
+import { verifyCJSign } from "../_shared/cj-sign.ts";
+
+// Module-level cache for the CJ account openId (HMAC key), loaded once per
+// isolate from the service-role-only cj_webhook_config table.
+let cachedOpenId: string | null = null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,86 +137,59 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    // ---- Webhook authenticity check ----
-    // CJ supports either a shared secret in a header (configured in CJ dashboard)
-    // or an HMAC-SHA256 signature. Reject when the expected secret is set
-    // but the request does not present it.
-    const expectedSecret = Deno.env.get("CJ_WEBHOOK_SECRET");
-    if (!expectedSecret) {
-      console.error("[CJ-WEBHOOK] CJ_WEBHOOK_SECRET not configured — rejecting request");
-      return new Response(
-        JSON.stringify({ success: false, error: "Webhook secret not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-    {
-      const provided =
-        req.headers.get("x-cj-secret") ??
-        req.headers.get("x-webhook-secret") ??
-        req.headers.get("x-cj-signature") ??
-        "";
-      // Plain shared-secret equality (CJ may also pass an HMAC; treat both the
-      // same — only callers that know the secret can forge a valid header).
-      let ok = provided === expectedSecret;
-      if (!ok && provided && provided.length === 64) {
-        try {
-          const bodyText = await req.clone().text();
-          const key = await crypto.subtle.importKey(
-            "raw",
-            new TextEncoder().encode(expectedSecret),
-            { name: "HMAC", hash: "SHA-256" },
-            false,
-            ["sign"],
-          );
-          const sig = await crypto.subtle.sign(
-            "HMAC",
-            key,
-            new TextEncoder().encode(bodyText),
-          );
-          const hex = Array.from(new Uint8Array(sig))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-          ok = hex === provided.toLowerCase();
-        } catch (_e) {
-          ok = false;
-        }
-      }
-      if (!ok) {
-        console.warn("[CJ-WEBHOOK] Rejected request: missing/invalid signature");
-        return new Response(
-          JSON.stringify({ success: false, error: "Unauthorized" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-    }
+    // deno-lint-ignore no-explicit-any
+    const supabaseAdmin: SupabaseClient<any> = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
-    // Check if request has a body
-    const contentLength = req.headers.get("content-length");
-    const contentType = req.headers.get("content-type");
-    
-    if (!contentLength || contentLength === "0") {
+    // Read the exact raw body bytes once; the CJ signature covers these bytes.
+    const rawBody = new Uint8Array(await req.arrayBuffer());
+    if (rawBody.byteLength === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Empty request body. Expected JSON payload from CJ Dropshipping." 
-        }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        JSON.stringify({
+          success: false,
+          error: "Empty request body. Expected JSON payload from CJ Dropshipping."
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       );
     }
 
-    // Parse JSON body safely
+    // ---- CJ signature check (official protocol) ----
+    // header `sign` = Base64(HMAC-SHA256(raw request body, account openId)).
+    // The openId is provisioned server-side into cj_webhook_config by
+    // cj-openid-bootstrap and is never logged or exposed.
+    if (!cachedOpenId) {
+      const { data: cfg } = await supabaseAdmin
+        .from("cj_webhook_config")
+        .select("value")
+        .eq("key", "open_id")
+        .maybeSingle();
+      cachedOpenId = cfg?.value ?? null;
+    }
+    if (!cachedOpenId) {
+      console.error("[CJ-WEBHOOK] openId not provisioned — rejecting request");
+      return new Response(
+        JSON.stringify({ success: false, error: "Webhook signing not provisioned" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const signOk = await verifyCJSign(rawBody, req.headers.get("sign"), cachedOpenId);
+    if (!signOk) {
+      console.warn("[CJ-WEBHOOK] Rejected request: missing/invalid sign header");
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Parse JSON body safely (from the verified raw bytes)
     let payload: CJWebhookPayload;
     try {
-      const bodyText = await req.text();
-      if (!bodyText || bodyText.trim() === "") {
-        return new Response(
-          JSON.stringify({ success: false, error: "Empty JSON body" }), 
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      const bodyText = new TextDecoder().decode(rawBody);
       payload = JSON.parse(bodyText);
     } catch (parseError) {
       console.error("[CJ-WEBHOOK] JSON parse error:", parseError);
@@ -229,12 +207,6 @@ serve(async (req) => {
       );
     }
 
-    // deno-lint-ignore no-explicit-any
-    const supabaseAdmin: SupabaseClient<any> = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-    
     console.log(`[CJ-WEBHOOK] Received ${payload.type} webhook:`, JSON.stringify(payload));
 
     // Log the webhook event idempotently (message_id is UNIQUE): no
