@@ -113,8 +113,9 @@ Deno.serve(async (req) => {
   const since = new Date(Date.now() - hours * 3600_000).toISOString();
 
   // 1. Load sessions
+  // Window-first human filter (same rows as session_forensics_human + first_seen_at >= since).
   const { data: sessions, error: sErr } = await supabase
-    .from("session_forensics_human")
+    .rpc("session_forensics_human_window", { p_since: since })
     .select(
       "session_id,entry_page,utm_source,country,device,browser,product_id,product_name,time_on_site_seconds,max_scroll_depth,rage_clicks,dead_clicks,cart_opened,checkout_started,purchased,exit_reason,first_seen_at",
     )
