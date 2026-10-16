@@ -7707,6 +7707,33 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_job_leases: {
+        Row: {
+          checkpoint: Json
+          holder: string | null
+          job: string
+          last_result: Json | null
+          locked_until: string
+          updated_at: string
+        }
+        Insert: {
+          checkpoint?: Json
+          holder?: string | null
+          job: string
+          last_result?: Json | null
+          locked_until?: string
+          updated_at?: string
+        }
+        Update: {
+          checkpoint?: Json
+          holder?: string | null
+          job?: string
+          last_result?: Json | null
+          locked_until?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_quarantine: {
         Row: {
           created_at: string
@@ -9817,6 +9844,8 @@ export type Database = {
           reported_duration_seconds: number | null
           screen_wxh: string | null
           session_id: string
+          shadow_classified_at: string | null
+          shadow_classifier_version: string | null
           stripe_session_id: string | null
           technical_path: boolean
           timezone: string | null
@@ -9885,6 +9914,8 @@ export type Database = {
           reported_duration_seconds?: number | null
           screen_wxh?: string | null
           session_id: string
+          shadow_classified_at?: string | null
+          shadow_classifier_version?: string | null
           stripe_session_id?: string | null
           technical_path?: boolean
           timezone?: string | null
@@ -9953,6 +9984,8 @@ export type Database = {
           reported_duration_seconds?: number | null
           screen_wxh?: string | null
           session_id?: string
+          shadow_classified_at?: string | null
+          shadow_classifier_version?: string | null
           stripe_session_id?: string | null
           technical_path?: boolean
           timezone?: string | null
