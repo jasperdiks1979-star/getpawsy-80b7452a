@@ -21,6 +21,7 @@
  * ProductDetail.tsx above buy box). No DB impact.
  */
 import { memo } from 'react';
+import { US_TRANSIT_DAYS } from '@/lib/shipping-windows';
 
 interface TrustStripAboveATCProps {
   className?: string;
@@ -28,10 +29,14 @@ interface TrustStripAboveATCProps {
   compact?: boolean;
 }
 
-const SIGNALS: Array<{ icon: string; label: string; ariaLabel: string }> = [
+// Checkout offers exactly one shipping rate with this same transit window,
+// so the strip states it instead of implying a choice of options.
+const DELIVERY_LABEL = `US delivery ${US_TRANSIT_DAYS.min}–${US_TRANSIT_DAYS.max} business days`;
+
+export const SIGNALS: Array<{ icon: string; label: string; ariaLabel: string }> = [
   { icon: '🔒', label: 'Secure Stripe checkout', ariaLabel: 'Secure checkout powered by Stripe' },
   { icon: '↩', label: '30-day returns', ariaLabel: '30-day returns' },
-  { icon: '🚚', label: 'Shipping options shown at checkout', ariaLabel: 'Shipping options and estimated delivery shown at checkout' },
+  { icon: '🚚', label: DELIVERY_LABEL, ariaLabel: `Estimated ${DELIVERY_LABEL} after processing` },
 ];
 
 export const TrustStripAboveATC = memo(({ className = '', compact = false }: TrustStripAboveATCProps) => {
