@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     >();
     const sessionWrites = new Map<
       string,
-      { traffic_quality: TrafficQuality; is_bot: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; engagement_ms: number; interaction_count: number }
+      { traffic_quality: TrafficQuality; is_bot: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; engagement_ms?: number; interaction_count?: number }
     >();
 
     for (const w of targets) {
