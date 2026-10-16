@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
         for (const ev of evs) {
           const cls = classifyTraffic({
             page_path: ev.page_path,
-            user_agent: va?.user_agent ?? null,
+            user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
             is_internal_hint: va?.is_internal ?? va?.is_admin_path ?? null,
             is_bot_suspect_hint: va?.is_bot_suspect ?? null,
             bot_suspect_reason: va?.bot_suspect_reason ?? null,
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
               technical_path: cls.technical_path,
               bot_confidence: cls.bot_confidence,
               bot_reason: cls.bot_reason,
-              source_user_agent: va?.user_agent ?? null,
+              source_user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
             });
           }
         }
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
           const w = sessionWrites.get(sid)!;
           return supabase.from("canonical_sessions").update({
             ...w,
-            classification_version: `${CLASSIFIER_VERSION}-shadow`,
+            classifier_version: `${CLASSIFIER_VERSION}-shadow`,
           }).eq("session_id", sid);
         }));
         totalSessionsWritten += slice.length;

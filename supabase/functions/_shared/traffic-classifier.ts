@@ -223,6 +223,9 @@ export function aggregateSessionQuality(
   if (has("internal")) return "internal";
   if (has("technical") && events.every((e) => e.traffic_quality === "technical")) return "technical";
   if (has("bot")) {
+    // Hard UA hits (headless/automation/crawler, confidence >= 0.95) are never
+    // overridden: a test browser clicking Add to Cart is not a shopper.
+    if (events.some((e) => e.traffic_quality === "bot" && Number(e.bot_confidence ?? 0) >= 0.95)) return "bot";
     if (strongHuman) return "human"; // protected — do not let one weak-bot signal wipe a converter
     return "bot";
   }
