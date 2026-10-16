@@ -80661,6 +80661,54 @@ export type Database = {
         Args: { p_phase: string; p_threshold: number }
         Returns: Json
       }
+      session_forensics_human_window: {
+        Args: { p_since: string }
+        Returns: {
+          add_to_cart_at: string | null
+          begin_checkout_at: string | null
+          browser: string | null
+          cart_opened: boolean | null
+          checkout_started: boolean | null
+          city: string | null
+          country: string | null
+          currency: string | null
+          dead_clicks: number | null
+          device: string | null
+          entry_page: string | null
+          exit_reason: string | null
+          first_seen_at: string | null
+          form_abandons: number | null
+          furthest_step: string | null
+          last_seen_at: string | null
+          last_step: string | null
+          max_scroll_depth: number | null
+          order_id: string | null
+          os: string | null
+          payment_at: string | null
+          product_id: string | null
+          product_name: string | null
+          purchase_at: string | null
+          purchased: boolean | null
+          rage_clicks: number | null
+          referrer: string | null
+          session_id: string | null
+          stripe_session_id: string | null
+          time_on_site_seconds: number | null
+          traffic_type: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          value: number | null
+          view_cart_at: string | null
+          visitor_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "session_forensics"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       test_tiktok_exclusion_fixtures: {
