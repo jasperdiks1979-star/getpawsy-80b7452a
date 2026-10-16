@@ -5,6 +5,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Home, Search, BookOpen, ShoppingBag, HelpCircle, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getConversionFlag } from "@/lib/conversionFlags";
+import { applyNotFoundSignals } from "@/lib/notFoundSignals";
 
 function log404(pathname: string, referrer: string) {
   try {
@@ -35,6 +36,17 @@ const NotFound = () => {
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
     log404(location.pathname, document.referrer);
+    let restore = applyNotFoundSignals();
+    // Runtime canonical scripts may re-set the href after navigation.
+    const t = window.setTimeout(() => {
+      const r1 = restore;
+      const r2 = applyNotFoundSignals();
+      restore = () => { r2(); r1(); };
+    }, 500);
+    return () => {
+      window.clearTimeout(t);
+      restore();
+    };
   }, [location.pathname]);
 
   const contextMessage = useMemo(() => {
