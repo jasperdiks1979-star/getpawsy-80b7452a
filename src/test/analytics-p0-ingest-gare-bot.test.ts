@@ -41,7 +41,7 @@ describe("P0 ingest idempotency", () => {
     const p = emptyPartial("a", "b");
     foldEvents(p, [
       ev({ canonical_name: "CANONICAL_ADD_TO_CART", source_event_id: "c1", product_id: "x" }),
-      ev({ canonical_name: "CANONICAL_ADD_TO_CART", source_event_id: "c2", product_id: "x" }),
+      ev({ canonical_name: "CANONICAL_ADD_TO_CART", source_event_id: "c2", product_id: "x", atc_qty: "1" }),
     ], () => "DIRECT");
     expect(p.sessions.s1.has_add_to_cart).toBe(true);
     expect(p.sessions.s1.page_views).toBe(0);
