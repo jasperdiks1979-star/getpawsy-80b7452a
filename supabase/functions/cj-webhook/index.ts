@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
+import { decideDedup, type ExistingLog } from "../_shared/cj-webhook-dedup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
