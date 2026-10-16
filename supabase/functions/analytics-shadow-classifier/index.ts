@@ -1,60 +1,35 @@
-// Shadow-mode traffic classifier.
-// Read-heavy; writes ONLY additive classification columns on canonical_events
-// and canonical_sessions for events in the target windows. No deletes,
-// no visitor_id regeneration, no business-column updates.
+// Shadow-mode traffic classifier (per session).
+// Reads stored canonical_sessions fields (user_agent, stage, engagement,
+// interactions) in small keyset-paginated batches and writes ONLY derived
+// labels on canonical_sessions (traffic_quality, is_bot, technical_path,
+// bot_confidence, bot_reason, shadow_classifier_version, shadow_classified_at).
+// Raw events are never read or written. Exclusive lease + checkpoint live in
+// public.analytics_job_leases (job = 'shadow_classifier').
 //
 // Auth: verify_jwt=false by platform default; requires a shared token header.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-import {
-  classifyTraffic,
-  aggregateSessionQuality,
-  CLASSIFIER_VERSION,
-  type TrafficQuality,
-} from "../_shared/traffic-classifier.ts";
-import { isTechnicalPath } from "../_shared/technical-routes.ts";
+import { CLASSIFIER_VERSION } from "../_shared/traffic-classifier.ts";
+import { classifySessionRow } from "../_shared/session-shadow-classify.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-type WindowKey = "1h" | "10h" | "24h" | "7d";
-const WINDOWS: Record<WindowKey, number> = {
-  "1h": 1,
-  "10h": 10,
-  "24h": 24,
-  "7d": 24 * 7,
-};
-
-interface WindowReport {
-  window: WindowKey;
-  since_iso: string;
-  total_raw_sessions: number;
-  human_sessions: number;
-  uncertain_sessions: number;
-  bot_sessions: number;
-  technical_sessions: number;
-  internal_sessions: number;
-  human_visitors: number;
-  uncertain_visitors: number;
-  bot_visitors: number;
-  technical_visitors: number;
-  internal_visitors: number;
-  total_events: number;
-  page_view_events: number;
-  atc_events: number;
-  checkout_events: number;
-  order_events: number;
-  events_written: number;
-  sessions_written: number;
-  session_ids_join_via_visitor_activity: number;
-}
+const VERSION = `${CLASSIFIER_VERSION}-session-shadow`;
+const JOB = "shadow_classifier";
+const LEASE_MS = 5 * 60 * 1000;
+const TIME_BUDGET_MS = 45_000;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function clampInt(v: string | null, def: number, min: number, max: number) {
+  const n = Number.parseInt(v ?? "", 10);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
 }
 
 const INTERNAL_SECRET = Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "";
@@ -66,262 +41,104 @@ Deno.serve(async (req) => {
   const provided = req.headers.get("x-internal-secret") ?? "";
   const accepted = [INTERNAL_SECRET, WARMER_SECRET].filter((s) => s.length > 0);
   if (!provided || !accepted.includes(provided)) return json({ ok: false, error: "unauthorized" }, 401);
+
+  const url = new URL(req.url);
+  const dryRun = url.searchParams.get("dry_run") === "true";
+  const hours = clampInt(url.searchParams.get("hours"), 24, 1, 168);
+  const batch = clampInt(url.searchParams.get("batch"), 200, 10, 500);
+  const maxBatches = clampInt(url.searchParams.get("max_batches"), 20, 1, 60);
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  const holder = crypto.randomUUID();
+  const started = Date.now();
+
+  // Exclusive lease: only succeeds when no unexpired lease exists.
+  const { data: lease, error: leaseErr } = await supabase
+    .from("analytics_job_leases")
+    .update({ holder, locked_until: new Date(started + LEASE_MS).toISOString(), updated_at: new Date().toISOString() })
+    .eq("job", JOB)
+    .lt("locked_until", new Date(started).toISOString())
+    .select("checkpoint")
+    .maybeSingle();
+  if (leaseErr) return json({ ok: false, error: `lease: ${leaseErr.message}` }, 500);
+  if (!lease) return json({ ok: false, skipped: "locked" }, 409);
+
+  const sinceIso = new Date(started - hours * 3600 * 1000).toISOString();
+  const cp = (lease.checkpoint ?? {}) as { hours?: number; since?: string; cursor?: string };
+  // Resume only an unfinished pass over the same window size.
+  let cursor = cp.hours === hours && cp.cursor ? cp.cursor : "";
+  const counts = { human: 0, uncertain: 0, bot: 0, technical: 0, internal: 0 };
+  let scanned = 0, written = 0, unchanged = 0, failed = 0, batches = 0;
+  let done = false;
+  let error: string | null = null;
+
   try {
-    const url = new URL(req.url);
-    const dryRun = url.searchParams.get("dry_run") === "true";
-    const only = url.searchParams.get("window") as WindowKey | null;
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-    const nowMs = Date.now();
-    const targets: WindowKey[] = only ? [only] : ["1h", "10h", "24h", "7d"];
-    const reports: WindowReport[] = [];
-    // Aggregate write set across windows keyed by event id, so 24h/7d don't double-write 1h events.
-    const eventWrites = new Map<
-      string,
-      { traffic_quality: TrafficQuality; is_bot: boolean; is_internal: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; source_user_agent: string | null }
-    >();
-    const sessionWrites = new Map<
-      string,
-      { traffic_quality: TrafficQuality; is_bot: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; engagement_ms?: number; interaction_count?: number }
-    >();
-
-    for (const w of targets) {
-      const sinceIso = new Date(nowMs - WINDOWS[w] * 3600 * 1000).toISOString();
-      // Pull events (cap for safety)
-      const { data: events, error: evErr } = await supabase
-        .from("canonical_events")
-        .select("id, session_id, visitor_id, canonical_name, page_path, occurred_at, meta")
-        .gte("occurred_at", sinceIso)
-        .order("occurred_at", { ascending: true })
-        .limit(50000);
-      if (evErr) throw evErr;
-
-      // Pull visitor_activity for join enrichment (bot suspects, is_internal hints, UA)
-      const sessionIds = Array.from(new Set((events ?? []).map((e: any) => e.session_id).filter(Boolean)));
-      const visitorIds = Array.from(new Set((events ?? []).map((e: any) => e.visitor_id).filter(Boolean)));
-      const vaBySid = new Map<string, any>();
-      const vaByVid = new Map<string, any>();
-      let vaJoinHits = 0;
-      // visitor_activity has no user_agent column; selecting it made the whole
-      // query fail and silently dropped every bot hint. UA lives on canonical_sessions.
-      const VA_COLS = "session_id, visitor_id, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path, traffic_quality";
-      const uaBySid = new Map<string, string>();
-      if (sessionIds.length > 0) {
-        const { data: va } = await supabase
-          .from("visitor_activity")
-          .select(VA_COLS)
-          .in("session_id", sessionIds)
-          .limit(20000);
-        for (const row of (va ?? [])) if (row.session_id) vaBySid.set(row.session_id, row);
-        const { data: cs } = await supabase
-          .from("canonical_sessions")
-          .select("session_id, user_agent")
-          .in("session_id", sessionIds)
-          .limit(20000);
-        for (const row of (cs ?? [])) if (row.session_id && row.user_agent) uaBySid.set(row.session_id, row.user_agent);
-      }
-      if (visitorIds.length > 0) {
-        const { data: va2 } = await supabase
-          .from("visitor_activity")
-          .select(VA_COLS)
-          .in("visitor_id", visitorIds)
-          .limit(20000);
-        for (const row of (va2 ?? [])) if (row.visitor_id) vaByVid.set(row.visitor_id, row);
-      }
-
-      // Group events by session_id (fallback visitor_id)
-      const groups = new Map<string, any[]>();
-      for (const ev of (events ?? [])) {
-        const key = ev.session_id || `v:${ev.visitor_id || "unknown"}`;
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(ev);
-      }
-
-      let human = 0, uncertain = 0, bot = 0, technical = 0, internal = 0;
-      const humanV = new Set<string>(), uncV = new Set<string>(), botV = new Set<string>(),
-            techV = new Set<string>(), intV = new Set<string>();
-      let pageViews = 0, atc = 0, checkout = 0, orders = 0;
-
-      for (const [key, evs] of groups) {
-        const first = evs[0];
-        const va = (first.session_id && vaBySid.get(first.session_id)) ||
-                   (first.visitor_id && vaByVid.get(first.visitor_id)) || null;
-        if (va && (first.session_id ? vaBySid.has(first.session_id) : false)) vaJoinHits += 1;
-
-        const names = evs.map((e: any) => String(e.canonical_name || "").toLowerCase());
-        const hasAtc = names.some((n) => n.includes("add_to_cart") || n.includes("atc"));
-        const hasCheckout = names.some((n) => n.includes("checkout"));
-        const hasOrder = names.some((n) => n.includes("purchase") || n.includes("order"));
-        const pvCount = names.filter((n) => n.includes("page_view") || n === "pageview").length;
-        pageViews += pvCount;
-        if (hasAtc) atc += 1;
-        if (hasCheckout) checkout += 1;
-        if (hasOrder) orders += 1;
-
-        const engagementMs = Math.max(
-          0,
-          new Date(evs[evs.length - 1].occurred_at).getTime() - new Date(evs[0].occurred_at).getTime(),
-        );
-
-        const perEvent: { traffic_quality: TrafficQuality; bot_confidence?: number | null }[] = [];
-        for (const ev of evs) {
-          const cls = classifyTraffic({
-            page_path: ev.page_path,
-            user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
-            is_internal_hint: va?.is_internal ?? va?.is_admin_path ?? null,
-            is_bot_suspect_hint: va?.is_bot_suspect ?? null,
-            bot_suspect_reason: va?.bot_suspect_reason ?? null,
-            engagement_ms: engagementMs,
-            interaction_count: 0,
-            pageviews: pvCount,
-            has_atc: hasAtc,
-            has_checkout: hasCheckout,
-            has_order: hasOrder,
-          });
-          perEvent.push({ traffic_quality: cls.traffic_quality, bot_confidence: cls.bot_confidence });
-          if (!eventWrites.has(ev.id)) {
-            eventWrites.set(ev.id, {
-              traffic_quality: cls.traffic_quality,
-              is_bot: cls.is_bot,
-              is_internal: cls.is_internal,
-              technical_path: cls.technical_path,
-              bot_confidence: cls.bot_confidence,
-              bot_reason: cls.bot_reason,
-              source_user_agent: (first.session_id && uaBySid.get(first.session_id)) || null,
-            });
-          }
-        }
-
-        const strongHuman = hasAtc || hasCheckout || hasOrder;
-        const sessionQ = aggregateSessionQuality(perEvent, strongHuman);
-
-        // Session write (session_id required; skip v: pseudo groups)
-        if (first.session_id && !sessionWrites.has(first.session_id)) {
-          sessionWrites.set(first.session_id, {
-            traffic_quality: sessionQ,
-            is_bot: sessionQ === "bot",
-            technical_path: sessionQ === "technical",
-            bot_confidence: perEvent.reduce((m, e) => Math.max(m, Number(e.bot_confidence || 0)), 0),
-            bot_reason: sessionQ === "bot" ? "aggregated" : null,
-            // engagement_ms / interaction_count are owned by
-            // canonical_session_apply_activity (monotonic GREATEST). Writing
-            // them here would reset real deliberate-action counts to 0.
-          });
-        }
-
-        const vid = first.visitor_id || key;
-        switch (sessionQ) {
-          case "human": human += 1; humanV.add(vid); break;
-          case "uncertain": uncertain += 1; uncV.add(vid); break;
-          case "bot": bot += 1; botV.add(vid); break;
-          case "technical": technical += 1; techV.add(vid); break;
-          case "internal": internal += 1; intV.add(vid); break;
-        }
-      }
-
-      reports.push({
-        window: w,
-        since_iso: sinceIso,
-        total_raw_sessions: groups.size,
-        human_sessions: human,
-        uncertain_sessions: uncertain,
-        bot_sessions: bot,
-        technical_sessions: technical,
-        internal_sessions: internal,
-        human_visitors: humanV.size,
-        uncertain_visitors: uncV.size,
-        bot_visitors: botV.size,
-        technical_visitors: techV.size,
-        internal_visitors: intV.size,
-        total_events: (events ?? []).length,
-        page_view_events: pageViews,
-        atc_events: atc,
-        checkout_events: checkout,
-        order_events: orders,
-        events_written: 0,
-        sessions_written: 0,
-        session_ids_join_via_visitor_activity: vaJoinHits,
-      });
-    }
-
-    // Persist classification (idempotent; only if not dry_run)
-    let totalEventsWritten = 0;
-    let totalSessionsWritten = 0;
-    if (!dryRun) {
-      const ids = Array.from(eventWrites.keys());
-      const CHUNK = 200;
-      for (let i = 0; i < ids.length; i += CHUNK) {
-        const slice = ids.slice(i, i + CHUNK);
-        // Update each row individually via .update().eq() — chunked to control roundtrips
-        await Promise.all(slice.map((id) => {
-          const w = eventWrites.get(id)!;
-          return supabase.from("canonical_events").update({
-            ...w,
-            classification_version: `${CLASSIFIER_VERSION}-shadow`,
-            classified_at: new Date().toISOString(),
-          }).eq("id", id);
-        }));
-        totalEventsWritten += slice.length;
-      }
-      const sids = Array.from(sessionWrites.keys());
-      for (let i = 0; i < sids.length; i += CHUNK) {
-        const slice = sids.slice(i, i + CHUNK);
-        await Promise.all(slice.map((sid) => {
-          const w = sessionWrites.get(sid)!;
-          return supabase.from("canonical_sessions").update({
-            ...w,
-            classifier_version: `${CLASSIFIER_VERSION}-shadow`,
-          }).eq("session_id", sid);
-        }));
-        totalSessionsWritten += slice.length;
-      }
-      // Distribute counts to widest window report (simpler than per-window bookkeeping)
-      if (reports.length > 0) {
-        reports[reports.length - 1].events_written = totalEventsWritten;
-        reports[reports.length - 1].sessions_written = totalSessionsWritten;
-      }
-    }
-
-    // Old-vs-new parity: read pre-existing session counts using legacy is_internal-only filter
-    const parity: Record<string, unknown> = {};
-    for (const r of reports) {
-      const { count: oldSessions } = await supabase
+    while (batches < maxBatches && Date.now() - started < TIME_BUDGET_MS) {
+      const { data: rows, error: e1 } = await supabase
         .from("canonical_sessions")
-        .select("session_id", { count: "exact", head: true })
-        .gte("last_seen_at", r.since_iso)
-        .eq("is_internal", false);
-      parity[r.window] = {
-        old_default_sessions: oldSessions ?? null,
-        new_human_sessions: r.human_sessions,
-        new_human_plus_uncertain: r.human_sessions + r.uncertain_sessions,
-        new_bot_sessions: r.bot_sessions,
-        new_technical_sessions: r.technical_sessions,
-        new_internal_sessions: r.internal_sessions,
-        delta_default_minus_human_uncertain:
-          (oldSessions ?? 0) - (r.human_sessions + r.uncertain_sessions),
-      };
-    }
+        .select("session_id, user_agent, first_landing_path, landing_page, last_stage, order_id, engagement_ms, interaction_count, traffic_quality, is_bot, technical_path, bot_confidence, bot_reason, shadow_classifier_version")
+        .gte("last_seen_at", sinceIso)
+        .gt("session_id", cursor)
+        .order("session_id", { ascending: true })
+        .limit(batch);
+      if (e1) throw new Error(`read sessions: ${e1.message}`);
+      batches += 1;
+      if (!rows || rows.length === 0) { done = true; break; }
 
-    return json({
-      ok: true,
-      classifier_version: `${CLASSIFIER_VERSION}-shadow`,
-      dry_run: dryRun,
-      generated_at: new Date().toISOString(),
-      windows: reports,
-      parity_old_vs_new: parity,
-      mutations: {
-        deletes: 0,
-        business_column_updates: 0,
-        classification_column_updates_events: totalEventsWritten,
-        classification_column_updates_sessions: totalSessionsWritten,
-      },
-      guardrails: {
-        production_default_changed: false,
-        historical_backfill_executed: false,
-        visitor_ids_regenerated: false,
-      },
-    });
-  } catch (err) {
-    return json({ ok: false, error: (err as Error).message }, 500);
+      const sids = rows.map((r: any) => r.session_id);
+      const { data: va, error: e2 } = await supabase
+        .from("visitor_activity")
+        .select("session_id, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path")
+        .in("session_id", sids)
+        .limit(5000);
+      if (e2) throw new Error(`read hints: ${e2.message}`);
+      const hints = new Map<string, any>();
+      for (const h of va ?? []) {
+        const prev = hints.get(h.session_id);
+        // Strongest hint wins across rows for the same session.
+        hints.set(h.session_id, {
+          is_internal: !!(prev?.is_internal || h.is_internal),
+          is_admin_path: !!(prev?.is_admin_path || h.is_admin_path),
+          is_bot_suspect: !!(prev?.is_bot_suspect || h.is_bot_suspect),
+          bot_suspect_reason: prev?.bot_suspect_reason ?? h.bot_suspect_reason ?? null,
+        });
+      }
+
+      for (const r of rows as any[]) {
+        scanned += 1;
+        const lbl = classifySessionRow(r, hints.get(r.session_id) ?? null);
+        counts[lbl.traffic_quality] += 1;
+        const same = r.traffic_quality === lbl.traffic_quality && r.is_bot === lbl.is_bot &&
+          r.technical_path === lbl.technical_path && Number(r.bot_confidence ?? 0) === lbl.bot_confidence &&
+          (r.bot_reason ?? null) === lbl.bot_reason && r.shadow_classifier_version === VERSION;
+        if (same) { unchanged += 1; continue; }
+        if (dryRun) continue;
+        const { error: e3 } = await supabase
+          .from("canonical_sessions")
+          .update({ ...lbl, shadow_classifier_version: VERSION, shadow_classified_at: new Date().toISOString() })
+          .eq("session_id", r.session_id);
+        if (e3) { failed += 1; error = `write: ${e3.message}`; } else written += 1;
+      }
+      cursor = rows[rows.length - 1].session_id;
+      if (rows.length < batch) { done = true; break; }
+    }
+  } catch (e) {
+    error = (e as Error).message;
   }
+
+  const result = {
+    ok: error === null && failed === 0,
+    version: VERSION, dry_run: dryRun, hours, since_iso: sinceIso, batch, batches,
+    scanned, written, unchanged, failed, complete: done, counts, error,
+    duration_ms: Date.now() - started, raw_event_writes: 0,
+  };
+  // Release lease; keep cursor only for an unfinished, non-dry pass.
+  await supabase.from("analytics_job_leases").update({
+    holder: null,
+    locked_until: new Date(0).toISOString(),
+    checkpoint: !dryRun && !done ? { hours, cursor } : {},
+    last_result: result,
+    updated_at: new Date().toISOString(),
+  }).eq("job", JOB).eq("holder", holder);
+
+  return json(result, result.ok ? 200 : 500);
 });
