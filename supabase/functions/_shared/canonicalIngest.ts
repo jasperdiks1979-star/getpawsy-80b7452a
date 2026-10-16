@@ -141,6 +141,19 @@ export function isDuplicateCanonicalRow(p: object, r: any): boolean {
 }
 
 /**
+ * A CANONICAL_ADD_TO_CART row from the storefront (source_system "cci") is
+ * written twice per tap: the tap itself (no quantity) and the successful add
+ * (with quantity). Only the successful add counts; a tap that added nothing
+ * (no option chosen, out of stock) never marks the session. Other sources are
+ * unchanged. Reporting-only: raw rows are never modified.
+ */
+export function isSuccessfulAddToCart(r: any): boolean {
+  if (r?.source_system !== "cci") return true;
+  const q = Number(r?.atc_qty);
+  return r?.atc_qty != null && r.atc_qty !== "" && Number.isFinite(q) && q > 0;
+}
+
+/**
  * Fold one page of canonical_events rows (ordered occurred_at DESC, newest
  * first — the same order the single-pass scan used) into the partial.
  */
@@ -213,7 +226,7 @@ export function foldEvents(
     }
     if (stage === "CANONICAL_PAGE_VIEW") s.page_views += 1;
     if (stage === "CANONICAL_PRODUCT_VIEW") s.has_product_view = true;
-    if (stage === "CANONICAL_ADD_TO_CART") s.has_add_to_cart = true;
+    if (stage === "CANONICAL_ADD_TO_CART" && isSuccessfulAddToCart(r)) s.has_add_to_cart = true;
     if (stage === "CANONICAL_CART") s.has_view_cart = true;
     if (stage === "CANONICAL_CHECKOUT") s.has_checkout = true;
     if (stage === "CANONICAL_PURCHASE") s.has_purchase = true;
