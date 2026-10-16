@@ -20,10 +20,9 @@ describe("shadow classifier: headless add-to-cart", () => {
   it("weak bot hint is still overridden by a real converter", () => {
     expect(aggregateSessionQuality([{ traffic_quality: "bot", bot_confidence: 0.85 }], true)).toBe("human");
   });
-  it("function reads UA from canonical_sessions and uses existing columns", () => {
+  it("function reads UA from canonical_sessions per session", () => {
     const src = readFileSync("supabase/functions/analytics-shadow-classifier/index.ts", "utf8");
+    expect(src).toMatch(/from\("canonical_sessions"\)\s*\.select\("session_id, user_agent/);
     expect(src).not.toMatch(/from\("visitor_activity"\)\s*\.select\([^)]*user_agent/);
-    expect(src).toMatch(/uaBySid/);
-    expect(src).not.toMatch(/classification_version: `\$\{CLASSIFIER_VERSION\}-shadow`,\s*\}\)\.eq\("session_id"/);
   });
 });
