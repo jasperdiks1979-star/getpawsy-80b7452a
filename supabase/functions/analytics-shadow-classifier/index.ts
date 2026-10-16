@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     >();
     const sessionWrites = new Map<
       string,
-      { traffic_quality: TrafficQuality; is_bot: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; engagement_ms: number; interaction_count: number }
+      { traffic_quality: TrafficQuality; is_bot: boolean; technical_path: boolean; bot_confidence: number; bot_reason: string | null; engagement_ms?: number; interaction_count?: number }
     >();
 
     for (const w of targets) {
@@ -186,8 +186,9 @@ Deno.serve(async (req) => {
             technical_path: sessionQ === "technical",
             bot_confidence: perEvent.reduce((m, e) => Math.max(m, Number(e.bot_confidence || 0)), 0),
             bot_reason: sessionQ === "bot" ? "aggregated" : null,
-            engagement_ms: engagementMs,
-            interaction_count: 0,
+            // engagement_ms / interaction_count are owned by
+            // canonical_session_apply_activity (monotonic GREATEST). Writing
+            // them here would reset real deliberate-action counts to 0.
           });
         }
 
