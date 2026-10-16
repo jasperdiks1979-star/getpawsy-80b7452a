@@ -36,10 +36,17 @@ const NotFound = () => {
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
     log404(location.pathname, document.referrer);
-    applyNotFoundSignals();
+    let restore = applyNotFoundSignals();
     // Runtime canonical scripts may re-set the href after navigation.
-    const t = window.setTimeout(() => applyNotFoundSignals(), 500);
-    return () => window.clearTimeout(t);
+    const t = window.setTimeout(() => {
+      const r1 = restore;
+      const r2 = applyNotFoundSignals();
+      restore = () => { r2(); r1(); };
+    }, 500);
+    return () => {
+      window.clearTimeout(t);
+      restore();
+    };
   }, [location.pathname]);
 
   const contextMessage = useMemo(() => {
