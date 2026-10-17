@@ -42,6 +42,10 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         run: npm ci
 
+      - name: Run full regression test suite
+        if: ${{ steps.release.outputs.release_created }}
+        run: npm test -- --run
+
       - name: Build production bundle
         if: ${{ steps.release.outputs.release_created }}
         run: npm run build
