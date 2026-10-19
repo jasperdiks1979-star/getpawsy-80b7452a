@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
@@ -22,6 +22,7 @@ import { claimCrawlerLog } from '@/lib/crawlerCoverage';
 const TrackerInner = () => {
   const location = useLocation();
   const { trackBrowsing, trackViewCart, trackCheckout } = useVisitorTracking();
+  const lastTrackedPath = useRef<string | null>(null);
 
   useVisitorHeartbeat(30000);
 
@@ -43,6 +44,9 @@ const TrackerInner = () => {
     const path = location.pathname;
     // Guard: never dispatch commercial analytics for technical routes.
     if (isTechnicalPath(path)) return;
+    // Geo/state refresh recreates callbacks but is not a navigation.
+    if (lastTrackedPath.current === path) return;
+    lastTrackedPath.current = path;
 
     // Backfill the URL with inferred UTMs (e.g. TikTok ad clicks that
     // arrive with only `ttclid` / `ad=tt`) BEFORE firing GA4 page_view,
