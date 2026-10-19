@@ -86,6 +86,7 @@ import { usePdpBotRenderTrace } from "@/hooks/usePdpBotRenderTrace";
 import { RelatedProductsCarousel } from "@/components/products/RelatedProductsCarousel";
 import { categoryCollectionHref } from "@/lib/canonical-category-registry";
 import { FrequentlyBoughtTogether } from "@/components/products/FrequentlyBoughtTogether";
+import { isBundleUpsellReady } from "@/lib/commerceBundleReleaseGate";
 import { useRelatedProducts } from "@/hooks/useRelatedProducts";
 import { RelatedGuides } from "@/components/guides/RelatedGuides";
 import { DogBedsClusterLinks } from "@/components/seo/DogBedsClusterLinks";
@@ -2206,7 +2207,7 @@ const ProductDetail = () => {
         {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 
         {/* Frequently Bought Together */}
-        {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
+        {isBundleUpsellReady() && (relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
           <div className="mt-16">
             <FrequentlyBoughtTogether
               currentProduct={{
