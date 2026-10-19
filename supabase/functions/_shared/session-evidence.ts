@@ -47,7 +47,9 @@ export function aggregateSessionEvidence(
     h.is_bot_suspect ||= a.is_bot_suspect === true;
     if (a.is_bot_suspect === true && a.bot_suspect_reason) {
       if (!h.bot_suspect_reason ||
-        (STRONG.has(a.bot_suspect_reason) && !STRONG.has(h.bot_suspect_reason))) {
+        (STRONG.has(a.bot_suspect_reason) && !STRONG.has(h.bot_suspect_reason)) ||
+        (STRONG.has(a.bot_suspect_reason) === STRONG.has(h.bot_suspect_reason) &&
+          a.bot_suspect_reason < h.bot_suspect_reason)) {
         h.bot_suspect_reason = a.bot_suspect_reason;
       }
     }
