@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] October 19 five commercial fixes: shared commercial reader/counting; displayed-variant schema/list prices; intentional product robots parity; unsupported bowl claims; verified shipping/returns wording.
+- [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
+- [ ] Fix 1 remaining adoption: legacy product/heatmap rollups and organic-growth-intelligence server envelope still lack shared human-session filtering. Migrated identified commercial funnel/session readers; UNKNOWN remains separate and callbacks count distinct sessions. No DB/function edits; do not claim universal dashboard parity.
 - [ ] Run focused/full tests and browser checks; preserve protected payment/GA4 paths. Independent build/typecheck/prerender/rollback remain unavailable; no publication.
 
 - [x] October 19 focused conversion run: HEAD 112834081 clean at entry; GA4 ancestor retained; live desktop/mobile US variant $97.95 → cart → checkout form, five collection PDPs and public SEO files checked. No new proven high-impact defect; no application edits or release.

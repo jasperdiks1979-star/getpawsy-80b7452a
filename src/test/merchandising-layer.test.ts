@@ -55,7 +55,7 @@ describe('merchandising layer', () => {
     expect(src).toContain('ProductRobotsPolicy product={product}');
     expect(read('src/lib/seo-robots-policy.ts')).toContain('product.seo_noindex === true');
     // noindex must still allow link following so legacy equity keeps flowing.
-    expect(src).toContain('noindex, follow');
+    expect(read('src/lib/seo-robots-policy.ts')).toContain('noindex, follow');
   });
 
   it('the product page still resolves any product, including retired ones', () => {
