@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] October 19 focused conversion run: verify current baseline, live US shopping, targeted/full tests and release gates; defer checkout security patch and preserve GA4 work.
+
 - [x] Stage checkout return-origin correction outside auto-deployed functions; live canonical, test isolated, unknown fail-closed; eight origin regressions pass.
 - [x] Full suite 2878 passed/2 skipped; focused 44 passed; live desktop/mobile checkout form reached without orders. Automatic build OK.
 - [ ] Checkout deployment blocked: independent typecheck/production-prerender and exercised rollback unavailable; inactive patch retained, no live fix claimed.
