@@ -19,5 +19,5 @@
 - Bot labels: analytics-shadow-classifier classifies per canonical_sessions row (stored UA/stage), keyset batches, lease+checkpoint in analytics_job_leases, its own version in shadow_classifier_version (classifier_version is overwritten by a trigger); never reads/writes canonical_events. Why: event-based pass hit caps and its version was clobbered.
 - "Complete the setup" requires isBundleUpsellReady(). Why: unsafe base prices and lost variant identity.
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
-- Stage payment patches outside functions until gates pass. Why: auto-deploy.
-- Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck, prerender and rollback off-tree.
+- Stage payment patches outside functions until gates pass. Why: auto-deploys.
+- Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
