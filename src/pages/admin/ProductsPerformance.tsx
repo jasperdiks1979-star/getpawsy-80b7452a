@@ -1,9 +1,8 @@
 /**
  * /admin/products-performance — per-product funnel & revenue (Canonical).
  *
- * Genesis V2.6 Wave 2: reads from canonical_products (daily per-product rollup).
- * Revenue cents come from canonical_orders aggregation in the SQL view, so it
- * always matches the global Revenue dashboard.
+ * Bounded canonical session/event evidence with the shared commercial contract.
+ * Revenue is verified paid item subtotal, not global shipping/tax-inclusive revenue.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -30,8 +29,6 @@ function money(n: number): string {
 
 export default function ProductsPerformance() {
   const [range, setRange] = useState<Range>('30d');
-  // Bots never reach canonical_products — toggle is informational.
-  const [excludeBots, setExcludeBots] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('views');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +84,7 @@ export default function ProductsPerformance() {
               Products Performance
             </h1>
             <p className="text-sm text-muted-foreground">
-              Per-product views, ATCs, checkouts, purchases, CVR and revenue. Source: canonical_products.
+              Commercial sessions per product and stage; paid item revenue excludes shipping and tax.
             </p>
           </div>
           <Button onClick={load} disabled={loading} variant="outline" size="sm">
@@ -100,9 +97,6 @@ export default function ProductsPerformance() {
           <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <LabeledSelect label="Range" value={range} onChange={(v) => setRange(v as Range)} options={[
               { v: '24h', l: 'Last 24h' }, { v: '7d', l: 'Last 7d' }, { v: '30d', l: 'Last 30d' }, { v: '90d', l: 'Last 90d' },
-            ]} />
-            <LabeledSelect label="Bots" value={excludeBots ? 'exclude' : 'include'} onChange={(v) => setExcludeBots(v === 'exclude')} options={[
-              { v: 'exclude', l: 'Exclude bots' }, { v: 'include', l: 'Include bots' },
             ]} />
             <LabeledSelect label="Sort by" value={sortKey} onChange={(v) => setSortKey(v as SortKey)} options={[
               { v: 'views', l: 'Views' }, { v: 'atc', l: 'Add to cart' },

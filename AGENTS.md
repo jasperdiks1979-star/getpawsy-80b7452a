@@ -21,7 +21,7 @@
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploys.
 - Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
-- Commercial frontend funnels use commercial-funnel/read-commercial-funnel over the canonical envelope; hard exclusions win, UNKNOWN stays separate, stages count distinct sessions. Why: legacy views and event totals disagree.
+- Commercial reports use commercial-funnel/read-commercial-funnel; product/heatmap/organic readers add bounded session-indexed SELECT evidence via read-commercial-reports, fail closed on incomplete data, and never fall back to legacy aggregates. Why: hard exclusions, UNKNOWN and distinct stages must agree without rewriting history.
 - Product-claim-hygiene removes unsupported supplier promises at read time, retaining catalog/URLs. Why: claims need evidence.
 - PDP schema receives buy-box price; lean collection schema shares batched card option queries and omits unresolved offers. Why: catalog base can differ from purchasable options.
 - Product routes own robots via productRobotsDirective, matching existing tier/noindex sitemap policy. Why: route-only index must not overwrite eligibility.
