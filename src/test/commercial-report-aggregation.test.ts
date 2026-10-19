@@ -32,13 +32,18 @@ describe('commercial report session contract', () => {
     expect(aggregateCommercialProducts(evidence([event('purchase', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'expired' })]))[0].revenue_cents).toBe(0);
   });
   it('repeated paid callbacks count the verified order amount once', () => {
-    const e = { ...evidence([event('p1', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' }), event('p2', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' })]), orders: [{ order_id: 'paid', total_amount: 162.99, currency: 'USD' }] };
+    const e = { ...evidence([event('p1', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' }), event('p2', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' })]), orders: [{ order_id: 'paid', total_amount: 162.99, currency: 'USD', items: [{ id: 'tree', price: 162.99, quantity: 1 }] }] };
     expect(aggregateCommercialProducts(e)[0]).toMatchObject({ purchases: 1, revenue_cents: 16299 });
     expect(aggregateOrganicWindow(e).organic.revenue_cents).toBe(16299);
   });
   it('does not multiply an order total across multiple products', () => {
     const e = { ...evidence([event('p1', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' }), event('p2', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid', product_id: 'bowl' })]), orders: [{ order_id: 'paid', total_amount: 200, currency: 'USD' }] };
     expect(() => aggregateCommercialProducts(e)).toThrow('allocation unavailable');
+  });
+  it('uses exact paid item subtotals for multiple products, not the whole order amount', () => {
+    const e = { ...evidence([event('p1', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid' }), event('p2', { canonical_name: 'CANONICAL_PURCHASE', order_id: 'paid', product_id: 'bowl' })]), orders: [{ order_id: 'paid', total_amount: 190, currency: 'USD', items: JSON.stringify([{ id: 'tree', price: 162.99, quantity: 1 }, { id: 'bowl', price: 16.99, quantity: 1 }]) }] };
+    expect(aggregateCommercialProducts(e).map(r => r.revenue_cents)).toEqual([16299, 1699]);
+    expect(aggregateOrganicWindow(e).organic.revenue_cents).toBe(19000);
   });
   it('paid source evidence is not attributed as organic', () => {
     const e = { ...evidence([event('1')]), sessions: [{ ...human, utm_medium: 'cpc' }] };

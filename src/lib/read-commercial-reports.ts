@@ -39,10 +39,10 @@ export async function loadCommercialReportEvidence(hours: number): Promise<Comme
   const orderIds = [...new Set(events.filter(e => e.canonical_name === 'CANONICAL_PURCHASE' && e.order_id).map(e => e.order_id).filter((id): id is string => typeof id === 'string'))];
   const orders: CommercialPaidOrder[] = [];
   for (let i = 0; i < orderIds.length; i += 50) {
-    const { data, error } = await supabase.from('orders').select('id,total_amount,currency')
+    const { data, error } = await supabase.from('orders').select('id,total_amount,currency,items')
       .in('id', orderIds.slice(i, i + 50)).in('status', ['paid', 'completed']).limit(50);
     if (error) throw error;
-    orders.push(...(data ?? []).map(o => ({ order_id: o.id, total_amount: Number(o.total_amount), currency: o.currency })));
+    orders.push(...(data ?? []).map(o => ({ order_id: o.id, total_amount: Number(o.total_amount), currency: o.currency, items: o.items })));
   }
   return { sessions, events, orders, since: truth.window.since, until: truth.window.until };
 }

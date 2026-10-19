@@ -9,7 +9,7 @@ export interface CommercialReportEvent {
   canonical_name: string; product_id: string | null; page_path: string | null;
   order_id: string | null; technical_path?: boolean;
 }
-export interface CommercialPaidOrder { order_id: string; total_amount: number; currency: string | null }
+export interface CommercialPaidOrder { order_id: string; total_amount: number; currency: string | null; items?: unknown }
 export interface CommercialReportEvidence {
   sessions: TruthSession[]; events: CommercialReportEvent[]; orders: CommercialPaidOrder[];
   since: string; until: string;
@@ -38,16 +38,25 @@ export function aggregateCommercialProducts(e: CommercialReportEvidence): Canoni
   }
   return [...groups.values()].map(rows => {
     const count = (stage: string) => new Set(rows.filter(r => r.canonical_name === stage).map(r => r.session_id)).size;
-    // Never allocate an order total to multiple products without item-level evidence.
+    // Product revenue is verified item subtotal, not an allocated shipping/tax-inclusive order total.
     const orderIds = new Set(rows.filter(r => r.canonical_name === 'CANONICAL_PURCHASE').map(r => r.order_id));
-    for (const id of orderIds) {
-      if (e.orders.some(o => o.order_id === id) && new Set(events.filter(r => r.order_id === id && r.canonical_name === 'CANONICAL_PURCHASE').map(r => r.product_id)).size > 1) {
-        throw new Error('Product revenue allocation unavailable: multi-product paid order');
+    let revenue = 0;
+    for (const o of e.orders.filter(o => orderIds.has(o.order_id))) {
+      let items: unknown = o.items;
+      try { if (typeof items === 'string') items = JSON.parse(items); } catch { items = null; }
+      if (!Array.isArray(items) || o.currency?.toUpperCase() !== 'USD') throw new Error('Product revenue allocation unavailable: verified order items required');
+      const matching = items.filter(item => item && typeof item === 'object' && item.id === rows[0].product_id);
+      if (!matching.length) throw new Error('Product revenue allocation unavailable: product not in paid items');
+      for (const item of matching) {
+        if (typeof item.price !== 'number' || typeof item.quantity !== 'number' || item.price < 0 || !Number.isFinite(item.price) || !Number.isInteger(item.quantity) || item.quantity < 1) {
+          throw new Error('Product revenue allocation unavailable: invalid paid item');
+        }
+        revenue += Math.round(item.price * 100) * item.quantity;
       }
     }
     return { day: rows[0].occurred_at.slice(0, 10), product_id: String(rows[0].product_id),
       product_views: count('CANONICAL_PRODUCT_VIEW'), add_to_carts: count('CANONICAL_ADD_TO_CART'),
-      checkouts: count('CANONICAL_CHECKOUT'), purchases: count('CANONICAL_PURCHASE'), revenue_cents: paidRevenue(e, rows) };
+      checkouts: count('CANONICAL_CHECKOUT'), purchases: count('CANONICAL_PURCHASE'), revenue_cents: revenue };
   }).sort((a, b) => b.revenue_cents - a.revenue_cents || b.product_views - a.product_views);
 }
 export function aggregateCommercialHeatmap(e: CommercialReportEvidence): CanonicalHeatmapRow[] {
