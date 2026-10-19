@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Stage checkout return-origin security correction without touching auto-deployed functions; live canonical, test isolated, unknown fail-closed.
+- [ ] Run origin/full regressions and pre-order browser check; deploy only with verified typecheck/prerender/rollback, otherwise retain staged patch.
+
 - [x] Reproduce canonical GA4 cold-PDP loss and duplicate SPA hits on live and preview.
 - [x] Buffer consented pageviews; full suite 2870 passed/2 skipped, focused GA4/cart/price 41 passed; cold PDP works on desktop/mobile and EU permission blocks hits.
 - [ ] Release blocked: duplicate network hit persists despite one explicit command; independent typecheck/production-prerender and exercised rollback unavailable. Retain unpublished changes.
