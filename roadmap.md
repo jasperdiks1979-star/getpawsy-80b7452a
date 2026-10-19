@@ -9,7 +9,7 @@
 
 - [x] Reproduce canonical GA4 cold-PDP loss and duplicate SPA hits on live and preview.
 - [x] Buffer consented pageviews; full suite 2870 passed/2 skipped, focused GA4/cart/price 41 passed; cold PDP works on desktop/mobile and EU permission blocks hits.
-- [ ] GA4 release blocked only by its functional defect: duplicate navigation network hit persists despite one explicit command. Tooling gates pass. Retain unpublished changes.
+- [ ] GA4 release awaits external canonical-stream change: disable Enhanced measurement → Page views → Page changes based on browser history events. At c146eb4 (clean), browser-only suppression of our explicit page_view left exactly one Google history page_view; downloaded canonical gtag has vtp_historyEvents:true. Existing buffer passes 10 focused tests; full suite 2878 passed/2 skipped. Preview cold PDP sends once (US desktop/mobile), EU sends no Google requests; live cold PDP still lacks page_view. No application edits or publish. Current instructions prohibit manually running build/typechecks, including release-validate.sh; fresh independent build/rollback evidence not obtained in this run.
 
 - [x] Check October 16 commit, visible agent processes, live bundle, database health and credit reserve.
 - [x] Audit post-registration CJ records without credentials, payload disclosure or synthetic deliveries.
