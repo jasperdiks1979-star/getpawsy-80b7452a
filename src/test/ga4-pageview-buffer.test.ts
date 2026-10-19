@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPageViewBuffer } from '../lib/ga4PageViews';
+const consent = vi.hoisted(() => ({ choice: null as 'all' | 'necessary' | null, auto: true }));
+vi.mock('../lib/cookieConsent', () => ({ getConsent: () => consent.choice }));
+vi.mock('../lib/geoConsent', () => ({ canAutoGrantConsent: () => consent.auto }));
+import { createPageViewBuffer, hasAnalyticsConsent } from '../lib/ga4PageViews';
 const view = (path: string) => ({ page_path: path, page_location: `https://getpawsy.pet${path}`, page_title: 'GetPawsy' });
 describe('consented canonical pageview buffer', () => {
   it('preserves cold PDP until delayed readiness', () => {
@@ -30,5 +33,17 @@ describe('consented canonical pageview buffer', () => {
     let allowed = true; const send = vi.fn(); const b = createPageViewBuffer(send, () => allowed);
     b.enqueue(view('/')); allowed = false; b.consentChanged(); b.ready();
     allowed = true; b.consentChanged(); expect(send).not.toHaveBeenCalled();
+  });
+  it('respects explicit US opt-out over automatic consent', () => {
+    consent.auto = true; consent.choice = 'necessary'; expect(hasAnalyticsConsent()).toBe(false);
+    consent.choice = null; expect(hasAnalyticsConsent()).toBe(true);
+    consent.auto = false; expect(hasAnalyticsConsent()).toBe(false);
+    consent.choice = 'all'; expect(hasAnalyticsConsent()).toBe(true);
+  });
+  it('permits current page only after EU consent without replaying earlier browsing', () => {
+    let allowed = false; const send = vi.fn(); const b = createPageViewBuffer(send, () => allowed);
+    b.enqueue(view('/products/example')); allowed = true; b.consentChanged();
+    b.enqueue(view('/products/example')); b.ready();
+    expect(send).toHaveBeenCalledExactlyOnceWith(view('/products/example'));
   });
 });

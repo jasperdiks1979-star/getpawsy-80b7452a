@@ -22,9 +22,9 @@ export function createPageViewBuffer(send: (view: PageView) => void, allowed: ()
   };
   return {
     enqueue(view: PageView) {
+      if (!allowed()) return;
       if (lastPath === view.page_path) return;
       lastPath = view.page_path;
-      if (!allowed()) return;
       pending.push({ ...view });
       if (pending.length > 50) pending.shift();
       flush();
