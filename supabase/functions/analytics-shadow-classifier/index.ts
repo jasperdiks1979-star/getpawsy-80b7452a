@@ -13,6 +13,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { CLASSIFIER_VERSION } from "../_shared/traffic-classifier.ts";
 import { classifySessionRow } from "../_shared/session-shadow-classify.ts";
 import { aggregateSessionEvidence } from "../_shared/session-evidence.ts";
+import { assertCompleteEvidence, resolveShadowWindow } from "../_shared/shadow-evidence-safety.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -63,13 +64,8 @@ Deno.serve(async (req) => {
   if (leaseErr) return json({ ok: false, error: `lease: ${leaseErr.message}` }, 500);
   if (!lease) return json({ ok: false, skipped: "locked" }, 409);
 
-  const cp = (lease.checkpoint ?? {}) as { hours?: number; since?: string; cursor?: string };
-  // Freeze the window across resumed passes; moving it while keeping a cursor can skip sessions.
-  const canResume = cp.hours === hours && !!cp.cursor && !!cp.since &&
-    Number.isFinite(Date.parse(cp.since)) && Date.parse(cp.since) <= started &&
-    Date.parse(cp.since) >= started - 8 * 24 * 3600 * 1000;
-  const sinceIso = canResume ? cp.since! : new Date(started - hours * 3600 * 1000).toISOString();
-  let cursor = canResume ? cp.cursor! : "";
+  const { sinceIso, cursor: initialCursor } = resolveShadowWindow(lease.checkpoint ?? null, hours, started);
+  let cursor = initialCursor;
   const counts = { human: 0, uncertain: 0, bot: 0, technical: 0, internal: 0 };
   let scanned = 0, written = 0, unchanged = 0, failed = 0, batches = 0;
   let done = false;
@@ -98,8 +94,7 @@ Deno.serve(async (req) => {
       if (e2) throw new Error(`read hints: ${e2.message}`);
       // PostgREST may return fewer than the requested 1,000 rows due to server limits.
       // Exact count is required: never classify on truncated evidence.
-      if (activityCount === null || activityCount !== (va?.length ?? 0))
-        throw new Error("visitor activity evidence incomplete; reduce batch or paginate");
+      assertCompleteEvidence(va?.length ?? 0, activityCount, "visitor activity");
       // Server-side verified crawler evidence is stronger than browser labels.
       const { data: verified, count: crawlerCount, error: eVerified } = await supabase
         .from("crawler_visits")
@@ -109,8 +104,7 @@ Deno.serve(async (req) => {
         .gte("created_at", sinceIso)
         .limit(1000);
       if (eVerified) throw new Error(`read verified crawler evidence: ${eVerified.message}`);
-      if (crawlerCount === null || crawlerCount !== (verified?.length ?? 0))
-        throw new Error("verified crawler evidence incomplete; reduce batch or paginate");
+      assertCompleteEvidence(verified?.length ?? 0, crawlerCount, "verified crawler");
       const hints = aggregateSessionEvidence(va ?? [], verified ?? []);
 
       for (const r of rows as any[]) {
