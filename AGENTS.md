@@ -1,5 +1,5 @@
 
-- Never query cron.job_run_details by start_time alone (MIN/MAX, date filters/sorts, per-job time summaries, "remaining old rows?"); always bound by indexed runid first (e.g. runid > max(runid) - N). Why: only runid is indexed and platform owns the table; unbounded diagnostics caused ~95% of its heavy reads (2026-09-25).
+- Never query cron.job_run_details by start_time alone; bound by indexed runid first (runid > max - N). Why: only runid is indexed; unbounded diagnostics caused ~95% of its heavy reads.
 - For one-off organic Pinterest waves, target exact creative IDs in the PCIE2 assembler and exact queue IDs in the PCIE2 publisher; never drain unrelated READY pins. Why: a whole-queue drain can publish content outside a narrow approval.
 
 - Spreadsheet exports use src/utils/excelExport.ts (JSZip); do not re-add xlsx. Why: xlsx >=0.19 is off-npm (scanner cannot parse it) and 0.18.5 carries two high advisories.
@@ -19,4 +19,5 @@
 - Bot labels: analytics-shadow-classifier classifies per canonical_sessions row (stored UA/stage), keyset batches, lease+checkpoint in analytics_job_leases, its own version in shadow_classifier_version (classifier_version is overwritten by a trigger); never reads/writes canonical_events. Why: event-based pass hit caps and its version was clobbered.
 - "Complete the setup" requires isBundleUpsellReady(). Why: unsafe base prices and lost variant identity.
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
-- Stage payment patches outside functions until gates pass. Why: auto-deploy.
+- Stage payment patches outside functions until gates pass. Why: auto-deploys.
+- Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
