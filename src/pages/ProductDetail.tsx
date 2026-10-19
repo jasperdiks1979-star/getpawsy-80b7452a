@@ -1,4 +1,8 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
+
+// Fail closed: the existing bundle component loses required variant IDs and
+// displays base prices. Re-enable only after end-to-end server price parity tests.
+export const ENABLE_VARIANT_SAFE_BUNDLE_UPSELL = false;
 import { listingPrice } from "@/lib/listingPrice";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
@@ -2210,7 +2214,7 @@ const ProductDetail = () => {
             server-authoritative checkout. Disable the upsell until a variant-aware,
             server-priced bundle path has passed staging checkout parity tests.
             The normal product Add to Cart remains available. */}
-        {false && (relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
+        {ENABLE_VARIANT_SAFE_BUNDLE_UPSELL && (relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
           <div className="mt-16">
             <FrequentlyBoughtTogether
               currentProduct={{
