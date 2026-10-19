@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Stage checkout return-origin correction outside auto-deployed functions; live canonical, test isolated, unknown fail-closed; eight origin regressions pass.
+- [x] Full suite 2878 passed/2 skipped; focused 44 passed; live desktop/mobile checkout form reached without orders. Automatic build OK.
+- [ ] Checkout deployment blocked: independent typecheck/production-prerender and exercised rollback unavailable; inactive patch retained, no live fix claimed.
+
 - [x] Reproduce canonical GA4 cold-PDP loss and duplicate SPA hits on live and preview.
 - [x] Buffer consented pageviews; full suite 2870 passed/2 skipped, focused GA4/cart/price 41 passed; cold PDP works on desktop/mobile and EU permission blocks hits.
 - [ ] Release blocked: duplicate network hit persists despite one explicit command; independent typecheck/production-prerender and exercised rollback unavailable. Retain unpublished changes.
