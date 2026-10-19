@@ -55,3 +55,21 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 2. Safe, trigger-compatible browser enrichment that does not change commercial labels.
 3. Evidence pagination beyond the current conservative 1,000-row cap, without high RAM/DB load.
 4. Hourly shadow job is active; verify lease/checkpoint behavior and that any future deployment cannot silently change classification of all sessions on its next scheduled run.
+
+## Additional source-of-truth findings (read-only)
+- `canonical_events` has both `browser` and `source_user_agent` columns, but in a bounded recent 1,000-event sample **zero** records had either field populated. This means the browser/user-agent gaps start upstream of the session rollup. Do not simply copy a Chrome browser label into user_agent.
+- `canonical_session_upsert_recent` can only carry browser values that already exist in `canonical_events`; it does not populate `source_user_agent` into `canonical_sessions.user_agent`.
+- `canonical_session_apply_evidence` can enrich user_agent only from crawler_visits; ordinary sessions remain uncovered.
+- `visitor_activity.browser` contains client-side browser labels and may help diagnostic dashboards, but cannot prove a verified browser or human shopper.
+
+## Browser repair trigger-compatible design (STAGING ONLY)
+1. Snapshot representative canonical_sessions rows including `traffic_class`, `is_internal`, `exclude_from_commercial`, `classification_reason`, `bot_name`, `classifier_version`, `traffic_quality`, attribution fields and `updated_at`.
+2. Do NOT bypass the BEFORE UPDATE trigger in production. In staging, evaluate changing the trigger function so it preserves existing classification fields when **only** browser changes, while still reclassifying when its actual inputs change. Include every dependency (`user_agent`, referrer, UTMs, click IDs, landing path, crawler_identity, interaction_count); INSERT must still classify.
+3. Test that a browser-only update does not change any commercial field, while a relevant source-field update still correctly recomputes classification. Test existing first-touch attribution lock, validation trigger, concurrent updates and rollback.
+4. Only after a safe, reviewed staging implementation should the opt-in browser RPC safety block be reconsidered. The current RPC is intentionally non-executable with the active production trigger.
+5. Fix collection upstream separately: establish which first-party event ingestion endpoint has access to trusted request user-agent, whether it is retained under the site's privacy policy, and how to bind it to canonical session IDs. Never infer UA from a browser label or trust a client-supplied bot hint as verified crawler evidence.
+
+## High-volume evidence pagination (branch code, unvalidated in staging)
+- `evidence-pagination.ts` now provides stable ordered pages, exact-count checks, duplicate-ID checks, 10,000-row ceiling, 500-row pages and a 45-second job deadline.
+- Reads are ordered by `created_at` then unique `id` and fail closed on truncation or inconsistent counts. Offset pagination is not a transactional snapshot; concurrent insert/delete with unchanged total counts is an unresolved integration risk.
+- The full project suite and actual PostgREST integration remain pending. Do not publish the new Edge Function merely because the pure helper tests were added.
