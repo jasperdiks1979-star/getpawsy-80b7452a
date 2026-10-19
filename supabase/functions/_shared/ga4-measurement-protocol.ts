@@ -56,7 +56,6 @@ export async function sendGa4PurchaseMp(
 
   const body = {
     client_id: clientId,
-    ...(input.sessionId ? { session_id: input.sessionId } : {}),
     non_personalized_ads: false,
     events: [
       {
@@ -70,6 +69,7 @@ export async function sendGa4PurchaseMp(
           medium: input.medium ?? undefined,
           campaign: input.campaign ?? undefined,
           engagement_time_msec: 1,
+          ...(input.sessionId ? { session_id: input.sessionId } : {}),
           server_origin: "stripe_webhook",
         },
       },
@@ -111,9 +111,9 @@ export interface Ga4MpBeginCheckoutInput {
 
 /**
  * Mirrors the client `begin_checkout` event to the canonical GA4 stream
- * via Measurement Protocol. GA4 deduplicates client + server events when
- * they share `client_id` + `session_id` + a deterministic transaction id,
- * so this is safe to fire on every Stripe session creation.
+ * via Measurement Protocol. Session ID belongs in events[].params according
+ * to Google's protocol. Do not assume GA4 automatically deduplicates
+ * begin_checkout events just because a deterministic transaction id exists.
  */
 export async function sendGa4BeginCheckoutMp(
   input: Ga4MpBeginCheckoutInput,
@@ -135,7 +135,6 @@ export async function sendGa4BeginCheckoutMp(
 
   const body = {
     client_id: clientId,
-    ...(input.sessionId ? { session_id: input.sessionId } : {}),
     non_personalized_ads: false,
     events: [
       {
@@ -151,6 +150,7 @@ export async function sendGa4BeginCheckoutMp(
           medium: input.medium ?? undefined,
           campaign: input.campaign ?? undefined,
           engagement_time_msec: 1,
+          ...(input.sessionId ? { session_id: input.sessionId } : {}),
           server_origin: "create_checkout",
         },
       },
