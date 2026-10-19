@@ -247,14 +247,18 @@ export async function getCanonicalRevenue(limit = 50): Promise<CanonicalRevenueR
 
 /** Per-source per-day rollup. */
 export async function getCanonicalSources(days = 30): Promise<CanonicalSourceRow[]> {
-  const from = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("canonical_sources" as any)
-    .select("*")
-    .gte("day", from)
-    .order("day", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as unknown) as CanonicalSourceRow[];
+  const truth = await readCommercialFunnel(days * 24);
+  const groups = new Map<string, CanonicalSourceRow>();
+  for (const s of truth.sessions) {
+    const day = s.first_seen_at.slice(0, 10);
+    const source = s.utm_source || s.source || 'direct';
+    const medium = s.utm_medium || 'unknown';
+    const key = JSON.stringify([day, source, medium]);
+    const row = groups.get(key) ?? { day, source, medium, sessions: 0, purchases: 0 };
+    row.sessions++; if (s.has_purchase) row.purchases++;
+    groups.set(key, row);
+  }
+  return [...groups.values()].sort((a, b) => b.day.localeCompare(a.day));
 }
 
 /** Per-product per-day rollup. */
@@ -310,17 +314,15 @@ export interface CanonicalExecKpis {
   cvr_pct: number;
 }
 export async function getExecutiveKpis(hours = 24 * 30): Promise<CanonicalExecKpis> {
-  const rows = await getCanonicalKpisHourly(hours);
-  const sum = (k: keyof CanonicalKpiRow) =>
-    rows.reduce((acc, r) => acc + Number(r[k] ?? 0), 0);
-  const sessions = sum("sessions");
-  const purchases = sum("purchases");
-  const revenue_eur = sum("revenue_cents") / 100;
+  const { totals } = await readCommercialFunnel(hours);
+  const sessions = totals.sessions;
+  const purchases = totals.purchases;
+  const revenue_eur = totals.revenue;
   return {
     sessions,
-    product_views: sum("product_views"),
-    add_to_carts: sum("add_to_carts"),
-    checkouts: sum("checkouts"),
+    product_views: totals.product_views,
+    add_to_carts: totals.add_to_cart,
+    checkouts: totals.checkout_started,
     purchases,
     revenue_eur,
     aov_eur: purchases > 0 ? revenue_eur / purchases : 0,

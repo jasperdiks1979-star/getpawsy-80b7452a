@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalEventCounts, type CanonicalStage } from "@/lib/canonicalAnalytics";
+import { readCommercialFunnel } from '@/lib/read-commercial-funnel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,9 @@ const TrafficCommandCenter = () => {
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
     const since7 = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    const [canonCounts, { data: va }, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
+    const [canonCounts, traffic, { data: pq }, { data: ord }, { data: cs }] = await Promise.all([
       getCanonicalEventCounts(30 * 24),
-      supabase.from("visitor_activity").select("referrer_category, session_id").gte("created_at", since7),
+      readCommercialFunnel(168),
       supabase.from("pinterest_pin_queue").select("status, created_at").gte("created_at", since7),
       supabase.from("orders").select("status, total_amount, created_at").gte("created_at", since).order("created_at", { ascending: false }),
       supabase.from("pinterest_credit_state").select("*").eq("id", 1).maybeSingle(),
@@ -44,8 +45,8 @@ const TrafficCommandCenter = () => {
     setFunnel(stageMap.map(({ stage, key }) => ({ stage, count: canonCounts[key] ?? 0 })));
 
     const bySrc: Record<string, Set<string>> = {};
-    (va || []).forEach((r: any) => {
-      const k = r.referrer_category || "unknown";
+    traffic.sessions.forEach(r => {
+      const k = r.utm_source || r.source || "unknown";
       (bySrc[k] ||= new Set()).add(r.session_id);
     });
     setSources(
@@ -106,7 +107,7 @@ const TrafficCommandCenter = () => {
               <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
               <div className="text-sm">
                 <div className="font-semibold text-destructive">P1 Funnel Alert</div>
-                <div>PDP → ATC rate is {atcRate}% over 30d ({atc} ATC events / {view} PDP views). Paid orders: {paid}.</div>
+                <div>PDP → ATC rate is {atcRate}% over 30d ({atc} cart sessions / {view} product-view sessions). Paid orders: {paid}.</div>
               </div>
             </CardContent>
           </Card>

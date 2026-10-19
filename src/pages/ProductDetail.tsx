@@ -2,6 +2,7 @@ import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
 import { listingPrice } from "@/lib/listingPrice";
 import { neutralProductRecord } from '@/lib/product-claim-hygiene';
 import { productRobotsDirective, getRobotsContent } from '@/lib/seo-robots-policy';
+import { ProductRobotsPolicy } from '@/components/seo/ProductRobotsPolicy';
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
@@ -1213,25 +1214,7 @@ const ProductDetail = () => {
     <Layout>
       {/* Retired (out-of-range) and Tier C products get noindex to preserve
           crawl budget; legacy long-tail and in-range products stay indexable. */}
-      <Helmet>
-        {productRobotsDirective(product) === 'noindex-follow' ? (
-          <>
-            <meta name="robots" content="noindex, follow" />
-            <meta name="googlebot" content="noindex, follow" />
-          </>
-        ) : (
-          <>
-            <meta
-              name="robots"
-              content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
-            />
-            <meta
-              name="googlebot"
-              content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
-            />
-          </>
-        )}
-      </Helmet>
+      <ProductRobotsPolicy product={product} />
       <ProductSchema
         displayedPrice={activePrice}
         product={{
