@@ -94,6 +94,7 @@ export function setConsent(
   safeSetItem(CONSENT_KEY, versioned);
   setCookieValue(CONSENT_KEY, versioned);
   applyGtagConsent(value);
+  window.dispatchEvent(new Event('gp:consent-changed'));
   // Mirror to TikTok pixel + expose state for the dev debug panel
   try {
     const w = window as any;

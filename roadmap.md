@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Reproduce canonical GA4 cold-PDP loss and duplicate SPA hits on live and preview.
+- [x] Buffer consented pageviews; full suite 2870 passed/2 skipped, focused GA4/cart/price 41 passed; cold PDP works on desktop/mobile and EU permission blocks hits.
+- [ ] Release blocked: duplicate network hit persists despite one explicit command; independent typecheck/production-prerender and exercised rollback unavailable. Retain unpublished changes.
+
 - [x] Check October 16 commit, visible agent processes, live bundle, database health and credit reserve.
 - [x] Audit post-registration CJ records without credentials, payload disclosure or synthetic deliveries.
 - [x] Probe representative HTTP statuses and indexable guide-product links read-only.

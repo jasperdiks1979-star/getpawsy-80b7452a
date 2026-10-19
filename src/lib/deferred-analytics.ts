@@ -10,6 +10,7 @@
 
 import { canAutoGrantConsent } from './geoConsent';
 import { reportTikTokPixelValidation } from './tiktok-pixel-config';
+import { CONSENT_CHANGED, hasAnalyticsConsent, markGa4Ready } from './ga4PageViews';
 
 // Ensure dataLayer exists safely before any gtag call
 if (typeof window !== 'undefined') {
@@ -32,7 +33,7 @@ function loadScript(src: string): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => {
       console.warn('[Analytics] Failed to load:', src);
-      resolve(); // Don't reject — analytics failure must never block the app
+      reject(new Error('Analytics script blocked')); // Caught by non-blocking initializer
     };
     document.head.appendChild(script);
   });
@@ -186,11 +187,23 @@ export async function initDeferredAnalytics(): Promise<void> {
   initialized = true;
 
   try {
+    // Basic consent mode: no Google script/cookieless hits before permission.
+    if (!hasAnalyticsConsent()) {
+      await new Promise<void>(resolve => {
+        const changed = () => {
+          if (!hasAnalyticsConsent()) return;
+          window.removeEventListener(CONSENT_CHANGED, changed);
+          resolve();
+        };
+        window.addEventListener(CONSENT_CHANGED, changed);
+        changed();
+      });
+    }
     // Set default consent BEFORE loading scripts.
     // Geo-aware: EU/GDPR visitors → denied until banner grants. Non-EU
     // (US/CCPA opt-out regime) → granted on first hit so attribution is
     // not lost. Resolved SYNCHRONOUSLY via timezone (no network race).
-    const autoGrantConsent = canAutoGrantConsent();
+    const autoGrantConsent = hasAnalyticsConsent();
     const defaultState = autoGrantConsent ? 'granted' : 'denied';
     gtag('consent', 'default', {
       'analytics_storage': defaultState,
@@ -217,6 +230,8 @@ export async function initDeferredAnalytics(): Promise<void> {
     // the tracker) corrupting engagement + bounce metrics.
     gtag('config', 'G-5WYL8RJDZF', { send_page_view: false });
     gtag('config', 'AW-381705659', { send_page_view: false });
+    window.gtag = gtag;
+    markGa4Ready();
 
     // Load TikTok Pixel alongside Google scripts
     initTikTokPixel();

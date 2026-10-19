@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useVisitorHeartbeat } from '@/hooks/useVisitorHeartbeat';
-import { fireMarketingAsync, MARKETING_FLAGS } from '@/lib/marketingClient';
+import { MARKETING_FLAGS } from '@/lib/marketingClient';
+import { CONSENT_CHANGED, queueGa4PageView } from '@/lib/ga4PageViews';
 import { MarketingErrorBoundary } from '@/components/error/MarketingErrorBoundary';
 import { pushTrafficContext } from '@/lib/traffic';
 import { resolveUtm, syncUtmToUrl, captureFirstTouch } from '@/lib/utmNormalizer';
@@ -25,6 +26,15 @@ const TrackerInner = () => {
   const lastTrackedPath = useRef<string | null>(null);
 
   useVisitorHeartbeat(30000);
+
+  useEffect(() => {
+    const changed = () => {
+      if (isTechnicalPath(location.pathname) || !MARKETING_FLAGS.GOOGLE_ENABLED) return;
+      queueGa4PageView({ page_path: location.pathname, page_location: window.location.href, page_title: document.title });
+    };
+    window.addEventListener(CONSENT_CHANGED, changed);
+    return () => window.removeEventListener(CONSENT_CHANGED, changed);
+  }, [location.pathname]);
 
   useEffect(() => {
     // Phase 4A: seed the canonical session id BEFORE any writer fires so
@@ -69,15 +79,11 @@ const TrackerInner = () => {
 
     // Defer Google Analytics page_view — non-blocking
     if (MARKETING_FLAGS.GOOGLE_ENABLED) {
-      fireMarketingAsync('gtag-pageview', () => {
-        if (typeof window.gtag === 'function') {
-          window.gtag('event', 'page_view', {
-            page_location: window.location.href,
-            page_path: path,
-            page_title: document.title,
-          });
-        }
-      }, 'google');
+      queueGa4PageView({
+        page_location: window.location.href,
+        page_path: path,
+        page_title: document.title,
+      });
     }
 
     // Visitor tracking (internal analytics — always runs)
