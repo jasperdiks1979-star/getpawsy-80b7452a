@@ -20,17 +20,28 @@ BEGIN
     RAISE EXCEPTION 'max_sessions must be between 1 and 100';
   END IF;
 
-  -- Safety: the production BEFORE UPDATE channel-classification trigger currently
-  -- recalculates unrelated commercial classification fields on ANY row update.
-  -- Do not permit an apparently browser-only repair to invoke that trigger
-  -- until its behavior has been reviewed and explicitly made safe in staging.
-  IF EXISTS (
+  -- Fail closed unless the classifier trigger has been explicitly scoped to
+  -- ALL of its source inputs. A generic BEFORE UPDATE trigger would overwrite
+  -- commercial labels on browser-only backfill. The staging migration must
+  -- be independently reviewed and applied before this opt-in RPC is invoked.
+  IF NOT EXISTS (
     SELECT 1 FROM pg_catalog.pg_trigger t
     WHERE t.tgrelid = 'public.canonical_sessions'::regclass
       AND t.tgname = 'trg_canonical_sessions_zz_classify'
-      AND t.tgenabled <> 'D'
+      AND t.tgenabled = 'O'
+      AND (SELECT array_agg(a.attname::text)
+           FROM pg_catalog.pg_attribute a
+           WHERE a.attrelid = t.tgrelid
+             AND a.attnum = ANY(string_to_array(btrim(t.tgattr::text), ' ')::smallint[]))
+        @> ARRAY[
+          'referrer','utm_source','utm_medium','user_agent','first_landing_path',
+          'interaction_count','crawler_identity','first_referrer',
+          'first_utm_source','first_utm_medium','first_gclid','first_fbclid',
+          'first_ttclid','first_msclkid','first_pinterest_click_id',
+          'first_reddit_click_id'
+        ]::text[]
   ) THEN
-    RAISE EXCEPTION 'browser evidence repair blocked: canonical_sessions classification trigger requires staging review';
+    RAISE EXCEPTION 'browser evidence repair blocked: safe input-scoped classifier trigger not verified';
   END IF;
 
   -- Limit session candidates BEFORE accessing activity rows.
