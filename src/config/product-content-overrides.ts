@@ -338,10 +338,58 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
   hideBestValueBadge: true,
 };
 
+/**
+ * Stainless Steel Cat Litter Box with Lid, Scoop and Mat.
+ * MANUAL product (owner-verified): stainless steel box with a lid, includes a
+ * scoop and a mat. No automatic cleaning, no sensors, no app. Dimensions and
+ * performance figures are not verified and are intentionally omitted.
+ */
+const STAINLESS_STEEL_MANUAL_LITTER_BOX: ProductContentOverride = {
+  intro:
+    'A manual stainless steel litter box with a lid. It comes with a litter scoop and a mat, and you scoop it yourself as part of your normal routine.',
+  suppressUrgencyLine: true,
+  hideAdIntentHeadline: true,
+  hideEmotionalHook: true,
+  benefits: [
+    'Stainless steel litter box with a lid',
+    'Litter scoop and mat included',
+    'Manual litter box — no motors, sensors or app to set up',
+  ],
+  specs: [
+    { label: 'Category', value: 'Cat Litter Boxes' },
+    { label: 'Type', value: 'Manual litter box — you scoop it yourself' },
+    { label: 'Material', value: 'Stainless steel' },
+    { label: 'Included', value: 'Lid, litter scoop and mat' },
+    { label: 'Brand', value: 'GetPawsy' },
+  ],
+  steps: [
+    { step: '1', title: 'Place the mat and the box', description: 'Set the included mat in front of the box and add your usual litter.' },
+    { step: '2', title: 'Close the lid', description: 'Put the lid on the box.' },
+    { step: '3', title: 'Scoop by hand', description: 'Use the included scoop as part of your normal routine.' },
+  ],
+  faqs: [
+    { q: 'Is this litter box automatic or self-cleaning?', a: 'No. This is a manual stainless steel litter box. There is no automatic cleaning, no sensors and no app — you scoop it yourself with the included scoop.' },
+    { q: 'What is included?', a: 'The stainless steel litter box with its lid, a litter scoop and a mat.' },
+    { q: 'How long does shipping take?', a: 'We ship to the United States. Orders are processed in 1–2 business days, then estimated US transit is 5–10 business days, and shipping options are confirmed at checkout.' },
+    { q: 'What is the return policy?', a: 'GetPawsy offers a 30-day return policy. Items must be unused and in original condition — contact support to start a return.' },
+  ],
+  hideSections: [
+    'litterBoxConversionBoost',
+    'litterBoxLovedSection',
+    'problemSolution',
+    'productVsAlternatives',
+    'productIdealFor',
+    'reassuranceCallout',
+    'whyPetParentsLoveIt',
+  ],
+  hideBestValueBadge: true,
+};
+
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
   '128e0207-8a94-4d71-b428-5b7f5002528f': AUTOMATIC_CAT_LITTER_BOX,
   'e4474637-f447-4503-a342-5667c4c546a8': COVERED_CAT_LITTER_BOX,
   'e265e7fe-af60-4efc-b927-5c4f79fc1bf0': ENCLOSED_DUAL_OPENING_LITTER_BOX,
+  '1daefaa0-7892-4760-87a9-0aa34c49c767': STAINLESS_STEEL_MANUAL_LITTER_BOX,
 };
 
 
