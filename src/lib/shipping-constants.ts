@@ -221,7 +221,7 @@ export const OPERATING_COUNTRY = 'United States';
 export const TRUST_BADGES = {
   shipping: {
     title: 'Free Shipping Available',
-    subtitle: `On orders over $${FREE_SHIPPING_THRESHOLD}`,
+    subtitle: `On orders $${FREE_SHIPPING_THRESHOLD}+`,
   },
   delivery: {
     title: 'US Delivery',
@@ -244,7 +244,7 @@ export const TRUST_BADGES = {
 // ============= FORMATTED MESSAGES =============
 
 /** Free shipping announcement bar message */
-export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 Free shipping on orders over $${FREE_SHIPPING_THRESHOLD} (${DELIVERY_TIME_STANDARD})`;
+export const ANNOUNCEMENT_FREE_SHIPPING = `🚚 Free shipping on orders $${FREE_SHIPPING_THRESHOLD}+ (${DELIVERY_TIME_STANDARD})`;
 
 /** Cart free shipping progress message */
 export const getCartShippingMessage = (currentTotal: number): string => {

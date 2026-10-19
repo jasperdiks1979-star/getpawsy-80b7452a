@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] October 19 five commercial fixes: shared commercial reader/counting; displayed-variant schema/list prices; intentional product robots parity; unsupported bowl claims; verified shipping/returns wording.
+- [ ] Run focused/full tests and browser checks; preserve protected payment/GA4 paths. Independent build/typecheck/prerender/rollback remain unavailable; no publication.
+
 - [x] October 19 focused conversion run: HEAD 112834081 clean at entry; GA4 ancestor retained; live desktop/mobile US variant $97.95 → cart → checkout form, five collection PDPs and public SEO files checked. No new proven high-impact defect; no application edits or release.
 - [x] October 19 release-gate repair: "prohibited" was an agent instruction, not a platform block. Added scripts/release-validate.sh + docs/RELEASE_VALIDATION.md. At a04f494: tsgo app/node exit 0, isolated `npm run build` (prerender + seo-coverage) exit 0, rollback rehearsal of 66f0ea6f2 build exit 0, Vitest 2878/2 skipped.
 

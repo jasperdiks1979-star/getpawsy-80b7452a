@@ -35,7 +35,7 @@ async function flush() {
   }
 }
 
-function loadRow(id: string): Promise<Row | null> {
+export function loadListingPriceRow(id: string): Promise<Row | null> {
   return new Promise((resolve) => {
     const list = pending.get(id) ?? [];
     list.push(resolve);
@@ -50,7 +50,7 @@ export function useListingPrice(
   const hasVariants = product.variants !== undefined;
   const { data, isPending, isError } = useQuery({
     queryKey: ['listing-price-row', product.id],
-    queryFn: () => loadRow(product.id as string),
+    queryFn: () => loadListingPriceRow(product.id as string),
     enabled: Boolean(product.id) && !hasVariants,
     staleTime: 5 * 60 * 1000,
     retry: false,

@@ -1,6 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 import { getKeywordsForCategory, SEO_KEYWORDS } from '@/lib/seo-keywords';
 import { buildSafeProductListItem, buildSafeOffer } from '@/lib/safe-offer';
+import { useQueries } from '@tanstack/react-query';
+import { loadListingPriceRow } from '@/hooks/useListingPrice';
 
 interface CategorySchemaProps {
   categoryName?: string;
@@ -12,6 +14,7 @@ interface CategorySchemaProps {
     name: string;
     slug?: string | null;
     price: number;
+    variants?: unknown;
     image_url?: string | null;
   }>;
 }
@@ -23,6 +26,19 @@ export function CategorySchema({
   baseUrl = 'https://getpawsy.pet',
   products = [],
 }: CategorySchemaProps) {
+  // Lean collections omit options. Share the cards' batched query/cache;
+  // never advertise a stale base price while the displayed price is loading.
+  const visible = products.slice(0, 10);
+  const prices = useQueries({ queries: visible.map(p => ({
+    queryKey: ['listing-price-row', p.id],
+    queryFn: () => loadListingPriceRow(p.id),
+    enabled: p.variants === undefined,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })) });
+  products = visible.flatMap((p, i) => p.variants !== undefined
+    ? [p]
+    : prices[i]?.data ? [{ ...p, price: Number(prices[i].data?.price), variants: prices[i].data?.variants }] : []);
   const isSearch = !!searchQuery;
   const pageTitle = isSearch
     ? `Search: "${searchQuery}" | GetPawsy Pet Products`

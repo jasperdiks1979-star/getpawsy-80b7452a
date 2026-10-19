@@ -40,7 +40,7 @@ const ReturnPolicy = () => {
     },
     {
       question: 'Who pays for return shipping?',
-      answer: 'If the return is due to a defective, damaged, or incorrect product, GetPawsy covers the return shipping cost. For other returns (e.g., change of mind on an eligible product), the customer is responsible for return shipping fees.',
+      answer: 'Contact support@getpawsy.pet before sending an item back. Our team will confirm the return instructions and any applicable shipping costs for your request.',
     },
     {
       question: 'Can I exchange a product?',
@@ -198,7 +198,7 @@ const ReturnPolicy = () => {
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">Receive a Resolution</h3>
                       <p className="text-muted-foreground">
-                        Our team will review your request within 1–2 business days and respond with next steps. Depending on the situation, we may issue a refund, send a replacement, or provide a return shipping label.
+                        Our team will review your request and confirm the next steps, return destination and any applicable shipping costs before you send an item back. The business location shown below is not a confirmed return address.
                       </p>
                     </div>
                   </div>

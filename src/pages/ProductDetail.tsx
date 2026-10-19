@@ -1,5 +1,7 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
 import { listingPrice } from "@/lib/listingPrice";
+import { neutralProductRecord } from '@/lib/product-claim-hygiene';
+import { productRobotsDirective, getRobotsContent } from '@/lib/seo-robots-policy';
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
 import { commerceV2UiEnabled } from "@/v2/commerce/featureFlags";
@@ -449,7 +451,8 @@ const ProductDetail = () => {
     queryKey: ["product", slug],
     queryFn: async () => {
       if (!slug) return null;
-      return fetchExistingProduct(slug);
+      const found = await fetchExistingProduct(slug);
+      return found ? neutralProductRecord(found) : null;
     },
     enabled: !!slug,
     // Cap retries so the PDP can never stay in skeleton longer than ~3s
@@ -1011,7 +1014,8 @@ const ProductDetail = () => {
     return (
       <Layout>
         <Helmet>
-          <meta name="robots" content="index, follow, max-image-preview:large" />
+          <meta name="robots" content={getRobotsContent(productRobotsDirective(product))} />
+          <meta name="googlebot" content={getRobotsContent(productRobotsDirective(product))} />
         </Helmet>
         <TikTokPdpVariant
           product={{
@@ -1210,7 +1214,7 @@ const ProductDetail = () => {
       {/* Retired (out-of-range) and Tier C products get noindex to preserve
           crawl budget; legacy long-tail and in-range products stay indexable. */}
       <Helmet>
-        {(product as any).seo_noindex === true || (product as any).seo_tier === "C" ? (
+        {productRobotsDirective(product) === 'noindex-follow' ? (
           <>
             <meta name="robots" content="noindex, follow" />
             <meta name="googlebot" content="noindex, follow" />
@@ -1229,6 +1233,7 @@ const ProductDetail = () => {
         )}
       </Helmet>
       <ProductSchema
+        displayedPrice={activePrice}
         product={{
           id: product.id,
           name: product.name || "",
@@ -1240,6 +1245,7 @@ const ProductDetail = () => {
           images: product.images as string[] | null,
           category: product.category,
           stock: product.stock,
+          variants: product.variants,
           sku: product.sku,
           seo_tier: (product as any).seo_tier || null,
           product_type: (product as any).product_type || null,

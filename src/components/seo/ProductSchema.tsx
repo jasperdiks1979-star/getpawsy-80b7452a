@@ -36,12 +36,15 @@ interface ProductSchemaProps {
     reviewer_name?: string | null;
   }>;
   baseUrl?: string;
+  /** Exact current buy-box price, already resolved by customerUnitPrice. */
+  displayedPrice?: number;
 }
 
 export function ProductSchema({ 
   product, 
   reviews = [],
-  baseUrl = 'https://getpawsy.pet'
+  baseUrl = 'https://getpawsy.pet',
+  displayedPrice,
 }: ProductSchemaProps) {
   // ALWAYS render schema — use fallback price if missing (Google trust & Merchant compliance)
   const rawPrice = Number(product.price);
@@ -96,7 +99,9 @@ export function ProductSchema({
   );
 
   const merchantPrice = getDisplayPrice(product as MerchantProduct);
-  const canonicalSchemaPrice = (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
+  const canonicalSchemaPrice = typeof displayedPrice === 'number' && Number.isFinite(displayedPrice) && displayedPrice > 0
+    ? displayedPrice
+    : (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
   const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description

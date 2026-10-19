@@ -18,6 +18,8 @@
  *  - factual fallback when input is empty
  */
 
+import { neutralProductCopy } from './product-claim-hygiene';
+
 const HARD_MAX = 150;
 const FALLBACK = "GetPawsy pet product";
 
@@ -70,7 +72,7 @@ export function buildStructuredProductName(
 ): string {
   const cap = Math.max(1, Math.min(HARD_MAX, Math.floor(maxLength)));
   const source = (product?.name_clean ?? "").trim() || (product?.name ?? "").trim();
-  const cleaned = normalize(source);
+  const cleaned = normalize(neutralProductCopy(source));
   if (!cleaned) return FALLBACK;
 
   if (codePointLength(cleaned) <= cap) return cleaned;
