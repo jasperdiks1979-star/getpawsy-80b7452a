@@ -7,13 +7,17 @@
 - No prohibited manual build/typecheck command was executed. The harness's latest observed automatic build was green; that is not independent release-validation evidence.
 - Source changes are automatically retained in Lovable history. Restore the entry revision through History for source rollback; no production rollback was exercised because nothing was published.
 
-## 1. Commercial session contract — PARTIAL, not universal
+## 1. Commercial session contract — specified reader coverage completed
 
 `commercial-funnel.ts` splits distinct canonical sessions into commercial, UNKNOWN and excluded populations. Explicit bot/internal/technical evidence overrides stale human flags. An exclusion flag alone is not evidence of a bot. No historical data is modified. Duplicate cart callbacks count one cart-reaching session; visitors and sessions remain distinct.
 
 The canonical funnel SDK/hook, truth totals, scorecards, Mission Control, Genesis boardrooms, revenue command center, executive war room, customer clusters, Pinterest widget and traffic command center now use the shared reader/counters. Source rollups and executive KPI totals also use this reader.
 
-**Remaining coverage:** `getCanonicalProducts` and `getCanonicalHeatmap` still read historical aggregate views; `useOrganicGrowthIntelligence` still consumes its existing server envelope. These lack per-session identity/flags at their public aggregate boundaries and cannot be truthfully reclassified by a frontend filter. Their consumers include product-performance/PDP-conversion/growth/canonical-analytics pages. Consequently this run does NOT establish one contract across ALL commercial reports. Completion needs a separately reviewed read-only aggregation adapter with session-level evidence, bounded queries and regression coverage; no new function was auto-deployed or database contract changed here.
+**Completed October 19 follow-up:** `getCanonicalProducts`, `getCanonicalHeatmap` and `useOrganicGrowthIntelligence` no longer consume the legacy aggregate views/server envelope. They use the shared canonical commercial-session verdict plus `read-commercial-reports`: session-indexed SELECT batches of 25, explicit since/until filters, 500-row pagination, ceilings of 500 commercial sessions/10,000 events/40 event requests, sequential batches, 15-minute memory cache and in-flight coalescing. Budget exhaustion, failed permissions, or reported truncated session evidence fail visibly; no partial-zero or legacy fallback.
+
+Product stage counts dedupe session/product/stage across the entire selected window, including midnight; heatmap `event_count` remains explicitly diagnostic while `unique_sessions` counts sessions. Paid revenue requires selected paid/completed order evidence; product revenue uses verified item subtotals, never duplicates an entire shipping/tax-inclusive order total across products. Missing item allocation fails visibly. Organic totals, channels, landing pages and product leaderboard derive from that same snapshot. Unsupported legacy pin attribution, previous-period deltas and automated recommendations are withheld. Attribution confidence is unavailable (the existing numeric field uses zero with an explicit unavailable adapter note); no confidence-based learning is enabled.
+
+This completes the three named missing reader paths, not a claim to have unified every unrelated diagnostic/server aggregate. No Edge Function or database contract was changed.
 
 Diagnostics retain raw sessions. Do not interpret the patched truth totals as proof that every diagnostic/map/revenue aggregation has been migrated, or that purchases counted as session stages are reconciled financial revenue.
 
@@ -55,4 +59,16 @@ Diagnostics retain raw sessions. Do not interpret the patched truth totals as pr
 
 ## Release decision
 
-**NOT PUBLISHED; NOT universally ready to release.** Independent TypeScript, production prerender/build and exercised artifact rollback remain unavailable under this run's explicit instructions. Fix 1 adoption also remains incomplete. No live-success claim is made. Complete those gates before publishing.
+**NOT PUBLISHED.** Independent TypeScript, production prerender/build and exercised artifact rollback remain unavailable: the current execution-tool instruction explicitly says not to run the project's builds/typechecks manually because the harness runs them automatically. No forbidden commands or release-validation wrapper were run to bypass this rule; automatic green output is not independent proof. No production deployment or custom-domain new-build verification is claimed. Owner still must verify the authorized return destination.
+
+## Follow-up evidence (23:29 UTC October 19)
+
+- Entry HEAD `452fb8d965c183a771537753cccd18de1059a6fd`, clean; versus `3b29468db2e9150efa999cf7661e4b3aa34c3f97`, only the preserved AGENTS wording shortening differed. No git mutation commands used and no additional agent launched.
+- Tested application SHA `c195afccbec271b5fe3ebaadb536a60a19b4f332`; subsequent changes only record this evidence/roadmap.
+- Focused: `bunx vitest run` with commercial-report-aggregation, commercial-five-fixes, analytics-commercial-inclusion, card-listing-price, listing-price-hook, merchandising-layer, security-b and pinterest-traffic-widget-canonical-source: **116 passed / 8 files**.
+- Full: `bunx vitest run`: **2924 passed, 2 skipped; 174 files passed / 1 skipped**. Final tests include 17 adapter regressions. Diff whitespace check passed.
+- Authenticated local browser using existing data: 30-day canonical snapshot **27,083 sessions**, adapter read **582 events** for **128 commercial sessions**, UNKNOWN **1,665**, excluded **25,290**; **35 product/day rows**, **235 heatmap rows**. Counts are canonical read-time classification, not independently proven unique humans. No historic relabel/backfill.
+- Organic readback succeeded: commercial/organic sessions **4/1 (24h), 31/23 (7d), 128/84 (30d)**; ten product leaderboard rows; legacy pin rows deliberately absent. Products Performance displayed its populated table and correct contract label. The earlier columnheader wait failed because table headings were cells; corrected cell selector passed. This is staged verification, not live production proof.
+- Fixes 2–5 files were unchanged from the completed baseline; their 23 regression cases passed again. Stripe, checkout security staging, GA4/consent, prices, ads and PRs were untouched.
+- Latest observed automatic log: **build OK at 23:25:57 UTC**. Final database snapshot **RAM 71%, connections 16/60, zero restarts, no exhaustion alerts**.
+- Source rollback: restore `452fb8d965c183a771537753cccd18de1059a6fd` via Lovable History to reverse only this follow-up, retaining fixes 2–5. Not rehearsed; no production release to undo.

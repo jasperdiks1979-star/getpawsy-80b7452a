@@ -1,9 +1,10 @@
 # Roadmap
 
 - [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
-- [ ] Complete remaining fix 1 readers using bounded session-indexed SELECTs and shared classification; validate focused/full tests and authenticated report readback. Preserve newer 452fb8d96 changes. No DB/function writes or legacy aggregate fallback.
+- [x] Fix 1 named remaining readers completed: bounded session-indexed SELECT adapter for product/heatmap/organic, shared verdicts, distinct cart sessions, explicit UNKNOWN, no legacy fallback. Authenticated readback 128 commercial/1665 UNKNOWN/25290 excluded and 582 events; product table rendered. Preserved 452fb8d96 changes; no DB/function edits.
 - [x] Permitted verification: focused 99 passed; full 2905 passed/2 skipped; staged desktop/mobile four PDPs, selected Pink/Light grey schema prices and neutral bowl confirmed, no page errors. Protected payment/GA4 paths untouched. RAM 70%, connections 22/60, zero restarts/exhaustion.
-- [ ] Release blocked: independent build/typecheck/prerender/rollback not performed under current instructions; universal historical reporting parity still incomplete. No publication. Return destination must be supplied/verified by owner; existing cost policy retained.
+- [x] Follow-up validation at c195afccbec271b5fe3ebaadb536a60a19b4f332: 116 focused / 2924 full passed, 2 skipped; diff clean; fixes 2–5 unchanged. RAM 71%, connections 16/60, zero restarts/alerts; authenticated product/heatmap/organic readback passed.
+- [ ] Release blocked: current tool instruction prohibits manual project builds/typechecks, so independent typecheck/prerender/build/artifact rollback cannot be run or bypassed. No publication. Owner must verify return destination; existing cost policy retained.
 
 - [x] October 19 focused conversion run: HEAD 112834081 clean at entry; GA4 ancestor retained; live desktop/mobile US variant $97.95 → cart → checkout form, five collection PDPs and public SEO files checked. No new proven high-impact defect; no application edits or release.
 - [x] October 19 release-gate repair: "prohibited" was an agent instruction, not a platform block. Added scripts/release-validate.sh + docs/RELEASE_VALIDATION.md. At a04f494: tsgo app/node exit 0, isolated `npm run build` (prerender + seo-coverage) exit 0, rollback rehearsal of 66f0ea6f2 build exit 0, Vitest 2878/2 skipped.
