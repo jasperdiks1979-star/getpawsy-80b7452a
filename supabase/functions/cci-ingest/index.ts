@@ -51,6 +51,13 @@ Deno.serve(async (req) => {
     req.headers.get('x-country') ||
     null;
   const country = bodyCountry || headerCountry || null;
+  // Capture the browser user-agent so the canonical pipeline can classify
+  // traffic on a PROVABLE signal (UA string) instead of guessing from missing
+  // interactions. Header first (trustworthy), body as fallback. Stored in the
+  // existing meta jsonb — no schema change. Never logged.
+  const uaHeader = req.headers.get('user-agent');
+  const uaBody = typeof body.user_agent === 'string' ? body.user_agent : null;
+  const userAgent = (uaHeader || uaBody || '').slice(0, 500) || null;
   const row = {
     session_id,
     visitor_id: body.visitor_id ? String(body.visitor_id) : null,
@@ -67,7 +74,10 @@ Deno.serve(async (req) => {
     country,
     funnel_stage: body.funnel_stage ? String(body.funnel_stage) : null,
     confidence: typeof body.confidence === 'number' ? body.confidence : null,
-    meta: (body.meta && typeof body.meta === 'object') ? body.meta : {},
+    meta: {
+      ...((body.meta && typeof body.meta === 'object') ? body.meta : {}),
+      ...(userAgent ? { user_agent: userAgent } : {}),
+    },
   };
 
   // Single bounded retry: the only observed 500s come from transient database
