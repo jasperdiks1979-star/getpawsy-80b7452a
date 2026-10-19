@@ -338,7 +338,51 @@ const ENCLOSED_DUAL_OPENING_LITTER_BOX: ProductContentOverride = {
   hideBestValueBadge: true,
 };
 
+/**
+ * Stainless Steel Cat Litter Box With Lid — manual, NOT automatic.
+ * Verified against live products.description and its listed variant options:
+ * stainless-steel body, lid, included scoop and mat, manual cleaning.
+ * Do not promise motors, sensors, app control, sealed waste compartment,
+ * self-cleaning or hands-free waste removal.
+ */
+const STAINLESS_STEEL_MANUAL_LITTER_BOX: ProductContentOverride = {
+  intro: 'A manual stainless-steel litter box with a lid, scoop and litter mat. The steel body is easy to wipe clean, while the lid and mat help keep litter mess contained. Regular scooping is required.',
+  hideAdIntentHeadline: true,
+  hideEmotionalHook: true,
+  suppressUrgencyLine: true,
+  bestFor: ['Owners who prefer a manual litter box', 'Cats needing a roomy litter area', 'Households wanting a scoop and mat included'],
+  benefits: [
+    'Stainless-steel litter box with a lid',
+    'Includes a litter scoop and mat',
+    'Manual scooping — no motor or automatic cleaning',
+    'Designed to help contain scattered litter',
+  ],
+  specs: [
+    { label: 'Type', value: 'Manual stainless-steel litter box' },
+    { label: 'Included', value: 'Lid, litter scoop and litter mat' },
+    { label: 'Cleaning', value: 'Manual scooping and wipe-clean maintenance' },
+    { label: 'Color options', value: 'Black, dark grey, light grey (subject to availability)' },
+  ],
+  faqs: [
+    { q: 'Is this a self-cleaning or automatic litter box?', a: 'No. This is a manual stainless-steel litter box. It does not have a motor, app control or automatic waste removal.' },
+    { q: 'What comes with the litter box?', a: 'The listing includes a lid, litter scoop and litter mat.' },
+    { q: 'How do I clean it?', a: 'Scoop waste regularly, change the litter as needed, and wipe down the stainless-steel surfaces.' },
+    { q: 'Which color will I receive?', a: 'Choose your preferred available color before adding the item to your cart.' },
+  ],
+  hideSections: [
+    'litterBoxConversionBoost',
+    'litterBoxLovedSection',
+    'problemSolution',
+    'productVsAlternatives',
+    'productIdealFor',
+    'reassuranceCallout',
+    'whyPetParentsLoveIt',
+  ],
+  hideBestValueBadge: true,
+};
+
 export const PRODUCT_CONTENT_OVERRIDES: Record<string, ProductContentOverride> = {
+  '1daefaa0-7892-4760-87a9-0aa34c49c767': STAINLESS_STEEL_MANUAL_LITTER_BOX,
   '128e0207-8a94-4d71-b428-5b7f5002528f': AUTOMATIC_CAT_LITTER_BOX,
   'e4474637-f447-4503-a342-5667c4c546a8': COVERED_CAT_LITTER_BOX,
   'e265e7fe-af60-4efc-b927-5c4f79fc1bf0': ENCLOSED_DUAL_OPENING_LITTER_BOX,

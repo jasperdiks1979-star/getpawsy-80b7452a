@@ -1,4 +1,6 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
+
+import { isBundleUpsellReady } from "@/lib/commerceBundleReleaseGate";
 import { listingPrice } from "@/lib/listingPrice";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { variantStockOf } from '@/lib/variantStock';
@@ -2205,8 +2207,12 @@ const ProductDetail = () => {
         {/* Related Guides — max 3 */}
         {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 
-        {/* Frequently Bought Together */}
-        {(relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
+        {/* Commerce safety: the bundle component currently uses base product prices,
+            loses required variant identity and applies client-side discounts before
+            server-authoritative checkout. Disable the upsell until a variant-aware,
+            server-priced bundle path has passed staging checkout parity tests.
+            The normal product Add to Cart remains available. */}
+        {isBundleUpsellReady() && (relatedLoading || (relatedProducts && relatedProducts.length >= 2)) && (
           <div className="mt-16">
             <FrequentlyBoughtTogether
               currentProduct={{
