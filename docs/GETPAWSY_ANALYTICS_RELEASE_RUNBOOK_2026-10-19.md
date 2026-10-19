@@ -23,7 +23,7 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 - Run `npm test -- --run` (or `npm test` if the package script already includes `vitest run`).
 - Run `npx tsc --noEmit` and `npm run build`.
 - Run `npm run edge:contract` where supported.
-- Specifically exercise all 34 targeted tests (16 evidence + 9 completeness/checkpoint + 9 pagination); confirm no stale test fixtures.
+- Specifically exercise all 36 targeted tests (16 evidence + 11 completeness/checkpoint + 9 pagination); confirm no stale test fixtures.
 - Confirm exact-count PostgREST reads return a count, and that failure never advances checkpoint beyond a failed write.
 
 ## Gate 2: database read-only preflight
@@ -73,3 +73,9 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 - `evidence-pagination.ts` now provides stable ordered pages, exact-count checks, duplicate-ID checks, 10,000-row ceiling, 500-row pages and a 45-second job deadline.
 - Reads are ordered by `created_at` then unique `id` and fail closed on truncation or inconsistent counts. Offset pagination is not a transactional snapshot; concurrent insert/delete with unchanged total counts is an unresolved integration risk.
 - The full project suite and actual PostgREST integration remain pending. Do not publish the new Edge Function merely because the pure helper tests were added.
+
+## Additional resume/lease release gates
+- `dry_run=true` currently acquires and releases the lease and writes job metadata, but must **not erase an existing unfinished checkpoint**. This is not a strictly database-read-only operation; never call it on production without a rollout plan.
+- New classifier versions must **not** resume a cursor from an older classifier version; checkpoint includes `version` and resets safely on mismatch.
+- The function must report a lease-release failure as an error, rather than claiming successful completion. Inspect the lease row before retrying if this happens.
+- Test scheduler overlap, expired lease takeover, failed write in middle of batch, and the first scheduled run after a version change in staging.
