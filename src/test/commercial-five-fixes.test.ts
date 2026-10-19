@@ -47,7 +47,7 @@ describe('real catalog variant price parity without catalog changes', () => {
     expect(listingPrice(158.99, [{ variantSellPrice: 44.38 }, { variantSellPrice: 45.52 }]).price).toBe(158.99);
   });
   it('sold out Pink does not advertise cheaper unavailable option', () => {
-    expect(buildSafeOffer({ price: 158.99, variants: [{ ...pink, inventoryNum: 0 }, grey] })?.price).toBe('164.99');
+    expect(buildSafeOffer({ price: 158.99, variants: [{ ...pink, inventories: [{ countryCode: "US", totalInventory: 0, cjInventory: 0 }] }, grey] })?.price).toBe('164.99');
   });
 });
 describe('intentional index policy and verified policy terms', () => {
