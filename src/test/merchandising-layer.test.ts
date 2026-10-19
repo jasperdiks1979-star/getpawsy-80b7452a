@@ -52,7 +52,7 @@ describe('merchandising layer', () => {
 
   it('the product page honours the per-product noindex flag', () => {
     const src = read('src/pages/ProductDetail.tsx');
-    expect(src).toContain('productRobotsDirective(product)');
+    expect(src).toContain('ProductRobotsPolicy product={product}');
     expect(read('src/lib/seo-robots-policy.ts')).toContain('product.seo_noindex === true');
     // noindex must still allow link following so legacy equity keeps flowing.
     expect(src).toContain('noindex, follow');
