@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
+import { commercialSessionCounters } from "@/lib/commercial-funnel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Users, ShoppingCart, CreditCard } from "lucide-react";
@@ -41,68 +42,15 @@ export const PinterestTrafficWidget = () => {
     retry: 1,
     refetchOnWindowFocus: false,
     queryFn: async (): Promise<TrafficStats> => {
-      const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
-
-      // 1. Pinterest-attributed canonical sessions in the 30d window.
-      //    Uses first_utm_source / first_referrer (locked attribution) with
-      //    fallback to live utm_source / referrer, matching Visitor World Map.
-      const { data: sessionRows, error: sErr } = await supabase
-        .from("canonical_sessions")
-        .select("session_id, first_utm_source, utm_source, first_utm_campaign, utm_campaign, first_referrer, referrer")
-        .gte("first_seen_at", since)
-        .or(
-          "utm_source.ilike.%pinterest%,first_utm_source.ilike.%pinterest%,referrer.ilike.%pinterest%,first_referrer.ilike.%pinterest%,referrer.ilike.%pin.it%,first_referrer.ilike.%pin.it%",
-        )
-        .limit(10000);
-      if (sErr) throw sErr;
-
-      const sessions = sessionRows ?? [];
-      const sessionIds = sessions.map((s) => s.session_id).filter(Boolean) as string[];
-
-      let cart = 0;
-      let checkout = 0;
-      let purchases = 0;
-
-      if (sessionIds.length > 0) {
-        // Chunk to stay under URL length limits. Chunks are INDEPENDENT, so
-        // they run in parallel instead of as a sequential waterfall — same
-        // rows, same formulas, just no serial round-trips.
-        const chunkSize = 500;
-        const chunks: string[][] = [];
-        for (let i = 0; i < sessionIds.length; i += chunkSize) {
-          chunks.push(sessionIds.slice(i, i + chunkSize));
-        }
-        const results = await Promise.all(
-          chunks.map(async (chunk) => {
-            const { data: evRows, error: eErr } = await supabase
-              .from("canonical_events")
-              .select("canonical_name")
-              .in("session_id", chunk)
-              .in("canonical_name", [
-                "CANONICAL_ADD_TO_CART",
-                "CANONICAL_CHECKOUT",
-                "CANONICAL_PURCHASE",
-              ])
-              .gte("occurred_at", since);
-            if (eErr) throw eErr;
-            return evRows ?? [];
-          }),
-        );
-        for (const evRows of results) {
-          for (const r of evRows) {
-            if (r.canonical_name === "CANONICAL_ADD_TO_CART") cart++;
-            else if (r.canonical_name === "CANONICAL_CHECKOUT") checkout++;
-            else if (r.canonical_name === "CANONICAL_PURCHASE") purchases++;
-          }
-        }
-      }
-
-      // Distinct sessions = "visitors" for the Pinterest lens.
-      const browsing = sessions.length;
+      const truth = await readCommercialFunnel(720);
+      const sessions = truth.sessions.filter(s => /pinterest|pin\.it/i.test(`${s.utm_source ?? ''} ${s.source ?? ''} ${s.referrer ?? ''}`));
+      const counts = commercialSessionCounters(sessions);
+      const browsing = counts.sessions;
+      const cart = counts.add_to_cart, checkout = counts.checkout_started, purchases = counts.purchases;
 
       const campaignCounts: Record<string, number> = {};
       for (const s of sessions) {
-        const camp = s.first_utm_campaign || s.utm_campaign || "Direct / Organic";
+        const camp = s.utm_campaign || "Direct / Organic";
         campaignCounts[camp] = (campaignCounts[camp] || 0) + 1;
       }
       const campaigns = Object.entries(campaignCounts)

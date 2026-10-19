@@ -16,6 +16,10 @@ import { getRobotsDirective, getRobotsContent } from '@/lib/seo-robots-policy';
 export function RobotsMetaPolicy() {
   const location = useLocation();
 
+  // PDP owns eligibility once its product is loaded. A route-only "index"
+  // must not overwrite tier C/noindex HTML during hydration or refetch.
+  if (/^\/products\/[^/]+\/?$/.test(location.pathname)) return null;
+
   const directive = getRobotsDirective(location.pathname, location.search);
   const content = getRobotsContent(directive);
 

@@ -1,15 +1,15 @@
 
 - Never query cron.job_run_details by start_time alone; bound by indexed runid first (runid > max - N). Why: only runid is indexed; unbounded diagnostics caused ~95% of its heavy reads.
-- For one-off organic Pinterest waves, target exact creative IDs in the PCIE2 assembler and exact queue IDs in the PCIE2 publisher; never drain unrelated READY pins. Why: a whole-queue drain can publish content outside a narrow approval.
+- One-off Pinterest waves target exact creative/queue IDs; never drain unrelated READY pins. Why: narrow approval.
 
-- Spreadsheet exports use src/utils/excelExport.ts (JSZip); do not re-add xlsx. Why: xlsx >=0.19 is off-npm (scanner cannot parse it) and 0.18.5 carries two high advisories.
-- Homepage featured products must pass active, positive-stock, non-duplicate, merch-visible, non-blocked gates. Why: a technically purchasable PDP is not sufficient when catalog merchandising has explicitly blocked the product.
-- SEO indexability (sitemap + prerender) comes from scripts/seo-indexability.mjs, which reads the existing TS policy sources; prerendered pages are written as <route>/index.html and vite-plugin-seo-coverage fails the build if any sitemap URL lacks indexable, self-canonical HTML. Why: one policy for sitemap, raw HTML and runtime, and the host only resolves directory indexes.
-- SEO topic clusters (collection → pillar → supporting guides) and canonical collection metadata live in src/lib/seo-clusters.ts and are shared by the hydrated pages and the build-time prerenderers; prerendered internal links are filtered against the generated sitemaps and the coverage gate also fails on indexable guide/blog pages missing from the sitemap. Why: one crawl-path definition, and sitemap and prerender stay in both-way parity.
-- Crawler-facing guide/blog titles and meta descriptions pass through src/lib/seo-title.ts (claim hygiene + length clamps) at render time; stored content is left unchanged. Why: removes claims we cannot back up without rewriting the content.
+- Spreadsheet exports use src/utils/excelExport.ts (JSZip), never xlsx. Why: off-npm releases or vulnerable older versions.
+- Homepage products must be active, stocked, nonduplicate, merch-visible and unblocked. Why: purchasable is not necessarily merch-approved.
+- Sitemap/prerender indexability uses scripts/seo-indexability.mjs and existing TS policies. Output is <route>/index.html; vite-plugin-seo-coverage requires indexable self-canonical HTML for every sitemap URL. Why: shared policy and directory-index hosting.
+- SEO clusters/metadata live in src/lib/seo-clusters.ts, shared by runtime and prerender. Internal links are sitemap-filtered; coverage enforces guide/blog parity. Why: one crawl path and no orphaned indexed pages.
+- Crawler guide/blog titles use src/lib/seo-title.ts at render time; stored content stays unchanged. Why: claim hygiene without catalog rewrites.
 - Customer unit price authority lives in src/lib/customerUnitPrice.ts and must stay identical to canonicalUnitPrice in supabase/functions/_shared/order-state.ts: products.price, overridden by variantSellPrice only for multi-option variants carrying variantCostPrice. Why: variantSellPrice without that marker is raw supplier cost.
 - Syncs that rebuild products.variants from CJ must go through supabase/functions/_shared/variant-price-guard.ts, and checkout coupons the storefront offers live in src/lib/couponCodes.ts matching create-checkout. Why: CJ variantSellPrice is supplier cost and must never replace or impersonate a processed sell price; client and server must charge the same discount.
-- Root-level SEO pages that duplicate a /guides page are listed in src/lib/seo-root-consolidation.ts; buildCanonicalUrl maps them to the guide, robots policy noindexes them, and the guide prerender writes noindex,follow stubs (also for GUIDE_REDIRECTS sources) whose canonical the index.html head script keeps. Why: consolidate signals without breaking ad landing routes.
+- src/lib/seo-root-consolidation.ts maps duplicate root pages to /guides canonicals with noindex. Prerender writes noindex,follow stubs, including GUIDE_REDIRECTS; index.html preserves their canonicals. Why: consolidate signals without breaking ad landings.
 - Checkout attempt chains may reuse only unpaid orders; every settled order advances the deterministic attempt id before a new payment session is created. Why: retries remain idempotent without binding a later identical purchase to an already-paid order.
 - Live shopper markers and the “Now online” counter use the same commercial-live-presence verdict; technical/unconfirmed geo appears only in an optional subdued forensic layer. Why: raw heartbeats must not look like active shoppers.
 - Product brand/GTIN/MPN for JSON-LD, prerender and the Merchant feed come only from src/lib/product-identifiers.ts (documented values only; never GetPawsy as fill-in brand, never ids/SKUs as MPN). Why: identifiers must describe the real product.
@@ -21,3 +21,7 @@
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploys.
 - Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
+- Commercial frontend funnels use commercial-funnel/read-commercial-funnel over the canonical envelope; hard exclusions win, UNKNOWN stays separate, stages count distinct sessions. Why: legacy views and event totals disagree.
+- Product-claim-hygiene removes unsupported supplier promises at read time, retaining catalog/URLs. Why: claims need evidence.
+- PDP schema receives buy-box price; lean collection schema shares batched card option queries and omits unresolved offers. Why: catalog base can differ from purchasable options.
+- Product routes own robots via productRobotsDirective, matching existing tier/noindex sitemap policy. Why: route-only index must not overwrite eligibility.

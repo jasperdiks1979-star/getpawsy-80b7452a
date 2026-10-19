@@ -1,5 +1,10 @@
 # Roadmap
 
+- [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
+- [ ] Fix 1 remaining adoption: legacy product/heatmap rollups and organic-growth-intelligence server envelope still lack shared human-session filtering. Migrated identified commercial funnel/session readers; UNKNOWN remains separate and callbacks count distinct sessions. No DB/function edits; do not claim universal dashboard parity.
+- [x] Permitted verification: focused 99 passed; full 2905 passed/2 skipped; staged desktop/mobile four PDPs, selected Pink/Light grey schema prices and neutral bowl confirmed, no page errors. Protected payment/GA4 paths untouched. RAM 70%, connections 22/60, zero restarts/exhaustion.
+- [ ] Release blocked: independent build/typecheck/prerender/rollback not performed under current instructions; universal historical reporting parity still incomplete. No publication. Return destination must be supplied/verified by owner; existing cost policy retained.
+
 - [x] October 19 focused conversion run: HEAD 112834081 clean at entry; GA4 ancestor retained; live desktop/mobile US variant $97.95 → cart → checkout form, five collection PDPs and public SEO files checked. No new proven high-impact defect; no application edits or release.
 - [x] October 19 release-gate repair: "prohibited" was an agent instruction, not a platform block. Added scripts/release-validate.sh + docs/RELEASE_VALIDATION.md. At a04f494: tsgo app/node exit 0, isolated `npm run build` (prerender + seo-coverage) exit 0, rollback rehearsal of 66f0ea6f2 build exit 0, Vitest 2878/2 skipped.
 

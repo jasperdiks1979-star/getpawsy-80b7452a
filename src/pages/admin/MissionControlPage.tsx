@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from '@/lib/read-commercial-funnel';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,11 +185,11 @@ export default function MissionControlPage() {
 
     const ordersQ: any = supabase.from("orders").select("total_amount,status", { count: "exact" });
     const pinsQ: any = supabase.from("pinterest_pins").select("id", { count: "exact", head: true });
-    const visitorsQ: any = supabase.from("canonical_events").select("session_id", { count: "exact", head: true });
+    const visitorsQ = readCommercialFunnel((Date.now() - startOfDay.getTime()) / 3600000);
     const [ordersRes, pinsRes, visitorsRes] = await Promise.all([
       ordersQ.gte("created_at", iso).eq("status", "paid"),
       pinsQ.gte("created_at", iso),
-      visitorsQ.gte("event_at", iso).eq("event_name", "page_view"),
+      visitorsQ,
     ]);
 
     const revenue = (ordersRes.data ?? []).reduce((acc, r: any) => acc + (Number(r.total_amount) || 0), 0);
@@ -196,24 +197,17 @@ export default function MissionControlPage() {
       orders: ordersRes.count ?? 0,
       revenue,
       pinsToday: pinsRes.count ?? 0,
-      visitors: visitorsRes.count ?? 0,
+      visitors: visitorsRes.totals.visitors,
     });
   }, []);
 
   const loadLive = useCallback(async () => {
-    const since = new Date(Date.now() - 5 * 60_000).toISOString();
-    const eventBuckets = ["page_view", "add_to_cart", "begin_checkout", "purchase"];
-    const results = await Promise.all(
-      eventBuckets.map((name) => {
-        const q: any = supabase.from("canonical_events").select("id", { count: "exact", head: true });
-        return q.gte("event_at", since).eq("event_name", name);
-      })
-    );
+    const result = await readCommercialFunnel(5 / 60);
     setLive({
-      visitors: results[0].count ?? 0,
-      addToCart: results[1].count ?? 0,
-      checkout: results[2].count ?? 0,
-      purchase: results[3].count ?? 0,
+      visitors: result.totals.visitors,
+      addToCart: result.totals.add_to_cart,
+      checkout: result.totals.checkout_started,
+      purchase: result.totals.purchases,
     });
   }, []);
 

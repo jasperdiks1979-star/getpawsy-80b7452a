@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 
 // Read-only Customer Behaviour Engine admin lens.
 // Uses ONLY existing production evidence. No writes, no mutations.
@@ -52,12 +53,10 @@ function useTable<T extends Row = Row>(
 
 // ---------- 1. Visitor clusters ----------
 function VisitorClusters() {
-  const rhs = useTable<Row>(() =>
-    (supabase as any).from("real_human_sessions")
-      .select("session_id,last_stage,tsi_classification,first_seen_at")
-      .gte("first_seen_at", new Date(Date.now() - 7 * 864e5).toISOString())
-      .limit(1000),
-  );
+  const rhs = useTable<Row>(async () => {
+    const truth = await readCommercialFunnel(168);
+    return { data: truth.sessions.map(s => ({ ...s, last_stage: s.has_purchase ? 'purchase' : s.has_checkout ? 'checkout' : s.has_add_to_cart ? 'add_to_cart' : s.has_product_view ? 'product_view' : 'page_view' })), error: null };
+  });
   const asq = useTable<Row>(() =>
     (supabase as any).from("analytics_session_quality")
       .select("session_id,time_on_page_ms,page_count,cart_interactions,checkout_interactions,product_interactions,classification")
@@ -90,7 +89,7 @@ function VisitorClusters() {
     return counts;
   }, [rhs.data, asq.data]);
 
-  if (rhs.error) return <ErrorState msg={`real_human_sessions: ${rhs.error}`} />;
+  if (rhs.error) return <ErrorState msg={`commercial sessions: ${rhs.error}`} />;
   if (asq.error) return <ErrorState msg={`analytics_session_quality: ${asq.error}`} />;
   if (rhs.loading || asq.loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
   const total = Object.values(buckets).reduce((a, b) => a + b, 0);

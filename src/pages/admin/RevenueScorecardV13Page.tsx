@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { readCommercialFunnel } from '@/lib/read-commercial-funnel';
 
 type Axis = { label: string; score: number; note: string };
 
@@ -24,19 +25,18 @@ export default function RevenueScorecardV13Page() {
     const since7d = new Date(Date.now() - 7 * 86400000).toISOString();
     const since30d = new Date(Date.now() - 30 * 86400000).toISOString();
     const [ev, orders, credits, posted, canonNames] = await Promise.all([
-      supabase.from("canonical_events").select("canonical_name,session_id,country,page_path").gte("occurred_at", since7d),
+      readCommercialFunnel(168),
       supabase.from("orders").select("status,total_amount,created_at").gte("created_at", since30d),
       supabase.from("pinterest_credit_events").select("credits_used").gte("created_at", since7d),
       supabase.from("pinterest_pin_queue").select("id", { count: "exact", head: true }).eq("status", "posted").gte("posted_at", since7d),
       supabase.from("canonical_events").select("canonical_name").limit(1),
     ]);
-    const events = ev.data ?? [];
-    const sessions = new Set(events.map((e: any) => e.session_id).filter(Boolean));
-    const us = new Set(events.filter((e: any) => e.country === "US").map((e: any) => e.session_id));
-    const pdp = events.filter((e: any) => e.canonical_name === "CANONICAL_PRODUCT_VIEW").length;
-    const atc = events.filter((e: any) => e.canonical_name === "CANONICAL_ADD_TO_CART").length;
-    const chk = events.filter((e: any) => e.canonical_name === "CANONICAL_CHECKOUT").length;
-    const collectionPv = events.filter((e: any) => (e.page_path ?? "").startsWith("/collections/")).length;
+    const sessions = new Set(ev.sessions.map(e => e.session_id));
+    const us = new Set(ev.sessions.filter(e => e.country === 'US').map(e => e.session_id));
+    const pdp = ev.totals.product_views;
+    const atc = ev.totals.add_to_cart;
+    const chk = ev.totals.checkout_started;
+    const collectionPv = ev.sessions.filter(e => (e.page_path ?? '').startsWith('/collections/')).length;
     const ord = orders.data ?? [];
     const paid = ord.filter((o: any) => o.status === "paid").length;
     const expired = ord.filter((o: any) => o.status === "expired").length;

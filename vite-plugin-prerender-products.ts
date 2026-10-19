@@ -1,5 +1,6 @@
 import { stripUnsupportedTitleClaims } from './src/lib/seo-title';
 import { stripMarkdown } from './src/lib/strip-markdown';
+import { neutralProductCopy, neutralProductRecord } from './src/lib/product-claim-hygiene';
 import fs from 'fs';
 import { clampMetaDescription } from './src/lib/seo-title';
 export { clampMetaDescription };
@@ -54,7 +55,7 @@ function stripHtml(value: string | null | undefined): string {
   // Markdown markers (**, __, #, links) must not leak into crawler-facing meta
   // descriptions — 238/432 active products carry them in the catalog.
   return stripMarkdown(
-    String(value || '')
+    neutralProductCopy(String(value || ''))
       .replace(/<[^>]*>/g, ' ')
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&'),
@@ -265,7 +266,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
 
       if (!page.length) break;
       // Schema/meta price = PDP advertised price (shared listingPrice rule).
-      all.push(...page.filter((product) => product.slug).map((product) => ({ ...product, price: listingPrice(product.price, product.variants).price })));
+      all.push(...page.filter((product) => product.slug).map((product) => ({ ...neutralProductRecord(product), price: listingPrice(product.price, product.variants).price })));
       if (page.length < size) break;
       offset += size;
     }

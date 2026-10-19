@@ -21,7 +21,7 @@ const Shipping = () => {
     <Layout>
       <Helmet>
         <title>Shipping Policy | GetPawsy</title>
-        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 5–10 business days to the US. Free shipping on orders over $35." /></Helmet>
+        <meta name="description" content="GetPawsy shipping policy. Orders processed in 1–2 business days, delivered in 5–10 business days to the US. Free shipping on orders $35+." /></Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">
           <motion.div
@@ -59,7 +59,7 @@ const Shipping = () => {
               </div>
               <div className="bg-muted/30 rounded-2xl p-6 text-center">
                 <Truck className="w-8 h-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-foreground mb-1">Free Over ${FREE_SHIPPING_THRESHOLD}</h3>
+                <h3 className="font-semibold text-foreground mb-1">Free on orders ${FREE_SHIPPING_THRESHOLD}+</h3>
                 <p className="text-sm text-muted-foreground">No hidden fees or surcharges</p>
               </div>
             </div>
@@ -76,7 +76,7 @@ const Shipping = () => {
               </div>
               <div className="bg-card rounded-2xl shadow-card p-6">
                 <p className="text-foreground mb-4">
-                  GetPawsy primarily serves customers across the United States. We ship to all 50 U.S. states, including Alaska, Hawaii, and U.S. territories. International shipping may be available for select destinations — please contact us for details.
+                  GetPawsy serves customers in the United States. Available destinations and shipping options are confirmed at checkout. Contact support before ordering if you need confirmation for your location.
                 </p>
                 <p className="text-muted-foreground">
                   All shipping rates, delivery estimates, and policies on this page apply to domestic U.S. orders.
@@ -169,7 +169,7 @@ const Shipping = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground">
-                      <strong>Free shipping</strong> on all orders over ${FREE_SHIPPING_THRESHOLD}.
+                      <strong>Free shipping</strong> on orders ${FREE_SHIPPING_THRESHOLD}+.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
@@ -197,7 +197,7 @@ const Shipping = () => {
                   <li>• <strong className="text-foreground">Delivery time:</strong> Estimated delivery: {DELIVERY_TIME_STANDARD} to the United States.</li>
                   <li>• <strong className="text-foreground">Tracking:</strong> All orders receive a tracking number.</li>
                   <li>• <strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted carrier partners.</li>
-                  <li>• <strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}.</li>
+                  <li>• <strong className="text-foreground">Free shipping</strong> on orders ${FREE_SHIPPING_THRESHOLD}+.</li>
                 </ul>
               </div>
             </section>

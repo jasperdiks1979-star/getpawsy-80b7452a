@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,11 +64,10 @@ export default function GenesisBoardroomPage() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const sb: any = supabase;
       const ordersRes: any = await sb.from("orders").select("total_amount,status").gte("created_at", today.toISOString()).eq("status", "paid");
-      const visitorsRes: any = await sb.from("canonical_sessions").select("*", { count: "exact", head: true }).gte("started_at", since);
-      const atcRes: any = await sb.from("canonical_events").select("*", { count: "exact", head: true }).eq("event_name", "add_to_cart").gte("occurred_at", since);
+      const traffic = await readCommercialFunnel(24);
       const orderRows: any[] = ordersRes.data ?? [];
       const revenueToday = orderRows.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
-      setLive({ revenueToday, ordersToday: orderRows.length, visitors24h: visitorsRes.count ?? 0, atc24h: atcRes.count ?? 0 });
+      setLive({ revenueToday, ordersToday: orderRows.length, visitors24h: traffic.totals.visitors, atc24h: traffic.totals.add_to_cart });
       setLoading(false);
     })().catch(() => setLoading(false));
   }, []);

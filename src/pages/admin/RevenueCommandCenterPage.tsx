@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 import { AlertTriangle, TrendingDown, TrendingUp, Activity, Radio, HelpCircle, ExternalLink } from "lucide-react";
 
 type NumMap = Record<string, number>;
@@ -73,11 +74,9 @@ async function loadCommand(): Promise<CommandState> {
   const start14 = new Date(now.getTime() - 14 * 86400_000);
   const start30 = new Date(now.getTime() - 30 * 86400_000);
 
-  const [ordersRes, canonicalRes, funnelRes, sessionsRes, abandonedRes] = await Promise.all([
+  const [ordersRes, traffic, abandonedRes] = await Promise.all([
     supabase.from("orders").select("id,status,total_amount,created_at").gte("created_at", start30.toISOString()).limit(2000),
-    supabase.from("canonical_events").select("canonical_name,occurred_at").gte("occurred_at", start14.toISOString()).limit(50000),
-    supabase.from("checkout_funnel_events").select("step,created_at").gte("created_at", start14.toISOString()).limit(50000),
-    supabase.from("canonical_sessions" as any).select("device,country,utm_source,landing_page,first_seen_at,last_stage").gte("first_seen_at", start14.toISOString()).limit(5000),
+    readCommercialFunnel(336),
     supabase.from("abandoned_carts").select("customer_email,reminder_sent_at,recovered_at").is("recovered_at", null).limit(2000),
   ]);
 
@@ -92,13 +91,17 @@ async function loadCommand(): Promise<CommandState> {
   const expired14d = orders.filter((o) => o.status === "expired" && new Date(o.created_at) >= start14).length;
   const pending14d = orders.filter((o) => o.status === "pending" && new Date(o.created_at) >= start14).length;
 
-  const canonical14d: NumMap = {};
-  for (const r of (canonicalRes.data ?? []) as any[]) canonical14d[r.canonical_name] = (canonical14d[r.canonical_name] ?? 0) + 1;
-
-  const funnelSteps14d: NumMap = {};
-  for (const r of (funnelRes.data ?? []) as any[]) funnelSteps14d[r.step] = (funnelSteps14d[r.step] ?? 0) + 1;
-
-  const sessions = (sessionsRes.data ?? []) as any[];
+  const canonical14d: NumMap = {
+    CANONICAL_PAGE_VIEW: traffic.totals.sessions,
+    CANONICAL_PRODUCT_VIEW: traffic.totals.product_views,
+    CANONICAL_ADD_TO_CART: traffic.totals.add_to_cart,
+    CANONICAL_CART: traffic.totals.view_cart,
+    CANONICAL_CHECKOUT: traffic.totals.checkout_started,
+    CANONICAL_PURCHASE: traffic.totals.purchases,
+  };
+  const funnelSteps14d: NumMap = { page_view: traffic.totals.sessions, product_view: traffic.totals.product_views,
+    add_to_cart: traffic.totals.add_to_cart, begin_checkout: traffic.totals.checkout_started, purchase: traffic.totals.purchases };
+  const sessions = traffic.sessions;
   const sessions14d = sessions.length;
   const deviceBreakdown: NumMap = {};
   const landingCounts: NumMap = {};

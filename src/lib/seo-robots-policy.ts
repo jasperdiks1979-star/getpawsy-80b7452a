@@ -17,6 +17,12 @@ import { ROOT_GUIDE_CONSOLIDATION } from './seo-root-consolidation';
 
 export type RobotsDirective = 'index' | 'noindex' | 'noindex-follow';
 
+/** Same product rule consumed by scripts/seo-indexability.mjs; never changes tier. */
+export function productRobotsDirective(product: { seo_noindex?: boolean | null; seo_tier?: string | null }): RobotsDirective {
+  return product.seo_noindex === true || String(product.seo_tier ?? '').trim().toUpperCase() === 'C'
+    ? 'noindex-follow' : 'index';
+}
+
 /**
  * Paths that must NEVER be indexed.
  * Prefix-matched: /admin also blocks /admin/foo/bar.

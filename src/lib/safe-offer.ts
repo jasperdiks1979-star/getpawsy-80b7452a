@@ -15,6 +15,7 @@
  */
 
 export interface SafeOfferInput {
+  variants?: unknown;
   price?: number | string | null;
   stock?: number | null;
   status?: string | null;
@@ -23,6 +24,7 @@ export interface SafeOfferInput {
 }
 
 import { buildStructuredProductName } from "./structured-product-name";
+import { listingPrice } from './listingPrice';
 
 const BASE = 'https://getpawsy.pet';
 
@@ -34,10 +36,11 @@ export function buildSafeOffer(
   product: SafeOfferInput,
   baseUrl: string = BASE
 ): Record<string, unknown> | null {
-  const numeric = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
-  if (typeof numeric !== 'number' || !isFinite(numeric) || numeric <= 0) {
+  const base = Number(product.price);
+  if (!Number.isFinite(base) || base <= 0) {
     return null;
   }
+  const numeric = listingPrice(base, product.variants).price;
 
   const productPath = product.slug || product.id;
   const inStock = (product.stock ?? 1) > 0 || product.status === 'active';

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,18 +71,12 @@ export default function ExecutiveWarRoomPage() {
       const brQ: any = supabase.from("bhi_briefings").select("top_threat,top_opportunity,top_revenue_leak,highest_roi,confidence").order("briefing_date", { ascending: false }).limit(1).maybeSingle();
       const ordersQ: any = supabase.from("orders").select("total_amount,created_at").eq("status", "paid").gte("created_at", dayIso);
       const pinsQ: any = supabase.from("pinterest_pins").select("id", { count: "exact", head: true }).gte("created_at", dayIso);
-      const ce: any = supabase.from("canonical_events");
-      const pvQ: any = ce.select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PAGE_VIEW").gte("occurred_at", dayIso);
-      const atcQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_ADD_TO_CART").gte("occurred_at", dayIso);
-      const chkQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_CHECKOUT").gte("occurred_at", dayIso);
-      const purchQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PURCHASE").gte("occurred_at", dayIso);
-      const liveQ: any = supabase.from("canonical_events").select("id", { count: "exact", head: true }).eq("canonical_name", "CANONICAL_PAGE_VIEW").gte("occurred_at", since5m);
-      const topProdQ: any = supabase.from("canonical_events").select("product_id").eq("canonical_name", "CANONICAL_ADD_TO_CART").gte("occurred_at", dayIso).not("product_id", "is", null).limit(500);
-      const topCampQ: any = supabase.from("canonical_events").select("utm_campaign").gte("occurred_at", dayIso).not("utm_campaign", "is", null).limit(500);
+      const trafficQ = readCommercialFunnel((Date.now() - startOfDay.getTime()) / 3600000);
+      const liveQ = readCommercialFunnel(5 / 60);
       const pendingQ: any = supabase.from("governance_decision_log").select("id,timestamp,source_engine,decision_type,proposal,expected_metric,expected_value,confidence,outcome").is("outcome", null).order("timestamp", { ascending: false }).limit(15);
 
-      const [bhi, br, ords, pins, pv, atc, chk, prch, live, topProd, topCamp, pending] = await Promise.all([
-        bhiQ, brQ, ordersQ, pinsQ, pvQ, atcQ, chkQ, purchQ, liveQ, topProdQ, topCampQ, pendingQ,
+      const [bhi, br, ords, pins, traffic, live, pending] = await Promise.all([
+        bhiQ, brQ, ordersQ, pinsQ, trafficQ, liveQ, pendingQ,
       ]);
 
       const firstErr = bhi?.error || br?.error || ords?.error;
@@ -95,23 +90,19 @@ export default function ExecutiveWarRoomPage() {
       setBriefing((br?.data as any) ?? null);
 
       const revenue = (ords?.data ?? []).reduce((a: number, r: any) => a + (Number(r.total_amount) || 0), 0);
-      setToday({ revenue, orders: (ords?.data ?? []).length, visitors: pv?.count ?? 0, pins: pins?.count ?? 0 });
-      setFunnel({ pv: pv?.count ?? 0, atc: atc?.count ?? 0, checkout: chk?.count ?? 0, purchase: prch?.count ?? 0 });
+      setToday({ revenue, orders: (ords?.data ?? []).length, visitors: traffic.totals.visitors, pins: pins?.count ?? 0 });
+      setFunnel({ pv: traffic.totals.sessions, atc: traffic.totals.add_to_cart, checkout: traffic.totals.checkout_started, purchase: traffic.totals.purchases });
 
       // Live visitors bucket separate — reuse liveQ for the header
-      (window as any).__liveVisitors = live?.count ?? 0;
+      (window as any).__liveVisitors = live.totals.visitors;
 
-      // Top product / campaign (client-side frequency)
-      const prodTally = new Map<string, number>();
-      for (const r of (topProd?.data ?? []) as any[]) {
-        const k = String(r.product_id); prodTally.set(k, (prodTally.get(k) ?? 0) + 1);
-      }
-      const tp = [...prodTally.entries()].sort((a, b) => b[1] - a[1])[0];
-      setTopProduct(tp ? { name: tp[0], count: tp[1] } : null);
-
+      // Product identity is absent from the session envelope; do not promote
+      // unfiltered event frequency to a commercial top-product verdict.
+      setTopProduct(null);
       const campTally = new Map<string, number>();
-      for (const r of (topCamp?.data ?? []) as any[]) {
-        const k = String(r.utm_campaign); campTally.set(k, (campTally.get(k) ?? 0) + 1);
+      for (const s of traffic.sessions) {
+        if (!s.utm_campaign) continue;
+        campTally.set(s.utm_campaign, (campTally.get(s.utm_campaign) ?? 0) + 1);
       }
       const tc = [...campTally.entries()].sort((a, b) => b[1] - a[1])[0];
       setTopCampaign(tc ? { name: tc[0], count: tc[1] } : null);

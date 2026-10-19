@@ -26,7 +26,7 @@ const FAQ = () => {
         },
         {
           question: 'Do you offer free shipping?',
-          answer: `Yes! We offer free US shipping on orders over $${FREE_SHIPPING_THRESHOLD}. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}.`,
+          answer: `Yes! We offer free US shipping on orders $${FREE_SHIPPING_THRESHOLD}+. Orders under $${FREE_SHIPPING_THRESHOLD} ship for a flat rate of $${FLAT_SHIPPING_RATE.toFixed(2)}.`,
         },
         {
           question: 'Where do you ship from?',
@@ -44,7 +44,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'What is your return policy?',
-          answer: `We offer a ${RETURN_WINDOW_DAYS}-day easy return policy. If you are not completely satisfied, we will make it right.`,
+          answer: `You may request a return for eligible items within ${RETURN_WINDOW_DAYS} days of delivery. See our Returns Policy for eligibility and contact support before sending an item back.`,
         },
         {
           question: 'How do I start a return?',
@@ -52,7 +52,7 @@ const FAQ = () => {
         },
         {
           question: 'When will I receive my refund?',
-          answer: 'Once we receive and inspect your return, refunds are processed back to your original payment method within 5 business days.',
+          answer: 'After your return is approved, refunds are processed to your original payment method within 5 business days. Your bank or payment provider may take additional time.',
         },
       ],
     },
@@ -62,7 +62,7 @@ const FAQ = () => {
       questions: [
         {
           question: 'Are your products safe for pets?',
-          answer: 'Yes. All products are carefully selected with comfort, safety, and everyday use in mind. We only offer products we would trust with our own pets.',
+          answer: 'Suitability depends on your pet and how the product is used. Check the product details, sizing and care instructions. Contact support if you need information before ordering.',
         },
         {
           question: 'Do your products fit all pets?',
@@ -108,7 +108,7 @@ const FAQ = () => {
     <Layout>
       <Helmet>
         <title>FAQ – Shipping, Returns & Orders | GetPawsy</title>
-        <meta name="description" content="Answers to common questions about GetPawsy orders, shipping times, returns, and pet product quality. Free US shipping on orders over $35." />
+        <meta name="description" content="Answers to common questions about GetPawsy orders, shipping times, returns, and pet product quality. Free US shipping on orders $35+." />
       </Helmet>
       <div className="min-h-screen py-16 lg:py-24">
         <div className="container px-4 md:px-6 max-w-4xl mx-auto">

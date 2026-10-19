@@ -36,7 +36,7 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
             <li><strong className="text-foreground">Delivery Time:</strong> {DELIVERY_TIME_STANDARD} to the United States</li>
             <li><strong className="text-foreground">Shipping:</strong> Orders are delivered via trusted carrier partners</li>
             <li><strong className="text-foreground">Tracking:</strong> All orders receive a tracking number</li>
-            <li><strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}</li>
+            <li><strong className="text-foreground">Free shipping</strong> on orders ${FREE_SHIPPING_THRESHOLD}+</li>
           </ul>
           <Link to="/shipping" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">
             View full Shipping Policy →
@@ -53,11 +53,11 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
         </AccordionTrigger>
         <AccordionContent>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><strong className="text-foreground">{RETURN_WINDOW_DAYS}-day return policy</strong> on all products</li>
+            <li><strong className="text-foreground">{RETURN_WINDOW_DAYS}-day return window</strong> from delivery for eligible items</li>
             <li>Returns must be sent back <strong className="text-foreground">by mail</strong></li>
             <li>Items must be unused and in original packaging</li>
-            <li>Customer is responsible for return shipping costs (unless item arrived damaged or incorrect)</li>
-            <li>Refund issued to <strong className="text-foreground">original payment method</strong> within 5 business days</li>
+            <li>Contact support before sending an item back to confirm the return destination and any applicable shipping costs</li>
+            <li>Refund issued to <strong className="text-foreground">original payment method</strong> within 5 business days after return approval; your bank may take additional time</li>
             <li>Contact <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> with your order number to start a return</li>
           </ul>
           <Link to="/returns" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">

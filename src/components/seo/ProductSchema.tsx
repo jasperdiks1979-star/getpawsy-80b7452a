@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
 import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
@@ -36,13 +37,21 @@ interface ProductSchemaProps {
     reviewer_name?: string | null;
   }>;
   baseUrl?: string;
+  /** Exact current buy-box price, already resolved by customerUnitPrice. */
+  displayedPrice?: number;
 }
 
 export function ProductSchema({ 
   product, 
   reviews = [],
-  baseUrl = 'https://getpawsy.pet'
+  baseUrl = 'https://getpawsy.pet',
+  displayedPrice,
 }: ProductSchemaProps) {
+  useEffect(() => {
+    // The static slug-derived skeleton has no price and invents a brand.
+    // Replace it with the factual, fully resolved Product schema below.
+    document.getElementById('gp-prehydration-jsonld')?.remove();
+  }, [product.id]);
   // ALWAYS render schema — use fallback price if missing (Google trust & Merchant compliance)
   const rawPrice = Number(product.price);
   const safePrice = (rawPrice && rawPrice > 0) ? rawPrice : 0.01;
@@ -96,7 +105,9 @@ export function ProductSchema({
   );
 
   const merchantPrice = getDisplayPrice(product as MerchantProduct);
-  const canonicalSchemaPrice = (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
+  const canonicalSchemaPrice = typeof displayedPrice === 'number' && Number.isFinite(displayedPrice) && displayedPrice > 0
+    ? displayedPrice
+    : (merchantPrice.price && merchantPrice.price > 0) ? merchantPrice.price : safePrice;
   const merchantAvailability = getDisplayAvailability(product as MerchantProduct);
 
   // Generate meta description

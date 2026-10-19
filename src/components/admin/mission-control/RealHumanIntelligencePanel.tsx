@@ -3,10 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, ShieldCheck, Bot, Activity } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  REAL_HUMAN_COUNTERS_VIEW,
-} from "@/lib/realHumanSession";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
+import { commercialSessionCounters } from "@/lib/commercial-funnel";
 
 /**
  * Real Human Intelligence Panel — Constitution surface for Mission Control
@@ -67,17 +65,26 @@ export default function RealHumanIntelligencePanel() {
     let alive = true;
     (async () => {
       setLoading(true);
-      const [c, f, ch, cf] = await Promise.all([
-        supabase.from(REAL_HUMAN_COUNTERS_VIEW as any).select("*").maybeSingle(),
-        supabase.from("real_human_funnel_7d" as any).select("*").maybeSingle(),
-        supabase.from("real_human_channel_quality_7d" as any).select("*").limit(6),
-        supabase.from("real_human_classifier_confidence_7d" as any).select("*").maybeSingle(),
-      ]);
-      if (!alive) return;
-      setCounters((c.data as any) ?? null);
-      setFunnel((f.data as any) ?? null);
-      setChannels(((ch.data as any) ?? []) as Channel[]);
-      setConfidence((cf.data as any) ?? null);
+      try {
+        const truth = await readCommercialFunnel(168);
+        if (!alive) return;
+        const t = truth.totals;
+        setCounters({ total_sessions_7d: t.raw_sessions_all ?? 0, real_human_sessions_7d: t.sessions,
+          excluded_sessions_7d: t.excluded_sessions, real_human_us_sessions_7d: truth.sessions.filter(s => s.country === 'US').length });
+        setFunnel({ real_human_sessions: t.sessions, real_pdp_views: t.product_views,
+          real_add_to_carts: t.add_to_cart, real_checkouts: t.checkout_started, real_purchases: t.purchases,
+          real_conversion_rate_pct: t.sessions ? t.purchases / t.sessions * 100 : null });
+        setConfidence({ total_sessions: t.raw_sessions_all ?? 0, classified_human: t.sessions,
+          classified_excluded: t.excluded_sessions, unknown_sessions: t.unknown_sessions,
+          suspected_false_negatives: 0, possible_false_positives: 0, classifier_confidence_pct: null });
+        const sources = [...new Set(truth.sessions.map(s => s.source))];
+        setChannels(sources.map(channel => {
+          const rows = truth.sessions.filter(s => s.source === channel);
+          const c = commercialSessionCounters(rows);
+          return { channel, human_sessions: c.sessions, bot_sessions: 0, human_pct: null,
+            real_atc: c.add_to_cart, real_purchases: c.purchases, real_revenue_cents: null, real_purchase_rate_pct: null };
+        }));
+      } catch { setCounters(null); setFunnel(null); setConfidence(null); setChannels([]); }
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -87,7 +94,7 @@ export default function RealHumanIntelligencePanel() {
     counters && counters.total_sessions_7d > 0
       ? (counters.real_human_sessions_7d / counters.total_sessions_7d) * 100
       : null;
-  const botPct = humanPct == null ? null : 100 - humanPct;
+  const botPct = counters && counters.total_sessions_7d > 0 ? counters.excluded_sessions_7d / counters.total_sessions_7d * 100 : null;
 
   return (
     <Card>
@@ -129,7 +136,7 @@ export default function RealHumanIntelligencePanel() {
               />
               <Stat
                 icon={<Bot className="h-4 w-4" />}
-                label="Excluded (bots/tests)"
+                label="Excluded (confirmed/technical)"
                 value={num(counters?.excluded_sessions_7d)}
                 sub={botPct != null ? `${botPct.toFixed(1)}%` : undefined}
                 tone="warn"
@@ -141,7 +148,7 @@ export default function RealHumanIntelligencePanel() {
               />
               <Stat
                 icon={<Activity className="h-4 w-4" />}
-                label="Real PDP views"
+                label="PDP sessions"
                 value={num(funnel?.real_pdp_views)}
               />
               <Stat
@@ -179,7 +186,7 @@ export default function RealHumanIntelligencePanel() {
                     <tr>
                       <th className="text-left py-1">Channel</th>
                       <th className="text-right">Humans</th>
-                      <th className="text-right">Bots</th>
+                      <th className="text-right">Excluded</th>
                       <th className="text-right">Human %</th>
                       <th className="text-right">Real ATC</th>
                       <th className="text-right">Real Buys</th>
@@ -191,7 +198,7 @@ export default function RealHumanIntelligencePanel() {
                       <tr key={c.channel} className="border-t">
                         <td className="py-1 font-medium">{c.channel}</td>
                         <td className="text-right">{num(c.human_sessions)}</td>
-                        <td className="text-right text-muted-foreground">{num(c.bot_sessions)}</td>
+                        <td className="text-right text-muted-foreground">{"—"}</td>
                         <td className="text-right">{c.human_pct != null ? `${c.human_pct}%` : "—"}</td>
                         <td className="text-right">{num(c.real_atc)}</td>
                         <td className="text-right">{num(c.real_purchases)}</td>
@@ -209,11 +216,9 @@ export default function RealHumanIntelligencePanel() {
             {/* Self-validation footer */}
             {confidence && (
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground border-t pt-2">
-                <span>Classifier self-validation:</span>
+                <span>Classification:</span>
                 <span>humans <b className="text-foreground">{num(confidence.classified_human)}</b></span>
                 <span>excluded <b className="text-foreground">{num(confidence.classified_excluded)}</b></span>
-                <span>suspected FN <b className={confidence.suspected_false_negatives > 5 ? "text-amber-600" : "text-foreground"}>{num(confidence.suspected_false_negatives)}</b></span>
-                <span>possible FP <b className={confidence.possible_false_positives > 5 ? "text-amber-600" : "text-foreground"}>{num(confidence.possible_false_positives)}</b></span>
                 <span>unknown <b className="text-foreground">{num(confidence.unknown_sessions)}</b></span>
               </div>
             )}

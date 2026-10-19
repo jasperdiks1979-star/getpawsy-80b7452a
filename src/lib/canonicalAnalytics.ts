@@ -3,6 +3,7 @@
 // Never compute funnel/revenue/source metrics in React; call this SDK instead.
 
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 
 export type CanonicalStage =
   | "CANONICAL_PAGE_VIEW"
@@ -151,16 +152,16 @@ export interface CanonicalSessionFilters {
  */
 export async function getCanonicalFunnelSessions(opts: CanonicalSessionFilters = {}): Promise<CanonicalSessionRow[]> {
   const hours = opts.hours ?? 24 * 30;
-  let q = supabase
-    .from('canonical_funnel' as any)
-    .select('*')
-    .gte('last_seen_at', since(hours))
-    .limit(50000);
-  if (opts.usOnly) q = q.eq('country', 'US');
-  if (opts.country) q = q.eq('country', opts.country);
-  const { data, error } = await q;
-  if (error) throw error;
-  let rows = ((data ?? []) as unknown) as CanonicalSessionRow[];
+  const payload = await readCommercialFunnel(hours, opts.usOnly ? 'US' : 'all');
+  let rows: CanonicalSessionRow[] = payload.sessions.map(s => ({
+    session_id: s.session_id, first_seen_at: s.first_seen_at, last_seen_at: s.last_seen_at,
+    utm_source: s.utm_source, utm_medium: s.utm_medium, utm_campaign: s.utm_campaign,
+    country: s.country, device: s.device, reached_page_view: true,
+    reached_product_view: s.has_product_view, reached_add_to_cart: s.has_add_to_cart,
+    reached_cart: s.has_view_cart, reached_checkout: s.has_checkout, reached_purchase: s.has_purchase,
+    order_id: null, stripe_session_id: null,
+  }));
+  if (opts.country) rows = rows.filter(r => r.country === opts.country);
   if (opts.source && opts.source !== 'all') {
     rows = rows.filter((r) => classifyCanonicalSource(r.utm_source) === opts.source);
   }
@@ -191,20 +192,11 @@ export async function getCanonicalOrders(opts: { hours?: number; source?: Canoni
 
 /** Canonical event counts grouped by canonical_name for a window (uses canonical_events directly). */
 export async function getCanonicalEventCounts(hours = 24): Promise<Record<CanonicalStage, number>> {
-  const out: Record<CanonicalStage, number> = {
-    CANONICAL_PAGE_VIEW: 0, CANONICAL_PRODUCT_VIEW: 0, CANONICAL_ADD_TO_CART: 0,
-    CANONICAL_CART: 0, CANONICAL_CHECKOUT: 0, CANONICAL_PURCHASE: 0,
-  };
-  const { data, error } = await supabase
-    .from('canonical_events')
-    .select('canonical_name')
-    .gte('occurred_at', since(hours))
-    .limit(100000);
-  if (error) throw error;
-  for (const r of (data ?? []) as { canonical_name: CanonicalStage }[]) {
-    if (r.canonical_name in out) out[r.canonical_name as CanonicalStage]++;
-  }
-  return out;
+  const { totals: t } = await readCommercialFunnel(hours);
+  return { CANONICAL_PAGE_VIEW: t.sessions, CANONICAL_PRODUCT_VIEW: t.product_views,
+    CANONICAL_ADD_TO_CART: t.add_to_cart, CANONICAL_CART: t.view_cart,
+    CANONICAL_CHECKOUT: t.checkout_started, CANONICAL_PURCHASE: t.purchases };
+
 }
 
 /**
@@ -226,18 +218,9 @@ export function summarizeCanonicalSessions(sessions: CanonicalSessionRow[]) {
 
 /** Returns the full canonical funnel (counts per stage) over the last N hours. */
 export async function getCanonicalFunnel(hours = 24 * 30): Promise<CanonicalFunnelRow[]> {
-  const { data, error } = await supabase
-    .from("canonical_events")
-    .select("canonical_name")
-    .gte("occurred_at", since(hours));
-  if (error) throw error;
-  const tally = new Map<CanonicalStage, number>();
-  CANONICAL_STAGES.forEach((s) => tally.set(s, 0));
-  (data ?? []).forEach((r: any) => {
-    const n = r.canonical_name as CanonicalStage;
-    if (tally.has(n)) tally.set(n, (tally.get(n) ?? 0) + 1);
-  });
-  return CANONICAL_STAGES.map((stage) => ({ stage, count: tally.get(stage) ?? 0 }));
+  const counts = await getCanonicalEventCounts(hours);
+  return CANONICAL_STAGES.map(stage => ({ stage, count: counts[stage] }));
+
 }
 
 /** Hourly KPI snapshots for the last N hours. */
@@ -264,14 +247,18 @@ export async function getCanonicalRevenue(limit = 50): Promise<CanonicalRevenueR
 
 /** Per-source per-day rollup. */
 export async function getCanonicalSources(days = 30): Promise<CanonicalSourceRow[]> {
-  const from = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("canonical_sources" as any)
-    .select("*")
-    .gte("day", from)
-    .order("day", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as unknown) as CanonicalSourceRow[];
+  const truth = await readCommercialFunnel(days * 24);
+  const groups = new Map<string, CanonicalSourceRow>();
+  for (const s of truth.sessions) {
+    const day = s.first_seen_at.slice(0, 10);
+    const source = s.utm_source || s.source || 'direct';
+    const medium = s.utm_medium || 'unknown';
+    const key = JSON.stringify([day, source, medium]);
+    const row = groups.get(key) ?? { day, source, medium, sessions: 0, purchases: 0 };
+    row.sessions++; if (s.has_purchase) row.purchases++;
+    groups.set(key, row);
+  }
+  return [...groups.values()].sort((a, b) => b.day.localeCompare(a.day));
 }
 
 /** Per-product per-day rollup. */
@@ -327,17 +314,15 @@ export interface CanonicalExecKpis {
   cvr_pct: number;
 }
 export async function getExecutiveKpis(hours = 24 * 30): Promise<CanonicalExecKpis> {
-  const rows = await getCanonicalKpisHourly(hours);
-  const sum = (k: keyof CanonicalKpiRow) =>
-    rows.reduce((acc, r) => acc + Number(r[k] ?? 0), 0);
-  const sessions = sum("sessions");
-  const purchases = sum("purchases");
-  const revenue_eur = sum("revenue_cents") / 100;
+  const { totals } = await readCommercialFunnel(hours);
+  const sessions = totals.sessions;
+  const purchases = totals.purchases;
+  const revenue_eur = totals.revenue;
   return {
     sessions,
-    product_views: sum("product_views"),
-    add_to_carts: sum("add_to_carts"),
-    checkouts: sum("checkouts"),
+    product_views: totals.product_views,
+    add_to_carts: totals.add_to_cart,
+    checkouts: totals.checkout_started,
     purchases,
     revenue_eur,
     aov_eur: purchases > 0 ? revenue_eur / purchases : 0,
