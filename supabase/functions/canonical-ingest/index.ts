@@ -117,6 +117,14 @@ async function ingestCci(sb: ReturnType<typeof createClient>, sinceISO: string) 
           null,
         country: e.country,
         device: e.device,
+        // Provable bot signal: the UA captured by cci-ingest into meta. Lifted
+        // into canonical_events.source_user_agent (existing column) so the
+        // session refresh can fill canonical_sessions.user_agent and the
+        // shadow classifier's UA rules can fire.
+        source_user_agent:
+          typeof rawMeta.user_agent === "string" && rawMeta.user_agent.trim()
+            ? rawMeta.user_agent.trim().slice(0, 500)
+            : null,
         meta,
 
         // Purchase: order/session-anchored semantic key (same as SQL writer).
