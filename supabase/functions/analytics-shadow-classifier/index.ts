@@ -63,10 +63,13 @@ Deno.serve(async (req) => {
   if (leaseErr) return json({ ok: false, error: `lease: ${leaseErr.message}` }, 500);
   if (!lease) return json({ ok: false, skipped: "locked" }, 409);
 
-  const sinceIso = new Date(started - hours * 3600 * 1000).toISOString();
   const cp = (lease.checkpoint ?? {}) as { hours?: number; since?: string; cursor?: string };
-  // Resume only an unfinished pass over the same window size.
-  let cursor = cp.hours === hours && cp.cursor ? cp.cursor : "";
+  // Freeze the window across resumed passes; moving it while keeping a cursor can skip sessions.
+  const canResume = cp.hours === hours && !!cp.cursor && !!cp.since &&
+    Number.isFinite(Date.parse(cp.since)) && Date.parse(cp.since) <= started &&
+    Date.parse(cp.since) >= started - 8 * 24 * 3600 * 1000;
+  const sinceIso = canResume ? cp.since! : new Date(started - hours * 3600 * 1000).toISOString();
+  let cursor = canResume ? cp.cursor! : "";
   const counts = { human: 0, uncertain: 0, bot: 0, technical: 0, internal: 0 };
   let scanned = 0, written = 0, unchanged = 0, failed = 0, batches = 0;
   let done = false;
@@ -86,25 +89,28 @@ Deno.serve(async (req) => {
       if (!rows || rows.length === 0) { done = true; break; }
 
       const sids = rows.map((r: any) => r.session_id);
-      const { data: va, error: e2 } = await supabase
+      const { data: va, count: activityCount, error: e2 } = await supabase
         .from("visitor_activity")
-        .select("session_id, browser, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path")
+        .select("session_id, browser, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path", { count: "exact" })
         .in("session_id", sids)
         .gte("created_at", sinceIso)
-        .limit(5000);
+        .limit(1000);
       if (e2) throw new Error(`read hints: ${e2.message}`);
-      // Never classify from silently truncated evidence. Leave labels unchanged.
-      if ((va?.length ?? 0) >= 5000) throw new Error("visitor activity evidence cap reached; reduce batch or paginate");
+      // PostgREST may return fewer than the requested 1,000 rows due to server limits.
+      // Exact count is required: never classify on truncated evidence.
+      if (activityCount === null || activityCount !== (va?.length ?? 0))
+        throw new Error("visitor activity evidence incomplete; reduce batch or paginate");
       // Server-side verified crawler evidence is stronger than browser labels.
-      const { data: verified, error: eVerified } = await supabase
+      const { data: verified, count: crawlerCount, error: eVerified } = await supabase
         .from("crawler_visits")
-        .select("session_id, crawler_verified")
+        .select("session_id, crawler_verified", { count: "exact" })
         .in("session_id", sids)
         .eq("crawler_verified", true)
         .gte("created_at", sinceIso)
-        .limit(5000);
+        .limit(1000);
       if (eVerified) throw new Error(`read verified crawler evidence: ${eVerified.message}`);
-      if ((verified?.length ?? 0) >= 5000) throw new Error("verified crawler evidence cap reached; reduce batch or paginate");
+      if (crawlerCount === null || crawlerCount !== (verified?.length ?? 0))
+        throw new Error("verified crawler evidence incomplete; reduce batch or paginate");
       const hints = aggregateSessionEvidence(va ?? [], verified ?? []);
 
       for (const r of rows as any[]) {
@@ -120,7 +126,8 @@ Deno.serve(async (req) => {
           .from("canonical_sessions")
           .update({ ...lbl, shadow_classifier_version: VERSION, shadow_classified_at: new Date().toISOString() })
           .eq("session_id", r.session_id);
-        if (e3) { failed += 1; error = `write: ${e3.message}`; } else written += 1;
+        if (e3) { failed += 1; throw new Error(`write: ${e3.message}`); }
+        written += 1;
       }
       cursor = rows[rows.length - 1].session_id;
       if (rows.length < batch) { done = true; break; }
@@ -139,7 +146,7 @@ Deno.serve(async (req) => {
   await supabase.from("analytics_job_leases").update({
     holder: null,
     locked_until: new Date(0).toISOString(),
-    checkpoint: !dryRun && !done ? { hours, cursor } : {},
+    checkpoint: !dryRun && !done ? { hours, since: sinceIso, cursor } : {},
     last_result: result,
     updated_at: new Date().toISOString(),
   }).eq("job", JOB).eq("holder", holder);
