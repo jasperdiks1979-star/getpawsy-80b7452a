@@ -16,6 +16,8 @@ export interface SessionHints {
   is_admin_path?: boolean | null;
   is_bot_suspect?: boolean | null;
   bot_suspect_reason?: string | null;
+  crawler_verified?: boolean | null;
+  crawler_reason?: string | null;
 }
 export interface SessionLabel {
   traffic_quality: TrafficQuality;
@@ -35,9 +37,11 @@ export function classifySessionRow(s: SessionRow, h: SessionHints | null): Sessi
   const c = classifyTraffic({
     page_path: s.first_landing_path || s.landing_page || null,
     user_agent: s.user_agent ?? null,
-    is_internal_hint: h?.is_internal ?? h?.is_admin_path ?? null,
+    is_internal_hint: !!(h?.is_internal || h?.is_admin_path),
     is_bot_suspect_hint: h?.is_bot_suspect ?? null,
     bot_suspect_reason: h?.bot_suspect_reason ?? null,
+    crawler_verified: h?.crawler_verified === true,
+    crawler_reason: h?.crawler_reason ?? null,
     engagement_ms: s.engagement_ms ?? null,
     interaction_count: s.interaction_count ?? null,
     has_atc: hasAtc,
