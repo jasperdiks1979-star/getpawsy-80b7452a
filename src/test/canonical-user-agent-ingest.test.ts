@@ -24,7 +24,7 @@ describe("user-agent capture for provable bot classification", () => {
 
   it("session upsert fills user_agent fill-null only (never overwrites)", () => {
     const sql = readFileSync(
-      "supabase/migrations/20261019180000_ua_fill_null_sessions.sql",
+      "drizzle/migrations/0017_ua_fill_null_sessions.sql",
       "utf8",
     );
     expect(sql).toMatch(/user_agent\s*=\s*COALESCE\(canonical_sessions\.user_agent, EXCLUDED\.user_agent\)/);
