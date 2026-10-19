@@ -23,7 +23,7 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 - Run `npm test -- --run` (or `npm test` if the package script already includes `vitest run`).
 - Run `npx tsc --noEmit` and `npm run build`.
 - Run `npm run edge:contract` where supported.
-- Specifically exercise all 19 targeted tests (10 evidence + 9 completeness/checkpoint); confirm no stale test fixtures.
+- Specifically exercise all 34 targeted tests (16 evidence + 9 completeness/checkpoint + 9 pagination); confirm no stale test fixtures.
 - Confirm exact-count PostgREST reads return a count, and that failure never advances checkpoint beyond a failed write.
 
 ## Gate 2: database read-only preflight
