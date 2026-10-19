@@ -10,15 +10,17 @@ export interface ShadowCheckpoint {
   hours?: number;
   since?: string;
   cursor?: string;
+  version?: string;
 }
 export function resolveShadowWindow(
   checkpoint: ShadowCheckpoint | null,
   hours: number,
   started: number,
+  version?: string,
 ): { sinceIso: string; cursor: string } {
   const cp = checkpoint ?? {};
   const parsed = Date.parse(cp.since ?? "");
-  const canResume = cp.hours === hours && !!cp.cursor && !!cp.since &&
+  const canResume = cp.hours === hours && (!version || cp.version === version) && !!cp.cursor && !!cp.since &&
     Number.isFinite(parsed) && parsed <= started &&
     parsed >= started - 8 * 24 * 3600 * 1000;
   return canResume
