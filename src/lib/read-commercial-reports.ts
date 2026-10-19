@@ -1,11 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { readCommercialFunnel } from './read-commercial-funnel';
-import type { TruthResponse } from '@/hooks/useAnalyticsTruth';
 import type { CommercialReportEvidence, CommercialReportEvent, CommercialPaidOrder } from './commercial-report-aggregation';
 
 export const REPORT_SESSION_LIMIT = 500;
 export const REPORT_EVENT_LIMIT = 10000;
 const inflight = new Map<number, Promise<CommercialReportEvidence>>();
+const cache = new Map<number, { expires: number; evidence: CommercialReportEvidence }>();
 
 /** Indexed session-id reads only; bounded, no fallback to unclassified aggregates. */
 export async function loadCommercialReportEvidence(hours: number): Promise<CommercialReportEvidence> {
@@ -17,15 +17,18 @@ export async function loadCommercialReportEvidence(hours: number): Promise<Comme
   const sessions = [...truth.sessions, ...truth.unknownSessions, ...truth.excludedSessions];
   if (truth.sessions.length > REPORT_SESSION_LIMIT) throw new Error('Commercial report session budget exceeded; no partial totals shown');
   const events: CommercialReportEvent[] = [];
-  for (const s of truth.sessions) {
+  let requests = 0;
+  for (let i = 0; i < truth.sessions.length; i += 25) {
+    const ids = truth.sessions.slice(i, i + 25).map(s => s.session_id);
     let offset = 0;
     while (true) {
       const remaining = REPORT_EVENT_LIMIT - events.length;
       if (remaining <= 0) throw new Error('Commercial report event budget exceeded; no partial totals shown');
       const size = Math.min(500, remaining);
+      if (++requests > 40) throw new Error('Commercial report request budget exceeded; no partial totals shown');
       const { data, error } = await supabase.from('canonical_events')
         .select('id,session_id,occurred_at,canonical_name,product_id,page_path,order_id,technical_path')
-        .eq('session_id', s.session_id).gte('occurred_at', truth.window.since).lt('occurred_at', truth.window.until)
+        .in('session_id', ids).gte('occurred_at', truth.window.since).lt('occurred_at', truth.window.until)
         .order('occurred_at').order('id').range(offset, offset + size - 1);
       if (error) throw error;
       events.push(...(data ?? []));
@@ -45,9 +48,14 @@ export async function loadCommercialReportEvidence(hours: number): Promise<Comme
 }
 
 export function readCommercialReportEvidence(hours: number) {
+  const saved = cache.get(hours);
+  if (saved && saved.expires > Date.now()) return Promise.resolve(saved.evidence);
   const pending = inflight.get(hours);
   if (pending) return pending;
-  const request = loadCommercialReportEvidence(hours).finally(() => inflight.delete(hours));
+  const request = loadCommercialReportEvidence(hours).then(evidence => {
+    cache.set(hours, { expires: Date.now() + 900_000, evidence });
+    return evidence;
+  }).finally(() => inflight.delete(hours));
   inflight.set(hours, request);
   return request;
 }
