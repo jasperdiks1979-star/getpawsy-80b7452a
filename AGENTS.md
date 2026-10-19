@@ -1,5 +1,5 @@
 
-- Never query cron.job_run_details by start_time alone; bound by indexed runid first (runid > max(runid) - N). Why: only runid is indexed; unbounded diagnostics caused ~95% of its heavy reads.
+- Never query cron.job_run_details by start_time alone; bound by indexed runid first (runid > max - N). Why: only runid is indexed; unbounded diagnostics caused ~95% of its heavy reads.
 - For one-off organic Pinterest waves, target exact creative IDs in the PCIE2 assembler and exact queue IDs in the PCIE2 publisher; never drain unrelated READY pins. Why: a whole-queue drain can publish content outside a narrow approval.
 
 - Spreadsheet exports use src/utils/excelExport.ts (JSZip); do not re-add xlsx. Why: xlsx >=0.19 is off-npm (scanner cannot parse it) and 0.18.5 carries two high advisories.
