@@ -93,6 +93,8 @@ Deno.serve(async (req) => {
         .gte("created_at", sinceIso)
         .limit(5000);
       if (e2) throw new Error(`read hints: ${e2.message}`);
+      // Never classify from silently truncated evidence. Leave labels unchanged.
+      if ((va?.length ?? 0) >= 5000) throw new Error("visitor activity evidence cap reached; reduce batch or paginate");
       // Server-side verified crawler evidence is stronger than browser labels.
       const { data: verified, error: eVerified } = await supabase
         .from("crawler_visits")
@@ -102,6 +104,7 @@ Deno.serve(async (req) => {
         .gte("created_at", sinceIso)
         .limit(5000);
       if (eVerified) throw new Error(`read verified crawler evidence: ${eVerified.message}`);
+      if ((verified?.length ?? 0) >= 5000) throw new Error("verified crawler evidence cap reached; reduce batch or paginate");
       const hints = aggregateSessionEvidence(va ?? [], verified ?? []);
 
       for (const r of rows as any[]) {
