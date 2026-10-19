@@ -40,7 +40,7 @@ const ReturnPolicy = () => {
     },
     {
       question: 'Who pays for return shipping?',
-      answer: 'Contact support@getpawsy.pet before sending an item back. Our team will confirm the return instructions and any applicable shipping costs for your request.',
+      answer: 'If the return is due to a defective, damaged, or incorrect product, GetPawsy covers the return shipping cost. For other returns (e.g., change of mind on an eligible product), the customer is responsible for return shipping fees. Contact support@getpawsy.pet first to confirm eligibility and the return destination before shipping anything back.',
     },
     {
       question: 'Can I exchange a product?',
