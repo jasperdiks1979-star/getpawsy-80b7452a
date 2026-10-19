@@ -105,7 +105,10 @@ describe("Security B — sensitive analytics data is not anonymously readable", 
 describe("Security B — mapped legitimate callers keep working", () => {
   it("admin dashboards call analytics-canonical through the authenticated client", () => {
     const hook = read("src/hooks/useCanonicalFunnel.ts");
-    expect(hook).toContain('supabase.functions.invoke("analytics-canonical"');
+    expect(hook).toContain("readCommercialFunnel(hours, geo)");
+    const reader = read("src/lib/read-commercial-funnel.ts");
+    expect(reader).toMatch(/supabase\.functions\.invoke\(["']analytics-canonical["']/);
+    expect(reader).not.toContain("fetch(`${");
     expect(hook).not.toContain("fetch(`${");
   });
 

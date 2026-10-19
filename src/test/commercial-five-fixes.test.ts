@@ -52,7 +52,7 @@ describe('real catalog variant price parity without catalog changes', () => {
 });
 describe('intentional index policy and verified policy terms', () => {
   it.each([{ seo_tier: 'C', seo_noindex: false }, { seo_tier: ' c ', seo_noindex: false }, { seo_tier: 'A', seo_noindex: true }, { seo_tier: 'A', seo_noindex: false }])('runtime and sitemap agree: %j', p => {
-    expect(productRobotsDirective(p) === 'index').toBe(isProductIndexable({ ...p, is_active: true, is_duplicate: false, slug: 'real-product' }));
+    expect(productRobotsDirective(p) === 'index').toBe(isProductIndexable(p));
   });
   it('neutral bowl wording does not change catalog or URL', () => {
     const p = { name: 'Elevated Cat Bowl – Double Dish with Cervical Vertebra Protection for Cats', slug: 'cat-double-bowl-cat-food-bowl-protects-cervical-vertebra' };

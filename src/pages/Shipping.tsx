@@ -169,7 +169,7 @@ const Shipping = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <p className="text-foreground">
-                      <strong>Free shipping</strong> on all orders over ${FREE_SHIPPING_THRESHOLD}.
+                      <strong>Free shipping</strong> on orders ${FREE_SHIPPING_THRESHOLD}+.
                     </p>
                   </div>
                   <div className="flex items-start gap-3">
@@ -197,7 +197,7 @@ const Shipping = () => {
                   <li>• <strong className="text-foreground">Delivery time:</strong> Estimated delivery: {DELIVERY_TIME_STANDARD} to the United States.</li>
                   <li>• <strong className="text-foreground">Tracking:</strong> All orders receive a tracking number.</li>
                   <li>• <strong className="text-foreground">Carriers:</strong> Orders are delivered via trusted carrier partners.</li>
-                  <li>• <strong className="text-foreground">Free shipping</strong> on orders over ${FREE_SHIPPING_THRESHOLD}.</li>
+                  <li>• <strong className="text-foreground">Free shipping</strong> on orders ${FREE_SHIPPING_THRESHOLD}+.</li>
                 </ul>
               </div>
             </section>

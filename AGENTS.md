@@ -1,9 +1,9 @@
 
 - Never query cron.job_run_details by start_time alone; bound by indexed runid first (runid > max - N). Why: only runid is indexed; unbounded diagnostics caused ~95% of its heavy reads.
-- For one-off organic Pinterest waves, target exact creative IDs in the PCIE2 assembler and exact queue IDs in the PCIE2 publisher; never drain unrelated READY pins. Why: a whole-queue drain can publish content outside a narrow approval.
+- One-off Pinterest waves target exact creative/queue IDs; never drain unrelated READY pins. Why: narrow approval.
 
-- Spreadsheet exports use src/utils/excelExport.ts (JSZip); do not re-add xlsx. Why: xlsx >=0.19 is off-npm (scanner cannot parse it) and 0.18.5 carries two high advisories.
-- Homepage featured products must pass active, positive-stock, non-duplicate, merch-visible, non-blocked gates. Why: a technically purchasable PDP is not sufficient when catalog merchandising has explicitly blocked the product.
+- Spreadsheet exports use src/utils/excelExport.ts (JSZip), never xlsx. Why: off-npm releases or vulnerable older versions.
+- Homepage products must be active, stocked, nonduplicate, merch-visible and unblocked. Why: purchasable is not necessarily merch-approved.
 - SEO indexability (sitemap + prerender) comes from scripts/seo-indexability.mjs, which reads the existing TS policy sources; prerendered pages are written as <route>/index.html and vite-plugin-seo-coverage fails the build if any sitemap URL lacks indexable, self-canonical HTML. Why: one policy for sitemap, raw HTML and runtime, and the host only resolves directory indexes.
 - SEO clusters/metadata live in src/lib/seo-clusters.ts, shared by runtime and prerender. Internal links are sitemap-filtered; coverage enforces guide/blog parity. Why: one crawl path and no orphaned indexed pages.
 - Crawler guide/blog titles use src/lib/seo-title.ts at render time; stored content stays unchanged. Why: claim hygiene without catalog rewrites.
