@@ -25,6 +25,10 @@ describe('commercial report session contract', () => {
     const e = { ...evidence([event('1'), event('2', { session_id: 'h2' })]), sessions: [human, { ...human, session_id: 'h2' }] };
     expect(aggregateOrganicWindow(e).organic).toMatchObject({ sessions: 2, visitors: 1, add_to_cart: 2 });
   });
+  it('a cart tap after midnight does not count the same product session twice in a multi-day report', () => {
+    const e = { ...evidence([event('1'), event('2', { occurred_at: '2026-10-20T01:00:00.000Z' })]), until: '2026-10-21T00:00:00.000Z' };
+    expect(aggregateCommercialProducts(e).reduce((n, r) => n + r.add_to_carts, 0)).toBe(1);
+  });
   it('drops events outside snapshot and technical events', () => {
     expect(aggregateCommercialProducts(evidence([event('old', { occurred_at: '2026-10-18T00:00:00.000Z' }), event('technical', { technical_path: true }), event('future', { occurred_at: '2026-10-20T00:00:00.000Z' })]))).toEqual([]);
   });

@@ -30,7 +30,9 @@ function paidRevenue(e: CommercialReportEvidence, events: CommercialReportEvent[
   return orders.reduce((n, o) => n + Math.round(Number(o.total_amount) * 100), 0);
 }
 export function aggregateCommercialProducts(e: CommercialReportEvidence): CanonicalProductRow[] {
-  const events = reportEvents(e).filter(r => r.product_id);
+  const events = [...new Map(reportEvents(e).filter(r => r.product_id)
+    .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))
+    .map(r => [JSON.stringify([r.product_id, r.session_id, r.canonical_name]), r])).values()];
   const groups = new Map<string, CommercialReportEvent[]>();
   for (const r of events) {
     const key = JSON.stringify([r.occurred_at.slice(0, 10), r.product_id]);
