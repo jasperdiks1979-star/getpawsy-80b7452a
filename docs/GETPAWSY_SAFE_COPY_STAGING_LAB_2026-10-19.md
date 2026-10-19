@@ -43,3 +43,22 @@ The live classification trigger calls `classify_traffic_source` and `classify_ch
 
 ## Current disposition
 **STAGING LAB CREATED AND 7 ASSERTIONS PASSED. PRODUCTION RELEASE NOT AUTHORIZED.**
+
+## Phase 2: copied actual production SQL functions (additional 15 / 15 PASS)
+On the same isolated `analytics_repair_lab` schema, copied the **actual** production definitions of `classify_channel_v2`, `classify_traffic_source`, `canonical_sessions_lock_first_touch`, `canonical_sessions_set_classified_channel` and `validate_traffic_quality`, changing only schema qualifiers/search_path. Extended the synthetic sessions table with the actual trigger input/output columns. No production functions or data were modified.
+
+Attached exact copied functions to staging triggers, with the new candidate **input-scoped** classifier trigger and the original always-on first-touch lock and quality-validation triggers. Verified these ten exact-classifier cases: Pinterest organic INSERT; browser-only update preservation; locked first-touch preservation; HeadlessChrome exclusion; shadow-only update preservation; no-signal UNKNOWN exclusion; Googlebot recognition; Lovable preview exclusion; Google Ads click-ID attribution; invalid traffic_quality rejection.
+
+Also installed the **actual opt-in browser-backfill SQL RPC** in staging with only schema/table identifiers adapted to `analytics_repair_lab.sessions` and `analytics_repair_lab.activity`. Five additional SQL assertions passed: browser backfill preserves Pinterest attribution; second run is idempotent; future since rejected; batch >100 rejected; old all-UPDATE classifier trigger is rejected by the fail-closed trigger guard (then the input-scoped trigger was restored).
+
+**Phase 2 result: 15 / 15 PASS. Cumulative isolated lab assertions: 22 / 22 PASS.**
+
+## Phase 2 release artifacts
+- `supabase/migrations/20261019170000_scope_canonical_classification_trigger.sql`: proposed reversible input-scoped production trigger migration, **not applied**.
+- `supabase/migrations/20261019160000_canonical_browser_evidence_opt_in.sql`: updated to verify the trigger's complete input-column list before any browser backfill. No automatic backfill call.
+
+## Remaining non-negotiable gates
+- Exact production canonical_sessions table structure, RLS, indexes, foreign keys, concurrent writes and actual Edge Function invocation have not been cloned/tested; only a compatible lab table and exact copied trigger functions have been used.
+- Full repository build, exact-head Vitest and checkout E2E remain unverified.
+- Staging Edge Function secrets and webhook integrations are not fully audited.
+- Do not apply migrations or run backfill in production until those gates and the RAM limit are cleared.
