@@ -13,7 +13,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { CLASSIFIER_VERSION } from "../_shared/traffic-classifier.ts";
 import { classifySessionRow } from "../_shared/session-shadow-classify.ts";
 import { aggregateSessionEvidence } from "../_shared/session-evidence.ts";
-import { assertCompleteEvidence, resolveShadowWindow } from "../_shared/shadow-evidence-safety.ts";
+import { resolveShadowWindow } from "../_shared/shadow-evidence-safety.ts";
+import { fetchEvidencePages } from "../_shared/evidence-pagination.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -85,27 +86,24 @@ Deno.serve(async (req) => {
       if (!rows || rows.length === 0) { done = true; break; }
 
       const sids = rows.map((r: any) => r.session_id);
-      const { data: va, count: activityCount, error: e2 } = await supabase
-        .from("visitor_activity")
-        .select("session_id, browser, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path", { count: "exact" })
-        .in("session_id", sids)
-        .gte("created_at", sinceIso)
-        .limit(1000);
-      if (e2) throw new Error(`read hints: ${e2.message}`);
-      // PostgREST may return fewer than the requested 1,000 rows due to server limits.
-      // Exact count is required: never classify on truncated evidence.
-      assertCompleteEvidence(va?.length ?? 0, activityCount, "visitor activity");
-      // Server-side verified crawler evidence is stronger than browser labels.
-      const { data: verified, count: crawlerCount, error: eVerified } = await supabase
-        .from("crawler_visits")
-        .select("session_id, crawler_verified", { count: "exact" })
-        .in("session_id", sids)
-        .eq("crawler_verified", true)
-        .gte("created_at", sinceIso)
-        .limit(1000);
-      if (eVerified) throw new Error(`read verified crawler evidence: ${eVerified.message}`);
-      assertCompleteEvidence(verified?.length ?? 0, crawlerCount, "verified crawler");
-      const hints = aggregateSessionEvidence(va ?? [], verified ?? []);
+      const evidenceDeadline = started + TIME_BUDGET_MS;
+      const va = await fetchEvidencePages(async (offset, size) => {
+        const { data, count, error } = await supabase.from("visitor_activity")
+          .select("id, session_id, browser, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path", { count: "exact" })
+          .in("session_id", sids).gte("created_at", sinceIso)
+          .order("created_at", { ascending: true }).order("id", { ascending: true })
+          .range(offset, offset + size - 1);
+        return { data, count, error };
+      }, "visitor activity", { pageSize: 500, maxRows: 10000, deadline: evidenceDeadline });
+      const verified = await fetchEvidencePages(async (offset, size) => {
+        const { data, count, error } = await supabase.from("crawler_visits")
+          .select("id, session_id, crawler_verified", { count: "exact" })
+          .in("session_id", sids).eq("crawler_verified", true).gte("created_at", sinceIso)
+          .order("created_at", { ascending: true }).order("id", { ascending: true })
+          .range(offset, offset + size - 1);
+        return { data, count, error };
+      }, "verified crawler", { pageSize: 500, maxRows: 10000, deadline: evidenceDeadline });
+      const hints = aggregateSessionEvidence(va, verified);
 
       for (const r of rows as any[]) {
         scanned += 1;
