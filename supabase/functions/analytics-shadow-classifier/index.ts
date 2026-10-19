@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
   if (leaseErr) return json({ ok: false, error: `lease: ${leaseErr.message}` }, 500);
   if (!lease) return json({ ok: false, skipped: "locked" }, 409);
 
-  const { sinceIso, cursor: initialCursor } = resolveShadowWindow(lease.checkpoint ?? null, hours, started);
+  const { sinceIso, cursor: initialCursor } = resolveShadowWindow(lease.checkpoint ?? null, hours, started, VERSION);
   let cursor = initialCursor;
   const counts = { human: 0, uncertain: 0, bot: 0, technical: 0, internal: 0 };
   let scanned = 0, written = 0, unchanged = 0, failed = 0, batches = 0;
@@ -135,13 +135,16 @@ Deno.serve(async (req) => {
     duration_ms: Date.now() - started, raw_event_writes: 0,
   };
   // Release lease; keep cursor only for an unfinished, non-dry pass.
-  await supabase.from("analytics_job_leases").update({
+  const { data: released, error: releaseError } = await supabase.from("analytics_job_leases").update({
     holder: null,
     locked_until: new Date(0).toISOString(),
-    checkpoint: !dryRun && !done ? { hours, since: sinceIso, cursor } : {},
+    checkpoint: dryRun ? (lease.checkpoint ?? {}) : (!done ? { hours, since: sinceIso, cursor, version: VERSION } : {}),
     last_result: result,
     updated_at: new Date().toISOString(),
-  }).eq("job", JOB).eq("holder", holder);
+  }).eq("job", JOB).eq("holder", holder).select("job").maybeSingle();
+  if (releaseError || !released) {
+    return json({ ...result, ok: false, error: "lease release failed; inspect job state before retry" }, 500);
+  }
 
   return json(result, result.ok ? 200 : 500);
 });
