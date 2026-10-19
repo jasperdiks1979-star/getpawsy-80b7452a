@@ -20,3 +20,4 @@
 - "Complete the setup" requires isBundleUpsellReady(). Why: unsafe base prices and lost variant identity.
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploy.
+- Release gate: run scripts/release-validate.sh (tsgo + isolated /tmp production build/prerender + git-archive rollback rehearsal) before publishing; see docs/RELEASE_VALIDATION.md. Why: proves typecheck/prerender/rollback without touching the project tree or dev server.
