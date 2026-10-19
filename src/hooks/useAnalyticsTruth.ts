@@ -12,6 +12,7 @@
 // same (hours, geo, filters) fails CI.
 import { useQuery } from "@tanstack/react-query";
 import { attachCrawlerVerification } from "@/lib/trafficQualityClassifier";
+import { commercialSessionCounters } from '@/lib/commercial-funnel';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TruthSession {
@@ -265,6 +266,15 @@ export function useAnalyticsTruth(opts: UseAnalyticsTruthOptions = {}) {
           .limit(5000);
         if (cv?.length) payload.sessions = attachCrawlerVerification(payload.sessions, cv);
       } catch { /* non-fatal */ }
+      payload.totals = { ...payload.totals, ...commercialSessionCounters(payload.sessions) };
+      payload.funnel = [
+        { stage: 'CANONICAL_PAGE_VIEW', count: payload.totals.sessions },
+        { stage: 'CANONICAL_PRODUCT_VIEW', count: payload.totals.product_views },
+        { stage: 'CANONICAL_ADD_TO_CART', count: payload.totals.add_to_cart },
+        { stage: 'CANONICAL_CART', count: payload.totals.view_cart },
+        { stage: 'CANONICAL_CHECKOUT', count: payload.totals.checkout_started },
+        { stage: 'CANONICAL_PURCHASE', count: payload.totals.purchases },
+      ];
       payload.served_from_client_cache = false;
       writeClientCache(hours, geo, payload);
       return payload;

@@ -69,8 +69,8 @@ export function classifyAcquisitionBucket(s: CommercialSessionInput): Acquisitio
   const cls = String(s.traffic_class ?? "").toUpperCase();
 
   if (s.is_internal === true || cls === "INTERNAL" || cls === "INTERNAL_PREVIEW") return "INTERNAL";
-  if (s.is_bot === true || cls === "BOT" || cls === "CRAWLER") return "BOT";
-  if (s.technical_path === true) return "TECHNICAL";
+  if (s.is_bot === true || ['BOT', 'BOT_CONFIRMED', 'BOT_PROBABLE', 'CRAWLER'].includes(cls)) return "BOT";
+  if (s.technical_path === true || cls === 'TECHNICAL') return "TECHNICAL";
   if (s.exclude_from_commercial === true || cls === "" || cls === "UNKNOWN") return "UNKNOWN";
 
   if (channel.endsWith("_ads") || channel.endsWith("_paid") || PAID_CHANNELS.has(channel)) return "PAID";

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from '@/lib/read-commercial-funnel';
 
 // The ONE typed reader for the canonical analytics service. Every dashboard
 // (World Map, Clean Analytics, Funnel Health, Sales Commander) MUST read
@@ -66,12 +66,15 @@ export function useCanonicalFunnel(opts: UseCanonicalFunnelOptions = {}) {
     staleTime: 30_000,
     refetchInterval: opts.refetchIntervalMs ?? 60_000,
     queryFn: async (): Promise<CanonicalFunnelResponse> => {
-      const { data, error } = await supabase.functions.invoke("analytics-canonical", {
-        body: { hours, geo },
-      });
-      if (error) throw new Error(error.message || "analytics-canonical failed");
-      if (!data?.ok) throw new Error(data?.error || "analytics-canonical returned not ok");
-      return data as CanonicalFunnelResponse;
+      const data = await readCommercialFunnel(hours, geo);
+      return { ...data, funnel: [
+        { stage: 'CANONICAL_PAGE_VIEW', count: data.totals.sessions },
+        { stage: 'CANONICAL_PRODUCT_VIEW', count: data.totals.product_views },
+        { stage: 'CANONICAL_ADD_TO_CART', count: data.totals.add_to_cart },
+        { stage: 'CANONICAL_CART', count: data.totals.view_cart },
+        { stage: 'CANONICAL_CHECKOUT', count: data.totals.checkout_started },
+        { stage: 'CANONICAL_PURCHASE', count: data.totals.purchases },
+      ] };
     },
   });
 }
