@@ -4,6 +4,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
+import { readCommercialReportEvidence } from '@/lib/read-commercial-reports';
+import { aggregateCommercialProducts, aggregateCommercialHeatmap } from '@/lib/commercial-report-aggregation';
 
 export type CanonicalStage =
   | "CANONICAL_PAGE_VIEW"
@@ -263,25 +265,12 @@ export async function getCanonicalSources(days = 30): Promise<CanonicalSourceRow
 
 /** Per-product per-day rollup. */
 export async function getCanonicalProducts(days = 30): Promise<CanonicalProductRow[]> {
-  const from = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("canonical_products" as any)
-    .select("*")
-    .gte("day", from)
-    .order("revenue_cents", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as unknown) as CanonicalProductRow[];
+  return aggregateCommercialProducts(await readCommercialReportEvidence(days * 24));
 }
 
 /** Heatmap rollup by page_path × stage. */
 export async function getCanonicalHeatmap(days = 7): Promise<CanonicalHeatmapRow[]> {
-  const from = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from("canonical_heatmap" as any)
-    .select("*")
-    .gte("day", from);
-  if (error) throw error;
-  return ((data ?? []) as unknown) as CanonicalHeatmapRow[];
+  return aggregateCommercialHeatmap(await readCommercialReportEvidence(days * 24));
 }
 
 /** Open consistency alerts surfaced by canonical_validate_consistency. */

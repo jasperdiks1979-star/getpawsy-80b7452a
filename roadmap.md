@@ -1,7 +1,7 @@
 # Roadmap
 
 - [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
-- [ ] Fix 1 remaining adoption: legacy product/heatmap rollups and organic-growth-intelligence server envelope still lack shared human-session filtering. Migrated identified commercial funnel/session readers; UNKNOWN remains separate and callbacks count distinct sessions. No DB/function edits; do not claim universal dashboard parity.
+- [ ] Complete remaining fix 1 readers using bounded session-indexed SELECTs and shared classification; validate focused/full tests and authenticated report readback. Preserve newer 452fb8d96 changes. No DB/function writes or legacy aggregate fallback.
 - [x] Permitted verification: focused 99 passed; full 2905 passed/2 skipped; staged desktop/mobile four PDPs, selected Pink/Light grey schema prices and neutral bowl confirmed, no page errors. Protected payment/GA4 paths untouched. RAM 70%, connections 22/60, zero restarts/exhaustion.
 - [ ] Release blocked: independent build/typecheck/prerender/rollback not performed under current instructions; universal historical reporting parity still incomplete. No publication. Return destination must be supplied/verified by owner; existing cost policy retained.
 
