@@ -12,10 +12,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { CLASSIFIER_VERSION } from "../_shared/traffic-classifier.ts";
 import { classifySessionRow } from "../_shared/session-shadow-classify.ts";
+import { aggregateSessionEvidence } from "../_shared/session-evidence.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VERSION = `${CLASSIFIER_VERSION}-session-shadow`;
+const VERSION = `${CLASSIFIER_VERSION}-session-shadow-evidence-v2`;
 const JOB = "shadow_classifier";
 const LEASE_MS = 5 * 60 * 1000;
 const TIME_BUDGET_MS = 45_000;
@@ -87,21 +88,21 @@ Deno.serve(async (req) => {
       const sids = rows.map((r: any) => r.session_id);
       const { data: va, error: e2 } = await supabase
         .from("visitor_activity")
-        .select("session_id, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path")
+        .select("session_id, browser, is_bot_suspect, bot_suspect_reason, is_internal, is_admin_path")
         .in("session_id", sids)
+        .gte("created_at", sinceIso)
         .limit(5000);
       if (e2) throw new Error(`read hints: ${e2.message}`);
-      const hints = new Map<string, any>();
-      for (const h of va ?? []) {
-        const prev = hints.get(h.session_id);
-        // Strongest hint wins across rows for the same session.
-        hints.set(h.session_id, {
-          is_internal: !!(prev?.is_internal || h.is_internal),
-          is_admin_path: !!(prev?.is_admin_path || h.is_admin_path),
-          is_bot_suspect: !!(prev?.is_bot_suspect || h.is_bot_suspect),
-          bot_suspect_reason: prev?.bot_suspect_reason ?? h.bot_suspect_reason ?? null,
-        });
-      }
+      // Server-side verified crawler evidence is stronger than browser labels.
+      const { data: verified, error: eVerified } = await supabase
+        .from("crawler_visits")
+        .select("session_id, crawler_verified")
+        .in("session_id", sids)
+        .eq("crawler_verified", true)
+        .gte("created_at", sinceIso)
+        .limit(5000);
+      if (eVerified) throw new Error(`read verified crawler evidence: ${eVerified.message}`);
+      const hints = aggregateSessionEvidence(va ?? [], verified ?? []);
 
       for (const r of rows as any[]) {
         scanned += 1;
