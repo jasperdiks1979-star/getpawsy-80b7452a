@@ -26,6 +26,26 @@ describe("verified crawler evidence and weak browser hints", () => {
     const hints = aggregateSessionEvidence([{ session_id: "s", is_internal: false, is_admin_path: true }], []);
     expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("internal");
   });
+  it("equal-strength bot hints produce identical evidence in either order", () => {
+    const a = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "automation_signal" };
+    const b = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" };
+    expect(aggregateSessionEvidence([a, b], []).get("s")?.bot_suspect_reason)
+      .toBe(aggregateSessionEvidence([b, a], []).get("s")?.bot_suspect_reason);
+  });
+  it("unverified crawler evidence cannot override a strong bot signal", () => {
+    const hints = aggregateSessionEvidence(
+      [{ session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" }],
+      [{ session_id: "s", crawler_verified: false }],
+    );
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("verified crawler takes priority over internal hint", () => {
+    const hints = aggregateSessionEvidence(
+      [{ session_id: "s", is_internal: true }],
+      [{ session_id: "s", crawler_verified: true }],
+    );
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
   it("strong bot hint wins regardless of row order", () => {
     const weak = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "lighthouse_viewport" };
     const strong = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" };
