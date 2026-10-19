@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useEffect } from 'react';
 import { generateProductKeywords, generateMetaDescription } from '@/lib/seo-keywords';
 import { getCategoryCollectionFullUrl } from '@/lib/category-collection-map';
 import { getDisplayPrice, getDisplayAvailability } from '@/lib/merchant-safe-product';
@@ -46,6 +47,11 @@ export function ProductSchema({
   baseUrl = 'https://getpawsy.pet',
   displayedPrice,
 }: ProductSchemaProps) {
+  useEffect(() => {
+    // The static slug-derived skeleton has no price and invents a brand.
+    // Replace it with the factual, fully resolved Product schema below.
+    document.getElementById('gp-prehydration-jsonld')?.remove();
+  }, [product.id]);
   // ALWAYS render schema — use fallback price if missing (Google trust & Merchant compliance)
   const rawPrice = Number(product.price);
   const safePrice = (rawPrice && rawPrice > 0) ? rawPrice : 0.01;

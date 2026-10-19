@@ -5,7 +5,7 @@ export function neutralProductCopy(raw: string): string {
   return raw
     .replace(/\b(?:with\s+)?cervical\s+vertebra(?:e)?\s+protection(?:\s+for\s+cats)?\b/gi, '')
     .replace(/\bprotects?\s+(?:the\s+)?cervical\s+vertebra(?:e)?\b/gi, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
     .replace(/\s*[-–—,:;]\s*$/g, '')
     .trim();
 }

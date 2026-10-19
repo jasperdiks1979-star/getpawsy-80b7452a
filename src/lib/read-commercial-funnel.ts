@@ -9,10 +9,12 @@ export async function readCommercialFunnel(hours: number, geo: 'US' | 'all' = 'a
     throw new Error(error?.message || 'Commercial session evidence unavailable');
   }
   const payload = data as TruthResponse;
+  const split = splitCommercialSessions(payload.sessions);
   return {
     ...payload,
     totals: { ...payload.totals, ...commercialSessionCounters(payload.sessions) },
-    sessions: splitCommercialSessions(payload.sessions).commercial,
-    unknownSessions: splitCommercialSessions(payload.sessions).unknown,
+    sessions: split.commercial,
+    unknownSessions: split.unknown,
+    excludedSessions: split.excluded,
   };
 }

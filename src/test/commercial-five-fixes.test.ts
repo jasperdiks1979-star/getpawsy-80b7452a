@@ -17,6 +17,10 @@ describe('commercial exclusion and distinct funnel contract', () => {
     const split = splitCommercialSessions([{ session_id: 'silent', page_views: 1, stored_traffic_class_v2: 'UNKNOWN' }]);
     expect(split.unknown).toHaveLength(1); expect(split.excluded).toHaveLength(0);
   });
+  it('an exclusion flag without bot evidence stays UNKNOWN', () => {
+    const split = splitCommercialSessions([{ session_id: 'unconfirmed', stored_exclude_from_commercial: true }]);
+    expect(split.unknown).toHaveLength(1); expect(split.excluded).toHaveLength(0);
+  });
   it('duplicate cart callbacks count one session, two sessions can share one visitor', () => {
     expect(commercialSessionCounters([human, human, { ...human, session_id: 'second' }])).toMatchObject({ sessions: 2, visitors: 1, add_to_cart: 2 });
   });
@@ -58,6 +62,12 @@ describe('intentional index policy and verified policy terms', () => {
     const p = { name: 'Elevated Cat Bowl – Double Dish with Cervical Vertebra Protection for Cats', slug: 'cat-double-bowl-cat-food-bowl-protects-cervical-vertebra' };
     const clean = neutralProductRecord(p); expect(clean.name).toBe('Elevated Cat Bowl – Double Dish');
     expect(clean.slug).toBe(p.slug); expect(p.name).toContain('Cervical Vertebra Protection');
+  });
+  it('removes the exact bowl health description without flattening unrelated descriptions', () => {
+    const bowl = { id: '6ba6b3c8-d055-46df-8e6a-e6ee9ff98272', description: 'minimizes regurgitation and bloating' };
+    expect(neutralProductRecord(bowl).description).toBe('An elevated cat feeding bowl. Check the selected option and product images before ordering.');
+    const other = { description: 'First paragraph\n\nSecond paragraph' };
+    expect(neutralProductRecord(other).description).toBe(other.description);
   });
   it('free shipping includes exactly 35 dollars, not 34.99', () => {
     expect(FREE_SHIPPING_THRESHOLD).toBe(35); expect(getCartIncentiveState(35, 1).freeShippingUnlocked).toBe(true);
