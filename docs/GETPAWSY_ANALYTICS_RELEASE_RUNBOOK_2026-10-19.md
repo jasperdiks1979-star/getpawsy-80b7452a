@@ -10,6 +10,8 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 - `canonical_session_apply_evidence` only derives user-agent from `crawler_visits`, which is not a complete source for ordinary sessions. Do not fabricate missing user-agents from browser labels.
 - Shadow classifier uses `user_agent`, verified crawler evidence, activity hints, and stages; it does not use `browser` as human/bot proof.
 - GitHub Actions blocked by confirmed billing balance; tests are not green.
+- Read-only verification: production cron `analytics-shadow-classifier-hourly` is active at minute 23 each hour. Its latest recorded run used `v1-session-shadow`, scanned 1,056 sessions, wrote 34 derived labels, and reported no errors. This is an existing production scheduler, not one created by this PR.
+- Recent bounded 200-session sample contained 330 activity evidence rows and 8 verified crawler rows. Larger windows can exceed conservative API caps; exact counts must be checked before classification.
 
 ## Gate 0: repository and environment identity
 - Confirm current GitHub main HEAD, PR head SHA and Lovable workspace base. Do not reset or overwrite the newer main.
@@ -52,4 +54,4 @@ Branch: `repair/browser-bot-evidence-v2-20261019`, PR #15.
 1. Reliable first-party collection of user-agent / verified automation signals without treating Chrome viewport as proof.
 2. Safe, trigger-compatible browser enrichment that does not change commercial labels.
 3. Evidence pagination beyond the current conservative 1,000-row cap, without high RAM/DB load.
-4. Whether the hourly shadow job scheduler is active in production, and whether its checkpoint is healthy.
+4. Hourly shadow job is active; verify lease/checkpoint behavior and that any future deployment cannot silently change classification of all sessions on its next scheduled run.
