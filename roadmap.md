@@ -1,5 +1,9 @@
 # Roadmap
 
+- [x] Reproduce canonical GA4 cold-PDP loss and duplicate SPA hits on live and preview.
+- [ ] Buffer consented pageviews; verify focused/full tests and desktop/mobile network behavior.
+- [ ] Release only with typecheck, production prerender, rollback and database gates; otherwise retain unpublished changes.
+
 - [x] Check October 16 commit, visible agent processes, live bundle, database health and credit reserve.
 - [x] Audit post-registration CJ records without credentials, payload disclosure or synthetic deliveries.
 - [x] Probe representative HTTP statuses and indexable guide-product links read-only.

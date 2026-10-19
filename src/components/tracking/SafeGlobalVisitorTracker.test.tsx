@@ -6,6 +6,7 @@ vi.mock('react-router-dom', () => ({ useLocation: () => ({ pathname: state.path 
 vi.mock('@/hooks/useVisitorTracking', () => ({ useVisitorTracking: () => ({ trackBrowsing: vi.fn(), trackViewCart: vi.fn(), trackCheckout: vi.fn() }) }));
 vi.mock('@/hooks/useVisitorHeartbeat', () => ({ useVisitorHeartbeat: vi.fn() }));
 vi.mock('@/lib/marketingClient', () => ({ MARKETING_FLAGS: { GOOGLE_ENABLED: true }, fireMarketingAsync: (_: string, fn: () => void) => fn() }));
+vi.mock('@/lib/ga4PageViews', () => ({ queueGa4PageView: (view: unknown) => state.hits('event', 'page_view', view) }));
 vi.mock('@/components/error/MarketingErrorBoundary', () => ({ MarketingErrorBoundary: ({ children }: { children: ReactNode }) => children }));
 vi.mock('@/lib/traffic', () => ({ pushTrafficContext: vi.fn() }));
 vi.mock('@/lib/utmNormalizer', () => ({ resolveUtm: vi.fn(), syncUtmToUrl: vi.fn(), captureFirstTouch: vi.fn() }));
