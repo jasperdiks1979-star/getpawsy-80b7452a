@@ -129,7 +129,9 @@ export function classifyTraffic(input: ClassifierInput): ClassifierResult {
       classification_version: CLASSIFIER_VERSION,
     };
   }
-  if (highConfExisting && !strongHuman) {
+  // Verified high-confidence automation evidence must not become human simply
+  // because an automated client fired add-to-cart or checkout events.
+  if (highConfExisting) {
     return {
       traffic_quality: "bot",
       is_bot: true,
