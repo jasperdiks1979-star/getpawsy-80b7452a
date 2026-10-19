@@ -1,4 +1,5 @@
 import { stripUnsupportedTitleClaims } from './src/lib/seo-title';
+import { stripMarkdown } from './src/lib/strip-markdown';
 import fs from 'fs';
 import { clampMetaDescription } from './src/lib/seo-title';
 export { clampMetaDescription };
@@ -50,12 +51,14 @@ function escapeHtml(value: string): string {
 }
 
 function stripHtml(value: string | null | undefined): string {
-  return String(value || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
+  // Markdown markers (**, __, #, links) must not leak into crawler-facing meta
+  // descriptions — 238/432 active products carry them in the catalog.
+  return stripMarkdown(
+    String(value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&'),
+  );
 }
 
 function slugify(value: string): string {
