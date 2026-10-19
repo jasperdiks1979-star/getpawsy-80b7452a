@@ -4,6 +4,7 @@ import GridLayout, { WidthProvider, type Layout as RGLItem } from "react-grid-la
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { supabase } from "@/integrations/supabase/client";
+import { readCommercialFunnel } from "@/lib/read-commercial-funnel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,17 +84,13 @@ function OrdersTodayWidget() {
 }
 function Visitors24hWidget() {
   const { d, loading } = useMetric(async () => {
-    const since = new Date(Date.now() - 86_400_000).toISOString();
-    const { count } = await supabase.from("canonical_sessions").select("id",{count:"exact",head:true}).gte("started_at", since);
-    return count ?? 0;
+    return (await readCommercialFunnel(24)).totals.visitors;
   });
   return <StatShell title="Visitors 24h" value={d ?? 0} sub="canonical_sessions" loading={loading} />;
 }
 function Atc24hWidget() {
   const { d, loading } = useMetric(async () => {
-    const since = new Date(Date.now() - 86_400_000).toISOString();
-    const { count } = await (supabase.from("canonical_events") as any).select("id",{count:"exact",head:true}).eq("event_type","add_to_cart").gte("occurred_at", since);
-    return count ?? 0;
+    return (await readCommercialFunnel(24)).totals.add_to_cart;
   });
   return <StatShell title="Add-to-Cart 24h" value={d ?? 0} loading={loading} />;
 }
