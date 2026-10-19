@@ -38,13 +38,13 @@ async function killSwitchGate() {
     },
     body: JSON.stringify({ p_deployment_kind: DEPLOY_KIND }),
   });
-  if (!r.ok) return { allowed: true, kill_switch_status: 'unknown', reason: 'gate_probe_failed' };
+  if (!r.ok) return { allowed: false, kill_switch_status: 'unknown', reason: 'gate_probe_failed' };
   return r.json();
 }
 
 const gate = await killSwitchGate();
 console.log('CEO Kill Switch:', JSON.stringify(gate));
-if (!gate.allowed && !SAFE_KINDS.has(DEPLOY_KIND)) {
+if (gate.reason === 'gate_probe_failed' || (!gate.allowed && !SAFE_KINDS.has(DEPLOY_KIND))) {
   console.error(`\nCEO KILL SWITCH — DEPLOYMENT BLOCKED (status=${gate.kill_switch_status}).`);
   console.error(`Reason: ${gate.reason}`);
   console.error('Only DEPLOYMENT_KIND in {hotfix,rollback,diagnostics,monitoring,evidence,production_validation} bypasses.');

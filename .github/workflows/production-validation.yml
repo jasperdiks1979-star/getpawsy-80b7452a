@@ -28,19 +28,19 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
-            echo "Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets — skipping (configure to enable gate)."
-            exit 0
+            echo "::error::Missing SUPABASE_URL / SUPABASE_ANON_KEY secrets; production validation cannot be skipped."
+            exit 1
           fi
-          RESP=$(curl -sS -X POST \
+          RESP=$(curl --fail-with-body -sS --connect-timeout 10 --max-time 120 -X POST \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Content-Type: application/json" \
             -d "{\"trigger\":\"ci\",\"git_commit\":\"${GITHUB_SHA}\"}" \
             "${SUPABASE_URL}/functions/v1/production-validation-runner")
           echo "$RESP"
-          STATUS=$(echo "$RESP" | jq -r '.status // "fail"')
-          FAILED=$(echo "$RESP" | jq -r '.failed // 0')
-          if [ "$STATUS" = "fail" ] || [ "$FAILED" != "0" ]; then
+          STATUS=$(echo "$RESP" | jq -er '.status // "fail"')
+          FAILED=$(echo "$RESP" | jq -er '.failed // "missing"')
+          if [ "$STATUS" != "pass" ] || [ "$FAILED" != "0" ]; then
             echo "Deployment gate REJECTED — production validation failed."
             exit 1
           fi
