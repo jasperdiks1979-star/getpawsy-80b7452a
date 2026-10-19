@@ -35,6 +35,14 @@ describe("shadow classifier checkpoint safety", () => {
   it("does not reuse cursor without a valid frozen window", () => {
     expect(resolveShadowWindow({ hours: 24, since: "invalid", cursor: "abc" }, 24, now).cursor).toBe("");
   });
+  it("does not resume a checkpoint from a different classifier version", () => {
+    const cp = { hours: 24, since: "2026-10-18T12:00:00.000Z", cursor: "abc", version: "v1" };
+    expect(resolveShadowWindow(cp, 24, now, "v2").cursor).toBe("");
+  });
+  it("resumes a checkpoint from the same classifier version", () => {
+    const cp = { hours: 24, since: "2026-10-18T12:00:00.000Z", cursor: "abc", version: "v2" };
+    expect(resolveShadowWindow(cp, 24, now, "v2").cursor).toBe("abc");
+  });
   it("does not reuse a checkpoint older than eight days", () => {
     expect(resolveShadowWindow({ hours: 24, since: "2026-10-01T12:00:00.000Z", cursor: "abc" }, 24, now).cursor).toBe("");
   });
