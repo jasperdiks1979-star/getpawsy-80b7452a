@@ -23,12 +23,12 @@ const FORBIDDEN_SOURCES = [
 ];
 
 describe("PinterestTrafficWidget · canonical source lock", () => {
-  it("reads canonical_sessions", () => {
-    expect(SRC).toMatch(/\.from\(\s*["']canonical_sessions["']\s*\)/);
+  it("uses the shared commercial reader", () => {
+    expect(SRC).toContain('readCommercialFunnel(720)');
   });
 
-  it("reads canonical_events", () => {
-    expect(SRC).toMatch(/\.from\(\s*["']canonical_events["']\s*\)/);
+  it("derives stage counts from distinct commercial sessions", () => {
+    expect(SRC).toContain('commercialSessionCounters(sessions)');
   });
 
   it("never reads any legacy parallel Pinterest/traffic table", () => {
@@ -39,9 +39,7 @@ describe("PinterestTrafficWidget · canonical source lock", () => {
     }
   });
 
-  it("uses canonical event names for ATC / checkout / purchase counts", () => {
-    expect(SRC).toContain("CANONICAL_ADD_TO_CART");
-    expect(SRC).toContain("CANONICAL_CHECKOUT");
-    expect(SRC).toContain("CANONICAL_PURCHASE");
+  it("never counts raw event taps as shoppers", () => {
+    expect(SRC).not.toMatch(/\.from\(\s*["']canonical_events["']\s*\)/);
   });
 });

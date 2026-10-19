@@ -8,7 +8,7 @@ export interface CommercialFunnelSession extends ClassifierSession {
 /** Read-only canonical human contract; UNKNOWN is never a synonym for bot. */
 export function splitCommercialSessions<T extends CommercialFunnelSession>(rows: T[]) {
   const unique = [...new Map(rows.filter(r => r.session_id).map(r => [r.session_id, r])).values()];
-  const classified = classifySessions(unique);
+  const classified = classifySessions(unique.map(r => ({ ...r, stored_exclude_from_commercial: false })));
   const commercial: T[] = [], unknown: T[] = [], excluded: T[] = [];
   unique.forEach((row, i) => {
     const c = classified[i];
