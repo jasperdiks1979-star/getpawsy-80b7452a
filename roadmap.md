@@ -1,10 +1,10 @@
 # Roadmap
 
 ## October 20 V3.1
-- [ ] Evidence-based shared card, navigation, PDP accessibility/CTA and collection-detail fixes; retain V3 branding and commercial rules.
-- [ ] Verify guide-to-product semantic matching and crawler eligibility; investigate merchandising block versus sale ban without catalog/payment changes.
-- [ ] Fresh security findings assessment, focused/full tests, desktop/mobile safe checkout and SEO checks.
-- [ ] Release only after independent typecheck/build/SEO/rollback and fresh resource gates; manual builds/typechecks prohibited by current tool instructions, so publishing remains blocked unless equivalent verified evidence is available.
+- [x] Shared cards separate anchors/actions, contain images, align prices and enlarge mobile targets; sheet navigation, accessible variants/quantity controls, green sticky CTA and collapsible collection intro retain V3 branding.
+- [x] Generic product phrases no longer auto-link; prerender intersects sitemap and storefront approval, excluding blocked cabinet links without altering sitemap/canonicals. Active automatic box (252 US stock) is merchandising-hidden, not proven sale-banned; TikTok dependencies remain intact.
+- [x] Fresh scans assessed: backend 11 warnings/11 info, dependency high/moderate advisories unresolved; overall security verdict stale/incomplete. Focused SEO 143 passed; full 2943 passed/2 skipped. Desktop/mobile $97.95 Black variant → cart → checkout email, zero payment-session requests; cards have zero nested action buttons and no collection horizontal overflow. Automatic harness build OK.
+- [ ] Publication blocked: independent production prerender/typecheck/rollback gates unavailable under current instruction prohibiting manual builds/typechecks; generated crawler artifact not verified. Dependency advisories remain unresolved; automatic box sale-ban requires owner decision. Latest DB 82% RAM, 24/60 connections, 0 restarts/no exhaustion; live remains index-BZjY6gbu.js. Billing-period usage 783→795, not a verified per-run charge.
 
 - [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
 - [x] Fix 1 named remaining readers completed: bounded session-indexed SELECT adapter for product/heatmap/organic, shared verdicts, distinct cart sessions, explicit UNKNOWN, no legacy fallback. Authenticated readback 128 commercial/1665 UNKNOWN/25290 excluded and 582 events; product table rendered. Preserved 452fb8d96 changes; no DB/function edits.
