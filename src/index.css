@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Warm & Organic Design System
+/* GetPawsy V3 — warm cream, deep green text/CTAs, peach + sage accents
    Aardse tinten met zachte accenten voor een uitnodigend en betrouwbaar gevoel
    All colors are HSL.
 */
@@ -10,31 +10,31 @@
 @layer base {
   :root {
     /* Warm, inviting cream background - slightly warmer for premium feel */
-    --background: 38 35% 97%;
-    --foreground: 25 30% 12%;
+    --background: 40 40% 97%;
+    --foreground: 160 35% 13%;
 
     /* Soft cream cards with subtle warmth */
-    --card: 40 45% 98%;
-    --card-foreground: 25 30% 12%;
+    --card: 40 50% 99%;
+    --card-foreground: 160 35% 13%;
 
     --popover: 40 45% 99%;
-    --popover-foreground: 25 30% 12%;
+    --popover-foreground: 160 35% 13%;
 
     /* Rich terracotta primary - confident but warm */
-    --primary: 22 70% 48%;
-    --primary-foreground: 40 45% 99%;
+    --primary: 160 42% 22%;
+    --primary-foreground: 40 50% 98%;
 
     /* Soft sage green secondary - calming pet-friendly */
-    --secondary: 145 28% 90%;
-    --secondary-foreground: 145 35% 22%;
+    --secondary: 140 24% 90%;
+    --secondary-foreground: 160 38% 18%;
 
     /* Warm sand/beige muted - premium feel */
     --muted: 38 35% 93%;
-    --muted-foreground: 25 18% 42%;
+    --muted-foreground: 160 12% 32%;
 
     /* Warm cream accent - soft sand tone */
-    --accent: 35 40% 92%;
-    --accent-foreground: 35 45% 22%;
+    --accent: 22 90% 92%;
+    --accent-foreground: 18 60% 28%;
 
     /* Trust-building success green */
     --destructive: 0 68% 52%;
@@ -42,19 +42,19 @@
 
     --border: 38 30% 88%;
     --input: 38 30% 88%;
-    --ring: 22 70% 48%;
+    --ring: 160 42% 22%;
 
     --radius: 0.875rem;
 
     /* Sidebar */
     --sidebar-background: 38 38% 96%;
     --sidebar-foreground: 25 25% 22%;
-    --sidebar-primary: 22 70% 48%;
+    --sidebar-primary: 160 42% 22%;
     --sidebar-primary-foreground: 40 45% 99%;
     --sidebar-accent: 145 28% 90%;
     --sidebar-accent-foreground: 145 35% 22%;
     --sidebar-border: 38 30% 88%;
-    --sidebar-ring: 22 70% 48%;
+    --sidebar-ring: 160 42% 22%;
 
     /* Custom semantic colors */
     --success: 145 55% 38%;
@@ -63,7 +63,7 @@
     --warning-foreground: 38 92% 12%;
 
     /* NEW: Premium warm sand accent for section backgrounds */
-    --sand: 35 45% 95%;
+    --sand: 28 70% 95%;
     --sand-foreground: 35 50% 20%;
 
     /* Luxury dark section */

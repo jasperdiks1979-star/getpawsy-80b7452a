@@ -47,8 +47,8 @@ describe('homepage delivery consistency', () => {
   it('never uses the dog-training campaign artwork as homepage imagery', () => {
     expect(html).not.toContain('/hero/dog-training-hero');
     expect(home).not.toContain('dog-training-hero');
-    expect(html).toContain('/hero/cat-litter-box-hero');
-    expect(home).toContain('/hero/cat-litter-box-hero');
+    expect(html).toContain('/hero/v3-hero');
+    expect(home).toContain('/hero/v3-hero');
   });
 
   it('renders the exact five commercial-rebuild heroes in source order', () => {

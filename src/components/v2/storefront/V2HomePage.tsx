@@ -9,8 +9,8 @@ import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
-const heroDesktop = '/hero/cat-litter-box-hero.webp';
-const heroMobile = '/hero/cat-litter-box-hero-mobile.webp';
+const heroDesktop = '/hero/v3-hero.webp';
+const heroMobile = '/hero/v3-hero-mobile.webp';
 
 const HERO_PRODUCT_IDS = [
   // Slot 1 uses a visible, active cat product with verified stock, a live PDP,
@@ -109,11 +109,10 @@ export function V2HomePage() {
               id="hero-heading"
               className="mt-3 font-display text-3xl font-bold leading-tight text-foreground sm:text-4xl md:text-5xl"
             >
-              A cleaner home for you and your cat
+              Happy cats, tidy homes
             </h1>
             <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
-              Explore our focused range of litter boxes, cat trees and enrichment toys for indoor cats.
-              Product pages separate verified supplier facts from details that are not documented.
+              Litter boxes, cat trees and enrichment for indoor cats, shipped across the US.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
@@ -139,9 +138,9 @@ export function V2HomePage() {
               <source media="(min-width: 768px)" srcSet={heroDesktop} />
               <img
                 src={heroMobile}
-                alt="Enclosed cat litter box in a clean indoor space"
-                width={1200}
-                height={669}
+                alt="Relaxed cat stretching on a sofa in a bright living room"
+                width={1600}
+                height={1200}
                 fetchPriority="high"
                 decoding="async"
                 className="aspect-[4/3] w-full object-cover"
