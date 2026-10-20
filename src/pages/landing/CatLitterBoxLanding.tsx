@@ -89,6 +89,11 @@ const CatLitterBoxLanding = () => {
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
+        {/* Missing product: never let this empty state be indexed (GSC Soft 404). */}
+        <Helmet>
+          <title>Product Not Found | GetPawsy</title>
+          <meta name="robots" content="noindex, follow" />
+        </Helmet>
         <h1 className="text-2xl font-bold text-foreground mb-2">Product Not Found</h1>
         <p className="text-muted-foreground mb-4">This product may no longer be available.</p>
         <Button onClick={() => navigate('/products')}>Browse All Products</Button>
