@@ -719,6 +719,7 @@ const SeoCollection = () => {
                       product={{
                         id: product.id,
                         name: product.name,
+                        name_clean: product.name_clean,
                         price: product.price,
                         compare_at_price: product.compare_at_price,
                         image_url: product.image_url,
