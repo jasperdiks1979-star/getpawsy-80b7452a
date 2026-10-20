@@ -39,3 +39,12 @@ describe('create-checkout wiring', () => {
     expect(src).not.toMatch(/rawOrigin \|\|/);
   });
 });
+describe('create-checkout pending order typing', () => {
+  const src = readFileSync('supabase/functions/create-checkout/index.ts', 'utf8');
+  it('inserted pending order reads back the same columns as the reuse lookup', () => {
+    expect(src).toMatch(/\.insert\(orderRow\)\.select\("id, payment_status"\)/);
+  });
+  it('still fails closed when the order cannot be recorded', () => {
+    expect(src).toMatch(/if \(orderError \|\| !pendingOrder\?\.id\)/);
+  });
+});
