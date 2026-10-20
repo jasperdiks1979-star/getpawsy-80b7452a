@@ -1,4 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { isSpecificProductPhrase } from '@/lib/guide-product-eligibility';
+
+describe('guide product auto-link phrases', () => {
+  it('does not link generic litter-box wording to a specific product', () => {
+    expect(isSpecificProductPhrase('cat litter box')).toBe(false);
+  });
+  it('keeps product-specific phrases linkable', () => {
+    expect(isSpecificProductPhrase('stainless steel litter box')).toBe(true);
+  });
+});
 import { readFileSync } from 'node:fs';
 import { isGuideLinkAllowed, productSlugFromHref } from '@/lib/guide-product-eligibility';
 

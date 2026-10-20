@@ -20,3 +20,14 @@ export function isGuideLinkAllowed(href: string | undefined | null, eligible: Re
   if (!slug) return true;
   return !!eligible && eligible.has(slug);
 }
+
+const GENERIC_PRODUCT_WORDS = new Set([
+  'cat', 'cats', 'kitty', 'kitten', 'litter', 'box', 'boxes', 'with', 'for', 'and', 'the', 'large', 'small',
+  'indoor', 'pet', 'pets', 'covered', 'enclosed', 'easy', 'clean', 'cleaning',
+]);
+
+/** Auto-link phrases must identify a product, not just its category (e.g. "cat litter box"). */
+export function isSpecificProductPhrase(phrase: string): boolean {
+  const words = phrase.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  return words.filter((w) => w.length >= 3 && !GENERIC_PRODUCT_WORDS.has(w)).length >= 2;
+}

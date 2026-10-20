@@ -196,7 +196,7 @@ const GuidePage = () => {
         for (let len = 4; len >= 3; len--) {
           for (let i = 0; i <= words.length - len; i++) {
             const phrase = words.slice(i, i + len).join(' ');
-            if (phrase.length >= 12 && !map.has(phrase)) {
+            if (phrase.length >= 12 && isSpecificProductPhrase(phrase) && !map.has(phrase)) {
               map.set(phrase, `/products/${p.slug}`);
             }
           }
