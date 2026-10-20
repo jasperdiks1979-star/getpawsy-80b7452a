@@ -10,27 +10,27 @@
 @layer base {
   :root {
     /* Warm, inviting cream background - slightly warmer for premium feel */
-    --background: 40 40% 97%;
-    --foreground: 160 35% 13%;
+    --background: 36 33% 98%;
+    --foreground: 24 14% 14%;
 
     /* Soft cream cards with subtle warmth */
     --card: 40 50% 99%;
-    --card-foreground: 160 35% 13%;
+    --card-foreground: 24 14% 14%;
 
     --popover: 40 45% 99%;
-    --popover-foreground: 160 35% 13%;
+    --popover-foreground: 24 14% 14%;
 
     /* Rich terracotta primary - confident but warm */
     --primary: 160 42% 22%;
     --primary-foreground: 40 50% 98%;
 
     /* Soft sage green secondary - calming pet-friendly */
-    --secondary: 140 24% 90%;
-    --secondary-foreground: 160 38% 18%;
+    --secondary: 42 70% 92%;
+    --secondary-foreground: 30 40% 20%;
 
     /* Warm sand/beige muted - premium feel */
     --muted: 38 35% 93%;
-    --muted-foreground: 160 12% 32%;
+    --muted-foreground: 24 8% 34%;
 
     /* Warm cream accent - soft sand tone */
     --accent: 22 90% 92%;
