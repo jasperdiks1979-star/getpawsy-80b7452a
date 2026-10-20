@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Search } from 'lucide-react';
+import { Menu, ShoppingBag, Search, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
-import { PRIMARY_NAV } from './nav-config';
+import { PRIMARY_NAV, SHOP_NAV } from './nav-config';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/shipping-constants';
 import logo from '@/assets/logo-getpawsy.png';
 
@@ -47,16 +49,31 @@ export function V2Header() {
       </p>
 
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
-        <button
-          type="button"
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-          aria-controls="v2-mobile-nav"
-          onClick={() => setOpen((v) => !v)}
-          className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
-        </button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Open menu" className="lg:hidden h-11 w-11 text-foreground">
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" aria-describedby={undefined} className="w-[min(330px,100vw)] overflow-y-auto">
+            <SheetTitle className="font-display text-xl">GetPawsy</SheetTitle>
+            <nav id="v2-mobile-nav" aria-label="Mobile" className="mt-6">
+              <ul className="list-none p-0">
+                {SHOP_NAV.map((item) => (
+                  <li key={item.href}>
+                    <SheetClose asChild>
+                      <Link to={item.href} className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-3 text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        {item.label}<ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                      </Link>
+                    </SheetClose>
+                  </li>
+                ))}
+                <li><SheetClose asChild><Link to="/collections/cat-toys" className="flex min-h-12 items-center border-b border-border py-3 text-base font-medium focus-visible:ring-2 focus-visible:ring-ring">Cat toys</Link></SheetClose></li>
+                <li><SheetClose asChild><Link to="/help" className="flex min-h-12 items-center py-3 text-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring">Help &amp; support</Link></SheetClose></li>
+              </ul>
+            </nav>
+          </SheetContent>
+        </Sheet>
 
         <Link
           to="/"
@@ -104,29 +121,6 @@ export function V2Header() {
         </div>
       </div>
 
-      {open && (
-        <nav
-          id="v2-mobile-nav"
-          aria-label="Mobile"
-          className="lg:hidden border-t border-border bg-background"
-        >
-          <ul className="mx-auto max-w-6xl list-none px-4 py-2 sm:px-6">
-            {PRIMARY_NAV.map((item) => (
-              <li key={item.href}>
-                <Link
-                  to={item.href}
-                  className="flex min-h-[56px] flex-col justify-center border-b border-border/60 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <span className="text-base font-semibold text-foreground">{item.label}</span>
-                  {item.description && (
-                    <span className="text-xs text-muted-foreground">{item.description}</span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
     </header>
   );
 }
