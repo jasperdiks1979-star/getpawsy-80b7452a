@@ -11,6 +11,7 @@ vi.mock("@/integrations/supabase/client", () => {
   const product = { id: "p1", name: "Sisal Scratching Post", slug: "sisal-post", image_url: "https://x/i.png", price: 19.5, category: "Cat Scratching Posts", stock: 5 };
   const q: any = {
     select: () => q, order: () => q, limit: () => q, ilike: () => q, in: () => q, lte: () => q, or: () => q, not: () => q,
+    neq: (c: string, v: unknown) => { calls.push(`neq:${c}=${v}`); return q; },
     eq: (c: string, v: unknown) => { calls.push(`eq:${c}=${v}`); return q; },
     gt: (c: string, v: unknown) => { calls.push(`gt:${c}=${v}`); return q; },
     then: (res: any) => Promise.resolve({ data: [product], error: null }).then(res),
@@ -31,6 +32,9 @@ describe("PriorityPickBlock guide→product bridge", () => {
     const name = await waitFor(() => screen.getByText("Sisal Scratching Post"));
     expect(calls).toContain("eq:is_active=true");
     expect(calls).toContain("gt:stock=0");
+    expect(calls).toContain("eq:merch_hidden=false");
+    expect(calls).toContain("neq:merch_role=blocked");
+    expect(calls).toContain("eq:is_duplicate=false");
     expect(name.closest("a")?.getAttribute("href")).toBe("/products/sisal-post");
     fireEvent.click(name);
     expect(trackEvent).toHaveBeenCalledWith("guide_product_click", expect.objectContaining({

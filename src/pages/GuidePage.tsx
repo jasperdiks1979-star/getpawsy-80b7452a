@@ -36,6 +36,7 @@ import { GuideClusterNav } from '@/components/guides/GuideClusterNav';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
 import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
+import { isGuideLinkAllowed } from '@/lib/guide-product-eligibility';
 
 /** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
 const normalizeProductHref = (href: string): string =>
@@ -90,19 +91,29 @@ const GuidePage = () => {
   const redirectTarget = slug ? getGuideRedirectTarget(slug) : null;
 
   // Fetch products for internal linking AND image enrichment in guide content
-  const { data: linkableProducts = [] } = useQuery({
-    queryKey: ['internal-linking-products'],
+  // Storefront gates match the homepage: only merch-approved, in-stock products may be linked.
+  const { data: linkableProducts = [], isFetched: linkableReady } = useQuery({
+    queryKey: ['internal-linking-products', 'storefront-eligible'],
     queryFn: async () => {
       const { data } = await supabase
         .from('products_public')
         .select('id, name, slug, category, image_url')
         .eq('is_active', true)
+        .gt('stock', 0)
+        .eq('merch_hidden', false)
+        .neq('merch_role', 'blocked')
+        .eq('is_duplicate', false)
         .not('slug', 'is', null)
-        .limit(200);
+        .limit(500);
       return (data || []) as { id: string; name: string; slug: string | null; category: string | null; image_url: string | null }[];
     },
     staleTime: 5 * 60 * 1000,
   });
+  const eligibleSlugs = useMemo(
+    () => new Set(linkableProducts.map(p => (p.slug || '').toLowerCase()).filter(Boolean)),
+    [linkableProducts],
+  );
+  const eligibleSet = linkableReady ? eligibleSlugs : null;
 
   // Build a fuzzy product-name → image_url map for enriching guide sections
   const productImageMap = useMemo(() => {
@@ -147,7 +158,7 @@ const GuidePage = () => {
 
   // Enrich comparisonProducts with real images from the database
   const enrichedComparisonProducts = useMemo(() => {
-    return guide?.comparisonProducts?.map(raw => {
+    return guide?.comparisonProducts?.filter(raw => isGuideLinkAllowed(raw.link, eligibleSet)).map(raw => {
       // Canonical product namespace is /products/{slug}; legacy /product/ links
       // stored in guide content are normalized at render time.
       const p = raw.link ? { ...raw, link: normalizeProductHref(raw.link) } : raw;
@@ -159,7 +170,7 @@ const GuidePage = () => {
       }
       return p;
     });
-  }, [guide?.comparisonProducts, productImageMap]);
+  }, [guide?.comparisonProducts, productImageMap, eligibleSet]);
 
   // Build keyword → product URL lookup for auto-linking product mentions in guide content
   const productLinkMap = useMemo(() => {
@@ -167,7 +178,7 @@ const GuidePage = () => {
     
     // Priority 1: Add guide's own comparisonProducts (most accurate, short names)
     guide?.comparisonProducts?.forEach(cp => {
-      if (cp.name && cp.link) {
+      if (cp.name && cp.link && isGuideLinkAllowed(cp.link, eligibleSet)) {
         map.set(cp.name.toLowerCase().trim(), normalizeProductHref(cp.link));
       }
     });
@@ -194,7 +205,7 @@ const GuidePage = () => {
     });
     
     return map;
-  }, [linkableProducts, guide?.comparisonProducts]);
+  }, [linkableProducts, guide?.comparisonProducts, eligibleSet]);
 
   // IMPORTANT: This useMemo MUST be before any conditional returns to maintain
   // stable React hooks order across all renders (loading, error, loaded).
@@ -492,7 +503,7 @@ const GuidePage = () => {
   const formatInline = (text: string) => {
     // Resolve stored internal links to final canonical destinations first.
     // Bold
-    let result = canonicalizeInternalLinks(text).replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
+    let result = canonicalizeInternalLinks(text, { allowedProducts: eligibleSlugs && eligibleSet ? eligibleSlugs : new Set<string>() }).replace(/\*\*(.+?)\*\*/g, '<strong class="text-foreground font-semibold">$1</strong>');
     // Markdown links [text](/guides/slug) → <a> tags
     result = result.replace(/\[([^\]]+)\]\(\/guides\/([a-z0-9-]+)\)/g, 
       '<a href="/guides/$2" class="text-primary hover:underline font-medium" data-internal-guide="true">$1</a>');
@@ -698,6 +709,8 @@ const GuidePage = () => {
               const hasRealImage = pick.image && !pick.image.startsWith('/images/guides/');
               return {
                 ...pick,
+                // Ineligible product → empty link, which QuickRecommendation hides.
+                link: isGuideLinkAllowed(pick.link, eligibleSet) ? pick.link : '',
                 image: hasRealImage
                   ? pick.image
                   : findProductImage(pick.name) || enrichedComparisonProducts?.find(p => p.link === pick.link)?.image,

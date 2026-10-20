@@ -49,6 +49,9 @@ export function PriorityPickBlock({ slug, hideAnswer }: Props) {
         .select('id,name,slug,image_url,price,category,stock')
         .eq('is_active', true)
         .gt('stock', 0)
+        .eq('merch_hidden', false)
+        .neq('merch_role', 'blocked')
+        .eq('is_duplicate', false)
         .not('slug', 'is', null)
         .or(pick.keywords.map(k => `name.ilike.%${k}%`).join(','));
 
