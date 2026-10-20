@@ -12,6 +12,7 @@ import { useCollectionIntegrityCheck } from '@/lib/collection-integrity';
 import { resolveCollectionSlug, getVirtualCollection } from '@/lib/collection-slug-resolver';
 import { logCollectionResolution } from '@/lib/diagnostics-payload';
 import { classifySpecies } from '@/lib/species-taxonomy';
+import { applySpeciesGuard, collectionSpeciesTarget } from '@/lib/collection-species-guard';
 import { getConversionFlag } from '@/lib/conversionFlags';
 import { Layout } from '@/components/layout/Layout';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -356,52 +357,16 @@ const SeoCollection = () => {
     enabled: !!collection,
   });
 
-  // Species taxonomy filter — applies to cat/dog hub pages AND all dog-*/cat-* prefixed collections
-  const isSpeciesCollection = slug === 'cat' || slug === 'dog' || slug === 'multi-pet';
-  const isDogPrefixedCollection = slug?.startsWith('dog-') || slug?.startsWith('puppy-');
-  const isCatPrefixedCollection = slug?.startsWith('cat-');
-  const needsSpeciesFilter = isSpeciesCollection || isDogPrefixedCollection || isCatPrefixedCollection;
+  // Species presentation guard — cat/cats/cat-*, dog/dogs/dog-*/puppy-*, multi-pet
+  const speciesTarget = collectionSpeciesTarget(slug);
+  const isSpeciesCollection = slug === 'cat' || slug === 'dog' || slug === 'cats' || slug === 'dogs' || slug === 'multi-pet';
+  const needsSpeciesFilter = speciesTarget !== null;
   const [includeMultiPet, setIncludeMultiPet] = useState(false); // STRICT mode: off by default
 
-  const products = useMemo(() => {
-    const raw = productMatch?.products || [];
-    if (!needsSpeciesFilter || raw.length === 0) return raw;
-
-    if (slug === 'multi-pet') {
-      return raw.filter(p => {
-        const dbSpecies = (p as any).primary_species;
-        if (dbSpecies) return dbSpecies === 'both';
-        const taxonomy = classifySpecies(p.name, p.category || '', []);
-        return taxonomy.speciesPrimary === 'multi';
-      });
-    }
-
-    // Determine target species from slug prefix or exact slug
-    const targetSpecies: 'cat' | 'dog' = (slug === 'cat' || isCatPrefixedCollection) ? 'cat' : 'dog';
-    const oppositeSpecies = targetSpecies === 'cat' ? 'dog' : 'cat';
-    return raw.filter(p => {
-      const dbSpecies = (p as any).primary_species as string | null;
-      const category = (p.category || '').toLowerCase();
-      const name = (p.name || '').toLowerCase();
-
-      // Hard-exclude products whose category explicitly belongs to the opposite species
-      const oppositeKeywords = oppositeSpecies === 'dog'
-        ? ['dog collar', 'dog leash', 'dog harness', 'dog training', 'dog bed', 'dog toy', 'dog crate', 'dog car']
-        : ['cat tree', 'cat litter', 'cat condo', 'cat tower', 'cat scratching', 'cat furniture'];
-      const hasCategoryConflict = oppositeKeywords.some(kw => category.includes(kw));
-      if (hasCategoryConflict) return false;
-
-      if (dbSpecies && dbSpecies !== 'unknown') {
-        if (dbSpecies === targetSpecies) return true;
-        if (dbSpecies === 'both') return true;
-        return false;
-      }
-      const taxonomy = classifySpecies(name, category, []);
-      if (taxonomy.speciesPrimary === targetSpecies) return true;
-      if (taxonomy.speciesPrimary === 'multi') return true;
-      return false;
-    });
-  }, [productMatch?.products, needsSpeciesFilter, slug, isDogPrefixedCollection, isCatPrefixedCollection, includeMultiPet]);
+  const products = useMemo(
+    () => applySpeciesGuard(productMatch?.products || [], speciesTarget, includeMultiPet),
+    [productMatch?.products, speciesTarget, includeMultiPet],
+  );
 
   // Infinite scroll for large catalogs (e.g. /collections/all)
   const { visibleItems, hasMore, isLoading: scrollLoading, loaderRef } = useInfiniteScroll({
