@@ -1,5 +1,11 @@
 # Roadmap
 
+## October 20 V3.1
+- [ ] Evidence-based shared card, navigation, PDP accessibility/CTA and collection-detail fixes; retain V3 branding and commercial rules.
+- [ ] Verify guide-to-product semantic matching and crawler eligibility; investigate merchandising block versus sale ban without catalog/payment changes.
+- [ ] Fresh security findings assessment, focused/full tests, desktop/mobile safe checkout and SEO checks.
+- [ ] Release only after independent typecheck/build/SEO/rollback and fresh resource gates; manual builds/typechecks prohibited by current tool instructions, so publishing remains blocked unless equivalent verified evidence is available.
+
 - [x] October 19 fixes 2–5 staged: exact active-variant Product/collection offers; tier/noindex robots parity; unsupported bowl health copy removed read-time; $35+ shipping and existing verified returns terms. Desktop/mobile staged PDP evidence confirmed.
 - [x] Fix 1 named remaining readers completed: bounded session-indexed SELECT adapter for product/heatmap/organic, shared verdicts, distinct cart sessions, explicit UNKNOWN, no legacy fallback. Authenticated readback 128 commercial/1665 UNKNOWN/25290 excluded and 582 events; product table rendered. Preserved 452fb8d96 changes; no DB/function edits.
 - [x] Permitted verification: focused 99 passed; full 2905 passed/2 skipped; staged desktop/mobile four PDPs, selected Pink/Light grey schema prices and neutral bowl confirmed, no page errors. Protected payment/GA4 paths untouched. RAM 70%, connections 22/60, zero restarts/exhaustion.
