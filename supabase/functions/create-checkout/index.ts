@@ -714,7 +714,7 @@ serve(async (req) => {
     let pendingOrder = reusableOrder;
     let orderError: unknown = null;
     if (!orderError && !pendingOrder) {
-      const ins = await supabaseAdmin.from("orders").insert(orderRow).select("id").maybeSingle();
+      const ins = await supabaseAdmin.from("orders").insert(orderRow).select("id, payment_status").maybeSingle();
       pendingOrder = ins.data; orderError = ins.error;
       if (orderError && (orderError as { code?: string }).code === "23505") {
         ({ data: pendingOrder, error: orderError } = await findByAttempt());
