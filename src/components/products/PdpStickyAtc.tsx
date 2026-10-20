@@ -103,8 +103,8 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
           'border-t border-border/40 bg-background/95 backdrop-blur-md',
           'supports-[backdrop-filter]:bg-background/80',
           'px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]',
-          'shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]',
-          'transition-transform duration-300 ease-out',
+          'shadow-lg',
+          'motion-safe:transition-transform motion-safe:duration-300 ease-out',
           hiddenByScroll ? 'translate-y-full' : 'translate-y-0',
         ].join(' ')}
         style={{ contain: 'layout' }}
@@ -122,7 +122,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
           <Button
             onClick={handleTap}
             disabled={!inStock}
-            className="ml-auto h-14 flex-1 gap-2 text-[15px] font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-transform"
+            className="ml-auto h-14 flex-1 min-w-0 gap-2 text-sm font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <ShoppingCart className="w-[18px] h-[18px]" />
             {inStock ? `${ctaLabel} →` : 'Out of stock'}
@@ -136,7 +136,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
     <div
       role="region"
       aria-label="Quick add to cart"
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.25)]"
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85 px-3 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg"
       style={{ contain: 'layout' }}
     >
       {showPayMarks && <PaymentMarksRow />}
@@ -150,7 +150,7 @@ export function PdpStickyAtc({ onCtaClick, inStock, price, productId, ctaLabel =
         <Button
           onClick={handleTap}
           disabled={!inStock}
-          className="ml-auto h-12 flex-1 gap-2 text-sm font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl active:scale-[0.98] transition-transform"
+          className="ml-auto h-12 flex-1 min-w-0 gap-2 text-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
         >
           <ShoppingCart className="w-4 h-4" />
           {inStock ? `${ctaLabel} →` : 'Out of stock'}

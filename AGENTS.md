@@ -11,17 +11,19 @@
 - Syncs that rebuild products.variants from CJ must go through supabase/functions/_shared/variant-price-guard.ts, and checkout coupons the storefront offers live in src/lib/couponCodes.ts matching create-checkout. Why: CJ variantSellPrice is supplier cost and must never replace or impersonate a processed sell price; client and server must charge the same discount.
 - src/lib/seo-root-consolidation.ts maps duplicate root pages to /guides canonicals with noindex. Prerender writes noindex,follow stubs, including GUIDE_REDIRECTS; index.html preserves their canonicals. Why: consolidate signals without breaking ad landings.
 - Checkout attempt chains may reuse only unpaid orders; every settled order advances the deterministic attempt id before a new payment session is created. Why: retries remain idempotent without binding a later identical purchase to an already-paid order.
-- Live shopper markers and the “Now online” counter use the same commercial-live-presence verdict; technical/unconfirmed geo appears only in an optional subdued forensic layer. Why: raw heartbeats must not look like active shoppers.
+- Shopper markers and “Now online” share commercial-live-presence verdict; unconfirmed geo stays forensic. Why: heartbeats aren't shoppers.
 - Product brand/GTIN/MPN for JSON-LD, prerender and the Merchant feed come only from src/lib/product-identifiers.ts (documented values only; never GetPawsy as fill-in brand, never ids/SKUs as MPN). Why: identifiers must describe the real product.
 - US handling/transit day windows live in src/lib/shipping-windows.ts and feed shopper copy, Product JSON-LD and the feed. Why: one shipping promise everywhere.
 - Generic PDP sections choose context via src/lib/pdp-category.ts and must never state product attributes; facts come from product-evidence or verified overrides. Why: category guesses leaked false features (ramp → bed).
 - Quick-add callers must preserve missing variant data rather than defaulting it to an empty array. Why: lean listing queries omit variants and must route to explicit option selection instead of adding a bare cart line.
-- Bot labels: analytics-shadow-classifier classifies per canonical_sessions row (stored UA/stage), keyset batches, lease+checkpoint in analytics_job_leases, its own version in shadow_classifier_version (classifier_version is overwritten by a trigger); never reads/writes canonical_events. Why: event-based pass hit caps and its version was clobbered.
+- Bot labels: analytics-shadow-classifier uses canonical_sessions UA/stage, keyset batches, analytics_job_leases checkpoint and shadow_classifier_version (trigger overwrites classifier_version); never touches canonical_events. Why: event scans hit caps.
 - "Complete the setup" requires isBundleUpsellReady(). Why: unsafe base prices and lost variant identity.
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploys.
 - Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
-- Commercial reports use commercial-funnel/read-commercial-funnel; product/heatmap/organic readers add bounded session-indexed SELECT evidence via read-commercial-reports, fail closed on incomplete data, and never fall back to legacy aggregates. Why: hard exclusions, UNKNOWN and distinct stages must agree without rewriting history.
+- Reports use commercial-funnel/read-commercial-funnel; product/heatmap/organic use bounded session-indexed SELECTs via read-commercial-reports, fail closed, no legacy aggregates. Why: exclusions, UNKNOWN and distinct stages must agree.
 - Product-claim-hygiene removes unsupported supplier promises at read time, retaining catalog/URLs. Why: claims need evidence.
 - PDP schema receives buy-box price; lean collection schema shares batched card option queries and omits unresolved offers. Why: catalog base can differ from purchasable options.
 - Product routes own robots via productRobotsDirective, matching existing tier/noindex sitemap policy. Why: route-only index must not overwrite eligibility.
+- Guide product links intersect sitemap with storefront approval; auto-link phrases must identify products, not categories. Why: avoid blocked links and cabinet-to-pan mismatches.
+- Cards separate anchors from buttons; mobile menus use the shared sheet. Why: valid markup and contained keyboard focus.

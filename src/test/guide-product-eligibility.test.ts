@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { isGuideLinkAllowed, productSlugFromHref } from '@/lib/guide-product-eligibility';
+import { guideProductLinkIntersection, isGuideLinkAllowed, isSpecificProductPhrase, productSlugFromHref } from '@/lib/guide-product-eligibility';
+
+describe('guide product auto-link phrases', () => {
+  it('does not link generic litter-box wording to a specific product', () => {
+    expect(isSpecificProductPhrase('cat litter box')).toBe(false);
+  });
+  it('keeps product-specific phrases linkable', () => {
+    expect(isSpecificProductPhrase('stainless steel litter box')).toBe(true);
+  });
+});
+
+describe('crawler guide product promotion', () => {
+  it('drops the blocked wooden cabinet even when it is in the sitemap', () => {
+    const cabinet = 'cat-litter-box-enclosure-wooden-litter-box-furniture-hidden-2-rooms-black';
+    expect(guideProductLinkIntersection(new Set([...eligible, cabinet]), eligible).has(cabinet)).toBe(false);
+  });
+  it('keeps the approved stainless box without changing sitemap eligibility', () => {
+    const indexed = new Set(eligible);
+    expect([...guideProductLinkIntersection(indexed, eligible)]).toEqual([...eligible]);
+    expect([...indexed]).toEqual([...eligible]);
+  });
+});
 
 const eligible = new Set(['stainless-steel-cat-litter-box-with-lid-large-cat-litter-box-for-big-cats-scoop-and-mat-included']);
 

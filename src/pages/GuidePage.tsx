@@ -36,7 +36,7 @@ import { GuideClusterNav } from '@/components/guides/GuideClusterNav';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
 import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
-import { isGuideLinkAllowed } from '@/lib/guide-product-eligibility';
+import { isGuideLinkAllowed, isSpecificProductPhrase } from '@/lib/guide-product-eligibility';
 
 /** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
 const normalizeProductHref = (href: string): string =>
@@ -196,7 +196,7 @@ const GuidePage = () => {
         for (let len = 4; len >= 3; len--) {
           for (let i = 0; i <= words.length - len; i++) {
             const phrase = words.slice(i, i + len).join(' ');
-            if (phrase.length >= 12 && !map.has(phrase)) {
+            if (phrase.length >= 12 && isSpecificProductPhrase(phrase) && !map.has(phrase)) {
               map.set(phrase, `/products/${p.slug}`);
             }
           }

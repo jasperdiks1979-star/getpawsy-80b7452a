@@ -72,7 +72,8 @@ export const CollectionClusterIntro = memo(function CollectionClusterIntro({
   if (!intro) return null;
 
   return (
-    <div className="mb-8 max-w-3xl">
+    <details className="mb-5 max-w-3xl group">
+      <summary className="cursor-pointer py-3 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">Buying advice &amp; related guides</summary>
       <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4">
         {intro.text(collectionName)}
       </p>
@@ -87,7 +88,7 @@ export const CollectionClusterIntro = memo(function CollectionClusterIntro({
           </Link>
         ))}
       </div>
-    </div>
+    </details>
   );
 });
 

@@ -22,6 +22,7 @@ import { loadSeoPolicy, normalizeProductLinks } from './scripts/seo-indexability
 import { canonicalizeInternalLinks, type InternalLinkContext } from './src/lib/seo-internal-links';
 import { clusterForGuide, SEO_CLUSTERS } from './src/lib/seo-clusters';
 import { sanitizeGuideSeoTitle, clampMetaDescription, sanitizeSeoDescription } from './src/lib/seo-title';
+import { guideProductLinkIntersection } from './src/lib/guide-product-eligibility';
 
 /** Link context from the generated sitemaps: only advertised (canonical, indexable) URLs stay linked. */
 export function linkContextFromSitemaps(dir: string): InternalLinkContext | undefined {
@@ -635,6 +636,14 @@ export default function prerenderGuidesPlugin(): Plugin {
       const policy = loadSeoPolicy();
       const linkCtx = linkContextFromSitemaps(path.resolve('public'));
       if (!linkCtx) throw new Error('[prerender-guides] FATAL sitemaps missing — cannot canonicalize internal links');
+      // Sitemap eligibility alone does not approve a product for editorial promotion.
+      // Match hydrated guide gates without removing URLs from sitemaps or changing product robots.
+      const approvedProducts = await supaRestAll<{ slug: string }>('products_public',
+        'select=slug&is_active=eq.true&stock=gt.0&merch_hidden=eq.false&merch_role=neq.blocked&is_duplicate=eq.false&slug=not.is.null&order=slug.asc');
+      if (approvedProducts === null) throw new Error('[prerender-guides] FATAL guide product eligibility fetch failed');
+      linkCtx.allowedProducts = guideProductLinkIntersection(
+        linkCtx.allowedProducts ?? new Set<string>(), new Set(approvedProducts.map((p) => p.slug)),
+      );
       const files = fs.readdirSync(guidesDir).filter(f => f.endsWith('.json') && f !== 'index.json');
       const staticGuides: GuideJson[] = [];
       for (const file of files) {

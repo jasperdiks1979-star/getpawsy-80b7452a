@@ -1691,12 +1691,14 @@ const ProductDetail = () => {
                     const hasImage = !!variant.variantImage;
 
                     return (
-                      <motion.button
+                      <Button
                         key={variant.vid}
+                        type="button"
+                        variant="outline"
+                        aria-pressed={isSelected}
+                        aria-label={`Choose ${displayValue}`}
                         onClick={() => { setSelectedVariant(variant); setUserHasSelectedVariant(true); }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all ${
+                        className={`h-auto min-h-11 max-w-full whitespace-normal inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 ${
                           isSelected
                             ? "border-primary bg-primary/10 text-primary shadow-soft ring-2 ring-primary/20"
                             : "border-border hover:border-primary/50 bg-background"
@@ -1706,7 +1708,7 @@ const ProductDetail = () => {
                         {isColorVariant && colorHex && (
                           <span
                             className={`w-4 h-4 rounded-full flex-shrink-0 ${
-                              ["white", "ivory", "cream", "beige"].includes(detectedColor!)
+                              ["white", "ivory", "cream", "beige"].includes(detectedColor ?? "")
                                 ? "border border-border"
                                 : ""
                             }`}
@@ -1729,7 +1731,7 @@ const ProductDetail = () => {
                             ${Number(variant.variantSellPrice).toFixed(2)}
                           </span>
                         )}
-                      </motion.button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1847,7 +1849,7 @@ const ProductDetail = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap items-center gap-4 pt-4"
+              className="grid grid-cols-[auto_minmax(0,1fr)] sm:flex sm:flex-wrap items-center gap-3 pt-4"
             >
               {/* Quantity Selector */}
               <div className="flex items-center bg-muted/50 rounded-xl overflow-hidden">
@@ -1856,6 +1858,7 @@ const ProductDetail = () => {
                   size="icon"
                   className="rounded-none h-12 w-12 hover:bg-muted"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  aria-label="Decrease quantity"
                 >
                   <Minus className="w-4 h-4" />
                 </Button>
@@ -1865,6 +1868,7 @@ const ProductDetail = () => {
                   size="icon"
                   className="rounded-none h-12 w-12 hover:bg-muted"
                   onClick={() => setQuantity(quantity + 1)}
+                  aria-label="Increase quantity"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -1874,7 +1878,7 @@ const ProductDetail = () => {
               <Button
                 ref={addToCartButtonRef}
                 size="lg"
-                className="flex-1 h-14 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white shadow-lg rounded-xl"
+                className="col-span-2 row-start-1 sm:flex-1 h-14 min-w-0 gap-2 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg rounded-lg"
                 onClick={handleAddToCart}
                 disabled={!inStock || variantChoiceMissing}
               >
@@ -1886,8 +1890,10 @@ const ProductDetail = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className={`h-12 w-12 rounded-xl border-2 ${inWishlist ? "border-accent bg-accent/10 text-accent" : ""}`}
+                className={`h-12 w-12 rounded-lg border-2 ${inWishlist ? "border-primary bg-primary/10 text-primary" : ""}`}
                 onClick={handleWishlistToggle}
+                aria-label={inWishlist ? "Remove from wishlist" : "Save to wishlist"}
+                aria-pressed={inWishlist}
               >
                 <Heart className={`w-5 h-5 ${inWishlist ? "fill-current" : ""}`} />
               </Button>

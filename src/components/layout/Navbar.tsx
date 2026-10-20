@@ -26,7 +26,7 @@ import { useCartIconRef } from '@/contexts/CartAnimationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -543,7 +543,8 @@ export const Navbar = () => {
                   <AnimatedHamburger isOpen={isMobileMenuOpen} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className={premiumMobileNavV2 ? 'w-[330px] p-0 bg-background border-l border-border/60' : 'w-[320px] p-0 bg-background'}>
+              <SheetContent side="right" aria-describedby={undefined} className="w-[min(330px,100vw)] p-0 bg-background border-l border-border/60">
+                <SheetTitle className="sr-only">GetPawsy menu</SheetTitle>
                 <div className="flex flex-col h-full">
                   <div className={premiumMobileNavV2 ? 'px-6 py-5 border-b border-border/50' : 'p-6 border-b bg-muted/30'}>
                     {premiumMobileNavV2 && (
@@ -566,7 +567,7 @@ export const Navbar = () => {
                   </div>
 
                   <ScrollArea className="flex-1">
-                    <nav className="p-4">
+                    <nav id="mobile-nav" aria-label="Mobile" className="p-4">
                       {premiumMobileNavV2 && (
                         <p className="px-4 text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground mb-2">
                           Browse
