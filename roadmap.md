@@ -3,6 +3,7 @@
 ## October 20 V3.2
 - [x] Species guard covers cats/dogs; multi-pet hidden behind opt-in toggle (tests in src/test/collection-species-guard.test.ts). Collections load name_clean. Warm-neutral text/background, green kept for primary CTA. Full suite 2948 passed/2 skipped. DB 78%, 16/60, 0 restarts.
 - [ ] Publication blocked: independent release-validate gates conflict with tool instruction forbidding manual builds/typechecks. Dependency advisories are transitive only (no safe direct fix). name_clean backfill for 55 products needs validated run. Supplier-image cleanup needs CJ rights (T202610201159544031).
+- [ ] Release-only round 19:35 UTC: allowed independent route = GitHub Actions on synced repo. All 9 workflows for 94d0005 failed before start: "account is locked due to a billing issue" (owner must fix GitHub billing, then re-run Tests & Performance + Production Validation). Not published. DB 72%, 16/60, 0 restarts.
 
 ## October 20 V3.1
 - [x] Shared cards separate anchors/actions, contain images, align prices and enlarge mobile targets; sheet navigation, accessible variants/quantity controls, green sticky CTA and collapsible collection intro retain V3 branding.
