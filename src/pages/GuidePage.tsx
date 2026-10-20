@@ -36,7 +36,7 @@ import { GuideClusterNav } from '@/components/guides/GuideClusterNav';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
 import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
-import { isGuideLinkAllowed } from '@/lib/guide-product-eligibility';
+import { isGuideLinkAllowed, isSpecificProductPhrase } from '@/lib/guide-product-eligibility';
 
 /** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
 const normalizeProductHref = (href: string): string =>

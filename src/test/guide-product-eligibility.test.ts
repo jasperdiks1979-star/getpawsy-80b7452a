@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { isSpecificProductPhrase } from '@/lib/guide-product-eligibility';
+import { readFileSync } from 'node:fs';
+import { isGuideLinkAllowed, isSpecificProductPhrase, productSlugFromHref } from '@/lib/guide-product-eligibility';
 
 describe('guide product auto-link phrases', () => {
   it('does not link generic litter-box wording to a specific product', () => {
@@ -9,8 +10,6 @@ describe('guide product auto-link phrases', () => {
     expect(isSpecificProductPhrase('stainless steel litter box')).toBe(true);
   });
 });
-import { readFileSync } from 'node:fs';
-import { isGuideLinkAllowed, productSlugFromHref } from '@/lib/guide-product-eligibility';
 
 const eligible = new Set(['stainless-steel-cat-litter-box-with-lid-large-cat-litter-box-for-big-cats-scoop-and-mat-included']);
 
