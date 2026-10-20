@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendGa4BeginCheckoutMp } from "../_shared/ga4-measurement-protocol.ts";
 import { getStripeKey } from "../_shared/stripe-key.ts";
+import { resolveCheckoutReturnOrigin } from "../_shared/checkout-return-origin.ts";
 import {
   canonicalUnitPrice,
   lockFulfillmentWarehouse,
@@ -124,6 +125,11 @@ serve(async (req) => {
       throw new Error("No Stripe key configured (STRIPE_SECRET_KEY_LIVE or STRIPE_SECRET_KEY)");
     }
     const stripeMode = selection.mode;
+    // Fail closed before any customer/order/session write when key mode is unknown.
+    const baseUrl = resolveCheckoutReturnOrigin(
+      stripeMode, req.headers.get("origin"), req.headers.get("referer"),
+      Deno.env.get("APP_BASE_URL") ?? null,
+    );
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     console.log("[CREATE-CHECKOUT] Stripe mode:", stripeMode, "override:", modeOverride || "(none)");
 
@@ -552,25 +558,9 @@ serve(async (req) => {
       }
     }
 
-    // Create Stripe checkout session
-    // Origin fallback: Origin → Referer → APP_BASE_URL → canonical domain.
-    // Eliminates failures from in-app browsers (Pinterest/FB/IG/TikTok) and
-    // iOS Safari edge cases that strip the Origin header.
-    const rawOrigin = req.headers.get("origin");
-    const rawReferer = req.headers.get("referer");
-    let baseUrl =
-      rawOrigin ||
-      (rawReferer ? rawReferer.replace(/^(https?:\/\/[^/]+).*$/, "$1") : "") ||
-      Deno.env.get("APP_BASE_URL") ||
-      "https://getpawsy.pet";
-    try {
-      const u = new URL(baseUrl);
-      if (!/^https?:$/.test(u.protocol)) throw new Error("bad protocol");
-      baseUrl = `${u.protocol}//${u.host}`;
-    } catch {
-      baseUrl = "https://getpawsy.pet";
-    }
-    console.log("[CREATE-CHECKOUT] baseUrl:", baseUrl, "origin:", rawOrigin, "referer:", rawReferer);
+    // Create Stripe checkout session. Live return URLs are always canonical;
+    // caller Origin/Referer only matter in explicit test mode (resolved above).
+    console.log("[CREATE-CHECKOUT] baseUrl:", baseUrl);
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,

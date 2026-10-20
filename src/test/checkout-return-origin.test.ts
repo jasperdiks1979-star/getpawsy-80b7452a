@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCheckoutReturnOrigin as resolve } from '../../security-staging/checkout-return-origin';
+import { resolveCheckoutReturnOrigin as resolve } from '../../supabase/functions/_shared/checkout-return-origin.ts';
 
 describe('staged live checkout return origin', () => {
   it('pins localhost live requests to canonical production', () => {
@@ -27,5 +27,15 @@ describe('staged live checkout return origin', () => {
   it('normalizes approved origins without query, path or credentials', () => {
     expect(resolve('test', 'http://127.0.0.1:8080/path?secret=x', null, null)).toBe('http://127.0.0.1:8080');
     expect(resolve('test', 'https://user:pass@isolated.lovable.app', null, null)).toBe('https://getpawsy.pet');
+  });
+});
+import { readFileSync } from 'node:fs';
+describe('create-checkout wiring', () => {
+  const src = readFileSync('supabase/functions/create-checkout/index.ts', 'utf8');
+  it('resolves the return origin from key mode before any customer or order work', () => {
+    const resolveAt = src.indexOf('resolveCheckoutReturnOrigin(');
+    expect(resolveAt).toBeGreaterThan(-1);
+    expect(resolveAt).toBeLessThan(src.indexOf('createClient('));
+    expect(src).not.toMatch(/rawOrigin \|\|/);
   });
 });

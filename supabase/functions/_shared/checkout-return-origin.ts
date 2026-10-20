@@ -1,4 +1,4 @@
-/** Staged only: not imported by production until release gates pass. */
+/** Resolve Stripe return origins from verified key mode, never from caller-supplied headers. */
 export const LIVE_STORE_ORIGIN = 'https://getpawsy.pet';
 
 export function resolveCheckoutReturnOrigin(
