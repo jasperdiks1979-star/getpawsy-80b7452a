@@ -31,3 +31,8 @@ export function isSpecificProductPhrase(phrase: string): boolean {
   const words = phrase.toLowerCase().match(/[a-z0-9]+/g) ?? [];
   return words.filter((w) => w.length >= 3 && !GENERIC_PRODUCT_WORDS.has(w)).length >= 2;
 }
+
+/** Editorial product links need both crawl eligibility and storefront approval; never alter sitemap membership. */
+export function guideProductLinkIntersection(indexable: ReadonlySet<string>, approved: ReadonlySet<string>): Set<string> {
+  return new Set([...indexable].filter((slug) => approved.has(slug)));
+}
