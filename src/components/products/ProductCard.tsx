@@ -20,6 +20,7 @@ import { useListingPrice } from "@/hooks/useListingPrice";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 import { getConversionFlag } from "@/lib/conversionFlags";
 import { displayName } from "@/lib/displayName";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping-constants";
 
 export interface Product {
   id: string;
@@ -219,11 +220,8 @@ export const ProductCard = memo(
           onComplete={handlePawComplete}
         />
 
-        <Link
-          ref={ref}
-          to={productUrl}
-          className={`group block ${premium ? "transition-transform duration-300 ease-out hover:-translate-y-0.5" : ""}`}
-          onClick={handleCardClick}
+        <div
+          className="group h-full"
           onMouseEnter={handleMouseEnter}
           onFocus={handleFocus}
           data-testid="product-card"
@@ -231,16 +229,17 @@ export const ProductCard = memo(
           <div
             className={
               premium
-                ? "relative rounded-2xl overflow-hidden bg-card border border-border/60 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.18)] transition-shadow duration-300"
-                : "relative glass-card rounded-2xl overflow-hidden"
+                ? "relative h-full rounded-lg overflow-hidden bg-card border border-border/60 hover:shadow-md transition-shadow duration-300 flex flex-col"
+                : "relative h-full bg-card border border-border rounded-lg overflow-hidden flex flex-col"
             }
           >
             <div className={`relative aspect-square overflow-hidden ${premium ? "bg-secondary/30" : "bg-muted"}`}>
+              <Link ref={ref} to={productUrl} onClick={handleCardClick} aria-label={displayName(product)} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
               <OptimizedImage
                 src={product.image_url || "/placeholder.svg"}
                 alt={product.image_alt_text || `${displayName(product)}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
                 aspectRatio="square"
-                className={premium ? "group-hover:scale-[1.03] transition-transform duration-500 ease-out" : "group-hover:scale-105"}
+                className="object-contain motion-safe:group-hover:scale-[1.03] motion-safe:transition-transform motion-safe:duration-300"
                 priority={priority}
                 onImgRef={
                   priority
@@ -250,6 +249,7 @@ export const ProductCard = memo(
                     : undefined
                 }
               />
+              </Link>
 
               {!premium && (
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -299,13 +299,15 @@ export const ProductCard = memo(
                 </div>
               )}
 
-              <div className="absolute top-3 right-3 hidden md:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+              <div className="absolute top-3 right-3 hidden md:flex flex-col gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
                 <Button
                   type="button"
                   variant="secondary"
                   size="icon"
                   className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
                   onClick={handleToggleWishlist}
+                  aria-label={inWishlist ? `Remove ${displayName(product)} from wishlist` : `Save ${displayName(product)} to wishlist`}
+                  aria-pressed={inWishlist}
                 >
                   <Heart
                     className={`w-4 h-4 transition-all ${inWishlist ? "fill-destructive text-destructive scale-110" : ""} ${isAnimating ? "animate-heartPop" : ""}`}
@@ -317,12 +319,13 @@ export const ProductCard = memo(
                   size="icon"
                   className="rounded-full bg-card/90 backdrop-blur-sm hover:bg-card shadow-soft h-10 w-10"
                   onClick={handleQuickView}
+                  aria-label={`View ${displayName(product)}`}
                 >
                   <Eye className="w-4 h-4" />
                 </Button>
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-4 hidden md:block translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
+              <div className="absolute bottom-0 left-0 right-0 p-4 hidden md:block translate-y-full group-hover:translate-y-0 group-focus-within:translate-y-0 motion-safe:transition-transform motion-safe:duration-200">
                 <Button
                   type="button"
                   className="w-full gap-2 rounded-full shadow-soft"
@@ -336,23 +339,21 @@ export const ProductCard = memo(
               </div>
             </div>
 
-            <div className={premium ? "p-4 md:p-5 space-y-2" : "p-5 space-y-3"}>
+            <div className="p-3 md:p-4 flex flex-1 flex-col gap-2 min-w-0">
               {product.category && (
                 <p className={premium ? "text-[10px] text-muted-foreground font-medium uppercase tracking-[0.14em]" : "text-xs text-primary font-medium uppercase tracking-wider"}>
                   {safeString(product.category)}
                 </p>
               )}
 
-              <h3 className={
-                premium
-                  ? "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-[15px] md:text-base leading-snug min-h-[2.5rem]"
-                  : "font-display font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-base leading-snug min-h-[2.5rem]"
-              }>
+              <h3 className="font-medium text-foreground text-sm md:text-base leading-snug min-h-[2.5rem]">
+                <Link to={productUrl} onClick={handleCardClick} title={displayName(product)} className="line-clamp-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
                 {safeString(displayName(product))}
+                </Link>
               </h3>
 
 
-              <div className={premium ? "flex items-baseline gap-2 pt-0.5" : "flex items-center gap-2"}>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-auto pt-1">
                 <span className={premium ? "text-[17px] md:text-lg font-semibold text-foreground tracking-tight" : "text-lg font-bold text-primary"}>
                   {priceLoading ? <span className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
                 </span>
@@ -367,13 +368,13 @@ export const ProductCard = memo(
                 <p className="text-xs text-muted-foreground">Shipping to customers in the United States</p>
               )}
               {premium && (
-                <p className="hidden md:block text-[11px] text-muted-foreground">Free U.S. shipping</p>
+                <p className="hidden md:block text-[11px] text-muted-foreground">Free US shipping on orders ${FREE_SHIPPING_THRESHOLD}+</p>
               )}
 
               <div className="flex gap-2 pt-1 md:hidden">
                 <Button
                   type="button"
-                  className={premium ? "flex-1 gap-2 rounded-full h-9 text-sm" : "flex-1 gap-2 rounded-full"}
+                  className="flex-1 min-w-0 gap-1 rounded-lg min-h-11 text-sm px-2"
                   size="sm"
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
@@ -386,8 +387,10 @@ export const ProductCard = memo(
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9 flex-shrink-0 rounded-full"
+                  className="h-11 w-11 flex-shrink-0 rounded-lg"
                   onClick={handleToggleWishlist}
+                  aria-label={inWishlist ? `Remove ${displayName(product)} from wishlist` : `Save ${displayName(product)} to wishlist`}
+                  aria-pressed={inWishlist}
                 >
                   <Heart
                     className={`w-4 h-4 transition-colors ${inWishlist ? "fill-destructive text-destructive" : ""} ${isAnimating ? "animate-heartPop" : ""}`}
@@ -398,7 +401,7 @@ export const ProductCard = memo(
               {isOutOfStock && !premium && <p className="text-xs text-destructive font-medium">Out of Stock</p>}
             </div>
           </div>
-        </Link>
+        </div>
       </>
     );
   }),
