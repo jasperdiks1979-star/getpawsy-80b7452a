@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2?target=deno";
 import { sendGa4BeginCheckoutMp } from "../_shared/ga4-measurement-protocol.ts";
 import { getStripeKey } from "../_shared/stripe-key.ts";
+import { resolveCheckoutReturnOrigin } from "../_shared/checkout-return-origin.ts";
 import {
   canonicalUnitPrice,
   lockFulfillmentWarehouse,
