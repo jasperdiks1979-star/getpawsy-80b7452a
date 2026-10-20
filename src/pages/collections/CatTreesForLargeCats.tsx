@@ -39,7 +39,7 @@ const FAQ_DATA = [
   { question: 'Can I put a cat tree near a window?', answer: 'Yes — window placement is ideal. Cats love watching outdoor activity, and natural sunlight provides warmth. Ensure the tree is stable enough that a cat launching toward the window won\'t tip it. Secure the tree to the wall if it\'s next to a window, especially on upper floors.' },
   { question: 'What is the best budget cat tree for large cats?', answer: 'Budget options under $120 include engineered wood trees with 4-inch sisal posts and 16+ inch platforms. They won\'t have the premium features of $200+ trees, but provide adequate support for cats up to 20 lbs. Add wall anchors ($10) for extra stability.' },
   { question: 'How long does shipping take for cat trees?', answer: 'Our cat trees ship directly to customers with standard delivery in 5–10 business days. Large trees ship via ground freight. Free shipping on orders over $35. Assembly hardware and wall-anchor kits included with all heavy-duty models.' },
-  { question: 'What is your return policy on cat trees?', answer: 'We offer a 30-day return policy. If the tree doesn\'t meet your expectations, contact us to start a return. Due to size, return shipping may apply. Defective or damaged trees are replaced free of charge.' },
+  { question: 'What is your return policy on cat trees?', answer: 'We offer a 30-day return policy. If the tree doesn\'t meet your expectations, contact us to start a return. Due to size, return shipping costs may apply for change-of-mind returns and are confirmed before you send anything. For defective or damaged trees, we cover return shipping and arrange a replacement or refund.' },
 ];
 
 const COMPARISON_DATA = [

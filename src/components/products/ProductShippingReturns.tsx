@@ -56,7 +56,7 @@ export function ProductShippingReturns({ className = '' }: { className?: string 
             <li><strong className="text-foreground">{RETURN_WINDOW_DAYS}-day return window</strong> from delivery for eligible items</li>
             <li>Returns must be sent back <strong className="text-foreground">by mail</strong></li>
             <li>Items must be unused and in original packaging</li>
-            <li>Contact support before sending an item back to confirm the return destination and any applicable shipping costs</li>
+            <li>Contact support before mailing returns; we'll provide instructions and any authorized return address for your specific order</li>
             <li>Refund issued to <strong className="text-foreground">original payment method</strong> within 5 business days after return approval; your bank may take additional time</li>
             <li>Contact <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a> with your order number to start a return</li>
           </ul>
