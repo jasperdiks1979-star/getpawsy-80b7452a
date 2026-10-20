@@ -83,7 +83,7 @@ export const CollectionClusterIntro = memo(function CollectionClusterIntro({
             to={link.href}
             className="text-xs font-medium text-primary hover:underline bg-primary/5 px-2.5 py-1 rounded-full"
           >
-            📖 {link.label}
+            {link.label}
           </Link>
         ))}
       </div>
