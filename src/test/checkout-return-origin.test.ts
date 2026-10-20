@@ -29,3 +29,13 @@ describe('staged live checkout return origin', () => {
     expect(resolve('test', 'https://user:pass@isolated.lovable.app', null, null)).toBe('https://getpawsy.pet');
   });
 });
+import { readFileSync } from 'node:fs';
+describe('create-checkout wiring', () => {
+  const src = readFileSync('supabase/functions/create-checkout/index.ts', 'utf8');
+  it('resolves the return origin from key mode before any customer or order work', () => {
+    const resolveAt = src.indexOf('resolveCheckoutReturnOrigin(');
+    expect(resolveAt).toBeGreaterThan(-1);
+    expect(resolveAt).toBeLessThan(src.indexOf('createClient('));
+    expect(src).not.toMatch(/rawOrigin \|\|/);
+  });
+});
