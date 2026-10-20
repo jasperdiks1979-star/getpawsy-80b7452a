@@ -777,7 +777,7 @@ export default function OrthopedicDogBeds() {
               { icon: '📋', title: 'Specs Before Claims', desc: 'We list the dimensions and materials the supplier documents — and nothing we cannot verify.' },
               { icon: '💬', title: 'Dedicated Support', desc: 'Real people, real answers. Our customer care team responds within 24 hours.' },
               { icon: '🐕', title: 'Breed-Specific Guidance', desc: 'Size guides and breed recommendations so your dog gets the right fit.' },
-              { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Return it within 30 days to arrange a return. No questions.' },
+              { icon: '💯', title: '30-Day Return Policy', desc: 'Not the right bed? Contact us within 30 days of delivery to arrange a return on eligible items.' },
             ].map(item => (
               <div key={item.title} className="bg-card border rounded-xl p-5 text-center">
                 <span className="text-3xl mb-3 block">{item.icon}</span>
