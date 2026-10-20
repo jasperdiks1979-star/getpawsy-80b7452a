@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCheckoutReturnOrigin as resolve } from '../../security-staging/checkout-return-origin';
+import { resolveCheckoutReturnOrigin as resolve } from '../../supabase/functions/_shared/checkout-return-origin.ts';
 
 describe('staged live checkout return origin', () => {
   it('pins localhost live requests to canonical production', () => {
