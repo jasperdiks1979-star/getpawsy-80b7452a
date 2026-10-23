@@ -11,12 +11,12 @@
  * fails CI if the public catalog drops below the minimum threshold.
  *
  * Usage: node scripts/smoke-anon-storefront.mjs
- * Env: SUPABASE_URL, SUPABASE_ANON_KEY (fallbacks baked in for the known prod ref)
+ * Env (required, no fallbacks): SUPABASE_URL, SUPABASE_ANON_KEY
  */
+import { requireCiBackendEnv, describeFetchError } from './lib/ci-backend-env.mjs';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
-const ANON_KEY = process.env.SUPABASE_ANON_KEY
-  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
+const { url: SUPABASE_URL, key: ANON_KEY, host } = requireCiBackendEnv();
+console.log(`Backend host: ${host}`);
 
 const MIN_TOTAL = 50;      // must have at least this many active products
 const MIN_PER_SPECIES = 5; // dog + cat each
@@ -45,7 +45,7 @@ for (const c of checks) {
     console.log(`${ok ? '✓' : '✗'} ${c.name}: ${n} (min ${c.min})`);
     if (!ok) failed++;
   } catch (e) {
-    console.error(`✗ ${c.name}: ${e.message}`);
+    console.error(`✗ ${c.name}: ${describeFetchError(e)}`);
     failed++;
   }
 }
