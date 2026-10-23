@@ -27,3 +27,4 @@
 - Product routes own robots via productRobotsDirective, matching existing tier/noindex sitemap policy. Why: route-only index must not overwrite eligibility.
 - Guide product links intersect sitemap with storefront approval; auto-link phrases must identify products, not categories. Why: avoid blocked links and cabinet-to-pan mismatches.
 - Cards separate anchors from buttons; mobile menus use the shared sheet. Why: valid markup and contained keyboard focus.
+- Storefront visual refreshes use shared semantic color tokens and existing commerce components; lifestyle photos are sourced separately from product media and have recorded licenses. Why: preserve purchase and SEO behavior without inventing product evidence.
