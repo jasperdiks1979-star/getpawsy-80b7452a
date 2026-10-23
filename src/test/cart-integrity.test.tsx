@@ -11,6 +11,13 @@ import React from 'react';
 import { CartProvider, useCart, type CartItem } from '@/contexts/CartContext';
 import { runDataHealing } from '@/lib/data-healer';
 
+// Keep fire-and-forget marketing imports inside the test lifetime, not RPC teardown.
+vi.mock('@/lib/analytics', () => ({
+  trackAddToCart: vi.fn(),
+  trackRemoveFromCart: vi.fn(),
+  trackGoogleAdsAddToCart: vi.fn(),
+}));
+
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: () => {
