@@ -50,12 +50,27 @@ if (!gate.allowed && !SAFE_KINDS.has(DEPLOY_KIND)) {
   process.exit(1);
 }
 
+// GitHub Actions OIDC: short-lived GitHub-signed token, never logged.
+async function githubOidcToken() {
+  const reqUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  const reqTok = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  if (!reqUrl || !reqTok) return null;
+  const r = await fetch(`${reqUrl}&audience=getpawsy-golden-customer`, {
+    headers: { Authorization: `Bearer ${reqTok}` },
+  });
+  if (!r.ok) { console.error(`GitHub OIDC token request failed: HTTP ${r.status}`); return null; }
+  return (await r.json()).value ?? null;
+}
+const oidc = await githubOidcToken();
+console.log(`CI identity token: ${oidc ? 'present' : 'absent'}`);
+
 const res = await fetch(`${SUPABASE_URL}/functions/v1/genesis-golden-customer`, {
   method: 'POST',
   headers: {
     Authorization: `Bearer ${ANON_KEY}`,
     apikey: ANON_KEY,
     'Content-Type': 'application/json',
+    ...(oidc ? { 'x-github-oidc': oidc } : {}),
   },
   body: JSON.stringify(body),
 });
