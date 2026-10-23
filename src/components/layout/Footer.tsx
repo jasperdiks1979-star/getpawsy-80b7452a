@@ -161,7 +161,7 @@ export const Footer = () => {
                 </div>
               </div>
 
-              <p className={premium ? "text-[11px] text-background/30 mt-3 leading-relaxed" : "text-xs text-background/40 mt-3 leading-relaxed"}>
+              <p className={premium ? "text-[11px] text-background/70 mt-3 leading-relaxed" : "text-xs text-background/70 mt-3 leading-relaxed"}>
                 GetPawsy is a trading name of Skidzo, a Dutch sole proprietorship registered in the Netherlands (KvK 78156955, VAT ID NL003295015B69), based in Apeldoorn, Netherlands. GetPawsy serves customers in the United States. Free shipping on orders over ${FREE_SHIPPING_THRESHOLD}.
               </p>
 
@@ -217,10 +217,10 @@ export const Footer = () => {
         <div className={premium ? "border-t border-background/5" : "border-t border-background/10"}>
           <div className="container px-4 md:px-6 py-4">
             <div className={premium ? "flex flex-col md:flex-row justify-between items-center gap-3 md:gap-6" : "flex flex-col md:flex-row justify-between items-center gap-3"}>
-              <p className={premium ? "text-[11px] text-background/35 tracking-wide" : "text-xs text-background/40"}>
+              <p className={premium ? "text-[11px] text-background/70 tracking-wide" : "text-xs text-background/70"}>
                 © {currentYear} GetPawsy. All rights reserved.
               </p>
-              <div className={premium ? "flex flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-background/45" : "flex flex-wrap justify-center gap-4 text-xs text-background/50"}>
+              <div className={premium ? "flex flex-wrap justify-center gap-x-5 gap-y-2 text-[11px] uppercase tracking-[0.18em] text-background/70" : "flex flex-wrap justify-center gap-4 text-xs text-background/70"}>
                 <a href="/privacy" className="hover:text-accent transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-accent transition-colors">Terms</a>
                 <Link to="/cookies" className="hover:text-accent transition-colors">Cookies</Link>

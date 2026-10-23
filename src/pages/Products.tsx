@@ -713,7 +713,7 @@ const Products = () => {
       </Helmet>
       <div className="container px-4 md:px-6 py-8">
         {/* Breadcrumbs */}
-        <Breadcrumb className={premiumFilters ? 'mb-6 [&_li]:text-[12px] [&_a]:text-muted-foreground/80 hover:[&_a]:text-foreground' : 'mb-6'}>
+        <Breadcrumb className={premiumFilters ? 'mb-6 [&_li]:text-[12px] [&_a]:text-muted-foreground hover:[&_a]:text-foreground' : 'mb-6'}>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>

@@ -2,6 +2,11 @@ import { test, expect } from "../playwright-fixture";
 import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Accessibility Tests", () => {
+  test.beforeEach(async ({ page }) => {
+    // Close the localhost-only developer panel; audit the shopper experience.
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('gp_dev_geo_panel_open', '0'));
+  });
   test.describe("Homepage", () => {
     test("should have no critical accessibility issues", async ({ page }) => {
       await page.goto("/");
