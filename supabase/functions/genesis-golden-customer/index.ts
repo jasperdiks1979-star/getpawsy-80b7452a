@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireMonitorCaller } from "../_shared/monitor-auth.ts";
+import { isGoldenCustomerCiCaller } from "../_shared/github-oidc.ts";
 
 const PROD_URL = "https://getpawsy.pet";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -241,8 +242,12 @@ async function journey(): Promise<{ checks: Check[]; checkout_ok: boolean; strip
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const guard = await requireMonitorCaller(req);
-  if (guard) return guard;
+  // Scoped CI path: GitHub-signed OIDC token from this repo's main-branch
+  // Production Validation workflow only. Otherwise the existing monitor guard.
+  if (!(await isGoldenCustomerCiCaller(req))) {
+    const guard = await requireMonitorCaller(req);
+    if (guard) return guard;
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
