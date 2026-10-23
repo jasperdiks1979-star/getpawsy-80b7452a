@@ -1,5 +1,10 @@
 # Roadmap
 
+## October 23 visual makeover
+- [ ] Apply cohesive warm-white/coral storefront styling, authentic lifestyle photography, shared card and PDP presentation without commerce changes.
+- [ ] Verify desktop/mobile, accessibility, cart journey, regressions and available release checks.
+- [ ] Publish only with all release gates green; otherwise retain preview and report exact blocker.
+
 ## October 20 V3.2
 - [x] Species guard covers cats/dogs; multi-pet hidden behind opt-in toggle (tests in src/test/collection-species-guard.test.ts). Collections load name_clean. Warm-neutral text/background, green kept for primary CTA. Full suite 2948 passed/2 skipped. DB 78%, 16/60, 0 restarts.
 - [ ] Publication blocked: independent release-validate gates conflict with tool instruction forbidding manual builds/typechecks. Dependency advisories are transitive only (no safe direct fix). name_clean backfill for 55 products needs validated run. Supplier-image cleanup needs CJ rights (T202610201159544031).
