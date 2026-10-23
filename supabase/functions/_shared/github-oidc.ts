@@ -1,7 +1,9 @@
 import { createRemoteJWKSet, jwtVerify } from "https://esm.sh/jose@5.9.6";
 import {
+  ANALYTICS_PARITY_AUDIENCE,
   GITHUB_OIDC_ISSUER,
   GOLDEN_CUSTOMER_AUDIENCE,
+  isAllowedAnalyticsParityClaims,
   isAllowedGoldenCustomerClaims,
 } from "./github-oidc-claims.ts";
 
