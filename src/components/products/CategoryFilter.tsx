@@ -302,6 +302,7 @@ export const CategoryFilter = ({
               transition={{ duration: 0.2 }}
             >
               <Checkbox
+                aria-label={`Filter by ${category.name}`}
                 checked={isSelected}
                 onCheckedChange={() => onToggleCategory(category.name)}
                 className="shrink-0"
@@ -346,6 +347,7 @@ export const CategoryFilter = ({
           transition={{ duration: 0.2 }}
         >
           <Checkbox
+            aria-label={`Filter by ${category.name}`}
             checked={isSelected}
             onCheckedChange={() => onToggleCategory(category.name)}
           />

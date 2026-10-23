@@ -936,7 +936,7 @@ const Products = () => {
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className={premiumFilters ? 'w-[180px] rounded-full border-border/60 text-[13px]' : 'w-[180px]'}>
+                <SelectTrigger aria-label="Sort products" className={premiumFilters ? 'w-[180px] rounded-full border-border/60 text-[13px]' : 'w-[180px]'}>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>

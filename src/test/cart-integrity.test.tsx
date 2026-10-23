@@ -5,11 +5,28 @@
  * hydration, reload, delayed product resolution, or transient API failure.
  * Only conclusively invalid entries may be dropped.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { CartProvider, useCart, type CartItem } from '@/contexts/CartContext';
 import { runDataHealing } from '@/lib/data-healer';
+
+// Keep fire-and-forget marketing imports inside the test lifetime, not RPC teardown.
+vi.mock('@/lib/analytics', () => ({
+  trackAddToCart: vi.fn(),
+  trackRemoveFromCart: vi.fn(),
+  trackGoogleAdsAddToCart: vi.fn(),
+}));
+
+vi.mock('@/lib/analyticsFunnel', () => ({ recordFunnelStep: vi.fn() }));
+vi.mock('@/lib/marketingClient', () => ({ fireMarketingAsync: vi.fn() }));
+beforeAll(async () => {
+  await Promise.all([
+    import('@/lib/analytics'),
+    import('@/lib/analyticsFunnel'),
+    import('@/lib/marketingClient'),
+  ]);
+});
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
