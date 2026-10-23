@@ -115,7 +115,7 @@ async function seedAdmin(context: any, page: any) {
       body: JSON.stringify({ role: "admin" }),
     }),
   );
-  await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route: any) =>
+  await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route: any) => route.request().url().includes("/rest/v1/user_roles") ? route.fallback() :
     route.fulfill({
       status: 200,
       contentType: "application/json",

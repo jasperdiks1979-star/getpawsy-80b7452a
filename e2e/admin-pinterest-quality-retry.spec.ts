@@ -117,7 +117,7 @@ test.describe("Admin · Pinterest Quality · retry after edge-function failure",
         body: JSON.stringify({ role: "admin" }),
       }),
     );
-    await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route) =>
+    await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route) => route.request().url().includes("/rest/v1/user_roles") ? route.fallback() :
       route.fulfill({
         status: 200,
         contentType: "application/json",

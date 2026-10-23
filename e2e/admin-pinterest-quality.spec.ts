@@ -161,7 +161,7 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
     );
     // Catch-all for any other REST table the page might touch. Individual
     // tests can override the pinterest_pin_queue route to model DB state.
-    await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route) =>
+    await page.route(`**/${SUPABASE_HOST}/rest/v1/**`, (route) => route.request().url().includes("/rest/v1/user_roles") ? route.fallback() :
       route.fulfill({
         status: 200,
         contentType: "application/json",
