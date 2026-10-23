@@ -13,6 +13,10 @@ import {
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 
+// Local Vite does not proxy the hosting asset endpoint; published pages use
+// the same-origin asset URLs. Both origins serve the same immutable photos.
+const photoUrl = (url: string) => import.meta.env.DEV ? `https://getpawsy.lovable.app${url}` : url;
+
 const HERO_PRODUCT_IDS = [
   // Slot 1 uses a visible, active cat product with verified stock, a live PDP,
   // a purchasable variant, and a stable rehosted primary image.
@@ -24,9 +28,10 @@ const HERO_PRODUCT_IDS = [
 ] as const;
 
 const CATEGORIES = [
-  { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: catPhoto.url },
-  { href: '/collections/dogs', title: 'For dogs', copy: 'For walks, naps and everything between.', image: petsPhoto.url },
-  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: catPhoto.url },
+  { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: photoUrl(catPhoto.url) },
+  { href: '/collections/dogs', title: 'For dogs', copy: 'For walks, naps and everything between.', image: photoUrl(petsPhoto.url) },
+  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: photoUrl(catPhoto.url) },
+  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: photoUrl(petsPhoto.url) },
 ];
 
 const REASSURANCE = [
@@ -101,9 +106,10 @@ export function V2HomePage() {
 
       {/* Hero */}
       <section className="relative isolate border-b border-border bg-secondary" aria-labelledby="hero-heading">
-        <img src={petsPhoto.url} alt="A real cat and small dog relaxing together at home" width={1400} height={932} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-center" />
-        <div className="mx-auto flex min-h-[540px] w-full max-w-6xl items-start px-4 py-9 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
-          <div className="max-w-sm bg-background/95 p-5 md:max-w-md md:p-8">
+        <img src={photoUrl(petsPhoto.url)} alt="A cat and small dog relaxing together at home" width={1400} height={932} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-center" />
+        <div className="storefront-hero-scrim absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="mx-auto flex min-h-[570px] w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
+          <div className="max-w-sm md:max-w-md">
             <p className="text-xs font-semibold text-muted-foreground">
               Indoor cat essentials · Shipped to the US
             </p>
@@ -134,7 +140,7 @@ export function V2HomePage() {
           A little something for every day
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">For the pets who make your house a home.</p>
-        <ul className="mt-6 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-3">
+        <ul className="mt-6 grid list-none grid-cols-2 gap-4 p-0 lg:grid-cols-4">
           {CATEGORIES.map((c) => (
             <li key={c.href}>
               <Link
@@ -151,7 +157,7 @@ export function V2HomePage() {
                   className={`aspect-[4/3] w-full object-cover ${c.title === 'For dogs' ? 'object-right' : 'object-bottom'}`}
                 />
                 <div className="p-4">
-                  <h3 className="flex items-center justify-between font-sans text-lg font-semibold text-foreground">{c.title}<ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" /></h3>
+                  <h3 className="flex items-center justify-between gap-2 font-sans text-base font-semibold text-foreground">{c.title}<ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /></h3>
                   <p className="mt-1 text-sm text-muted-foreground">{c.copy}</p>
                 </div>
               </Link>

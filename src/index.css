@@ -364,6 +364,16 @@
     background: hsl(var(--background));
   }
 
+  .storefront-hero-scrim {
+    background: linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.94) 30%, hsl(var(--background) / 0.15) 62%, transparent 100%);
+  }
+
+  @media (max-width: 767px) {
+    .storefront-hero-scrim {
+      background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 42%, hsl(var(--background) / 0.65) 65%, transparent 100%);
+    }
+  }
+
   .gradient-warm {
     background: linear-gradient(
       135deg,
