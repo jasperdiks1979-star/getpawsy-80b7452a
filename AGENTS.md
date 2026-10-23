@@ -21,6 +21,7 @@
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploys.
 - Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
+- Independent release gates run in GitHub Actions with read-only repository permission and an isolated pinned type checker; npm lock repairs preserve the versions already resolved by Bun. Why: avoid manual preview builds and unintended runtime upgrades.
 - Reports use commercial-funnel/read-commercial-funnel; product/heatmap/organic use bounded session-indexed SELECTs via read-commercial-reports, fail closed, no legacy aggregates. Why: exclusions, UNKNOWN and distinct stages must agree.
 - Product-claim-hygiene removes unsupported supplier promises at read time, retaining catalog/URLs. Why: claims need evidence.
 - PDP schema receives buy-box price; lean collection schema shares batched card option queries and omits unresolved offers. Why: catalog base can differ from purchasable options.

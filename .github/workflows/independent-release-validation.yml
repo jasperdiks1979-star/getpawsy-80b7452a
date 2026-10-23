@@ -1,0 +1,49 @@
+name: Independent Release Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - package-lock.json
+      - .github/workflows/independent-release-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install isolated pinned type checker
+        run: |
+          npm install --prefix "$RUNNER_TEMP/typechecker" --ignore-scripts --no-audit --no-fund @typescript/native-preview@7.0.0-dev.20260707.2
+          echo "$RUNNER_TEMP/typechecker/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Full regression suite
+        run: npm test -- --run
+      - name: Independent typecheck, production HTML coverage and rollback rehearsal
+        run: bash scripts/release-validate.sh d9abdceb6cd51340fac4b73486ad170a88ec41d8
+      - name: Preserve independent release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-release-${{ github.sha }}
+          path: |
+            /tmp/tsgo-app.log
+            /tmp/tsgo-node.log
+            /tmp/release-validate-build.log
+            /tmp/rollback-build.log
+          retention-days: 7
