@@ -18,12 +18,19 @@ jobs:
   parity:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
       - name: Analytics Truth live-parity probe
+        # The probe authenticates with a GitHub-signed OIDC token whose claims
+        # pin this repo's main branch and this workflow. Pull-request runs
+        # carry refs/pull/* claims and are therefore not authorized; skip there.
+        if: github.event_name != 'pull_request'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
