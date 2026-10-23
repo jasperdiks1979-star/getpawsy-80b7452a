@@ -1,4 +1,4 @@
-export default {
+const config = {
   ci: {
     collect: {
       numberOfRuns: 3,
@@ -73,3 +73,6 @@ export default {
     },
   },
 };
+
+export const ci = config.ci;
+export default config;
