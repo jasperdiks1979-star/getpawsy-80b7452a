@@ -23,6 +23,7 @@
 - Publish only after scripts/release-validate.sh passes (docs/RELEASE_VALIDATION.md). Why: proves typecheck/prerender/rollback off-tree.
 - Independent release gates run in GitHub Actions with read-only repository permission and an isolated pinned type checker; npm lock repairs preserve the versions already resolved by Bun. Why: avoid manual preview builds and unintended runtime upgrades.
 - CI browser checks use Playwright's installed browser and a production preview server; Lighthouse config uses ESM. Why: sandbox-only executable paths and CommonJS config fail on hosted runners.
+- Coverage badges remain CI artifacts and never commit to the synced branch. Why: automated badge pushes can replace pending Lovable release changes and invalidate same-SHA gates.
 - Reports use commercial-funnel/read-commercial-funnel; product/heatmap/organic use bounded session-indexed SELECTs via read-commercial-reports, fail closed, no legacy aggregates. Why: exclusions, UNKNOWN and distinct stages must agree.
 - Product-claim-hygiene removes unsupported supplier promises at read time, retaining catalog/URLs. Why: claims need evidence.
 - PDP schema receives buy-box price; lean collection schema shares batched card option queries and omits unresolved offers. Why: catalog base can differ from purchasable options.
