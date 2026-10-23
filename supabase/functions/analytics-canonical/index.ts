@@ -35,6 +35,7 @@
 // `visitor_activity` fetch. Enforced by `src/test/analytics-truth-parity.test.ts`.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
+import { isAnalyticsParityCiCaller } from "../_shared/github-oidc.ts";
 import { checkCanonicalV2Gate } from "../_shared/canonicalV2Flag.ts";
 import {
   classificationCoverage,
@@ -1129,8 +1130,13 @@ function withCacheMeta(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const guard = await requireInternalOrAdmin(req);
-  if (guard) return guard;
+  // Scoped CI path: GitHub-signed OIDC token from this repo's main-branch
+  // Analytics Truth Parity workflow only. Otherwise the existing guard
+  // (internal secret or admin JWT) applies unchanged.
+  if (!(await isAnalyticsParityCiCaller(req))) {
+    const guard = await requireInternalOrAdmin(req);
+    if (guard) return guard;
+  }
 
   const json = (b: unknown, status = 200) =>
     new Response(JSON.stringify(b), {

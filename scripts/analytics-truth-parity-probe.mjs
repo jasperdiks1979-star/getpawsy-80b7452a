@@ -30,6 +30,32 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(2);
 }
 
+// GitHub Actions OIDC: short-lived GitHub-signed token, never logged.
+// analytics-canonical accepts it only for this repo's main-branch
+// Analytics Truth Parity workflow (audience getpawsy-analytics-truth-parity).
+async function githubOidcToken() {
+  const reqUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  const reqTok = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  if (!reqUrl || !reqTok) return null;
+  const r = await fetch(`${reqUrl}&audience=getpawsy-analytics-truth-parity`, {
+    headers: { Authorization: `Bearer ${reqTok}` },
+  });
+  if (!r.ok) {
+    console.error(`[parity-probe] GitHub OIDC token request failed: HTTP ${r.status}`);
+    return null;
+  }
+  return (await r.json()).value ?? null;
+}
+const OIDC_TOKEN = await githubOidcToken();
+if (!OIDC_TOKEN) {
+  console.error(
+    "[parity-probe] No GitHub OIDC token available. analytics-canonical requires " +
+      "the workflow identity (id-token: write on a main-branch run); the anon key alone is not authorized.",
+  );
+  process.exit(2);
+}
+console.log("[parity-probe] CI identity token: present");
+
 const HOURS = (process.env.PROBE_HOURS || "5,10,24")
   .split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0);
 const GEOS = (process.env.PROBE_GEOS || "US,all")
@@ -109,6 +135,7 @@ async function callCanonical({ hours, geo }) {
       "content-type": "application/json",
       apikey: SUPABASE_KEY,
       authorization: `Bearer ${SUPABASE_KEY}`,
+      "x-github-oidc": OIDC_TOKEN,
     },
     body: JSON.stringify({ hours, geo }),
   });
