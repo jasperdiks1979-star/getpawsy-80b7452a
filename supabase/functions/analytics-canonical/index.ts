@@ -1130,8 +1130,13 @@ function withCacheMeta(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const guard = await requireInternalOrAdmin(req);
-  if (guard) return guard;
+  // Scoped CI path: GitHub-signed OIDC token from this repo's main-branch
+  // Analytics Truth Parity workflow only. Otherwise the existing guard
+  // (internal secret or admin JWT) applies unchanged.
+  if (!(await isAnalyticsParityCiCaller(req))) {
+    const guard = await requireInternalOrAdmin(req);
+    if (guard) return guard;
+  }
 
   const json = (b: unknown, status = 200) =>
     new Response(JSON.stringify(b), {
