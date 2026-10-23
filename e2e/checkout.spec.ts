@@ -2,6 +2,23 @@ import { test, expect } from "../playwright-fixture";
 
 test.describe("Checkout Flow", () => {
   test.beforeEach(async ({ page }) => {
+    // Block writes and payment requests throughout the isolated CI journey.
+    await page.route('**/*', async route => {
+      const request = route.request();
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) ||
+          /stripe\.com|\/create-checkout/.test(request.url())) {
+        await route.abort();
+        return;
+      }
+      await route.continue();
+    });
+    if (test.info().title === 'should calculate correct totals') {
+      await page.goto('/');
+      await page.evaluate(() => localStorage.setItem('pawsy-cart', JSON.stringify([
+        { id: 'ci-cart-fixture', name: 'CI fixture', price: 40, quantity: 1, image: '' },
+      ])));
+      return;
+    }
     // Add a product to cart before each checkout test
     await page.goto("/products");
     await page.waitForLoadState("networkidle");
@@ -107,13 +124,9 @@ test.describe("Checkout Flow", () => {
     await page.waitForLoadState("networkidle");
     
     // Check that subtotal, shipping, and total are displayed
-    const subtotal = page.locator('text=/subtotal|subtotaal/i');
-    const total = page.locator('text=/total|totaal/i');
-    
-    await expect(total.first()).toBeVisible({ timeout: 5000 });
-    
-    // Verify prices contain valid numbers
-    const priceText = await page.locator('text=/[€$]\\d+/').first().textContent();
-    expect(priceText).toMatch(/[€$]\d+/);
+    const subtotal = page.getByText('Subtotal', { exact: true }).locator('..');
+    const total = page.getByText('Total', { exact: true }).locator('..');
+    await expect(subtotal).toContainText('$40.00');
+    await expect(total).toContainText('$40.00');
   });
 });
