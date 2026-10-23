@@ -59,3 +59,6 @@
 - [x] Reconcile live shopper markers with the commercial live-presence counter.
 - [x] Preserve technical/unconfirmed live locations as a distinct forensic layer.
 - [x] Add live counter/map parity coverage and run focused analytics validation.
+- [x] Synchronize redesign release candidate 5f0e1514f; Production Validation 40037858419 and Independent Release Validation 40037856867 succeeded, including pinned typecheck, build/prerender and rollback d9abdceb6.
+- [x] Resolve proven accessibility failures; 2965 tests passed/2 skipped; checkout, accessibility, Lighthouse and visual jobs succeeded on candidate SHA.
+- [ ] Publish only after Tests & Performance 40037858385 concludes success (admin Pinterest fixture job 120701711192 still running) and current live Stripe key/account/webhook-signature alignment is proven; no payment or configuration changes authorized by uncertainty.
