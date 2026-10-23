@@ -48,7 +48,8 @@ describe('homepage delivery consistency', () => {
     expect(html).not.toContain('/hero/dog-training-hero');
     expect(home).not.toContain('dog-training-hero');
     expect(html).toContain('/hero/v3-hero');
-    expect(home).toContain('/hero/v3-hero');
+    expect(home).toContain('everyday-pets.webp.asset.json');
+    expect(home).toContain('living-room-cat.webp.asset.json');
   });
 
   it('renders the exact five commercial-rebuild heroes in source order', () => {

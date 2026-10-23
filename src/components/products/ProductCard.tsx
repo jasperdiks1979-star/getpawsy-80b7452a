@@ -233,7 +233,7 @@ export const ProductCard = memo(
                 : "relative h-full bg-card border border-border rounded-lg overflow-hidden flex flex-col"
             }
           >
-            <div className={`relative aspect-square overflow-hidden ${premium ? "bg-secondary/30" : "bg-muted"}`}>
+            <div className="relative aspect-square overflow-hidden bg-card">
               <Link ref={ref} to={productUrl} onClick={handleCardClick} aria-label={displayName(product)} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
               <OptimizedImage
                 src={product.image_url || "/placeholder.svg"}
@@ -273,10 +273,10 @@ export const ProductCard = memo(
               ) : (
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
                 {bestSeller && !isOutOfStock && (
-                  <Badge className="bg-amber-500 text-white shadow-soft text-[10px]">Our pick</Badge>
+                  <Badge className="bg-secondary text-secondary-foreground shadow-soft text-[10px]">Our pick</Badge>
                 )}
                 {topRated && !isOutOfStock && !bestSeller && (
-                  <Badge className="bg-emerald-600 text-white shadow-soft text-[10px]">Our pick</Badge>
+                  <Badge className="bg-secondary text-secondary-foreground shadow-soft text-[10px]">Our pick</Badge>
                 )}
                 {popularChoice && !isOutOfStock && !bestSeller && !topRated && (
                   <Badge className="bg-primary text-primary-foreground shadow-soft text-[10px]">
@@ -346,7 +346,7 @@ export const ProductCard = memo(
                 </p>
               )}
 
-              <h3 className="font-medium text-foreground text-sm md:text-base leading-snug min-h-[2.5rem]">
+              <h3 className="font-sans font-medium text-foreground text-sm md:text-base leading-snug min-h-[2.5rem]">
                 <Link to={productUrl} onClick={handleCardClick} title={displayName(product)} className="line-clamp-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
                 {safeString(displayName(product))}
                 </Link>
@@ -354,7 +354,7 @@ export const ProductCard = memo(
 
 
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-auto pt-1">
-                <span className={premium ? "text-[17px] md:text-lg font-semibold text-foreground tracking-tight" : "text-lg font-bold text-primary"}>
+                <span className="text-base md:text-lg font-semibold text-foreground">
                   {priceLoading ? <span className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
                 </span>
                 {!priceLoading && cardCanonical.displayCompareAt && (

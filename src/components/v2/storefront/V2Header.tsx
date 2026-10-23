@@ -81,7 +81,7 @@ export function V2Header() {
           aria-label="GetPawsy home"
         >
           <img src={logo} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
-          <span className="font-display text-lg font-bold tracking-tight text-foreground">GetPawsy</span>
+          <span className="font-display text-xl font-bold text-foreground">GetPawsy</span>
         </Link>
 
         <nav aria-label="Primary" className="hidden lg:flex flex-1 items-center justify-center gap-1">

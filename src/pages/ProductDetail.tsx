@@ -1495,7 +1495,7 @@ const ProductDetail = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-muted/50 rounded-2xl p-5"
+              className="border-y border-border py-5"
             >
               {(() => {
                 // Use the already-computed activePrice (base price unless user selected variant)
@@ -1512,7 +1512,7 @@ const ProductDetail = () => {
 
                 return (
                   <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="text-3xl md:text-4xl font-display font-bold text-primary">
+                    <span className="text-3xl md:text-4xl font-sans font-semibold text-foreground">
                       {showFromPrefix && <span className="text-lg font-medium mr-1">From</span>}${displayPrice.toFixed(2)}
                     </span>
                     {showCompare && (

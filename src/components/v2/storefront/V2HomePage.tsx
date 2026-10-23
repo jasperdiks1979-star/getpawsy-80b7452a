@@ -1,7 +1,10 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { PackageCheck, RotateCcw, Truck } from 'lucide-react';
+import { ArrowRight, PackageCheck, RotateCcw, Truck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import petsPhoto from '@/assets/everyday-pets.webp.asset.json';
+import catPhoto from '@/assets/living-room-cat.webp.asset.json';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
@@ -9,8 +12,10 @@ import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
-const heroDesktop = '/hero/v3-hero.webp';
-const heroMobile = '/hero/v3-hero-mobile.webp';
+
+// Local Vite does not proxy the hosting asset endpoint; published pages use
+// the same-origin asset URLs. Both origins serve the same immutable photos.
+const photoUrl = (url: string) => import.meta.env.DEV ? `https://getpawsy.lovable.app${url}` : url;
 
 const HERO_PRODUCT_IDS = [
   // Slot 1 uses a visible, active cat product with verified stock, a live PDP,
@@ -23,9 +28,10 @@ const HERO_PRODUCT_IDS = [
 ] as const;
 
 const CATEGORIES = [
-  { href: '/collections/cat-litter-boxes', title: 'Litter boxes', copy: 'Options for cleaner indoor spaces', image: '/categories/litter-boxes.jpg' },
-  { href: '/collections/cat-trees-and-condos', title: 'Cat trees', copy: 'Climbing, resting and scratching spaces', image: '/categories/cat-trees.jpg' },
-  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'Play and enrichment for indoor cats', image: '/categories/cats.jpg' },
+  { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: photoUrl(catPhoto.url) },
+  { href: '/collections/dogs', title: 'For dogs', copy: 'For walks, naps and everything between.', image: photoUrl(petsPhoto.url) },
+  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: photoUrl(catPhoto.url) },
+  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: photoUrl(petsPhoto.url) },
 ];
 
 const REASSURANCE = [
@@ -99,15 +105,17 @@ export function V2HomePage() {
       </Helmet>
 
       {/* Hero */}
-      <section className="border-b border-border bg-card" aria-labelledby="hero-heading">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 md:py-20">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <section className="relative isolate border-b border-border bg-secondary" aria-labelledby="hero-heading">
+        <img src={photoUrl(petsPhoto.url)} alt="A cat and small dog relaxing together at home" width={1400} height={932} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-center" />
+        <div className="storefront-hero-scrim absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="mx-auto flex min-h-[570px] w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
+          <div className="max-w-sm md:max-w-md">
+            <p className="text-xs font-semibold text-muted-foreground">
               Indoor cat essentials · Shipped to the US
             </p>
             <h1
               id="hero-heading"
-              className="mt-3 font-display text-3xl font-bold leading-tight text-foreground sm:text-4xl md:text-5xl"
+              className="mt-3 font-display text-4xl font-medium leading-tight text-foreground md:text-5xl"
             >
               Happy cats, tidy homes
             </h1>
@@ -115,53 +123,29 @@ export function V2HomePage() {
               Litter boxes, cat trees and enrichment for indoor cats, shipped across the US.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                to="/products"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Shop cat essentials
-              </Link>
-              <Link
-                to="/bundles"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-lg border border-border bg-background px-6 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Explore Sets
-              </Link>
+              <Button asChild size="lg" className="min-h-12"><Link to="/products">Shop cat essentials <ArrowRight aria-hidden="true" /></Link></Button>
+              <Button asChild variant="outline" size="lg" className="min-h-12"><Link to="/bundles">Explore Sets</Link></Button>
             </div>
             <p className="mt-5 text-sm text-muted-foreground">
               Free shipping over ${FREE_SHIPPING_THRESHOLD} · {RETURN_WINDOW_DAYS}-day returns · Secure checkout
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border bg-muted">
-            <picture>
-              <source media="(min-width: 768px)" srcSet={heroDesktop} />
-              <img
-                src={heroMobile}
-                alt="Relaxed cat stretching on a sofa in a bright living room"
-                width={1600}
-                height={1200}
-                fetchPriority="high"
-                decoding="async"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            </picture>
-          </div>
         </div>
       </section>
 
       {/* Categories */}
       <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 md:py-16" aria-labelledby="shop-heading">
         <h2 id="shop-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
-          Shop for indoor cats
+          A little something for every day
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">Browse by the part of your cat's routine you want to support.</p>
-        <ul className="mt-6 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-3">
+        <p className="mt-2 text-sm text-muted-foreground">For the pets who make your house a home.</p>
+        <ul className="mt-6 grid list-none grid-cols-2 gap-4 p-0 lg:grid-cols-4">
           {CATEGORIES.map((c) => (
             <li key={c.href}>
               <Link
                 to={c.href}
-                className="group block overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="group block overflow-hidden rounded-lg bg-secondary transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <img
                   src={c.image}
@@ -170,10 +154,10 @@ export function V2HomePage() {
                   height={400}
                   loading="lazy"
                   decoding="async"
-                  className="aspect-[16/10] w-full object-cover"
+                  className={`aspect-[4/3] w-full object-cover ${c.title === 'For dogs' ? 'object-right' : 'object-bottom'}`}
                 />
                 <div className="p-4">
-                  <h3 className="text-base font-semibold text-foreground">{c.title}</h3>
+                  <h3 className="flex items-center justify-between gap-2 font-sans text-base font-semibold text-foreground">{c.title}<ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /></h3>
                   <p className="mt-1 text-sm text-muted-foreground">{c.copy}</p>
                 </div>
               </Link>
@@ -192,9 +176,9 @@ export function V2HomePage() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 id="featured-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
-                   Five featured essentials
+                   Everyday cat essentials
                 </h2>
-                 <p className="mt-2 text-sm text-muted-foreground">A few of our most popular cat products.</p>
+                 <p className="mt-2 text-sm text-muted-foreground">Explore a few picks from our cat collection.</p>
               </div>
               <Link
                 to="/products"
@@ -219,9 +203,9 @@ export function V2HomePage() {
         <h2 id="trust-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
           What to expect
         </h2>
-        <ul className="mt-6 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-6 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-3">
           {REASSURANCE.map(({ icon: Icon, title, copy }) => (
-            <li key={title} className="rounded-xl border border-border bg-card p-5">
+            <li key={title} className="border-t border-border py-5">
               <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} aria-hidden="true" />
               <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{copy}</p>

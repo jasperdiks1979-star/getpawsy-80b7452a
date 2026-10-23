@@ -35,7 +35,7 @@ function Column({ title, items }: { title: string; items: { label: string; href:
 
 export function V2Footer() {
   return (
-    <footer className="mt-16 border-t border-border bg-muted/30">
+    <footer className="mt-16 border-t border-border bg-secondary">
       <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
         <div className="col-span-2 md:col-span-1">
           <p className="font-display text-lg font-bold text-foreground">{BUSINESS_NAME}</p>

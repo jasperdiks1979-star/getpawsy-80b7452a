@@ -26,7 +26,7 @@ export function V2ProductCard({ product, priority = false }: { product: V2CardPr
         to={`/products/${product.slug}`}
         className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <div className="aspect-square w-full overflow-hidden bg-muted">
+        <div className="aspect-square w-full overflow-hidden bg-card p-3 sm:p-4">
           {product.image_url ? (
             <img
               src={product.image_url}
@@ -43,9 +43,9 @@ export function V2ProductCard({ product, priority = false }: { product: V2CardPr
           )}
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-          <h3 title={displayName(product)} className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-snug text-foreground">{displayName(product)}</h3>
+          <h3 title={displayName(product)} className="line-clamp-2 min-h-[2.5rem] font-sans text-sm font-medium leading-snug text-foreground">{displayName(product)}</h3>
           <p className="mt-auto pt-2 text-base font-semibold text-foreground">{shown}</p>
-          <span className="flex items-center justify-between gap-2 text-xs font-medium text-primary">View options <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" /></span>
+          <span className="flex min-h-11 items-center justify-between gap-2 border-t border-border text-sm font-medium text-primary">View options <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" /></span>
         </div>
       </Link>
     </article>

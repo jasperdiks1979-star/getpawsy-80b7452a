@@ -2,15 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* GetPawsy V3 — warm cream, deep green text/CTAs, peach + sage accents
-   Aardse tinten met zachte accenten voor een uitnodigend en betrouwbaar gevoel
+/* GetPawsy — warm white, soft coral and quiet neutral surfaces
+   Storefront presentation tokens; commerce state colors remain separate.
    All colors are HSL.
 */
 
 @layer base {
   :root {
     /* Warm, inviting cream background - slightly warmer for premium feel */
-    --background: 36 33% 98%;
+    --background: 36 40% 99%;
     --foreground: 24 14% 14%;
 
     /* Soft cream cards with subtle warmth */
@@ -21,19 +21,19 @@
     --popover-foreground: 24 14% 14%;
 
     /* Rich terracotta primary - confident but warm */
-    --primary: 160 42% 22%;
+    --primary: 9 54% 37%;
     --primary-foreground: 40 50% 98%;
 
-    /* Soft sage green secondary - calming pet-friendly */
-    --secondary: 42 70% 92%;
+    /* Quiet beige secondary surfaces */
+    --secondary: 24 48% 94%;
     --secondary-foreground: 30 40% 20%;
 
     /* Warm sand/beige muted - premium feel */
-    --muted: 38 35% 93%;
+    --muted: 30 25% 95%;
     --muted-foreground: 24 8% 34%;
 
     /* Warm cream accent - soft sand tone */
-    --accent: 22 90% 92%;
+    --accent: 12 75% 94%;
     --accent-foreground: 18 60% 28%;
 
     /* Trust-building success green */
@@ -42,19 +42,19 @@
 
     --border: 38 30% 88%;
     --input: 38 30% 88%;
-    --ring: 160 42% 22%;
+    --ring: 9 54% 37%;
 
-    --radius: 0.875rem;
+    --radius: 0.5rem;
 
     /* Sidebar */
     --sidebar-background: 38 38% 96%;
     --sidebar-foreground: 25 25% 22%;
-    --sidebar-primary: 160 42% 22%;
+    --sidebar-primary: 9 54% 37%;
     --sidebar-primary-foreground: 40 45% 99%;
-    --sidebar-accent: 145 28% 90%;
-    --sidebar-accent-foreground: 145 35% 22%;
+    --sidebar-accent: 12 75% 94%;
+    --sidebar-accent-foreground: 18 60% 28%;
     --sidebar-border: 38 30% 88%;
-    --sidebar-ring: 160 42% 22%;
+    --sidebar-ring: 9 54% 37%;
 
     /* Custom semantic colors */
     --success: 145 55% 38%;
@@ -87,8 +87,8 @@
     --primary: 22 65% 58%;
     --primary-foreground: 25 22% 7%;
 
-    --secondary: 145 22% 16%;
-    --secondary-foreground: 145 28% 82%;
+    --secondary: 24 22% 16%;
+    --secondary-foreground: 24 28% 82%;
 
     --muted: 25 18% 15%;
     --muted-foreground: 38 22% 58%;
@@ -107,8 +107,8 @@
     --sidebar-foreground: 38 32% 88%;
     --sidebar-primary: 22 65% 58%;
     --sidebar-primary-foreground: 25 22% 7%;
-    --sidebar-accent: 145 22% 16%;
-    --sidebar-accent-foreground: 145 28% 82%;
+    --sidebar-accent: 24 22% 16%;
+    --sidebar-accent-foreground: 24 28% 82%;
     --sidebar-border: 25 18% 18%;
     --sidebar-ring: 22 65% 58%;
 
@@ -361,12 +361,17 @@
 @layer components {
   /* Gradient backgrounds - warmer, more inviting */
   .gradient-hero {
-    background: linear-gradient(
-      135deg,
-      hsl(38 35% 97%) 0%,
-      hsl(35 40% 95%) 50%,
-      hsl(145 28% 94%) 100%
-    );
+    background: hsl(var(--background));
+  }
+
+  .storefront-hero-scrim {
+    background: linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.94) 30%, hsl(var(--background) / 0.15) 62%, transparent 100%);
+  }
+
+  @media (max-width: 767px) {
+    .storefront-hero-scrim {
+      background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 52%, hsl(var(--background) / 0.92) 72%, transparent 100%);
+    }
   }
 
   .gradient-warm {
