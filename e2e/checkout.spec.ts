@@ -125,7 +125,7 @@ test.describe("Checkout Flow", () => {
     
     // Check that subtotal, shipping, and total are displayed
     const subtotal = page.getByText('Subtotal', { exact: true }).locator('..');
-    const total = page.getByText('Total', { exact: true }).locator('..');
+    const total = page.getByText('Total', { exact: true }).first().locator('..');
     await expect(subtotal).toContainText('$40.00');
     await expect(total).toContainText('$40.00');
   });
