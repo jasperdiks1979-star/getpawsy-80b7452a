@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { isAllowedGoldenCustomerClaims } from '../../supabase/functions/_shared/github-oidc-claims';
+import {
+  isAllowedGoldenCustomerClaims,
+  isAllowedAnalyticsParityClaims,
+} from '../../supabase/functions/_shared/github-oidc-claims';
 
 const ok = {
   iss: 'https://token.actions.githubusercontent.com',
