@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-// @ts-expect-error plain ESM script helper
 import { readCiBackendEnv } from '../../scripts/lib/ci-backend-env.mjs';
 
 describe('CI backend env', () => {
