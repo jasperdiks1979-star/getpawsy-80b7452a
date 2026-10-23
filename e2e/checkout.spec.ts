@@ -21,11 +21,11 @@ test.describe("Checkout Flow", () => {
     }
     // Add a product to cart before each checkout test
     await page.goto("/products");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     // Click first product
     await page.locator('a[href*="/products/"]').first().click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     // Add to cart
     const addToCartButton = page.getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i });
@@ -37,7 +37,7 @@ test.describe("Checkout Flow", () => {
 
   test("should navigate to checkout from cart", async ({ page }) => {
     await page.goto("/cart");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     // Find checkout button
     const checkoutButton = page.getByRole("button", { name: /checkout|afrekenen|bestellen/i })
@@ -46,19 +46,19 @@ test.describe("Checkout Flow", () => {
     if (await checkoutButton.count() > 0) {
       await checkoutButton.first().click();
       
-      // Should navigate to checkout or Stripe
-      await page.waitForLoadState("networkidle");
+      // Payment endpoints are blocked: only the storefront checkout may open
+      await page.waitForLoadState("domcontentloaded");
       
-      // Either on checkout page or redirected to Stripe
+      // Confirm storefront checkout without creating a payment session
       const url = page.url();
-      const isCheckout = url.includes("/checkout") || url.includes("stripe.com");
+      const isCheckout = url.includes("/checkout");
       expect(isCheckout).toBeTruthy();
     }
   });
 
   test("should display order summary on checkout", async ({ page }) => {
     await page.goto("/checkout");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     // Check for order summary elements
     const orderSummary = page.locator('[data-testid="order-summary"]')
@@ -76,7 +76,7 @@ test.describe("Checkout Flow", () => {
 
   test("should show shipping form fields", async ({ page }) => {
     await page.goto("/checkout");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     const url = page.url();
     
@@ -96,7 +96,7 @@ test.describe("Checkout Flow", () => {
 
   test("should validate required checkout fields", async ({ page }) => {
     await page.goto("/checkout");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     const url = page.url();
     
@@ -121,7 +121,7 @@ test.describe("Checkout Flow", () => {
 
   test("should calculate correct totals", async ({ page }) => {
     await page.goto("/cart");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     
     // Check that subtotal, shipping, and total are displayed
     const subtotal = page.getByText('Subtotal', { exact: true }).locator('..');
