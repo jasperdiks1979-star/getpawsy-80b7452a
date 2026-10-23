@@ -2357,6 +2357,7 @@ const ProductDetail = () => {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full"
+                  aria-label="Decrease quantity"
                   onClick={() => {
                     haptic.selection();
                     setQuantity(Math.max(1, quantity - 1));
@@ -2370,6 +2371,7 @@ const ProductDetail = () => {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full"
+                  aria-label="Increase quantity"
                   onClick={() => {
                     haptic.selection();
                     setQuantity(quantity + 1);
@@ -2381,7 +2383,7 @@ const ProductDetail = () => {
 
               {/* Add to Cart Button */}
               <Button
-                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white"
+                className="flex-1 md:flex-none md:min-w-[220px] gap-2 rounded-full font-bold shadow-soft bg-primary hover:bg-primary/90 text-primary-foreground"
                 size="lg"
                 onClick={handleAddToCart}
                 disabled={!inStock || variantChoiceMissing}
@@ -2395,6 +2397,8 @@ const ProductDetail = () => {
                 variant="outline"
                 size="icon"
                 className="h-11 w-11 flex-shrink-0 rounded-full border-2"
+                aria-label={inWishlist ? "Remove from wishlist" : "Save to wishlist"}
+                aria-pressed={inWishlist}
                 onClick={handleWishlistToggle}
               >
                 <Heart

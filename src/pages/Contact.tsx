@@ -216,7 +216,7 @@ const Contact = () => {
                         value={formData.subject} 
                         onValueChange={(value) => setFormData({ ...formData, subject: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="subject" aria-label="Subject">
                           <SelectValue placeholder="Select a subject" />
                         </SelectTrigger>
                         <SelectContent>

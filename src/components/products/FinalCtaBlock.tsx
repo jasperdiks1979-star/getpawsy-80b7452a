@@ -42,7 +42,7 @@ export function FinalCtaBlock({ onAddToCart, inStock, price, compareAtPrice, pro
 
         <Button
           size="lg"
-          className="h-14 px-10 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl"
+          className="h-14 px-10 gap-2 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
           onClick={onAddToCart}
           disabled={!inStock}
         >
