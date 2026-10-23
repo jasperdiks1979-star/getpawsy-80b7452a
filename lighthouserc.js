@@ -1,4 +1,4 @@
-export default {
+const config = {
   ci: {
     collect: {
       numberOfRuns: 3,
@@ -73,3 +73,7 @@ export default {
     },
   },
 };
+
+// The GitHub action reads the imported module namespace, not its default export.
+export const ci = config.ci;
+export default config;
