@@ -106,7 +106,7 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
     ? badges.filter(b => methods.includes(b.name))
     : badges;
 
-  const labelColor = variant === 'light' ? 'text-background/40' : 'text-muted-foreground';
+  const labelColor = variant === 'light' ? 'text-background/70' : 'text-muted-foreground';
   const badgeBg = variant === 'light' ? 'bg-background/10' : 'bg-muted';
   const badgeBorder = variant === 'light' ? '' : 'border border-border';
   const iconColor = variant === 'light' ? 'text-background/70' : 'text-foreground/70';
@@ -121,6 +121,7 @@ export const PaymentBadges = forwardRef<HTMLDivElement, PaymentBadgesProps>(func
           key={name}
           className={`inline-flex items-center justify-center h-6 px-2 rounded ${badgeBg} ${badgeBorder} ${iconColor}`}
           title={title || name}
+          role="img"
           aria-label={title || name}
         >
           <Icon className={`${width} h-4`} />
