@@ -1,9 +1,9 @@
 # Roadmap
 
 ## October 23 visual makeover
-- [ ] Apply cohesive warm-white/coral storefront styling, authentic lifestyle photography, shared card and PDP presentation without commerce changes.
-- [ ] Verify desktop/mobile, accessibility, cart journey, regressions and available release checks.
-- [ ] Publish only with all release gates green; otherwise retain preview and report exact blocker.
+- [x] Apply cohesive warm-white/coral storefront styling, licensed real lifestyle photography, shared card and PDP presentation without commerce changes.
+- [x] Verify desktop/mobile homepage and cats collection, mobile menu/PDP/cart/US checkout before payment, homepage accessibility and full regressions (2965 passed, 2 skipped).
+- [ ] Publish blocked: independent full typecheck/production-prerender/rollback not verified; manual execution prohibited. GitHub Tests & Performance run 40012692663 failed at npm ci because package.json and package-lock.json disagree, before build. CI repair and a successful release validation are required; no publication requested.
 
 ## October 20 V3.2
 - [x] Species guard covers cats/dogs; multi-pet hidden behind opt-in toggle (tests in src/test/collection-species-guard.test.ts). Collections load name_clean. Warm-neutral text/background, green kept for primary CTA. Full suite 2948 passed/2 skipped. DB 78%, 16/60, 0 restarts.
