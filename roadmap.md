@@ -3,7 +3,7 @@
 ## October 23 visual makeover
 - [x] Apply cohesive warm-white/coral storefront styling, licensed real lifestyle photography, shared card and PDP presentation without commerce changes.
 - [x] Verify desktop/mobile homepage and cats collection, mobile menu/PDP/cart/US checkout before payment, homepage accessibility and full regressions (2965 passed, 2 skipped).
-- [ ] Publish blocked: independent full typecheck/production-prerender/rollback not verified; manual execution prohibited. GitHub Tests & Performance run 40012692663 failed at npm ci because package.json and package-lock.json disagree, before build. CI repair and a successful release validation are required; no publication requested.
+- [ ] Release closeout October 23: makeover HEAD 9e8da23cad09e8c95362aa567ad395eb322bb5dd synced. Production Validation 40028982096 concluded success with all three guards executed; Tests & Performance 40028982080 concluded failure at npm ci (package.json/package-lock.json mismatch), build and checkout tests skipped. Independent full typecheck/production-prerender/rollback remain NOT VERIFIED; manual execution prohibited and not bypassed. CI lockfile repair and an independent release workflow covering all missing gates remain required. DB 61% RAM, 16/60 connections, zero restarts/exhaustion; live home/cats HTTP 200, cats toggle present, no mobile overflow/page errors. No publication or application/dependency changes.
 
 ## October 20 V3.2
 - [x] Species guard covers cats/dogs; multi-pet hidden behind opt-in toggle (tests in src/test/collection-species-guard.test.ts). Collections load name_clean. Warm-neutral text/background, green kept for primary CTA. Full suite 2948 passed/2 skipped. DB 78%, 16/60, 0 restarts.
