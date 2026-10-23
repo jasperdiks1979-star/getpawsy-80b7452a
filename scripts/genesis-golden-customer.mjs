@@ -6,11 +6,10 @@
  * fails the CI job (exit 1) if the anonymous customer journey is broken.
  * Blocks the deployment before it can reach production.
  *
- * Env: SUPABASE_URL, SUPABASE_ANON_KEY (fallbacks baked in for known prod ref).
+ * Env (required, no fallbacks): SUPABASE_URL, SUPABASE_ANON_KEY.
  */
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nojvgfbcjgipjxpfatmm.supabase.co';
-const ANON_KEY = process.env.SUPABASE_ANON_KEY
-  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc';
+import { requireCiBackendEnv } from './lib/ci-backend-env.mjs';
+const { url: SUPABASE_URL, key: ANON_KEY } = requireCiBackendEnv();
 
 // CEO Kill Switch: safe exceptions bypass the deployment block but still
 // run the Golden Customer for evidence.
