@@ -216,7 +216,7 @@ export function TikTokSalesFunnel({ onCtaClick, inStock, price }: TikTokSalesFun
         <Button
           onClick={onCtaClick}
           disabled={!inStock}
-          className="mt-4 h-14 px-10 gap-2 text-base font-bold bg-[hsl(25,95%,53%)] hover:bg-[hsl(25,95%,46%)] text-white rounded-xl shadow-md"
+          className="mt-4 h-14 px-10 gap-2 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md"
         >
           <ShoppingCart className="w-5 h-5" />
           Get Yours Today

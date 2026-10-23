@@ -302,6 +302,7 @@ export const CategoryFilter = ({
               transition={{ duration: 0.2 }}
             >
               <Checkbox
+                aria-label={`Filter by ${category.name}`}
                 checked={isSelected}
                 onCheckedChange={() => onToggleCategory(category.name)}
                 className="shrink-0"
@@ -346,6 +347,7 @@ export const CategoryFilter = ({
           transition={{ duration: 0.2 }}
         >
           <Checkbox
+            aria-label={`Filter by ${category.name}`}
             checked={isSelected}
             onCheckedChange={() => onToggleCategory(category.name)}
           />
@@ -381,6 +383,7 @@ export const CategoryFilter = ({
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-help">
                     <Progress 
+                      aria-label="Expanded categories"
                       value={(openCategories.length / allParentIds.length) * 100} 
                       className="w-12 h-1.5"
                     />
