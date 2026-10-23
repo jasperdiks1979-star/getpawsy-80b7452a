@@ -24,7 +24,7 @@
     --primary: 9 54% 37%;
     --primary-foreground: 40 50% 98%;
 
-    /* Soft sage green secondary - calming pet-friendly */
+    /* Quiet beige secondary surfaces */
     --secondary: 24 48% 94%;
     --secondary-foreground: 30 40% 20%;
 
@@ -370,7 +370,7 @@
 
   @media (max-width: 767px) {
     .storefront-hero-scrim {
-      background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 42%, hsl(var(--background) / 0.65) 65%, transparent 100%);
+      background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 52%, hsl(var(--background) / 0.92) 72%, transparent 100%);
     }
   }
 
