@@ -5,7 +5,7 @@
  * hydration, reload, delayed product resolution, or transient API failure.
  * Only conclusively invalid entries may be dropped.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { CartProvider, useCart, type CartItem } from '@/contexts/CartContext';
@@ -17,6 +17,16 @@ vi.mock('@/lib/analytics', () => ({
   trackRemoveFromCart: vi.fn(),
   trackGoogleAdsAddToCart: vi.fn(),
 }));
+
+vi.mock('@/lib/analyticsFunnel', () => ({ recordFunnelStep: vi.fn() }));
+vi.mock('@/lib/marketingClient', () => ({ fireMarketingAsync: vi.fn() }));
+beforeAll(async () => {
+  await Promise.all([
+    import('@/lib/analytics'),
+    import('@/lib/analyticsFunnel'),
+    import('@/lib/marketingClient'),
+  ]);
+});
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
