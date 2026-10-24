@@ -1,5 +1,9 @@
 # Roadmap
 
+## October 24 analytics exclusion repair
+- [ ] Correct frontend/backend bot evidence without historical data mutation; verify KPI, shadow and CSV parity.
+- [ ] Run regression/full tests and same-SHA release gates; publish only with proven production safety and rollback.
+
 ## October 23 visual makeover
 - [ ] Release external blocker 22:30 UTC: local96989f565d346b448e7b0e085a364fe5db96d137 contains tested minimal fixture/Lighthouse/public CI env and badge-write removal; GitHub main remains5f7a84bf4a90a423ecb8be4ccbbdd3201c12013a. GitHub connector configured scopes read:user,repo lacks workflow: create tree including workflow returns404 while same non-workflow tree returns201. Owner must reauthorize existing GitHub API connection with workflow scope or restore native Git sync, no credentials/paid changes made. 2965tests pass/2skipped, isolated totals40.00 verified, preview+live desktop/mobile US journey0payment calls/errors; DB81%,19/60,0restarts/no48h exhaustion. Independent40032278504 success on older94f949d78, Production40032278461 success olderSHA, Tests40032278490 red (checkout/Lighthouse/a11y). Final same-SHA gates and published rollback identity remain blocked; no publish. No agent spawned, platform concurrent-agent listing unavailable.
 - [x] Release continuation: proven CI failures isolated (sandbox-only Chromium executable, missing production preview webServer, CommonJS Lighthouse config in ESM project); minimally corrected without storefront edits. Mandatory security auto-fix updated only DOMPurify 3.4.17; npm/Bun lockfiles preserve every other resolved version. Full regression suite 2965 passed/2 skipped; mobile Grey cat tree $94.49 -> cart subtotal/free shipping/tax disclosure -> US checkout verified, no payment request/order. Automatic build OK; live homepage/cats HTTP 200, no overflow/page errors.
