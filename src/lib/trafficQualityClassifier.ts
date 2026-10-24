@@ -20,6 +20,8 @@
  * bot confidence for sessions that already look synthetic.
  */
 
+import { isTechnicalPath } from "./technicalRoutes";
+
 export type TrafficQualityClass =
   | "PROBABLE_HUMAN"
   | "POSSIBLE_HUMAN"
@@ -86,6 +88,7 @@ export interface ClassifierSession {
   is_internal?: boolean | null;
   is_bot?: boolean | null;
   bot_reason?: string | null;
+  classification_reason?: string | null;
   /** Explicit stored verdicts from canonical_sessions — take precedence. */
   stored_traffic_class_v2?: string | null;
   stored_exclude_from_commercial?: boolean | null;
@@ -406,8 +409,7 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
       return finish("PROBABLE_BOT_OR_AUTOMATION", 0.99);
     }
     if (s.stored_exclude_from_commercial === true) {
-      reasons.push("stored_exclude_from_commercial");
-      return finish("PROBABLE_BOT_OR_AUTOMATION", 0.9);
+      reasons.push("commercial_exclusion:not_bot_evidence");
     }
   }
   if (landingLower.includes("__lovable_sha") || landingLower.includes("__lovable_load_id")) {
@@ -428,6 +430,10 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
   }
 
   // 2. Declared automation.
+  if (isTechnicalPath(landing)) {
+    reasons.push("technical_path");
+    return finish("PROBABLE_BOT_OR_AUTOMATION", 0.99);
+  }
   if (s.is_bot === true || (ua && BOT_UA_RE.test(ua))) {
     reasons.push(s.is_bot === true ? "declared_bot_flag" : "bot_user_agent");
     return finish("PROBABLE_BOT_OR_AUTOMATION", 0.97);
@@ -539,6 +545,11 @@ export function classifySession(s: ClassifierSession): ClassifiedSession {
   }
 
   // 7. Probable bot / automation — requires MULTIPLE weak synthetic signals.
+  if (s.stored_traffic_class_v2?.toUpperCase() === "UNKNOWN" &&
+      s.classification_reason === "no_signal_no_evidence") {
+    reasons.push("unknown:no_independent_bot_evidence");
+    return finish("UNKNOWN", 0.3);
+  }
   //    Missing metadata (no UA, no referrer, no UTM) is a suspicion signal only.
   const weak: string[] = [];
   if (duration !== null && duration < 5) weak.push("duration<5s");
@@ -643,7 +654,7 @@ export function applyClusterBoost(
 ): ClassifiedSession[] {
   const clusters = new Set(detectBotClusters(classified).map((c) => c.key));
   if (clusters.size === 0) return classified;
-  return classified.map((c) => {
+  return classified.map((c, i) => {
     if (!clusters.has(clusterKey(c))) return c;
     if (c.traffic_quality_class === "PROBABLE_HUMAN" || c.traffic_quality_class === "INTERNAL_OR_TEST") return c;
     if (c.traffic_quality_class === "PROBABLE_BOT_OR_AUTOMATION") {
@@ -655,6 +666,9 @@ export function applyClusterBoost(
     }
 
     if (c.traffic_quality_class === "UNKNOWN" && (c.facts.duration_seconds ?? 99) <= 2) {
+      const raw = _raw?.[i];
+      if (raw?.stored_traffic_class_v2?.toUpperCase() === "UNKNOWN" &&
+          raw.classification_reason === "no_signal_no_evidence") return c;
       return {
         ...c,
         traffic_quality_class: "PROBABLE_BOT_OR_AUTOMATION",

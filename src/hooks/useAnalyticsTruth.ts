@@ -44,6 +44,7 @@ export interface TruthSession {
   has_purchase: boolean;
   order_value: number;
   is_internal: boolean;
+  is_bot?: boolean | null;
   /** Repaired measurement evidence — read-only passthrough from the envelope. */
   reported_duration_seconds?: number | null;
   effective_duration_seconds?: number | null;

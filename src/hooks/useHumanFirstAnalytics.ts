@@ -68,6 +68,8 @@ export function toHumanFirstSessions(sessions: TruthSession[]): HumanFirstSessio
     has_purchase: s.has_purchase,
     order_value: s.order_value,
     is_internal: s.is_internal,
+    is_bot: s.is_bot,
+    crawler_verified: s.crawler_verified,
     classification_reason: s.classification_reason ?? null,
     stored_traffic_class_v2: s.stored_traffic_class_v2 ?? null,
     stored_exclude_from_commercial: s.stored_exclude_from_commercial ?? null,

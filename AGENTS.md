@@ -17,6 +17,7 @@
 - Generic PDP sections choose context via src/lib/pdp-category.ts and must never state product attributes; facts come from product-evidence or verified overrides. Why: category guesses leaked false features (ramp → bed).
 - Quick-add callers must preserve missing variant data rather than defaulting it to an empty array. Why: lean listing queries omit variants and must route to explicit option selection instead of adding a bare cart line.
 - Bot labels: analytics-shadow-classifier uses canonical_sessions UA/stage, keyset batches, analytics_job_leases checkpoint and shadow_classifier_version (trigger overwrites classifier_version); never touches canonical_events. Why: event scans hit caps.
+- Read-time traffic-quality classifiers and their regression fixtures must maintain frontend/backend parity, including crawler verification and technical-route detection. Why: dashboard, shadow eligibility and exports must share evidence without rewriting history.
 - "Complete the setup" requires isBundleUpsellReady(). Why: unsafe base prices and lost variant identity.
 - Buffer consented GA4 views until configured; dedupe consecutive paths, allow back navigation. Why: cold-PDP loss and callback duplicates.
 - Stage payment patches outside functions until gates pass. Why: auto-deploys.
