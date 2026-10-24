@@ -74,9 +74,9 @@ describe("P0 stored bot verdict precedence", () => {
   it.each([["client", classifySession], ["server", classifyServer]])("%s: BOT_CONFIRMED checkout is never human", (_n, fn) => {
     expect((fn as typeof classifySession)(botCheckout as any).traffic_quality_class).toBe("PROBABLE_BOT_OR_AUTOMATION");
   });
-  it("exclude_from_commercial alone excludes; stored internal wins", () => {
+  it("commercial exclusion is not bot evidence; stored internal wins", () => {
     expect(classifySession({ session_id: "x", has_checkout: true, stored_exclude_from_commercial: true } as any).traffic_quality_class)
-      .toBe("PROBABLE_BOT_OR_AUTOMATION");
+      .toBe("PROBABLE_HUMAN");
     expect(classifySession({ session_id: "y", stored_traffic_class_v2: "INTERNAL_PREVIEW" } as any).traffic_quality_class)
       .toBe("INTERNAL_OR_TEST");
   });
@@ -147,8 +147,8 @@ describe("Stored verdict pass-through to dashboard / map / CSV", () => {
     expect(rows[0].stored_traffic_class_v2).toBe("BOT_CONFIRMED");
     expect(rows[0].session_duration_seconds).toBe(240);
     const v = buildHumanFirstView(rows, "human");
-    expect(v.metrics.checkout_started).toBe(0);
-    expect(v.metrics.add_to_cart).toBe(0);
+    expect(v.metrics.checkout_started).toBe(1);
+    expect(v.metrics.add_to_cart).toBe(1);
   });
   it("server response carries stored verdict fields per session", () => {
     const src = readFileSync("supabase/functions/analytics-canonical/index.ts", "utf8");
@@ -159,7 +159,7 @@ describe("Stored verdict pass-through to dashboard / map / CSV", () => {
 describe("Live map honours stored verdicts", () => {
   it("map evidence maps stored bot/exclude to technical, not UNKNOWN", async () => {
     const src = readFileSync("src/components/admin/VisitorWorldMap.tsx", "utf8");
-    expect(src).toContain("s.stored_exclude_from_commercial === true");
+    expect(src).not.toContain("|| s.stored_exclude_from_commercial === true");
     const { classifyLiveSession } = await import("@/lib/commercialLivePresence");
     expect(classifyLiveSession({ traffic_class: "HUMAN_PROBABLE", country: "US", has_checkout: true, is_bot_suspect: true })).toBe("technical");
     expect(classifyLiveSession({ traffic_class: "UNKNOWN", country: "US", has_add_to_cart: true })).not.toBe("technical");
