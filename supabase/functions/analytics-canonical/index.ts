@@ -539,6 +539,7 @@ async function computeEnvelope(opts: ComputeOpts): Promise<Record<string, unknow
               stored_is_bot: f?.is_bot ?? null,
               stored_is_internal: f?.is_internal ?? null,
               stored_technical_path: f?.technical_path ?? null,
+              classification_reason: f?.classification_reason ?? null,
               // Repaired measurement inputs — duration proven by first-party
               // activity (canonical events + visibility-aware heartbeat) and
               // deliberate interaction count. Never fabricated.
