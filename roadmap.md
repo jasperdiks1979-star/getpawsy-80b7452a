@@ -1,5 +1,11 @@
 # Roadmap
 
+## October 25 external PR claim and release audit
+- [x] Read actual draft PR diffs/checks #19/#16/#17/#20 and current main 12031cdefc47a0a125c7ce67ff8a6e6d0d04735b. Main already pins live checkout returns to HTTPS getpawsy.pet and rejects unknown modes; PR19 is redundant and permits broader test origins. No PR merged or checkout changed.
+- [ ] Pinterest release blocker: Tests & Performance 40137112070, job 121000857570, has 57 passed/6 failed. Three ambiguous score selectors and two APIRequestContext reads bypass browser mocks; anonymous deployed native gate returns 200 and source lacks authorization before service-role work. Preserve negative auth test; security repair requires guarded handler regression coverage and caller review before deployment.
+- [ ] Analytics probe 40169871329 authenticates but has 15 drifts: clean probe filters only is_internal, whereas server totals use strict commercial eligibility; separate US/all requests also cross moving time windows. Reconcile probe with canonical contract without changing history or weakening assertions.
+- [ ] Release blocked: no Independent Release run for current main; Stripe connector exposes only test webhook, selected live-key account and signing-secret match UNPROVEN. No publish, function deployment, payment/session/order, DNS or secret mutation. GitHub configured scopes remain read:user,repo (no workflow scope).
+
 ## October 24 analytics exclusion repair
 - [x] Correct frontend/backend bot evidence without historical data mutation; verify KPI, shadow and CSV parity (80 focused tests, 2977 full passed / 2 existing skipped; automatic build/typecheck OK).
 - [ ] Release blocked: local fix SHA 29fbc3ed08509bb3133b964c850c956d294c3c77 not yet present in GitHub main (743fc350e6f5bd760371bd87749302f56509139a). No same-SHA runs available; independent typecheck/build/rollback unverified. DB 60% RAM, 21/60 connections, zero restarts/no exhaustion. No publish or explicit function deployment; require native sync then all release gates before production verification.
