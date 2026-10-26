@@ -1,27 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import poster from '@/assets/mascot-kitten.webp';
-import idleWebm from '@/assets/videos/mascot-kitten.webm.asset.json';
-import idleMp4 from '@/assets/videos/mascot-kitten.mp4.asset.json';
-import waveWebm from '@/assets/videos/mascot-kitten-wave.webm.asset.json';
-import waveMp4 from '@/assets/videos/mascot-kitten-wave.mp4.asset.json';
+import idleWebm from '@/assets/videos/mascot-v2-k-idle.webm.asset.json';
+import idleMp4 from '@/assets/videos/mascot-v2-k-idle.mp4.asset.json';
+import waveWebm from '@/assets/videos/mascot-v2-k-wave.webm.asset.json';
+import waveMp4 from '@/assets/videos/mascot-v2-k-wave.mp4.asset.json';
 
-type Clip = 'idle' | 'wave';
 const pick = (v: HTMLVideoElement, webm: string, mp4: string) =>
-  v.canPlayType('video/webm; codecs="vp9"') ? webm : mp4;
+  v.canPlayType('video/webm; codecs="vp9"') === 'probably' ? webm : mp4;
 
 /**
- * Generated photoreal kitten, real video animation:
- * - idle loop: breathing, slow blink, ear twitch, tail sway
- * - "say hi" clip: looks left/right, ears swivel, small paw wave (first view + on tap)
+ * Generated photoreal GetPawsy kitten — real video motion.
+ * idle: 10s seamless palindrome loop (breathing, blinks, ear twitch, tail sway)
+ * wave: looks left/right, ears swivel, paw wave; ends exactly on idle frame 0.
+ * Two persistent <video> elements are swapped (no src reloads, no React
+ * re-renders during playback). Idle repeats a random 1–3 times before a wave.
  * Still photo for reduced-motion / data-saver.
  */
-export function KittenMascot() {
-  const ref = useRef<HTMLVideoElement>(null);
+export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const idleRef = useRef<HTMLVideoElement>(null);
+  const waveRef = useRef<HTMLVideoElement>(null);
   const [reduced, setReduced] = useState(true);
   const [paused, setPaused] = useState(false);
-  const clip = useRef<Clip>('wave');
-  const greeted = useRef(false);
+  const pausedRef = useRef(false);
+  const visible = useRef(false);
+  const loopsLeft = useRef(1);
+  const active = useRef<'idle' | 'wave'>('idle');
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -32,61 +36,83 @@ export function KittenMascot() {
     return () => mq.removeEventListener?.('change', on);
   }, []);
 
-  const load = (c: Clip) => {
-    const v = ref.current;
-    if (!v) return;
-    clip.current = c;
-    v.loop = c === 'idle';
-    v.src = c === 'idle' ? pick(v, idleWebm.url, idleMp4.url) : pick(v, waveWebm.url, waveMp4.url);
-    v.play().catch(() => {});
+  const show = (which: 'idle' | 'wave') => {
+    const i = idleRef.current, w = waveRef.current;
+    if (!i || !w) return;
+    active.current = which;
+    const on = which === 'idle' ? i : w;
+    const off = which === 'idle' ? w : i;
+    on.currentTime = 0;
+    on.style.opacity = '1';
+    off.style.opacity = '0';
+    off.pause();
+    if (visible.current && !pausedRef.current) on.play().catch(() => {});
   };
 
   useEffect(() => {
-    const v = ref.current;
-    if (!v || reduced) return;
+    const i = idleRef.current, w = waveRef.current;
+    if (reduced || !i || !w) return;
+    let loaded = false;
+    const onIdleEnd = () => {
+      loopsLeft.current -= 1;
+      if (loopsLeft.current <= 0) { loopsLeft.current = 1 + Math.floor(Math.random() * 3); show('wave'); }
+      else show('idle');
+    };
+    const onWaveEnd = () => show('idle');
+    i.addEventListener('ended', onIdleEnd);
+    w.addEventListener('ended', onWaveEnd);
+    const vis = () => { if (document.hidden) { i.pause(); w.pause(); } else if (visible.current && !pausedRef.current) (active.current === 'idle' ? i : w).play().catch(() => {}); };
+    document.addEventListener('visibilitychange', vis);
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !paused && !document.hidden) {
-        if (!greeted.current) { greeted.current = true; load('wave'); }
-        else v.play().catch(() => {});
-      } else v.pause();
-    });
-    io.observe(v);
-    return () => io.disconnect();
-  }, [reduced, paused]);
+      visible.current = e.isIntersecting;
+      if (e.isIntersecting && !loaded) {
+        loaded = true;
+        i.src = pick(i, idleWebm.url, idleMp4.url);
+        w.src = pick(w, waveWebm.url, waveMp4.url);
+        w.preload = 'auto';
+        w.load();
+      }
+      const cur = active.current === 'idle' ? i : w;
+      if (e.isIntersecting && !pausedRef.current && !document.hidden) cur.play().catch(() => {});
+      else cur.pause();
+    }, { rootMargin: '100px' });
+    io.observe(i);
+    return () => {
+      io.disconnect();
+      document.removeEventListener('visibilitychange', vis);
+      i.removeEventListener('ended', onIdleEnd);
+      w.removeEventListener('ended', onWaveEnd);
+    };
+  }, [reduced]);
 
-  const cls = 'h-20 w-20 rounded-full object-cover shadow-md ring-2 ring-primary/20 sm:h-24 sm:w-24';
+  const dim = size === 'sm' ? 'h-16 w-16 sm:h-20 sm:w-20' : 'h-20 w-20 sm:h-24 sm:w-24';
+  const ring = 'rounded-full shadow-md ring-2 ring-primary/20';
 
   if (reduced) {
-    return <img src={poster} alt="" width={96} height={96} loading="lazy" decoding="async" className={`${cls} shrink-0`} />;
+    return <img src={poster} alt="" width={96} height={96} loading="lazy" decoding="async" className={`${dim} ${ring} shrink-0 object-cover`} />;
   }
 
+  const vCls = 'absolute inset-0 h-full w-full rounded-full object-cover';
   return (
     <div className="relative shrink-0">
       <button
         type="button"
-        onClick={() => { setPaused(false); load('wave'); }}
+        onClick={() => { pausedRef.current = false; setPaused(false); show('wave'); }}
         aria-label="Say hi to the GetPawsy kitten"
-        className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={`relative block overflow-hidden ${dim} ${ring} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+        style={{ backgroundImage: `url(${poster})`, backgroundSize: 'cover' }}
       >
-        <video
-          ref={ref}
-          className={cls}
-          poster={poster}
-          muted
-          playsInline
-          preload="none"
-          aria-hidden="true"
-          width={96}
-          height={96}
-          onEnded={() => { if (clip.current === 'wave') load('idle'); }}
-        />
+        <video ref={idleRef} className={vCls} poster={poster} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
+        <video ref={waveRef} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
       </button>
       <button
         type="button"
         onClick={() => {
-          const v = ref.current;
-          if (!v) return;
-          if (paused) { v.play().catch(() => {}); setPaused(false); } else { v.pause(); setPaused(true); }
+          const cur = active.current === 'idle' ? idleRef.current : waveRef.current;
+          const next = !pausedRef.current;
+          pausedRef.current = next;
+          setPaused(next);
+          if (next) cur?.pause(); else cur?.play().catch(() => {});
         }}
         aria-label={paused ? 'Play kitten animation' : 'Pause kitten animation'}
         className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
