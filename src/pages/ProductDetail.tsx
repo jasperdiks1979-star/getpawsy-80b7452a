@@ -2307,6 +2307,11 @@ const ProductDetail = () => {
             animate={{ y: hideOnScroll ? 100 : 0, opacity: hideOnScroll ? 0 : 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            // While scrolled-away (opacity 0) the bar must not stay focusable
+            // or exposed to assistive tech; the in-page Add to Cart remains.
+            aria-hidden={hideOnScroll || undefined}
+            {...(hideOnScroll ? ({ inert: '' } as Record<string, string>) : {})}
+            style={hideOnScroll ? { pointerEvents: 'none' } : undefined}
             className={
               // CRITICAL: keep this legacy desktop sticky bar hidden on mobile.
               // PdpStickyAtc (md:hidden, z-40) owns the mobile sticky CTA. When
