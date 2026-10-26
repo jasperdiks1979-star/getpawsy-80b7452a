@@ -11,7 +11,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 // Deno.core.runMicrotasks — unsupported in the current edge runtime and the
 // root cause of the "transport_error / Failed to send request" crashes.
 // See docs/edge-function-deploy-errors notes.
-import { createClient } from "npm:@supabase/supabase-js@2.49.1";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.49.1";
 import type {
   PinterestQueueInsert,
   PinterestPinDraft,
@@ -1946,7 +1946,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       }
       if (visualDuplicate) {
         queueDuplicatesBlocked++;
-        const reason = `visual_duplicate(sim=${(visualSimilarity ?? 0).toFixed(3)},match=${visualMatch ?? "?"})`;
+        const reason = `visual_duplicate(sim=${(visualSimilarity ?? 0).toFixed(3)},match=${visualMatch ?? "?"})` as const;
         console.warn(
           `[pinterest-viral-batch] queue protection blocked pin variant=${rowRec.pin_variant} ${reason}`,
         );
@@ -1968,7 +1968,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       });
       if (govVerdict.enabled && !govVerdict.allowed) {
         governorBlocked++;
-        const reason = `governor:${govVerdict.reason ?? "violation"}`;
+        const reason = `governor:${govVerdict.reason ?? "violation"}` as const;
         console.warn(
           `[pinterest-viral-batch] governor blocked variant=${rec.pin_variant} ${reason}`,
           JSON.stringify(govVerdict.violations),
