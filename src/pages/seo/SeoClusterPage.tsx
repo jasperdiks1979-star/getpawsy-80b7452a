@@ -1,3 +1,4 @@
+import { GuideMascotCTA, guidePetContext } from '@/components/guides/GuideMascotCTA';
 /**
  * SeoClusterPage — Lightweight long-tail keyword cluster page.
  * Targets specific keyword variations and links back to the parent money page.

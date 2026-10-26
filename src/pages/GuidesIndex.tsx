@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { GuideMascotCTA } from '@/components/guides/GuideMascotCTA';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, Clock, ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
