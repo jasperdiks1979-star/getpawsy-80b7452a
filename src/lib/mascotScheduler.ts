@@ -1,6 +1,6 @@
 /** Pure helpers for the kitten clip scheduler (testable, no DOM). */
-export type MascotAction = 'wave' | 'groom';
-export const ACTIONS: MascotAction[] = ['wave', 'groom'];
+export type MascotAction = 'wave' | 'groom' | 'look';
+export const ACTIONS: MascotAction[] = ['wave', 'groom', 'look'];
 
 /** Idle loops (10 s each) before the next action: 1 or 2. */
 export function idleCyclesBeforeAction(rnd: number): number {
