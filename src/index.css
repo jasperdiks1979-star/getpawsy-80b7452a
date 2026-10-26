@@ -933,6 +933,7 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .paw-float { animation: none; }
+  .cta-bounce, .cta-bounce:hover { transition: none; transform: none; }
   .gp-cta-pulse { animation: none; }
   .gp-cta-emphasize { animation: none !important; transform: none; }
   /*
