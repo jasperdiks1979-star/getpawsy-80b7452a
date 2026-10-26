@@ -37,3 +37,11 @@ describe('guide picks', () => {
     expect(guidePicks(rows, 'dog').map((r) => r.id)).toEqual(['d']);
   });
 });
+
+describe('shop the room toys', () => {
+  it('cat trees labelled as toys are not shown under toys', () => {
+    const toys = ROOM_SPOTS.find((s) => s.id === 'toys')!;
+    const rows = [row({ id: 't', name: 'Cat Tree Condo Cat Toy' }), row({ id: 'b', name: 'Rolling Ball Toy' })];
+    expect(roomMatches(rows, toys).map((r) => r.id)).toEqual(['b']);
+  });
+});
