@@ -374,6 +374,23 @@
     }
   }
 
+  /* Decorative hero paw prints — gentle float, disabled for reduced motion */
+  .paw-float {
+    animation: paw-float 7s ease-in-out infinite;
+  }
+  .paw-float-delay {
+    animation-delay: 2.4s;
+  }
+  @keyframes paw-float {
+    0%, 100% { transform: translateY(0) rotate(12deg); }
+    50% { transform: translateY(-10px) rotate(12deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .paw-float {
+      animation: none;
+    }
+  }
+
   .gradient-warm {
     background: linear-gradient(
       135deg,
