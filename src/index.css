@@ -386,6 +386,14 @@
     50% { transform: translateY(-10px) rotate(12deg); }
   }
 
+  /* Gentle CTA lift on hover; static for reduced motion */
+  .cta-bounce {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .cta-bounce:hover {
+    transform: translateY(-2px);
+  }
+
   .gradient-warm {
     background: linear-gradient(
       135deg,
