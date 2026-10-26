@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { finderMatches, NEEDS, type Budget, type FinderRow, type Need, type Pet } from '@/lib/petFinder';
 import { displayName } from '@/lib/displayName';
 import { cardTitle } from '@/lib/cardTitle';
-import mascot from '@/assets/mascot-cat.webp';
+import { KittenMascot } from './KittenMascot';
 
 const BUDGETS: { id: Budget; label: string }[] = [
   { id: 'under50', label: 'Under $50' },
@@ -52,7 +52,7 @@ export function PetFinder() {
     <section aria-labelledby="finder-heading" className="mx-auto w-full max-w-6xl px-4 pb-4 sm:px-6">
       <div className="relative overflow-hidden rounded-3xl bg-secondary p-5 sm:p-8">
         <div className="flex items-center gap-4">
-          <img src={mascot} alt="" width={96} height={96} loading="lazy" decoding="async" className="mascot-wave h-20 w-20 shrink-0 sm:h-24 sm:w-24" />
+          <KittenMascot />
           <div className="min-w-0 flex-1">
             <h2 id="finder-heading" className="font-display text-xl font-bold text-foreground sm:text-2xl">Not sure where to start?</h2>
             <p className="mt-1 text-sm text-muted-foreground">Answer 3 quick questions and we'll show in-stock items that fit.</p>
