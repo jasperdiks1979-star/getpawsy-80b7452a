@@ -385,11 +385,6 @@
     0%, 100% { transform: translateY(0) rotate(12deg); }
     50% { transform: translateY(-10px) rotate(12deg); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .paw-float {
-      animation: none;
-    }
-  }
 
   .gradient-warm {
     background: linear-gradient(
@@ -929,6 +924,7 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
   .gp-arrow-bounce { font-size: 18px; animation-duration: 1.7s; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .paw-float { animation: none; }
   .gp-cta-pulse { animation: none; }
   .gp-cta-emphasize { animation: none !important; transform: none; }
   /*

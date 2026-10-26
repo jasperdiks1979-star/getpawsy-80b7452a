@@ -31,12 +31,10 @@ describe('discontinued CJ SKU CJTC276169401AZ', () => {
     expect(codeWithoutComments(heroSource)).not.toContain(DISCONTINUED_ID);
   });
 
-  it('keeps five homepage hero products', () => {
-    const block = heroSource.match(/const HERO_PRODUCT_IDS = \[([\s\S]*?)\] as const;/);
-    expect(block).toBeTruthy();
-    const ids = (block![1].match(/'[0-9a-f-]{36}'/g) ?? []);
-    expect(ids).toHaveLength(5);
-    expect(new Set(ids).size).toBe(5);
+  it('homepage picks come from the live eligibility filter, not a hardcoded list', () => {
+    // The fixed five-product hero list was replaced by live Featured Picks.
+    expect(heroSource).toContain('selectFeaturedPicks');
+    expect(heroSource).not.toMatch(/const HERO_PRODUCT_IDS = \[/);
   });
 
   it('is not a component of any curated bundle', () => {
