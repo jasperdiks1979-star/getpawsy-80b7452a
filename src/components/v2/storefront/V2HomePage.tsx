@@ -5,6 +5,8 @@ import { ArrowRight, PackageCheck, RotateCcw, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import petsPhoto from '@/assets/everyday-pets.webp.asset.json';
 import catPhoto from '@/assets/living-room-cat.webp.asset.json';
+import litterPhoto from '@/assets/category-litter-essentials.jpg';
+import toysPhoto from '@/assets/category-cat-toys.jpg';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
@@ -24,11 +26,12 @@ const photoUrl = (url: string) => import.meta.env.DEV ? `https://getpawsy.lovabl
 // Verified curator picks: visible, active products with verified stock, a
 // live PDP, a purchasable variant, and a stable rehosted primary image.
 const VERIFIED_PICK_IDS = [
-  'a59f49ad-b9ee-47ce-a16d-74c2ab61b900',
   'b9c0f448-162b-4464-bf36-7697e6fe4852',
   '1b218ab0-19b5-4ae5-a227-8099f2e2f00c',
   '84be6648-7fd6-4b18-bdd7-ff9df7907892',
   '1daefaa0-7892-4760-87a9-0aa34c49c767',
+  // Collage-style supplier image: kept eligible but never in a lead slot.
+  'a59f49ad-b9ee-47ce-a16d-74c2ab61b900',
 ] as const;
 
 const PICK_COLUMNS = 'id, name, slug, price, image_url, stock, is_active, is_duplicate, merch_hidden, merch_role';
@@ -36,8 +39,8 @@ const PICK_COLUMNS = 'id, name, slug, price, image_url, stock, is_active, is_dup
 const CATEGORIES = [
   { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: photoUrl(catPhoto.url) },
   { href: '/collections/dogs', title: 'For dogs', copy: 'For walks, naps and everything between.', image: photoUrl(petsPhoto.url) },
-  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: photoUrl(catPhoto.url) },
-  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: photoUrl(petsPhoto.url) },
+  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: litterPhoto },
+  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: toysPhoto },
 ];
 
 const REASSURANCE = [
