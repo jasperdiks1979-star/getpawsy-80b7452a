@@ -1,4 +1,5 @@
 import { customerUnitPrice, type PricedVariant } from "@/lib/customerUnitPrice";
+import { MascotHelper } from '@/components/v2/storefront/MascotHelper';
 import { listingPrice } from "@/lib/listingPrice";
 import { neutralProductRecord } from '@/lib/product-claim-hygiene';
 import { productRobotsDirective, getRobotsContent } from '@/lib/seo-robots-policy';
@@ -2199,6 +2200,7 @@ const ProductDetail = () => {
         <PDPClusterLinks productCategory={product.category} productName={product.name} />
 
         {/* Related Guides — max 3 */}
+        <div className="mx-auto max-w-6xl px-4"><MascotHelper slug={product.category} name={product.name} species={(product as { primary_species?: string | null }).primary_species} /></div>
         {relatedGuides.length > 0 && <RelatedGuides guides={relatedGuides} />}
 
         {/* Frequently Bought Together */}
