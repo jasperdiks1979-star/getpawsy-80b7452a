@@ -10,6 +10,8 @@ import toysPhoto from '@/assets/category-cat-toys.jpg';
 import heroPhoto from '@/assets/hero-cat-dog-joy.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
+import { PetFinder } from './PetFinder';
+import { cardLeadImage } from '@/lib/cardLeadImage';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
 import {
   selectFeaturedPicks,
@@ -35,7 +37,7 @@ const VERIFIED_PICK_IDS = [
   'b9c0f448-162b-4464-bf36-7697e6fe4852',
 ] as const;
 
-const PICK_COLUMNS = 'id, name, slug, price, image_url, stock, is_active, is_duplicate, merch_hidden, merch_role';
+const PICK_COLUMNS = 'id, name, slug, price, image_url, stock, is_active, is_duplicate, merch_hidden, merch_role, images';
 
 const CATEGORIES = [
   { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: photoUrl(catPhoto.url) },
@@ -93,7 +95,7 @@ function useFeaturedPicks() {
         slug: String(p.slug),
         name: String(p.name),
         price: Number(p.price),
-        image_url: p.image_url as string,
+        image_url: cardLeadImage(p as FeaturedPickRow & { images?: string[] | null }) as string,
       }));
     },
     staleTime: 5 * 60 * 1000,
@@ -212,6 +214,8 @@ export function V2HomePage() {
           ))}
         </ul>
       </section>
+
+      <PetFinder />
 
       {/* Featured picks — only rendered when the live catalog returns items */}
       {products.length > 0 && (

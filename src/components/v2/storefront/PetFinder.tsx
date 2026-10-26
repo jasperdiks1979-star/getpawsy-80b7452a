@@ -8,7 +8,6 @@ import { displayName } from '@/lib/displayName';
 import { cardTitle } from '@/lib/cardTitle';
 import mascot from '@/assets/mascot-cat.webp';
 
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const BUDGETS: { id: Budget; label: string }[] = [
   { id: 'under50', label: 'Under $50' },
   { id: '50to100', label: '$50 – $100' },
@@ -115,7 +114,7 @@ export function PetFinder() {
                         <Link to={`/products/${r.slug}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                           <img src={r.image_url!} alt={displayName(r)} width={240} height={240} loading="lazy" decoding="async" className="aspect-square w-full bg-background object-contain p-2" />
                           <span className="line-clamp-2 px-3 pt-2 text-sm font-medium text-foreground">{cardTitle(displayName(r))}</span>
-                          <span className="mt-auto px-3 pb-3 pt-1 text-sm font-bold text-foreground">From {usd.format(Number(r.price))}</span>
+                          <span className="mt-auto px-3 pb-3 pt-1 text-sm font-semibold text-primary">See price &amp; options</span>
                         </Link>
                       </li>
                     ))}
