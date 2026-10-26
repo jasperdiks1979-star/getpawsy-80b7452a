@@ -135,11 +135,11 @@ export function V2HomePage() {
 
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b border-border bg-secondary" aria-labelledby="hero-heading">
-        <img src={heroPhoto} alt="A happy ginger cat and golden dog relaxing together on a cream sofa" width={1600} height={1000} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_center] md:object-center" />
-        <div className="storefront-hero-scrim absolute inset-0 -z-10" aria-hidden="true" />
+        <img src={heroPhoto} alt="A happy ginger cat and golden dog relaxing together on a cream sofa" width={1600} height={1000} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 hidden h-full w-full object-cover md:block" />
+        <div className="storefront-hero-scrim absolute inset-0 -z-10 hidden md:block" aria-hidden="true" />
         <PawPrint className="paw-float absolute -z-10 left-[46%] top-10 hidden h-14 w-14 text-primary/20 md:block" />
         <Heart className="paw-float paw-float-delay absolute -z-10 left-[40%] bottom-16 hidden h-9 w-9 fill-primary/20 text-primary/30 md:block" aria-hidden="true" />
-        <div className="mx-auto flex min-h-[570px] w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
+        <div className="mx-auto flex w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
           <div className="max-w-sm md:max-w-lg">
             <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
               <PawPrint className="h-3.5 w-3.5" /> Pet essentials · Shipped to the US
@@ -161,6 +161,7 @@ export function V2HomePage() {
               <Button asChild size="lg" className="cta-bounce min-h-12 rounded-full px-7 text-base shadow-md"><Link to="/products">Shop now <ArrowRight aria-hidden="true" /></Link></Button>
               <Button asChild variant="outline" size="lg" className="min-h-12 rounded-full border-primary/40 bg-background/80 px-7 text-base"><Link to="/bundles">Explore Sets</Link></Button>
             </div>
+            <img src={heroPhoto} alt="" width={1600} height={1000} decoding="async" className="mt-7 aspect-[4/3] w-full rounded-3xl object-cover object-[75%_center] shadow-md md:hidden" />
           </div>
         </div>
       </section>
