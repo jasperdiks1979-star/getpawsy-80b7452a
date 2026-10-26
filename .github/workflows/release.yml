@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     branches: [main, master]
+    # Workflow-only changes must never cut a release or tag.
+    paths-ignore:
+      - '.github/workflows/**'
   workflow_dispatch:
     inputs:
       release_type:
@@ -232,33 +235,9 @@ jobs:
               generate_release_notes: false,
             });
 
-      - name: Update CHANGELOG
-        run: |
-          VERSION="${{ steps.new_version.outputs.version }}"
-          DATE=$(date +%Y-%m-%d)
-          
-          # Create temp file with new entry
-          echo "# Changelog" > CHANGELOG.tmp
-          echo "" >> CHANGELOG.tmp
-          echo "## [${VERSION}] - ${DATE}" >> CHANGELOG.tmp
-          echo "" >> CHANGELOG.tmp
-          echo "${{ steps.release_notes.outputs.notes }}" >> CHANGELOG.tmp
-          echo "" >> CHANGELOG.tmp
-          
-          # Append existing changelog (skip first line if it's the title)
-          if [ -f CHANGELOG.md ]; then
-            tail -n +3 CHANGELOG.md >> CHANGELOG.tmp
-          fi
-          
-          mv CHANGELOG.tmp CHANGELOG.md
-
-      - name: Commit CHANGELOG
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git commit -m "chore(release): update changelog for v${{ steps.new_version.outputs.version }} [skip ci]" || true
-          git push origin HEAD:${{ github.ref_name }} || true
+      # CHANGELOG auto-commit/push removed: automated commits must never be
+      # pushed to the Lovable-synced main branch. Release notes and tag
+      # history are preserved via the Git tag + GitHub Release steps above.
 
       - name: Post release summary
         run: |
