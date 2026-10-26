@@ -164,7 +164,7 @@ test.describe("Admin · Pinterest Quality · retry after edge-function failure",
     // Retry succeeds.
     await simBtn.click();
     await expect(page.getByText(/Avg native score/i)).toBeVisible();
-    await expect(page.getByText("47")).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: /^\s*Avg native score:\s*47\s*$/ })).toBeVisible();
     await expect(page.getByText(/Planned reject: 8/)).toBeVisible();
     expect(attempt).toBe(2);
   });

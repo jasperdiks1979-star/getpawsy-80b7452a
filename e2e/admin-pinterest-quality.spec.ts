@@ -196,7 +196,7 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
       .click();
 
     await expect(page.getByText(/Avg native score/i)).toBeVisible();
-    await expect(page.getByText("47")).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: /^\s*Avg native score:\s*47\s*$/ })).toBeVisible();
     await expect(page.getByText(/Planned reject: 8/)).toBeVisible();
 
     expect(fnCalls).toHaveLength(1);
@@ -306,7 +306,7 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}` },
+          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}`, "access-control-allow-origin": "*", "access-control-expose-headers": "content-range" },
           body: JSON.stringify(Array.from(drafts.values())),
         }),
     );
@@ -359,11 +359,15 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
     expect(downranked).toHaveLength(12);
 
     // Verify the page-context REST client also sees the new state.
-    const res = await page.request.get(
-      `https://${SUPABASE_HOST}/rest/v1/pinterest_pin_queue?select=id,status`,
-      { headers: { apikey: "test" } },
-    );
-    const rows = (await res.json()) as DraftRow[];
+    // Read through the page's own fetch so the mocked REST route (the
+    // in-memory DB model) answers; page.request bypasses page.route.
+    const rows = (await page.evaluate(async (host) => {
+      const r = await fetch(`https://${host}/rest/v1/pinterest_pin_queue?select=id,status`, {
+        headers: { apikey: "test" },
+      });
+      return r.json();
+    }, SUPABASE_HOST)) as DraftRow[];
+    expect(Array.isArray(rows)).toBe(true);
     expect(rows.filter((r) => r.status === "rejected")).toHaveLength(8);
     expect(rows.filter((r) => r.status === "downranked")).toHaveLength(12);
   });
@@ -379,7 +383,7 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}` },
+          headers: { "content-range": `0-${drafts.size - 1}/${drafts.size}`, "access-control-allow-origin": "*", "access-control-expose-headers": "content-range" },
           body: JSON.stringify(Array.from(drafts.values())),
         }),
     );
@@ -424,11 +428,15 @@ test.describe("Admin · Pinterest Quality · gate Simulate / Apply", () => {
     expect(byStatus("rejected")).toBe(3);
     expect(byStatus("draft")).toBe(0);
 
-    const res = await page.request.get(
-      `https://${SUPABASE_HOST}/rest/v1/pinterest_pin_queue?select=id,status`,
-      { headers: { apikey: "test" } },
-    );
-    const rows = (await res.json()) as DraftRow[];
+    // Read through the page's own fetch so the mocked REST route (the
+    // in-memory DB model) answers; page.request bypasses page.route.
+    const rows = (await page.evaluate(async (host) => {
+      const r = await fetch(`https://${host}/rest/v1/pinterest_pin_queue?select=id,status`, {
+        headers: { apikey: "test" },
+      });
+      return r.json();
+    }, SUPABASE_HOST)) as DraftRow[];
+    expect(Array.isArray(rows)).toBe(true);
     expect(rows.filter((r) => r.status === "approved")).toHaveLength(12);
     expect(rows.filter((r) => r.status === "downranked")).toHaveLength(10);
     expect(rows.filter((r) => r.status === "rejected")).toHaveLength(3);

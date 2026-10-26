@@ -155,7 +155,7 @@ const ACTIONS: Action[] = [
       page.getByRole("button", { name: /Simulate \(dry-run\)/i }).first(),
     expectSuccess: async (page) => {
       await expect(page.getByText(/Avg native score/i)).toBeVisible();
-      await expect(page.getByText("47")).toBeVisible();
+      await expect(page.getByRole("listitem").filter({ hasText: /^\s*Avg native score:\s*47\s*$/ })).toBeVisible();
       await expect(page.getByText(/Planned reject: 8/)).toBeVisible();
     },
   },

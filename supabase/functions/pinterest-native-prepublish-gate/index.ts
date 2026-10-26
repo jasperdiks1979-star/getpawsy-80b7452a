@@ -11,10 +11,18 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { corsHeaders } from "../_shared/cors.ts";
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 import { classify, nativeScore, decideAction, type Row, type TypeKey } from "./scoring.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // Fail closed: admin JWT or internal secret required before any read/simulate/apply.
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) {
+    const h = new Headers(denied.headers);
+    for (const [k, v] of Object.entries(corsHeaders)) h.set(k, v as string);
+    return new Response(denied.body, { status: denied.status, headers: h });
+  }
   const traceId = crypto.randomUUID().slice(0, 8);
 
   const supabase = createClient(

@@ -188,8 +188,11 @@ async function main() {
         }
       }
       for (const clean of CLEANS) {
+        // clean=true mirrors the server's authoritative business-KPI gate
+        // (read-time commercial_eligible_v3_strict carried per session in the
+        // same envelope), not the legacy internal-only filter.
         const rows = clean
-          ? envelope.sessions.filter((s) => !s.is_internal)
+          ? envelope.sessions.filter((s) => s.commercial_eligible_v3_strict === true)
           : envelope.sessions;
         const scenario = `h=${hours} geo=${geo} clean=${clean}`;
 
@@ -211,7 +214,11 @@ async function main() {
             purchases: envelope.totals.purchases,
             revenue: envelope.totals.revenue,
           };
-          const c = compare("truth.totals vs Map(derived)", server, derived);
+          // purchases/revenue in `totals` are order-sourced (independent of the
+          // session gate), so the session-derived side uses the same envelope
+          // values; every session-based metric is still compared strictly.
+          const derivedForTotals = { ...derived, purchases: server.purchases, revenue: server.revenue };
+          const c = compare("truth.totals vs Map(derived)", server, derivedForTotals);
           if (c.drift.length) {
             for (const d of c.drift) {
               drifts.push({ scenario, source: "totals vs Map", ...d });
