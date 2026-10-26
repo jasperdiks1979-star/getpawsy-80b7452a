@@ -3,10 +3,12 @@ import { idleCyclesBeforeAction, nextAction, idleRate, isStalled } from './masco
 
 describe('mascot scheduler', () => {
   it('never repeats the same action twice in a row', () => {
-    for (const r of [0, 0.3, 0.6, 0.99]) {
-      expect(nextAction('wave', r)).toBe('groom');
-      expect(nextAction('groom', r)).toBe('wave');
+    for (const prev of ['wave', 'groom', 'look'] as const) {
+      for (const r of [0, 0.3, 0.6, 0.99]) expect(nextAction(prev, r)).not.toBe(prev);
     }
+  });
+  it('can pick each of the three actions (wave, groom, look)', () => {
+    expect([0, 0.5, 0.99].map((r) => nextAction(null, r))).toEqual(['wave', 'groom', 'look']);
   });
   it('waits 1 or 2 idle loops before an action', () => {
     expect(idleCyclesBeforeAction(0.1)).toBe(1);

@@ -6,6 +6,8 @@ import waveWebm from '@/assets/videos/mascot-k3-w.webm.asset.json';
 import waveMp4 from '@/assets/videos/mascot-k3-w.mp4.asset.json';
 import groomWebm from '@/assets/videos/mascot-k3-g.webm.asset.json';
 import groomMp4 from '@/assets/videos/mascot-k3-g.mp4.asset.json';
+import lookWebm from '@/assets/videos/mascot-k4-l.webm.asset.json';
+import lookMp4 from '@/assets/videos/mascot-k4-l.mp4.asset.json';
 import { idleCyclesBeforeAction, idleRate, isStalled, nextAction, type MascotAction } from '@/lib/mascotScheduler';
 
 type Clip = 'idle' | MascotAction;
@@ -13,6 +15,8 @@ const SRC: Record<Clip, [string, string]> = {
   idle: [idleWebm.url, idleMp4.url],
   wave: [waveWebm.url, waveMp4.url],
   groom: [groomWebm.url, groomMp4.url],
+  // look (6 s): looks left, right, back; ear flick, soft blink, breathing
+  look: [lookWebm.url, lookMp4.url],
 };
 const pick = (v: HTMLVideoElement, [webm, mp4]: [string, string]) =>
   v.canPlayType('video/webm; codecs="vp9"') === 'probably' ? webm : mp4;
