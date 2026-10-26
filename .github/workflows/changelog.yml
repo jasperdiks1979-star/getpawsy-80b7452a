@@ -33,7 +33,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           output-file: "CHANGELOG.md"
           skip-version-file: true
-          skip-commit: false
+          # Never auto-commit/push to the Lovable-synced main branch.
+          # The generated changelog still feeds the GitHub Release body below.
+          skip-commit: true
           git-message: "chore(release): update changelog [skip ci]"
           preset: "conventionalcommits"
           tag-prefix: "v"
