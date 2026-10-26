@@ -11,6 +11,7 @@ import heroPhoto from '@/assets/hero-cat-dog-joy.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
 import { PetFinder } from './PetFinder';
+import { ShopTheRoom } from './ShopTheRoom';
 import { cardLeadImage } from '@/lib/cardLeadImage';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
 import {
@@ -216,6 +217,7 @@ export function V2HomePage() {
       </section>
 
       <PetFinder />
+      <ShopTheRoom />
 
       {/* Featured picks — only rendered when the live catalog returns items */}
       {products.length > 0 && (
