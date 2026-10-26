@@ -8,7 +8,6 @@
 //
 // Returns the raw verdict from the RPC plus a normalized reason string.
 
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 
 export interface GovernorViolation {
   rule: string;
@@ -41,7 +40,12 @@ export interface GovernorInput {
  * deny themselves.
  */
 // deno-lint-ignore no-explicit-any
-export async function checkGovernor(sb: SupabaseClient<any, any, any>, input: GovernorInput): Promise<GovernorVerdict> {
+/** Minimal structural client contract: only the RPC call the governor needs (works across supabase-js versions). */
+export interface GovernorRpcClient {
+  rpc(fn: "governor_check_pin", args: Record<string, unknown>): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+}
+
+export async function checkGovernor(sb: GovernorRpcClient, input: GovernorInput): Promise<GovernorVerdict> {
   try {
     const { data, error } = await sb.rpc("governor_check_pin", {
       p_slug: input.slug ?? "",
