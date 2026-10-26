@@ -1534,6 +1534,7 @@ const App = () => {
                           <Route path="/orthopedic-dog-beds" element={<CollectionAliasRedirect slug="orthopedic-dog-beds" fallback="all" />} />
                           <Route path="/cat-trees-for-large-cats" element={<CollectionAliasRedirect slug="cat-trees-for-large-cats" fallback="all" />} />
                           <Route path="/dog-car-travel-safety" element={<CollectionAliasRedirect slug="dog-car-travel-safety" fallback="all" />} />
+                          <Route path="/collections/litter-boxes" element={<CollectionAliasRedirect slug="cat-litter-boxes" fallback="cat-litter-boxes" />} />
                           <Route path="/collections/orthopedic-dog-beds" element={<CollectionAliasRedirect slug="orthopedic-dog-beds" fallback="all" />} />
                           <Route path="/collections/cat-trees-for-large-cats" element={<CollectionAliasRedirect slug="cat-trees-for-large-cats" fallback="all" />} />
                           <Route path="/collections/dog-car-travel-safety" element={<CollectionAliasRedirect slug="dog-car-travel-safety" fallback="all" />} />
