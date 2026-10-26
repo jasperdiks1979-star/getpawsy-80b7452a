@@ -386,6 +386,9 @@
     50% { transform: translateY(-10px) rotate(12deg); }
   }
 
+  .mascot-wave { animation: mascot-wave 4s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes mascot-wave { 0%,80%,100% { transform: rotate(0); } 85% { transform: rotate(-6deg); } 90% { transform: rotate(5deg); } 95% { transform: rotate(-3deg); } }
+
   /* Gentle CTA lift on hover; static for reduced motion */
   .cta-bounce {
     transition: transform 200ms ease, box-shadow 200ms ease;
@@ -934,6 +937,7 @@ a, button, [role="button"], input[type="submit"], input[type="button"] {
 @media (prefers-reduced-motion: reduce) {
   .paw-float { animation: none; }
   .cta-bounce, .cta-bounce:hover { transition: none; transform: none; }
+  .mascot-wave { animation: none; }
   .gp-cta-pulse { animation: none; }
   .gp-cta-emphasize { animation: none !important; transform: none; }
   /*

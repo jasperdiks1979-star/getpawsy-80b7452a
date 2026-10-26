@@ -19,6 +19,8 @@ import { getCanonicalCardPrice } from "@/lib/canonical-pricing";
 import { useListingPrice } from "@/hooks/useListingPrice";
 import { trackFirstGridImage } from "@/lib/grid-timing";
 import { getConversionFlag } from "@/lib/conversionFlags";
+import { cardLeadImage } from '@/lib/cardLeadImage';
+import { cardTitle } from '@/lib/cardTitle';
 import { displayName } from "@/lib/displayName";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/shipping-constants";
 
@@ -229,14 +231,14 @@ export const ProductCard = memo(
           <div
             className={
               premium
-                ? "relative h-full rounded-lg overflow-hidden bg-card border border-border/60 hover:shadow-md transition-shadow duration-300 flex flex-col"
-                : "relative h-full bg-card border border-border rounded-lg overflow-hidden flex flex-col"
+                ? "relative h-full rounded-2xl overflow-hidden bg-card border border-border/60 hover:shadow-md motion-safe:hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
+                : "relative h-full bg-card border border-border rounded-2xl overflow-hidden flex flex-col"
             }
           >
-            <div className="relative aspect-square overflow-hidden bg-card">
+            <div className="relative aspect-square overflow-hidden bg-secondary/50">
               <Link ref={ref} to={productUrl} onClick={handleCardClick} aria-label={displayName(product)} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
               <OptimizedImage
-                src={product.image_url || "/placeholder.svg"}
+                src={cardLeadImage({ id: product.id, image_url: product.image_url ?? null, images: product.images ?? null }) || "/placeholder.svg"}
                 alt={product.image_alt_text || `${displayName(product)}${product.category ? ` - ${product.category}` : ""} – GetPawsy`}
                 aspectRatio="square"
                 className="object-contain motion-safe:group-hover:scale-[1.03] motion-safe:transition-transform motion-safe:duration-300"
@@ -348,7 +350,7 @@ export const ProductCard = memo(
 
               <h3 className="font-sans font-medium text-foreground text-sm md:text-base leading-snug min-h-[2.5rem]">
                 <Link to={productUrl} onClick={handleCardClick} title={displayName(product)} className="line-clamp-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
-                {safeString(displayName(product))}
+                {safeString(cardTitle(displayName(product)))}
                 </Link>
               </h3>
 
@@ -374,7 +376,7 @@ export const ProductCard = memo(
               <div className="flex gap-2 pt-1 md:hidden">
                 <Button
                   type="button"
-                  className="flex-1 min-w-0 gap-1 rounded-lg min-h-11 text-sm px-2"
+                  className="flex-1 min-w-0 gap-1 rounded-full min-h-11 text-sm px-2"
                   size="sm"
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
