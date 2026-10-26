@@ -32,8 +32,9 @@ const FADE_MS = 350;
  * frame noise is blended instead of popping; the incoming clip is only
  * revealed once it is actually playing (no poster flash on iPhone).
  * A watchdog resumes stalled playback. Pauses offscreen / hidden tab.
- * Still photo for reduced-motion / data-saver. The pause control is a small
- * text button under the portrait — never an icon over the kitten or text.
+ * Still photo for reduced-motion / data-saver. The pause control is hidden
+ * visually (screen readers and keyboard focus only) — never visible text or
+ * an icon in the card.
  */
 export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const refs = { idle: useRef<HTMLVideoElement>(null), wave: useRef<HTMLVideoElement>(null), groom: useRef<HTMLVideoElement>(null) };
@@ -194,9 +195,10 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
           const el = refs[active.current].current;
           if (next) el?.pause(); else kick.current();
         }}
-        className="mt-1 rounded px-1 text-[10px] font-medium leading-tight text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-testid="mascot-motion-toggle"
+        className="sr-only focus-visible:not-sr-only focus-visible:mt-1 focus-visible:rounded focus-visible:bg-background focus-visible:px-1 focus-visible:text-[10px] focus-visible:font-medium focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {paused ? 'Play motion' : 'Pause motion'}
+        {paused ? 'Play kitten animation' : 'Pause kitten animation'}
       </button>
     </div>
   );
