@@ -1,4 +1,5 @@
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
+import { MascotHelper } from '@/components/v2/storefront/MascotHelper';
 import { CANONICAL_COLLECTION_META } from '@/lib/seo-clusters';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useMemo, useState } from 'react';
@@ -642,6 +643,7 @@ const SeoCollection = () => {
             {(CANONICAL_COLLECTION_META[collection.slug]?.intro || collection.meta_description || collection.seo_intro || '').substring(0, 300).replace(/<[^>]*>/g, '')}
           </p>
         </header>
+        <MascotHelper slug={collection.slug} name={collection.name} />
 
         {/* Trust strip — CI-10 hairline row (matches CI-7 hero / CI-8 cart).
             Flip premiumCollection to false to restore the legacy bordered chip row. */}
