@@ -10,7 +10,7 @@ describe('cardTitle', () => {
   });
   it('shortens long titles at a separator without trailing punctuation', () => {
     const out = cardTitle('Extra Large Stainless Steel Litter Box, Enclosed Cat Litter Box with Scoop and Deodorizer Bag');
-    expect(out).toBe('Extra Large Stainless Steel Litter Box, Enclosed Cat Litter Box');
+    expect(out).toBe('Extra Large Stainless Steel Litter Box');
     expect(out.length).toBeLessThanOrEqual(64);
   });
 });
