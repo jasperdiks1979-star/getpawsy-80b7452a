@@ -14,7 +14,7 @@ const BUDGETS: { id: Budget; label: string }[] = [
   { id: 'any', label: 'Any budget' },
 ];
 
-function useFinderPool(enabled: boolean) {
+export function useEligiblePool(enabled = true) {
   return useQuery({
     queryKey: ['v2-pet-finder-pool'],
     enabled,
@@ -44,7 +44,7 @@ export function PetFinder() {
   const [pet, setPet] = useState<Pet | null>(null);
   const [need, setNeed] = useState<Need | null>(null);
   const [budget, setBudget] = useState<Budget | null>(null);
-  const { data: pool = [], isLoading, isError } = useFinderPool(open);
+  const { data: pool = [], isLoading, isError } = useEligiblePool(open);
   const reset = () => { setPet(null); setNeed(null); setBudget(null); };
   const results = pet && need && budget ? finderMatches(pool, pet, need, budget) : null;
 

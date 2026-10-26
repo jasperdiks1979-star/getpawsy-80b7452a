@@ -3,6 +3,7 @@ import { useListingPrice } from '@/hooks/useListingPrice';
 import { ArrowUpRight } from 'lucide-react';
 import { displayName } from '@/lib/displayName';
 import { cardTitle } from '@/lib/cardTitle';
+import { FavoriteButton } from './FavoriteButton';
 
 export interface V2CardProduct {
   id: string;
@@ -22,7 +23,8 @@ export function V2ProductCard({ product, priority = false }: { product: V2CardPr
   const lp = useListingPrice({ id: product.id, price: product.price });
   const shown = lp === 'loading' ? ' ' : lp ? `${lp.isRange ? 'From ' : ''}${usd.format(lp.price)}` : usd.format(product.price);
   return (
-    <article className="group h-full">
+    <article className="group relative h-full">
+      <FavoriteButton productId={product.id} name={displayName(product)} className="absolute right-2 top-2 z-10" />
       <Link
         to={`/products/${product.slug}`}
         className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_hsl(var(--foreground)/0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0"

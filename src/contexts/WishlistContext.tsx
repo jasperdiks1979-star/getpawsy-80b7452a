@@ -21,6 +21,21 @@ interface WishlistContextType {
   getAddedAt: (productId: string) => number | undefined;
 }
 
+/** Keep only well-formed entries, one per product id (first one wins). */
+export function normalizeWishlist(raw: unknown): WishlistItem[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: WishlistItem[] = [];
+  for (const it of raw) {
+    const id = it && typeof it === 'object' ? (it as WishlistItem).productId : undefined;
+    if (typeof id !== 'string' || !id || id.length > 64 || seen.has(id)) continue;
+    seen.add(id);
+    const at = Number((it as WishlistItem).addedAt);
+    out.push({ productId: id, addedAt: Number.isFinite(at) ? at : Date.now() });
+  }
+  return out.slice(0, 200);
+}
+
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
@@ -28,7 +43,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     try {
       const saved = localStorage.getItem('wishlist-items');
       if (saved) {
-        return JSON.parse(saved);
+        return normalizeWishlist(JSON.parse(saved));
       }
       // Migrate from old format
       const oldSaved = localStorage.getItem('wishlist');
@@ -56,7 +71,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const wishlist = wishlistItems.map(item => item.productId);
 
   const addToWishlist = (productId: string, productName?: string, productPrice?: number) => {
-    setWishlistItems((prev) => [...prev, { productId, addedAt: Date.now() }]);
+    setWishlistItems((prev) => normalizeWishlist([...prev, { productId, addedAt: Date.now() }]));
     trackAddToWishlist(productId, productName, productPrice);
   };
 
