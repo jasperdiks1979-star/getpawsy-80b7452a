@@ -45,3 +45,13 @@ describe('shop the room toys', () => {
     expect(roomMatches(rows, toys).map((r) => r.id)).toEqual(['b']);
   });
 });
+
+import { cardLeadImage as _cli } from './cardLeadImage';
+describe('fleece dog bed card lead', () => {
+  it('uses the clean bed shot from its own gallery, not the bonus-toy promo', () => {
+    const id = '08856bd3-3842-4058-ba44-f1927ae59f2e';
+    const b = `https://nojvgfbcjgipjxpfatmm.supabase.co/storage/v1/object/public/product-images/rehosted/${id}/`;
+    expect(_cli({ id, image_url: b + 'feea2438d590dab2.png', images: [b + 'feea2438d590dab2.png', b + '8e529f821f207d65.png'] })).toBe(b + '8e529f821f207d65.png');
+    expect(_cli({ id, image_url: b + 'feea2438d590dab2.png', images: [b + 'feea2438d590dab2.png'] })).toBe(b + 'feea2438d590dab2.png');
+  });
+});

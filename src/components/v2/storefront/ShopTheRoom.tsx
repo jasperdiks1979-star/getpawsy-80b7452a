@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import room from '@/assets/shop-the-room.jpg';
 import { useEligiblePool } from './PetFinder';
 import { ROOM_SPOTS, roomMatches } from '@/lib/shopTheRoom';
@@ -31,10 +32,12 @@ export function ShopTheRoom() {
                 onClick={() => setActive(s.id)}
                 aria-pressed={active === s.id}
                 aria-label={`Show ${s.label}`}
+                title={s.label}
                 style={{ left: `${s.x}%`, top: `${s.y}%` }}
                 className="absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <span className={`block h-5 w-5 rounded-full border-2 border-background shadow-md ${active === s.id ? 'bg-primary scale-125' : 'bg-background/90'} transition-transform motion-reduce:transition-none`} />
+                <span className={`block h-5 w-5 rounded-full border-2 border-background shadow-md ${active === s.id ? 'bg-primary scale-125 ring-4 ring-primary/30' : 'bg-background/90'} transition-transform motion-reduce:transition-none`} />
+                {active === s.id && <span aria-hidden="true" className="pointer-events-none absolute top-full mt-1 whitespace-nowrap rounded-full bg-background/95 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow">{s.label}</span>}
               </button>
             ))}
           </div>
@@ -49,10 +52,16 @@ export function ShopTheRoom() {
               </button>
             ))}
           </div>
-          <div aria-live="polite" className="mt-4 grid min-h-[16rem] grid-cols-2 gap-3 lg:grid-cols-3">
+          <div aria-live="polite" className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
             {isError && <p className="col-span-full text-sm text-muted-foreground">Products couldn't load right now. Please try again later.</p>}
             {!isError && !isLoading && items.length === 0 && <p className="col-span-full text-sm text-muted-foreground">No in-stock items of this type right now.</p>}
             {items.map((p) => <V2ProductCard key={p.id} product={p} />)}
+            {!isError && !isLoading && (
+              <Link to={spot.href} className="flex min-h-32 flex-col items-center justify-center rounded-3xl border border-dashed border-primary/40 bg-secondary/40 p-4 text-center text-sm font-semibold text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {items.length < 2 && <span className="mb-1 text-xs font-normal text-muted-foreground">Only {items.length} pick here right now.</span>}
+                Browse all {spot.label.toLowerCase()} →
+              </Link>
+            )}
           </div>
         </div>
       </div>
