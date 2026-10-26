@@ -86,6 +86,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-sm text-muted-foreground leading-relaxed">
             {props.introText}
           </div>
+          <GuideMascotCTA context={guidePetContext(props.h1)} source={`cluster:${props.h1}`} className="mt-6" />
         </section>
 
         {/* Top Picks */}
