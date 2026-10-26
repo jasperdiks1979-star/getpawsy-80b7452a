@@ -3,29 +3,41 @@ import { Pause, Play } from 'lucide-react';
 import poster from '@/assets/mascot-kitten.webp';
 import idleWebm from '@/assets/videos/mascot-v2-k-idle.webm.asset.json';
 import idleMp4 from '@/assets/videos/mascot-v2-k-idle.mp4.asset.json';
-import waveWebm from '@/assets/videos/mascot-v2-k-wave.webm.asset.json';
-import waveMp4 from '@/assets/videos/mascot-v2-k-wave.mp4.asset.json';
+import waveWebm from '@/assets/videos/mascot-k3-w.webm.asset.json';
+import waveMp4 from '@/assets/videos/mascot-k3-w.mp4.asset.json';
+import groomWebm from '@/assets/videos/mascot-k3-g.webm.asset.json';
+import groomMp4 from '@/assets/videos/mascot-k3-g.mp4.asset.json';
+import { idleCyclesBeforeAction, idleRate, isStalled, nextAction, type MascotAction } from '@/lib/mascotScheduler';
 
-const pick = (v: HTMLVideoElement, webm: string, mp4: string) =>
+type Clip = 'idle' | MascotAction;
+const SRC: Record<Clip, [string, string]> = {
+  idle: [idleWebm.url, idleMp4.url],
+  wave: [waveWebm.url, waveMp4.url],
+  groom: [groomWebm.url, groomMp4.url],
+};
+const pick = (v: HTMLVideoElement, [webm, mp4]: [string, string]) =>
   v.canPlayType('video/webm; codecs="vp9"') === 'probably' ? webm : mp4;
 
 /**
- * Generated photoreal GetPawsy kitten — real video motion.
- * idle: 10s seamless palindrome loop (breathing, blinks, ear twitch, tail sway)
- * wave: looks left/right, ears swivel, paw wave; ends exactly on idle frame 0.
- * Two persistent <video> elements are swapped (no src reloads, no React
- * re-renders during playback). Idle repeats a random 1–3 times before a wave.
- * Still photo for reduced-motion / data-saver.
+ * Generated photoreal GetPawsy kitten — real video, three clips that all
+ * start and end on the same resting frame, so every handoff is seamless:
+ * - idle (10 s, native loop): breathing, blinks, ear twitch, tail sway
+ * - wave (5.9 s): looks left/right, ears swivel, paw wave
+ * - groom (6.5 s): head tilt, yawn, paw lick
+ * After 1–2 idle loops a random action plays (never the same twice), with
+ * slight idle speed variation. Swaps happen only at the resting frame, after
+ * the next clip has a frame ready. A watchdog resumes stalled playback.
+ * Pauses offscreen / hidden tab. Still photo for reduced-motion / data-saver.
  */
 export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const idleRef = useRef<HTMLVideoElement>(null);
-  const waveRef = useRef<HTMLVideoElement>(null);
+  const refs = { idle: useRef<HTMLVideoElement>(null), wave: useRef<HTMLVideoElement>(null), groom: useRef<HTMLVideoElement>(null) };
   const [reduced, setReduced] = useState(true);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);
   const visible = useRef(false);
-  const loopsLeft = useRef(1);
-  const active = useRef<'idle' | 'wave'>('idle');
+  const active = useRef<Clip>('idle');
+  const queued = useRef<MascotAction | null>(null);
+  const kick = useRef<() => void>(() => {});
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -36,53 +48,103 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
     return () => mq.removeEventListener?.('change', on);
   }, []);
 
-  const show = (which: 'idle' | 'wave') => {
-    const i = idleRef.current, w = waveRef.current;
-    if (!i || !w) return;
-    active.current = which;
-    const on = which === 'idle' ? i : w;
-    const off = which === 'idle' ? w : i;
-    on.currentTime = 0;
-    on.style.opacity = '1';
-    off.style.opacity = '0';
-    off.pause();
-    if (visible.current && !pausedRef.current) on.play().catch(() => {});
-  };
-
   useEffect(() => {
-    const i = idleRef.current, w = waveRef.current;
-    if (reduced || !i || !w) return;
+    if (reduced) return;
+    const v = { idle: refs.idle.current!, wave: refs.wave.current!, groom: refs.groom.current! };
+    if (!v.idle || !v.wave || !v.groom) return;
     let loaded = false;
-    const onIdleEnd = () => {
-      loopsLeft.current -= 1;
-      if (loopsLeft.current <= 0) { loopsLeft.current = 1 + Math.floor(Math.random() * 3); show('wave'); }
-      else show('idle');
+    let cycles = 0;
+    let target = idleCyclesBeforeAction(Math.random());
+    let last: MascotAction | null = null;
+    let lastT = 0;
+    let prevIdleT = 0;
+    let stallT = -1;
+    const shouldPlay = () => visible.current && !pausedRef.current && !document.hidden;
+
+    (Object.keys(v) as Clip[]).forEach((k) => {
+      const el = v[k];
+      el.muted = true; el.defaultMuted = true;
+      el.setAttribute('muted', ''); el.setAttribute('playsinline', ''); el.setAttribute('webkit-playsinline', '');
+    });
+    v.idle.loop = true;
+
+    const playActive = () => { if (shouldPlay()) v[active.current].play().catch(() => {}); };
+    kick.current = playActive;
+
+    /** Show `to` once it has a decoded frame, then hide the others. */
+    const swapTo = (to: Clip) => {
+      const el = v[to];
+      const reveal = () => {
+        el.style.opacity = '1';
+        (Object.keys(v) as Clip[]).forEach((k) => { if (k !== to) { v[k].style.opacity = '0'; v[k].pause(); } });
+        active.current = to;
+      };
+      el.currentTime = 0;
+      if (to === 'idle') el.playbackRate = idleRate(Math.random());
+      const p = shouldPlay() ? el.play() : Promise.resolve();
+      const rvfc = (el as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number }).requestVideoFrameCallback;
+      if (rvfc) rvfc.call(el, reveal);
+      else p.then(reveal, reveal);
+      p.catch(() => {});
     };
-    const onWaveEnd = () => show('idle');
-    i.addEventListener('ended', onIdleEnd);
-    w.addEventListener('ended', onWaveEnd);
-    const vis = () => { if (document.hidden) { i.pause(); w.pause(); } else if (visible.current && !pausedRef.current) (active.current === 'idle' ? i : w).play().catch(() => {}); };
+
+    const onIdleTime = () => {
+      const t = v.idle.currentTime;
+      if (active.current === 'idle' && t + 0.5 < prevIdleT) {
+        // Loop wrapped back to the resting frame.
+        cycles += 1;
+        if (queued.current || cycles >= target) {
+          const a = queued.current ?? nextAction(last, Math.random());
+          queued.current = null; last = a; cycles = 0; target = idleCyclesBeforeAction(Math.random());
+          swapTo(a);
+        } else {
+          v.idle.playbackRate = idleRate(Math.random());
+        }
+      }
+      prevIdleT = t;
+    };
+    const onActionEnd = () => { prevIdleT = 0; swapTo('idle'); };
+    v.idle.addEventListener('timeupdate', onIdleTime);
+    v.wave.addEventListener('ended', onActionEnd);
+    v.groom.addEventListener('ended', onActionEnd);
+
+    const vis = () => { if (document.hidden) (Object.values(v)).forEach((e) => e.pause()); else playActive(); };
     document.addEventListener('visibilitychange', vis);
+    // Retry after first user gesture (iOS Low Power Mode blocks muted autoplay).
+    const gesture = () => playActive();
+    window.addEventListener('pointerdown', gesture, { passive: true });
+
+    // Watchdog: if it should be playing but time is frozen twice in a row, resume.
+    const dog = window.setInterval(() => {
+      if (!loaded) return;
+      const el = v[active.current];
+      const t = el.currentTime;
+      if (isStalled(shouldPlay(), el.paused, lastT, t)) {
+        if (stallT === t) { if (el.ended) onActionEnd(); else el.play().catch(() => {}); }
+        stallT = t;
+      } else stallT = -1;
+      lastT = t;
+    }, 1500);
+
     const io = new IntersectionObserver(([e]) => {
       visible.current = e.isIntersecting;
       if (e.isIntersecting && !loaded) {
         loaded = true;
-        i.src = pick(i, idleWebm.url, idleMp4.url);
-        w.src = pick(w, waveWebm.url, waveMp4.url);
-        w.preload = 'auto';
-        w.load();
+        (Object.keys(v) as Clip[]).forEach((k) => { v[k].src = pick(v[k], SRC[k]); v[k].preload = 'auto'; v[k].load(); });
       }
-      const cur = active.current === 'idle' ? i : w;
-      if (e.isIntersecting && !pausedRef.current && !document.hidden) cur.play().catch(() => {});
-      else cur.pause();
+      if (e.isIntersecting) playActive(); else v[active.current].pause();
     }, { rootMargin: '100px' });
-    io.observe(i);
+    io.observe(v.idle);
     return () => {
       io.disconnect();
+      window.clearInterval(dog);
       document.removeEventListener('visibilitychange', vis);
-      i.removeEventListener('ended', onIdleEnd);
-      w.removeEventListener('ended', onWaveEnd);
+      window.removeEventListener('pointerdown', gesture);
+      v.idle.removeEventListener('timeupdate', onIdleTime);
+      v.wave.removeEventListener('ended', onActionEnd);
+      v.groom.removeEventListener('ended', onActionEnd);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced]);
 
   const dim = size === 'sm' ? 'h-16 w-16 sm:h-20 sm:w-20' : 'h-20 w-20 sm:h-24 sm:w-24';
@@ -97,22 +159,27 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
     <div className="relative shrink-0">
       <button
         type="button"
-        onClick={() => { pausedRef.current = false; setPaused(false); show('wave'); }}
+        onClick={() => {
+          pausedRef.current = false; setPaused(false);
+          if (active.current === 'idle') queued.current = 'wave';
+          kick.current();
+        }}
         aria-label="Say hi to the GetPawsy kitten"
         className={`relative block overflow-hidden ${dim} ${ring} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
         style={{ backgroundImage: `url(${poster})`, backgroundSize: 'cover' }}
       >
-        <video ref={idleRef} className={vCls} poster={poster} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
-        <video ref={waveRef} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
+        <video ref={refs.idle} className={vCls} poster={poster} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
+        <video ref={refs.wave} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
+        <video ref={refs.groom} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
       </button>
       <button
         type="button"
         onClick={() => {
-          const cur = active.current === 'idle' ? idleRef.current : waveRef.current;
           const next = !pausedRef.current;
           pausedRef.current = next;
           setPaused(next);
-          if (next) cur?.pause(); else cur?.play().catch(() => {});
+          const el = refs[active.current].current;
+          if (next) el?.pause(); else kick.current();
         }}
         aria-label={paused ? 'Play kitten animation' : 'Pause kitten animation'}
         className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
