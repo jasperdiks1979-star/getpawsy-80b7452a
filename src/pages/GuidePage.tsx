@@ -37,6 +37,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { resolveToCanonical } from '@/lib/canonical-category-registry';
 import { canonicalizeInternalLinks } from '@/lib/seo-internal-links';
 import { isGuideLinkAllowed, isSpecificProductPhrase } from '@/lib/guide-product-eligibility';
+import { GuideMascotCTA, guidePetContext } from '@/components/guides/GuideMascotCTA';
 
 /** Rewrite legacy /product/{slug} hrefs to the canonical /products/{slug}. */
 const normalizeProductHref = (href: string): string =>
@@ -663,6 +664,7 @@ const GuidePage = () => {
             </div>
           </div>
         </header>
+        <GuideMascotCTA context={guidePetContext(guide.title, guide.category)} source={`guide:${guide.slug}`} className="-mt-6 mb-10" />
 
         {/* Quick Answer Snippet — Premium */}
         {guide.quickAnswer && (

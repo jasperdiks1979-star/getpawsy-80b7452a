@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { GuideMascotCTA } from '@/components/guides/GuideMascotCTA';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, Clock, ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -196,6 +197,7 @@ const GuidesIndex = () => {
             Whether you're choosing your first dog bed, comparing cat litter boxes, or planning a trip with your pet, our guides provide honest, research-backed advice. Every recommendation is independently selected — never influenced by sponsors.
           </p>
         </header>
+        <GuideMascotCTA context="general" source="guides-index" className="mb-8" />
 
         {/* Category quick-nav */}
         <div className="flex flex-wrap gap-2 mb-10">

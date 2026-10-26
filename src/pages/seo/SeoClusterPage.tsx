@@ -1,3 +1,4 @@
+import { GuideMascotCTA, guidePetContext } from '@/components/guides/GuideMascotCTA';
 /**
  * SeoClusterPage — Lightweight long-tail keyword cluster page.
  * Targets specific keyword variations and links back to the parent money page.
@@ -86,6 +87,7 @@ export default function SeoClusterPage(props: SeoClusterPageProps) {
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 text-sm text-muted-foreground leading-relaxed">
             {props.introText}
           </div>
+          <GuideMascotCTA context={guidePetContext(props.h1)} source={`cluster:${props.h1}`} className="mt-6" />
         </section>
 
         {/* Top Picks */}
