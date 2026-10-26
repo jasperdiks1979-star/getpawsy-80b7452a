@@ -11,6 +11,8 @@ export const CARD_LEAD_IMAGE_OVERRIDES: Record<string, string> = {
   'b9c0f448-162b-4464-bf36-7697e6fe4852': `${BASE}/b9c0f448-162b-4464-bf36-7697e6fe4852/0136bcb3bba709d8.jpg`,
   // Raised dog bed: stored lead is a breed size chart; gallery shows this bed with a dog on it.
   'ecf613cb-2160-4842-9438-91d19b3a1967': `${BASE}/ecf613cb-2160-4842-9438-91d19b3a1967/33902580d3dd14f6.jpg`,
+  // Fleece nest dog bed: stored lead is a 'Bonus Plush Bone Toy' promo; gallery has a clean shot of this bed.
+  '08856bd3-3842-4058-ba44-f1927ae59f2e': `${BASE}/08856bd3-3842-4058-ba44-f1927ae59f2e/8e529f821f207d65.png`,
 };
 
 export function cardLeadImage(p: { id: string; image_url: string | null; images?: string[] | null }): string | null {
