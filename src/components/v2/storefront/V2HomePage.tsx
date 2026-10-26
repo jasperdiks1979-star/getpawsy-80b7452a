@@ -5,9 +5,15 @@ import { ArrowRight, PackageCheck, RotateCcw, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import petsPhoto from '@/assets/everyday-pets.webp.asset.json';
 import catPhoto from '@/assets/living-room-cat.webp.asset.json';
+import litterPhoto from '@/assets/category-litter-essentials.jpg';
+import toysPhoto from '@/assets/category-cat-toys.jpg';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
+import {
+  selectFeaturedPicks,
+  type FeaturedPickRow,
+} from '@/lib/featured-picks';
 import {
   FREE_SHIPPING_THRESHOLD,
   RETURN_WINDOW_DAYS,
@@ -17,21 +23,24 @@ import {
 // the same-origin asset URLs. Both origins serve the same immutable photos.
 const photoUrl = (url: string) => import.meta.env.DEV ? `https://getpawsy.lovable.app${url}` : url;
 
-const HERO_PRODUCT_IDS = [
-  // Slot 1 uses a visible, active cat product with verified stock, a live PDP,
-  // a purchasable variant, and a stable rehosted primary image.
-  'a59f49ad-b9ee-47ce-a16d-74c2ab61b900',
-  'b9c0f448-162b-4464-bf36-7697e6fe4852',
+// Verified curator picks: visible, active products with verified stock, a
+// live PDP, a purchasable variant, and a stable rehosted primary image.
+const VERIFIED_PICK_IDS = [
   '1b218ab0-19b5-4ae5-a227-8099f2e2f00c',
-  '84be6648-7fd6-4b18-bdd7-ff9df7907892',
   '1daefaa0-7892-4760-87a9-0aa34c49c767',
+  '84be6648-7fd6-4b18-bdd7-ff9df7907892',
+  'a59f49ad-b9ee-47ce-a16d-74c2ab61b900',
+  // Collage-style supplier image: kept eligible but never in a lead slot.
+  'b9c0f448-162b-4464-bf36-7697e6fe4852',
 ] as const;
+
+const PICK_COLUMNS = 'id, name, slug, price, image_url, stock, is_active, is_duplicate, merch_hidden, merch_role';
 
 const CATEGORIES = [
   { href: '/collections/cats', title: 'For cats', copy: 'Little comforts. Everyday play.', image: photoUrl(catPhoto.url) },
   { href: '/collections/dogs', title: 'For dogs', copy: 'For walks, naps and everything between.', image: photoUrl(petsPhoto.url) },
-  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: photoUrl(catPhoto.url) },
-  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: photoUrl(petsPhoto.url) },
+  { href: '/collections/cat-litter-boxes', title: 'Litter essentials', copy: 'Find a setup that fits your home.', image: litterPhoto },
+  { href: '/collections/cat-toys', title: 'Cat toys', copy: 'A little more play in every day.', image: toysPhoto },
 ];
 
 const REASSURANCE = [
@@ -52,40 +61,59 @@ const REASSURANCE = [
   },
 ];
 
-function useFeaturedProducts() {
+function useFeaturedPicks() {
   return useQuery({
-    queryKey: ['v2-home-featured', ...HERO_PRODUCT_IDS],
+    queryKey: ['v2-home-featured-picks'],
     queryFn: async (): Promise<V2CardProduct[]> => {
-      const { data } = await supabase
-        .from('products_public')
-        .select('id, name, slug, price, image_url, stock, is_active, is_duplicate, merch_hidden, merch_role')
-        .in('id', [...HERO_PRODUCT_IDS])
-        .eq('is_active', true)
-        .gt('stock', 0)
-        .not('is_duplicate', 'is', true)
-        .eq('merch_hidden', false)
-        .neq('merch_role', 'blocked');
-      const byId = new Map((data ?? []).map((product) => [String(product.id), product]));
-      return HERO_PRODUCT_IDS
-        .map((id) => byId.get(id))
-        .filter((product): product is NonNullable<typeof product> => Boolean(product))
-        .filter((p) => p.slug && p.image_url && typeof p.price === 'number' && Number(p.price) > 0)
-        // Never surface sandbox/placeholder fixtures as purchasable products.
-        .filter((p) => !/sandbox|placeholder|test-fixture/i.test(`${p.slug} ${p.name}`))
-        .map((p) => ({
-          id: String(p.id),
-          slug: String(p.slug),
-          name: String(p.name),
-          price: Number(p.price),
-          image_url: p.image_url as string,
-        }));
+      const [verifiedRes, catalogRes] = await Promise.all([
+        supabase
+          .from('products_public')
+          .select(PICK_COLUMNS)
+          .in('id', [...VERIFIED_PICK_IDS]),
+        supabase
+          .from('products_public')
+          .select(PICK_COLUMNS)
+          .eq('is_active', true)
+          .gt('stock', 0)
+          .not('is_duplicate', 'is', true)
+          .eq('merch_hidden', false)
+          .neq('merch_role', 'blocked')
+          .not('image_url', 'is', null)
+          .order('stock', { ascending: false })
+          .limit(40),
+      ]);
+      const picks = selectFeaturedPicks(
+        VERIFIED_PICK_IDS,
+        (verifiedRes.data ?? []) as FeaturedPickRow[],
+        (catalogRes.data ?? []) as FeaturedPickRow[],
+      );
+      return picks.map((p) => ({
+        id: String(p.id),
+        slug: String(p.slug),
+        name: String(p.name),
+        price: Number(p.price),
+        image_url: p.image_url as string,
+      }));
     },
     staleTime: 5 * 60 * 1000,
   });
 }
 
+/** Decorative paw print; hidden from assistive tech. */
+function PawPrint({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true" focusable="false" className={className}>
+      <ellipse cx="32" cy="42" rx="14" ry="11" />
+      <ellipse cx="14" cy="26" rx="6" ry="8" transform="rotate(-18 14 26)" />
+      <ellipse cx="26" cy="16" rx="6" ry="8" transform="rotate(-6 26 16)" />
+      <ellipse cx="38" cy="16" rx="6" ry="8" transform="rotate(6 38 16)" />
+      <ellipse cx="50" cy="26" rx="6" ry="8" transform="rotate(18 50 26)" />
+    </svg>
+  );
+}
+
 export function V2HomePage() {
-  const { data: products = [] } = useFeaturedProducts();
+  const { data: products = [] } = useFeaturedPicks();
 
   return (
     <V2Layout>
@@ -105,26 +133,28 @@ export function V2HomePage() {
       </Helmet>
 
       {/* Hero */}
-      <section className="relative isolate border-b border-border bg-secondary" aria-labelledby="hero-heading">
+      <section className="relative isolate overflow-hidden border-b border-border bg-secondary" aria-labelledby="hero-heading">
         <img src={photoUrl(petsPhoto.url)} alt="A cat and small dog relaxing together at home" width={1400} height={932} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-center" />
         <div className="storefront-hero-scrim absolute inset-0 -z-10" aria-hidden="true" />
+        <PawPrint className="paw-float absolute -z-10 right-[12%] top-10 h-16 w-16 rotate-12 text-primary/15" />
+        <PawPrint className="paw-float paw-float-delay absolute -z-10 right-[28%] bottom-12 h-10 w-10 -rotate-12 text-primary/10" />
         <div className="mx-auto flex min-h-[570px] w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
-          <div className="max-w-sm md:max-w-md">
-            <p className="text-xs font-semibold text-muted-foreground">
+          <div className="max-w-sm md:max-w-lg">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
               Indoor cat essentials · Shipped to the US
             </p>
             <h1
               id="hero-heading"
-              className="mt-3 font-display text-4xl font-medium leading-tight text-foreground md:text-5xl"
+              className="mt-3 font-display text-4xl font-medium leading-tight text-foreground md:text-6xl md:leading-[1.1]"
             >
-              Happy cats, tidy homes
+              Happy cats, <span className="text-primary">tidy homes</span>
             </h1>
-            <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
+            <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground md:text-lg">
               Litter boxes, cat trees and enrichment for indoor cats, shipped across the US.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="min-h-12"><Link to="/products">Shop cat essentials <ArrowRight aria-hidden="true" /></Link></Button>
-              <Button asChild variant="outline" size="lg" className="min-h-12"><Link to="/bundles">Explore Sets</Link></Button>
+              <Button asChild size="lg" className="min-h-12 rounded-full px-7 text-base shadow-sm"><Link to="/products">Shop cat essentials <ArrowRight aria-hidden="true" /></Link></Button>
+              <Button asChild variant="outline" size="lg" className="min-h-12 rounded-full px-7 text-base"><Link to="/bundles">Explore Sets</Link></Button>
             </div>
             <p className="mt-5 text-sm text-muted-foreground">
               Free shipping over ${FREE_SHIPPING_THRESHOLD} · {RETURN_WINDOW_DAYS}-day returns · Secure checkout
@@ -145,7 +175,7 @@ export function V2HomePage() {
             <li key={c.href}>
               <Link
                 to={c.href}
-                className="group block overflow-hidden rounded-lg bg-secondary transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="group block overflow-hidden rounded-2xl bg-secondary transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <img
                   src={c.image}
@@ -154,10 +184,10 @@ export function V2HomePage() {
                   height={400}
                   loading="lazy"
                   decoding="async"
-                  className={`aspect-[4/3] w-full object-cover ${c.title === 'For dogs' ? 'object-right' : 'object-bottom'}`}
+                  className={`aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100 ${c.title === 'For dogs' ? 'object-right' : 'object-bottom'}`}
                 />
                 <div className="p-4">
-                  <h3 className="flex items-center justify-between gap-2 font-sans text-base font-semibold text-foreground">{c.title}<ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /></h3>
+                  <h3 className="flex items-center justify-between gap-2 font-sans text-base font-semibold text-foreground">{c.title}<ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" aria-hidden="true" /></h3>
                   <p className="mt-1 text-sm text-muted-foreground">{c.copy}</p>
                 </div>
               </Link>
@@ -166,7 +196,7 @@ export function V2HomePage() {
         </ul>
       </section>
 
-      {/* Featured products — only rendered when the live catalog returns items */}
+      {/* Featured picks — only rendered when the live catalog returns items */}
       {products.length > 0 && (
         <section
           className="border-y border-border bg-muted/25"
@@ -176,9 +206,9 @@ export function V2HomePage() {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 id="featured-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
-                   Everyday cat essentials
+                  Featured picks
                 </h2>
-                 <p className="mt-2 text-sm text-muted-foreground">Explore a few picks from our cat collection.</p>
+                <p className="mt-2 text-sm text-muted-foreground">In stock now and ready to ship to your door.</p>
               </div>
               <Link
                 to="/products"
@@ -187,7 +217,7 @@ export function V2HomePage() {
                 View all products
               </Link>
             </div>
-            <ul className="mt-6 grid list-none grid-cols-2 gap-4 p-0 md:grid-cols-4">
+            <ul className="mt-6 grid list-none grid-cols-2 gap-4 p-0 md:grid-cols-3 lg:grid-cols-4">
               {products.map((p, i) => (
                 <li key={p.id}>
                   <V2ProductCard product={p} priority={i < 2} />

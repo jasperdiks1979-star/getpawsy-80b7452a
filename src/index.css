@@ -20,8 +20,8 @@
     --popover: 40 45% 99%;
     --popover-foreground: 24 14% 14%;
 
-    /* Rich terracotta primary - confident but warm */
-    --primary: 9 54% 37%;
+    /* Lively coral primary - playful but polished, AA on cream foreground */
+    --primary: 12 78% 45%;
     --primary-foreground: 40 50% 98%;
 
     /* Quiet beige secondary surfaces */
@@ -42,19 +42,19 @@
 
     --border: 38 30% 88%;
     --input: 38 30% 88%;
-    --ring: 9 54% 37%;
+    --ring: 12 78% 45%;
 
     --radius: 0.5rem;
 
     /* Sidebar */
     --sidebar-background: 38 38% 96%;
     --sidebar-foreground: 25 25% 22%;
-    --sidebar-primary: 9 54% 37%;
+    --sidebar-primary: 12 78% 45%;
     --sidebar-primary-foreground: 40 45% 99%;
     --sidebar-accent: 12 75% 94%;
     --sidebar-accent-foreground: 18 60% 28%;
     --sidebar-border: 38 30% 88%;
-    --sidebar-ring: 9 54% 37%;
+    --sidebar-ring: 12 78% 45%;
 
     /* Custom semantic colors */
     --success: 145 55% 38%;
@@ -371,6 +371,23 @@
   @media (max-width: 767px) {
     .storefront-hero-scrim {
       background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.98) 52%, hsl(var(--background) / 0.92) 72%, transparent 100%);
+    }
+  }
+
+  /* Decorative hero paw prints — gentle float, disabled for reduced motion */
+  .paw-float {
+    animation: paw-float 7s ease-in-out infinite;
+  }
+  .paw-float-delay {
+    animation-delay: 2.4s;
+  }
+  @keyframes paw-float {
+    0%, 100% { transform: translateY(0) rotate(12deg); }
+    50% { transform: translateY(-10px) rotate(12deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .paw-float {
+      animation: none;
     }
   }
 

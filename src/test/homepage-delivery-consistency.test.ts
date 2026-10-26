@@ -55,7 +55,7 @@ describe('homepage delivery consistency', () => {
   it('renders the exact five commercial-rebuild heroes in source order', () => {
     expect(HERO_IDS).toHaveLength(5);
     for (const id of HERO_IDS) expect(home).toContain(id);
-    expect(home).toContain(".in('id', [...HERO_PRODUCT_IDS])");
+    expect(home).toContain(".in('id', [...VERIFIED_PICK_IDS])");
   });
 
   it('excludes products blocked from homepage merchandising', () => {
