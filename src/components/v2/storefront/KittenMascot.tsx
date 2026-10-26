@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
 import poster from '@/assets/mascot-kitten.webp';
 import idleWebm from '@/assets/videos/mascot-v2-k-idle.webm.asset.json';
 import idleMp4 from '@/assets/videos/mascot-v2-k-idle.mp4.asset.json';
@@ -18,16 +17,23 @@ const SRC: Record<Clip, [string, string]> = {
 const pick = (v: HTMLVideoElement, [webm, mp4]: [string, string]) =>
   v.canPlayType('video/webm; codecs="vp9"') === 'probably' ? webm : mp4;
 
+/** Ms the outgoing clip keeps playing under the incoming one (crossfade). */
+const FADE_MS = 350;
+
 /**
  * Generated photoreal GetPawsy kitten — real video, three clips that all
- * start and end on the same resting frame, so every handoff is seamless:
+ * start and end on the same resting frame, so every handoff lands on the
+ * same pose:
  * - idle (10 s, native loop): breathing, blinks, ear twitch, tail sway
  * - wave (5.9 s): looks left/right, ears swivel, paw wave
  * - groom (6.5 s): head tilt, yawn, paw lick
  * After 1–2 idle loops a random action plays (never the same twice), with
- * slight idle speed variation. Swaps happen only at the resting frame, after
- * the next clip has a frame ready. A watchdog resumes stalled playback.
- * Pauses offscreen / hidden tab. Still photo for reduced-motion / data-saver.
+ * slight idle speed variation. Handoffs crossfade (FADE_MS) so any residual
+ * frame noise is blended instead of popping; the incoming clip is only
+ * revealed once it is actually playing (no poster flash on iPhone).
+ * A watchdog resumes stalled playback. Pauses offscreen / hidden tab.
+ * Still photo for reduced-motion / data-saver. The pause control is a small
+ * text button under the portrait — never an icon over the kitten or text.
  */
 export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const refs = { idle: useRef<HTMLVideoElement>(null), wave: useRef<HTMLVideoElement>(null), groom: useRef<HTMLVideoElement>(null) };
@@ -71,21 +77,27 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
     const playActive = () => { if (shouldPlay()) v[active.current].play().catch(() => {}); };
     kick.current = playActive;
 
-    /** Show `to` once it has a decoded frame, then hide the others. */
+    /** Crossfade to `to` once it is really playing, then park the others. */
     const swapTo = (to: Clip) => {
+      if (to === active.current) return;
       const el = v[to];
       const reveal = () => {
         el.style.opacity = '1';
-        (Object.keys(v) as Clip[]).forEach((k) => { if (k !== to) { v[k].style.opacity = '0'; v[k].pause(); } });
+        (Object.keys(v) as Clip[]).forEach((k) => { if (k !== to) v[k].style.opacity = '0'; });
         active.current = to;
+        // Let the outgoing clip keep playing under the fade, then pause it.
+        window.setTimeout(() => {
+          (Object.keys(v) as Clip[]).forEach((k) => { if (k !== to && active.current === to) v[k].pause(); });
+        }, FADE_MS + 50);
       };
       el.currentTime = 0;
       if (to === 'idle') el.playbackRate = idleRate(Math.random());
-      const p = shouldPlay() ? el.play() : Promise.resolve();
+      if (!shouldPlay()) { reveal(); return; }
+      const p = el.play();
+      p.catch(() => {});
       const rvfc = (el as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number }).requestVideoFrameCallback;
       if (rvfc) rvfc.call(el, reveal);
-      else p.then(reveal, reveal);
-      p.catch(() => {});
+      else el.addEventListener('playing', reveal, { once: true });
     };
 
     const onIdleTime = () => {
@@ -154,9 +166,9 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
     return <img src={poster} alt="" width={96} height={96} loading="lazy" decoding="async" className={`${dim} ${ring} shrink-0 object-cover`} />;
   }
 
-  const vCls = 'absolute inset-0 h-full w-full rounded-full object-cover';
+  const vCls = 'absolute inset-0 h-full w-full rounded-full object-cover transition-opacity duration-300';
   return (
-    <div className="relative shrink-0">
+    <div className="flex shrink-0 flex-col items-center">
       <button
         type="button"
         onClick={() => {
@@ -174,6 +186,7 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
       </button>
       <button
         type="button"
+        aria-pressed={paused}
         onClick={() => {
           const next = !pausedRef.current;
           pausedRef.current = next;
@@ -181,10 +194,9 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
           const el = refs[active.current].current;
           if (next) el?.pause(); else kick.current();
         }}
-        aria-label={paused ? 'Play kitten animation' : 'Pause kitten animation'}
-        className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background text-foreground shadow ring-1 ring-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-1 rounded px-1 text-[10px] font-medium leading-tight text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+        {paused ? 'Play motion' : 'Pause motion'}
       </button>
     </div>
   );
