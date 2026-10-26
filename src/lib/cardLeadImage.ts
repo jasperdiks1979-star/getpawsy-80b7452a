@@ -15,6 +15,8 @@ export const CARD_LEAD_IMAGE_OVERRIDES: Record<string, string> = {
 
 export function cardLeadImage(p: { id: string; image_url: string | null; images?: string[] | null }): string | null {
   const o = CARD_LEAD_IMAGE_OVERRIDES[p.id];
-  if (o && Array.isArray(p.images) && p.images.includes(o)) return o;
+  // Overrides were verified against the stored gallery; if a caller loaded
+  // images and the URL is no longer there, fall back to the stored lead.
+  if (o && (!Array.isArray(p.images) || p.images.includes(o))) return o;
   return p.image_url;
 }
