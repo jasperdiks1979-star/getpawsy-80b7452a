@@ -42,7 +42,7 @@ export interface GovernorInput {
 // deno-lint-ignore no-explicit-any
 /** Minimal structural client contract: only the RPC call the governor needs (works across supabase-js versions). */
 export interface GovernorRpcClient {
-  rpc(fn: "governor_check_pin", args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }>;
+  rpc(fn: "governor_check_pin", args: Record<string, unknown>): PromiseLike<{ data: unknown; error: { message: string } | null }>;
 }
 
 export async function checkGovernor(sb: GovernorRpcClient, input: GovernorInput): Promise<GovernorVerdict> {
