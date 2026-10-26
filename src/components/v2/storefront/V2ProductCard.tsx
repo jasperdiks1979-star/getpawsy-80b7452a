@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useListingPrice } from '@/hooks/useListingPrice';
 import { ArrowUpRight } from 'lucide-react';
 import { displayName } from '@/lib/displayName';
+import { cardTitle } from '@/lib/cardTitle';
 
 export interface V2CardProduct {
   id: string;
@@ -43,7 +44,7 @@ export function V2ProductCard({ product, priority = false }: { product: V2CardPr
           )}
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
-          <h3 title={displayName(product)} className="line-clamp-2 min-h-[2.5rem] font-sans text-sm font-medium leading-snug text-foreground">{displayName(product)}</h3>
+          <h3 title={displayName(product)} className="line-clamp-2 min-h-[2.5rem] font-sans text-sm font-medium leading-snug text-foreground">{cardTitle(displayName(product))}</h3>
           <p className="mt-auto pt-2 text-lg font-bold tracking-tight text-foreground">{shown}</p>
           <span className="flex min-h-11 items-center justify-between gap-2 border-t border-border text-sm font-semibold text-primary">View options <ArrowUpRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" aria-hidden="true" /></span>
         </div>

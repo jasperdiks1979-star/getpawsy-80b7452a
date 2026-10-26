@@ -1,12 +1,13 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, PackageCheck, RotateCcw, Truck } from 'lucide-react';
+import { ArrowRight, Heart, Lock, PackageCheck, RotateCcw, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import petsPhoto from '@/assets/everyday-pets.webp.asset.json';
 import catPhoto from '@/assets/living-room-cat.webp.asset.json';
 import litterPhoto from '@/assets/category-litter-essentials.jpg';
 import toysPhoto from '@/assets/category-cat-toys.jpg';
+import heroPhoto from '@/assets/hero-cat-dog-joy.webp';
 import { supabase } from '@/integrations/supabase/client';
 import { V2Layout } from './V2Layout';
 import { V2ProductCard, type V2CardProduct } from './V2ProductCard';
@@ -134,34 +135,50 @@ export function V2HomePage() {
 
       {/* Hero */}
       <section className="relative isolate overflow-hidden border-b border-border bg-secondary" aria-labelledby="hero-heading">
-        <img src={photoUrl(petsPhoto.url)} alt="A cat and small dog relaxing together at home" width={1400} height={932} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 h-full w-full object-cover object-center" />
-        <div className="storefront-hero-scrim absolute inset-0 -z-10" aria-hidden="true" />
-        <PawPrint className="paw-float absolute -z-10 right-[12%] top-10 h-16 w-16 rotate-12 text-primary/15" />
-        <PawPrint className="paw-float paw-float-delay absolute -z-10 right-[28%] bottom-12 h-10 w-10 -rotate-12 text-primary/10" />
-        <div className="mx-auto flex min-h-[570px] w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
+        <img src={heroPhoto} alt="A happy ginger cat and golden dog relaxing together on a cream sofa" width={1600} height={1000} fetchPriority="high" decoding="async" className="absolute inset-0 -z-10 hidden h-full w-full object-cover md:block" />
+        <div className="storefront-hero-scrim absolute inset-0 -z-10 hidden md:block" aria-hidden="true" />
+        <PawPrint className="paw-float absolute -z-10 left-[46%] top-10 hidden h-14 w-14 text-primary/20 md:block" />
+        <Heart className="paw-float paw-float-delay absolute -z-10 left-[40%] bottom-16 hidden h-9 w-9 fill-primary/20 text-primary/30 md:block" aria-hidden="true" />
+        <div className="mx-auto flex w-full max-w-6xl items-start px-4 py-8 sm:px-6 md:min-h-[600px] md:items-center md:py-16">
           <div className="max-w-sm md:max-w-lg">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-              Indoor cat essentials · Shipped to the US
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+              <PawPrint className="h-3.5 w-3.5" /> Pet essentials · Shipped to the US
             </p>
             <h1
               id="hero-heading"
-              className="mt-3 font-display text-4xl font-medium leading-tight text-foreground md:text-6xl md:leading-[1.1]"
+              className="mt-4 font-display text-4xl font-semibold leading-tight text-foreground md:text-6xl md:leading-[1.08]"
             >
-              Happy cats, <span className="text-primary">tidy homes</span>
+              Happy pets,{' '}
+              <span className="relative inline-block text-primary">
+                happy homes
+                <svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true" className="absolute -bottom-2 left-0 h-3 w-full text-primary/60"><path d="M2 8 Q50 2 100 7 T198 5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+              </span>
             </h1>
-            <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground md:text-lg">
-              Litter boxes, cat trees and enrichment for indoor cats, shipped across the US.
+            <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground md:text-lg">
+              Litter boxes, cat trees, toys and comfy beds for cats and dogs — chosen to make every day a little brighter.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="min-h-12 rounded-full px-7 text-base shadow-sm"><Link to="/products">Shop cat essentials <ArrowRight aria-hidden="true" /></Link></Button>
-              <Button asChild variant="outline" size="lg" className="min-h-12 rounded-full px-7 text-base"><Link to="/bundles">Explore Sets</Link></Button>
+              <Button asChild size="lg" className="cta-bounce min-h-12 rounded-full px-7 text-base shadow-md"><Link to="/products">Shop now <ArrowRight aria-hidden="true" /></Link></Button>
+              <Button asChild variant="outline" size="lg" className="min-h-12 rounded-full border-primary/40 bg-background/80 px-7 text-base"><Link to="/bundles">Explore Sets</Link></Button>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">
-              Free shipping over ${FREE_SHIPPING_THRESHOLD} · {RETURN_WINDOW_DAYS}-day returns · Secure checkout
-            </p>
+            <img src={heroPhoto} alt="" width={1600} height={1000} decoding="async" className="mt-7 aspect-[4/3] w-full rounded-3xl object-cover object-[75%_center] shadow-md md:hidden" />
           </div>
-
         </div>
+      </section>
+
+      {/* Trust bar — only policy facts already stated on our shipping/returns pages */}
+      <section aria-label="Shopping with GetPawsy" className="border-b border-border bg-background">
+        <ul className="mx-auto flex w-full max-w-6xl list-none flex-wrap items-center justify-center gap-2 px-4 py-4 sm:gap-3 sm:px-6">
+          {[
+            { icon: Truck, label: `Free US shipping over $${FREE_SHIPPING_THRESHOLD}` },
+            { icon: RotateCcw, label: `${RETURN_WINDOW_DAYS}-day returns` },
+            { icon: Lock, label: 'Secure checkout' },
+          ].map(({ icon: Icon, label }) => (
+            <li key={label} className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-xs font-semibold text-foreground sm:text-sm">
+              <Icon className="h-4 w-4 text-primary" aria-hidden="true" /> {label}
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Categories */}
@@ -205,8 +222,8 @@ export function V2HomePage() {
           <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 md:py-16">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 id="featured-heading" className="font-display text-2xl font-bold text-foreground md:text-3xl">
-                  Featured picks
+                <h2 id="featured-heading" className="flex items-center gap-2 font-display text-2xl font-bold text-foreground md:text-3xl">
+                  Featured picks <Heart className="h-5 w-5 fill-primary/25 text-primary" aria-hidden="true" />
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">In stock now and ready to ship to your door.</p>
               </div>
