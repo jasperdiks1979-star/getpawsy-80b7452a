@@ -156,7 +156,7 @@ function pickCanonical(rows: ResolvedProductRow[]): ResolvedProductRow {
 }
 
 async function resolveProduct(
-  sb: ReturnType<typeof createClient>,
+  sb: SupabaseClient,
   rawSlug: string,
 ): Promise<{ product: ResolvedProductRow | null; diag: ResolveDiagnostics }> {
   const normalized = normalizeSlugInput(rawSlug);
@@ -1392,6 +1392,11 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       phash_max_similarity: number | null;
       phash_retries: number;
       phash_status: string | null;
+      candidate_count: number;
+      selected_candidate_exists: boolean;
+      selected_candidate_id: string | null;
+      fallback_used: boolean;
+      failure_stage: string | null;
     }> = [];
 
     const rows: Record<string, unknown>[] = [];
@@ -1850,10 +1855,12 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     }
     let blocklistRejected = 0;
     for (const r of sanitizedRows) {
-      const destCheck = sanitizeUrl((r as Record<string, unknown>).destination_link as string | undefined);
-      const imgCheck = sanitizeUrl((r as Record<string, unknown>).pin_image_url as string | undefined, { allowExternalReferrer: true });
+      // Plain record view of the typed queue row for generic field reads.
+      const rowRec: Record<string, unknown> = { ...r };
+      const destCheck = sanitizeUrl(rowRec.destination_link as string | undefined);
+      const imgCheck = sanitizeUrl(rowRec.pin_image_url as string | undefined, { allowExternalReferrer: true });
       const urlReasons = [...destCheck.reasons, ...imgCheck.reasons];
-      const imgUrl = (r as Record<string, unknown>).pin_image_url as string;
+      const imgUrl = rowRec.pin_image_url as string;
       const imgHash = imgUrl ? hashImageUrl(imgUrl) : null;
       if (
         (imgUrl && blocklistedImageUrls.has(imgUrl)) ||
@@ -1863,7 +1870,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         await quarantineEvent(sb, {
           source: "pinterest_pin_queue",
           reasons: ["blocklisted_image"],
-          payload: r as Record<string, unknown>,
+          payload: rowRec,
         });
         continue;
       }
@@ -1891,14 +1898,14 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       }
       // Creative-fingerprint dedup — catches "different image URL but same
       // creative DNA" (same slug + variant + hook + overlay + backdrop).
-      const meta = (r as Record<string, unknown>).meta as Record<string, unknown> | undefined;
+      const meta = rowRec.meta as Record<string, unknown> | undefined;
       const intel = (meta?.intelligence ?? {}) as Record<string, unknown>;
       const fingerprint = computeCreativeFingerprint({
-        product_slug: (r as Record<string, unknown>).product_slug as string,
-        pin_variant: (r as Record<string, unknown>).pin_variant as string,
-        hook_group: (r as Record<string, unknown>).hook_group as string,
-        category_key: (r as Record<string, unknown>).category_key as string,
-        overlay_text: (r as Record<string, unknown>).overlay_text as string,
+        product_slug: rowRec.product_slug as string,
+        pin_variant: rowRec.pin_variant as string,
+        hook_group: rowRec.hook_group as string,
+        category_key: rowRec.category_key as string,
+        overlay_text: rowRec.overlay_text as string,
         backdrop_style: (intel.backdrop_style as string) ?? null,
         pin_mode: (intel.pin_mode as string) ?? null,
       });
@@ -1912,7 +1919,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         if ((fpCount || 0) > 0) duplicateImage = true;
       }
       const qaReasons = runPinQa({
-        ...(r as Record<string, unknown>),
+        ...rowRec,
         image_hash: imgHash,
         duplicate_image: duplicateImage,
         domination_mode: dominationMode,
@@ -1920,20 +1927,20 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
       // SEO keyword presence — soft check, logged but not fatal.
       const hasKw = containsCategoryKeyword(
         categoryKey,
-        (r as Record<string, unknown>).pin_title as string,
-        (r as Record<string, unknown>).pin_description as string,
+        rowRec.pin_title as string,
+        rowRec.pin_description as string,
       ) || containsTargetKeyword(
-        (r as Record<string, unknown>).pin_title as string,
-        (r as Record<string, unknown>).pin_description as string,
+        rowRec.pin_title as string,
+        rowRec.pin_description as string,
       );
-      if (!hasKw) console.warn(`[pinterest-viral-batch] no target keyword in pin "${(r as Record<string, unknown>).pin_title}"`);
+      if (!hasKw) console.warn(`[pinterest-viral-batch] no target keyword in pin "${rowRec.pin_title}"`);
       const allReasons = Array.from(new Set([...qaReasons, ...urlReasons]));
       const fatalUrl = !destCheck.ok || !imgCheck.ok;
       if (fatalUrl) {
         await quarantineEvent(sb, {
           source: "pinterest_pin_queue",
           reasons: urlReasons,
-          payload: r as Record<string, unknown>,
+          payload: rowRec,
         });
         continue;
       }
@@ -1941,17 +1948,17 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
         queueDuplicatesBlocked++;
         const reason = `visual_duplicate(sim=${(visualSimilarity ?? 0).toFixed(3)},match=${visualMatch ?? "?"})`;
         console.warn(
-          `[pinterest-viral-batch] queue protection blocked pin variant=${(r as Record<string, unknown>).pin_variant} ${reason}`,
+          `[pinterest-viral-batch] queue protection blocked pin variant=${rowRec.pin_variant} ${reason}`,
         );
         await quarantineEvent(sb, {
           source: "pinterest_pin_queue",
           reasons: [reason, ...allReasons],
-          payload: { ...(r as Record<string, unknown>), pin_image_phash: pinPhash },
+          payload: { ...rowRec, pin_image_phash: pinPhash },
         });
         continue;
       }
       // ── Anti-duplication / banned-phrase governor (hard gate) ──────────
-      const rec = r as Record<string, unknown>;
+      const rec = rowRec;
       const govVerdict = await checkGovernor(sb, {
         slug: rec.product_slug as string,
         boardId: (rec.board_id as string | null) ?? null,
@@ -2020,7 +2027,7 @@ SEO keywords to weave in naturally (use 1–2 per pin, never stuff): ${seoKeywor
     // 🩺 Queue health check — flag missing approvals, scheduling gaps, and
     // hook-group imbalance BEFORE the insert. Blocks insert when any
     // error-severity issue is found unless `skipHealthCheck` is set.
-    const health = runQueueHealthCheck(annotatedRows as Array<Record<string, unknown>>);
+    const health = runQueueHealthCheck(annotatedRows.map((row): Record<string, unknown> => ({ ...row })));
     // Layout QA telemetry — surfaced in response for the admin dashboard.
     if (layoutIssues.length > 0) {
       console.warn(

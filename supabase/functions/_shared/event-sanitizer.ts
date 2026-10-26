@@ -12,6 +12,14 @@
 // Non-empty ⇒ event must be diverted to `analytics_quarantine` instead.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Reasons accepted by quarantineEvent: sanitizer reasons, pin-QA reasons and pin-queue gate reasons. */
+export type QuarantineReason =
+  | SanitizerReason
+  | import("./pinterest-qa.ts").PinQaReason
+  | "blocklisted_image"
+  | `visual_duplicate(${string})`
+  | `governor:${string}`;
+
 export type SanitizerReason =
   | "invalid_url"
   | "invalid_referrer"
@@ -310,7 +318,7 @@ export async function quarantineEvent(
   admin: any,
   args: {
     source: string;
-    reasons: SanitizerReason[];
+    reasons: QuarantineReason[];
     payload: Record<string, unknown>;
     userAgent?: string | null;
     sessionId?: string | null;
