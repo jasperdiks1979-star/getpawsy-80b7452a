@@ -206,6 +206,9 @@ test.describe("Accessibility Tests", () => {
 
     test("skip link should be accessible", async ({ page }) => {
       await page.goto("/");
+      // The header (and its skip link) renders after hydration; pressing Tab
+      // before that focuses the pre-render shell instead of the app.
+      await page.locator('a[href="#main"], a[href="#content"]').first().waitFor({ state: "attached" });
 
       // Press tab to reveal skip link (if exists)
       await page.keyboard.press("Tab");
