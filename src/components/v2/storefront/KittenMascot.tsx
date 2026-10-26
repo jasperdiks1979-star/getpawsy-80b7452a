@@ -31,6 +31,7 @@ const FADE_MS = 350;
  * - idle (10 s, native loop): breathing, blinks, ear twitch, tail sway
  * - wave (5.9 s): looks left/right, ears swivel, paw wave
  * - groom (6.5 s): head tilt, yawn, paw lick
+ * - look (6 s): looks left/right/back, ear flick, soft blink
  * After 1–2 idle loops a random action plays (never the same twice), with
  * slight idle speed variation. Handoffs crossfade (FADE_MS) so any residual
  * frame noise is blended instead of popping; the incoming clip is only
@@ -41,7 +42,7 @@ const FADE_MS = 350;
  * an icon in the card.
  */
 export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const refs = { idle: useRef<HTMLVideoElement>(null), wave: useRef<HTMLVideoElement>(null), groom: useRef<HTMLVideoElement>(null) };
+  const refs = { idle: useRef<HTMLVideoElement>(null), wave: useRef<HTMLVideoElement>(null), groom: useRef<HTMLVideoElement>(null), look: useRef<HTMLVideoElement>(null) };
   const [reduced, setReduced] = useState(true);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);
@@ -61,8 +62,8 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
 
   useEffect(() => {
     if (reduced) return;
-    const v = { idle: refs.idle.current!, wave: refs.wave.current!, groom: refs.groom.current! };
-    if (!v.idle || !v.wave || !v.groom) return;
+    const v = { idle: refs.idle.current!, wave: refs.wave.current!, groom: refs.groom.current!, look: refs.look.current! };
+    if (!v.idle || !v.wave || !v.groom || !v.look) return;
     let loaded = false;
     let cycles = 0;
     let target = idleCyclesBeforeAction(Math.random());
@@ -124,6 +125,7 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
     v.idle.addEventListener('timeupdate', onIdleTime);
     v.wave.addEventListener('ended', onActionEnd);
     v.groom.addEventListener('ended', onActionEnd);
+    v.look.addEventListener('ended', onActionEnd);
 
     const vis = () => { if (document.hidden) (Object.values(v)).forEach((e) => e.pause()); else playActive(); };
     document.addEventListener('visibilitychange', vis);
@@ -160,6 +162,7 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
       v.idle.removeEventListener('timeupdate', onIdleTime);
       v.wave.removeEventListener('ended', onActionEnd);
       v.groom.removeEventListener('ended', onActionEnd);
+      v.look.removeEventListener('ended', onActionEnd);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced]);
@@ -188,6 +191,7 @@ export function KittenMascot({ size = 'md' }: { size?: 'sm' | 'md' }) {
         <video ref={refs.idle} className={vCls} poster={poster} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
         <video ref={refs.wave} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
         <video ref={refs.groom} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
+        <video ref={refs.look} className={vCls} style={{ opacity: 0 }} muted playsInline preload="none" aria-hidden="true" width={96} height={96} />
       </button>
       <button
         type="button"
