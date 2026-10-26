@@ -1,61 +1,86 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import poster from '@/assets/mascot-kitten.webp';
-import webm from '@/assets/videos/mascot-kitten.webm.asset.json';
-import mp4 from '@/assets/videos/mascot-kitten.mp4.asset.json';
+import idleWebm from '@/assets/videos/mascot-kitten.webm.asset.json';
+import idleMp4 from '@/assets/videos/mascot-kitten.mp4.asset.json';
+import waveWebm from '@/assets/videos/mascot-kitten-wave.webm.asset.json';
+import waveMp4 from '@/assets/videos/mascot-kitten-wave.mp4.asset.json';
+
+type Clip = 'idle' | 'wave';
+const pick = (v: HTMLVideoElement, webm: string, mp4: string) =>
+  v.canPlayType('video/webm; codecs="vp9"') ? webm : mp4;
 
 /**
- * Generated photoreal kitten. Real looping video (breathing/blink/ear/tail)
- * only when motion is allowed and the element is on screen; otherwise a still.
+ * Generated photoreal kitten, real video animation:
+ * - idle loop: breathing, slow blink, ear twitch, tail sway
+ * - "say hi" clip: looks left/right, ears swivel, small paw wave (first view + on tap)
+ * Still photo for reduced-motion / data-saver.
  */
 export function KittenMascot() {
   const ref = useRef<HTMLVideoElement>(null);
   const [reduced, setReduced] = useState(true);
   const [paused, setPaused] = useState(false);
+  const clip = useRef<Clip>('wave');
+  const greeted = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-    setReduced(mq.matches || !!saveData);
     const on = () => setReduced(mq.matches || !!saveData);
+    on();
     mq.addEventListener?.('change', on);
     return () => mq.removeEventListener?.('change', on);
   }, []);
+
+  const load = (c: Clip) => {
+    const v = ref.current;
+    if (!v) return;
+    clip.current = c;
+    v.loop = c === 'idle';
+    v.src = c === 'idle' ? pick(v, idleWebm.url, idleMp4.url) : pick(v, waveWebm.url, waveMp4.url);
+    v.play().catch(() => {});
+  };
 
   useEffect(() => {
     const v = ref.current;
     if (!v || reduced) return;
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !paused && !document.hidden) v.play().catch(() => {});
-      else v.pause();
+      if (e.isIntersecting && !paused && !document.hidden) {
+        if (!greeted.current) { greeted.current = true; load('wave'); }
+        else v.play().catch(() => {});
+      } else v.pause();
     });
     io.observe(v);
     return () => io.disconnect();
   }, [reduced, paused]);
 
-  const cls = 'h-20 w-20 shrink-0 rounded-full object-cover shadow-md ring-2 ring-primary/20 sm:h-24 sm:w-24';
+  const cls = 'h-20 w-20 rounded-full object-cover shadow-md ring-2 ring-primary/20 sm:h-24 sm:w-24';
 
   if (reduced) {
-    return <img src={poster} alt="" width={96} height={96} loading="lazy" decoding="async" className={cls} />;
+    return <img src={poster} alt="" width={96} height={96} loading="lazy" decoding="async" className={`${cls} shrink-0`} />;
   }
 
   return (
     <div className="relative shrink-0">
-      <video
-        ref={ref}
-        className={cls}
-        poster={poster}
-        muted
-        loop
-        playsInline
-        preload="none"
-        aria-hidden="true"
-        width={96}
-        height={96}
+      <button
+        type="button"
+        onClick={() => { setPaused(false); load('wave'); }}
+        aria-label="Say hi to the GetPawsy kitten"
+        className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <source src={webm.url} type="video/webm" />
-        <source src={mp4.url} type="video/mp4" />
-      </video>
+        <video
+          ref={ref}
+          className={cls}
+          poster={poster}
+          muted
+          playsInline
+          preload="none"
+          aria-hidden="true"
+          width={96}
+          height={96}
+          onEnded={() => { if (clip.current === 'wave') load('idle'); }}
+        />
+      </button>
       <button
         type="button"
         onClick={() => {
