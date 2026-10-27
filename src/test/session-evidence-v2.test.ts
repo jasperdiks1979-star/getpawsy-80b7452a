@@ -1,0 +1,82 @@
+import { describe, it, expect } from "vitest";
+import { aggregateSessionEvidence } from "../../supabase/functions/_shared/session-evidence";
+import { classifySessionRow } from "../../supabase/functions/_shared/session-shadow-classify";
+const row = { session_id: "s", first_landing_path: "/products/example", last_stage: "CANONICAL_PAGE_VIEW", engagement_ms: 0, interaction_count: 0 };
+describe("verified crawler evidence and weak browser hints", () => {
+  it("verified crawler stays bot even at checkout", () => {
+    const hints = aggregateSessionEvidence([], [{ session_id: "s", crawler_verified: true }]);
+    expect(classifySessionRow({ ...row, last_stage: "CANONICAL_CHECKOUT" }, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("unverified crawler stays uncertain", () => {
+    const hints = aggregateSessionEvidence([], [{ session_id: "s", crawler_verified: false }]);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("uncertain");
+  });
+  it("Chrome with weak 800x600 hint stays uncertain", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", browser: "Chrome", is_bot_suspect: true, bot_suspect_reason: "lighthouse_viewport" }], []);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("uncertain");
+  });
+  it("strong shopper action overrides weak viewport hint", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", browser: "Chrome", is_bot_suspect: true, bot_suspect_reason: "lighthouse_viewport" }], []);
+    expect(classifySessionRow({ ...row, last_stage: "CANONICAL_ADD_TO_CART" }, hints.get("s")!).traffic_quality).toBe("human");
+  });
+  it("HeadlessChrome remains bot despite cart action", () => {
+    expect(classifySessionRow({ ...row, user_agent: "Mozilla/5.0 HeadlessChrome/141.0", last_stage: "CANONICAL_ADD_TO_CART" }, null).traffic_quality).toBe("bot");
+  });
+  it("admin hint works even if is_internal is false", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", is_internal: false, is_admin_path: true }], []);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("internal");
+  });
+  it("equal-strength bot hints produce identical evidence in either order", () => {
+    const a = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "automation_signal" };
+    const b = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" };
+    expect(aggregateSessionEvidence([a, b], []).get("s")?.bot_suspect_reason)
+      .toBe(aggregateSessionEvidence([b, a], []).get("s")?.bot_suspect_reason);
+  });
+  it("unverified crawler evidence cannot override a strong bot signal", () => {
+    const hints = aggregateSessionEvidence(
+      [{ session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" }],
+      [{ session_id: "s", crawler_verified: false }],
+    );
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("verified crawler takes priority over internal hint", () => {
+    const hints = aggregateSessionEvidence(
+      [{ session_id: "s", is_internal: true }],
+      [{ session_id: "s", crawler_verified: true }],
+    );
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("strong bot hint wins regardless of row order", () => {
+    const weak = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "lighthouse_viewport" };
+    const strong = { session_id: "s", is_bot_suspect: true, bot_suspect_reason: "headless_browser" };
+    expect(aggregateSessionEvidence([weak, strong], []).get("s")?.bot_suspect_reason).toBe("headless_browser");
+    expect(aggregateSessionEvidence([strong, weak], []).get("s")?.bot_suspect_reason).toBe("headless_browser");
+  });
+  it("browser label alone does not establish a human session", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", browser: "Chrome" }], []);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("uncertain");
+  });
+  it("verified crawler beats recorded purchase stage", () => {
+    const hints = aggregateSessionEvidence([], [{ session_id: "s", crawler_verified: true }]);
+    expect(classifySessionRow({ ...row, last_stage: "CANONICAL_PURCHASE" }, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("synthetic monitor user agent beats checkout action", () => {
+    expect(classifySessionRow({ ...row, user_agent: "Mozilla/5.0 Playwright", last_stage: "CANONICAL_CHECKOUT" }, null).traffic_quality).toBe("bot");
+  });
+  it("strong client bot hint without human action stays bot", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", is_bot_suspect: true, bot_suspect_reason: "automation_signal" }], []);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+  it("existing shopper protection preserves cart against unverified client hint", () => {
+    const hints = aggregateSessionEvidence([{ session_id: "s", is_bot_suspect: true, bot_suspect_reason: "automation_signal" }], []);
+    expect(classifySessionRow({ ...row, last_stage: "CANONICAL_ADD_TO_CART" }, hints.get("s")!).traffic_quality).toBe("human");
+  });
+  it("duplicate verified crawler records do not change result", () => {
+    const hints = aggregateSessionEvidence([], [
+      { session_id: "s", crawler_verified: true },
+      { session_id: "s", crawler_verified: true },
+    ]);
+    expect(classifySessionRow(row, hints.get("s")!).traffic_quality).toBe("bot");
+  });
+
+});
