@@ -19,7 +19,6 @@ import { CartProvider, useCart } from '@/contexts/CartContext';
 import { trackCci } from '@/lib/cci';
 const beacon = vi.fn(() => true);
 class PayloadBlob { _text: string; constructor(parts: string[]) { this._text = parts.join(''); } }
-const bodies = () => beacon.mock.calls.map(call => JSON.parse((call as unknown[])[1] as never as { _text: string }['_text']));
 const readBodies = (): Array<Record<string, any>> => beacon.mock.calls.map(call => JSON.parse(((call as unknown[])[1] as PayloadBlob)._text));
 
 beforeEach(() => {
@@ -55,7 +54,7 @@ describe('October 28 shared add tracking', () => {
     unmount();
   });
   it('caller metadata preserves persisted content attribution and click identifiers', () => {
-    sessionStorage.setItem('utm_content', 'guide-cat-beds');
+    window.history.replaceState({}, '', '/products?utm_content=guide-cat-beds');
     sessionStorage.setItem('gp_epik', 'real-test-click-id');
     trackCci('add_to_cart_success', { product_id: 'p', meta: { quantity: 1 } });
     expect(readBodies()[0].meta).toMatchObject({ quantity: 1, utm_content: 'guide-cat-beds', epik: 'real-test-click-id' });
