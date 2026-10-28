@@ -1,0 +1,27 @@
+name: Diagnostic TypeScript Check (isolated)
+on:
+  push:
+    branches:
+      - fix/analytics-build-typecheck-20261028
+    paths:
+      - .github/workflows/diagnostic-typecheck-20261028.yml
+      - src/hooks/usePdpBotRenderTrace.ts
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: TypeScript check (no emit)
+        run: npx tsc --noEmit --pretty false
+      - name: Focused crawler render tests
+        if: success()
+        run: npx vitest run src/hooks/usePdpBotRenderTrace.test.ts
