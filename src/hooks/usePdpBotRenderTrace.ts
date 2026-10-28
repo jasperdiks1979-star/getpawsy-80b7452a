@@ -89,10 +89,6 @@ const RECENT_TTL_MS = 60_000; // suppress identical reports within 60s
 // all collapse to a single `crawler_visits` row instead of N duplicates.
 function makePageViewId(): string {
   try {
-    // Resolve once before retrying so every render stage joins the same
-    // canonical session; never send an unjoinable synthetic identity.
-    const sessionId = getCanonicalSessionId();
-    if (!sessionId) return;
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
     }
@@ -122,6 +118,10 @@ async function reportRenderState(
   inflightReports.add(key);
 
   try {
+    // Resolve once before retrying so every render stage joins the same
+    // canonical session; never send an unjoinable synthetic identity.
+    const sessionId = getCanonicalSessionId();
+    if (!sessionId) return;
     // Encode render state + durations in the URL so they land in
     // `crawler_visits.page_url` without requiring a schema change.
     // Format: ?_render=<state>&_t_mount=<ms>[&_t_shell=<ms>]
