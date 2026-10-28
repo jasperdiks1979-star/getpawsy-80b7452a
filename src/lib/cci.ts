@@ -147,8 +147,9 @@ export function trackCci(event_name: CciEvent, extra?: Record<string, unknown>):
         ttclid: clicks.ttclid,
         gclid: clicks.gclid,
         fbclid: clicks.fbclid,
+        ...(extra?.meta && typeof extra.meta === 'object' ? extra.meta : {}),
       },
-      ...extra,
+      ...Object.fromEntries(Object.entries(extra ?? {}).filter(([key]) => key !== 'meta')),
     });
     const url = `https://${PROJECT}.supabase.co/functions/v1/cci-ingest`;
     // Use CORS-safelisted content type to avoid preflight that Chrome silently drops on sendBeacon.

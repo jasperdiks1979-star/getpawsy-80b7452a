@@ -14,6 +14,7 @@ const trackGoogleAdsAddToCart = (productId: string, productName: string, price: 
 // ⚡ supabase is NOT imported at top level — dynamic import keeps ~138KB SDK off critical path
 const getSupabase = () => import('@/integrations/supabase/client').then(m => m.supabase);
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { trackCci } from '@/lib/cci';
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 import { sanitizeCartIdentity, type V2CartIdentity } from '@/v2/commerce/cartIdentity';
 import { getCartSessionId, clearCartSessionId } from '@/lib/cartSession';
@@ -398,6 +399,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // path that should count in the /admin/funnel-health dashboard. All
     // other legacy fires (mount/hydration/sticky-sync) are tagged
     // 'legacy_unverified' and excluded.
+    // All add entry points share this writer (PDP, quick view, bundles,
+    // related products). Never emit from hydration or inside a state updater.
+    trackCci('add_to_cart_success', {
+      product_id: newItem.v2?.productId ?? cartLineProductId(newItem.id),
+      funnel_stage: 'add_to_cart',
+      meta: { quantity: 1, price: newItem.price, event_id, source_component: 'cart_context_add_item' },
+    });
     getFireUserAddToCart().then(fn => fn({
       product_id: newItem.id,
       slug: newItem.slug ?? null,

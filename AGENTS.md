@@ -33,3 +33,5 @@
 - Cards separate anchors from buttons; mobile menus use the shared sheet. Why: valid markup and contained keyboard focus.
 - Storefront visual refreshes use shared semantic color tokens and existing commerce components; lifestyle photos are sourced separately from product media and have recorded licenses. Why: preserve purchase and SEO behavior without inventing product evidence.
 - Card lead-image overrides live in src/lib/cardLeadImage.ts and may only point to a photo from the same product's own stored gallery; catalog data stays unchanged. Why: fix collage/size-chart leads without substituting another SKU.
+- CCI successful adds are emitted only by CartContext per added unit; PDP retains attempt/error events, and caller metadata merges with attribution. Why: every add entry point is measurable without duplicate success writers or lost UTMs.
+- PDP crawler render traces resolve a canonical session once before retries and retain the stage idempotency key. Why: crawler identity must join sessions without inventing IDs or mutating historical visits.

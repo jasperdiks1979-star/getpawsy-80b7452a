@@ -26,6 +26,7 @@ vi.mock('@/hooks/useRetryWithBackoff', () => ({
 }));
 
 import { usePdpBotRenderTrace } from './usePdpBotRenderTrace';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 // --- Helpers -------------------------------------------------------------
 
@@ -107,6 +108,26 @@ async function drainRetryBackoff(): Promise<void> {
 // --- Tests ---------------------------------------------------------------
 
 describe('usePdpBotRenderTrace', () => {
+  it('links shell/rendered retries to the same canonical session and stage key', async () => {
+    invokeMock.mockClear();
+    setUserAgent(GOOGLEBOT_UA);
+    const sid = getCanonicalSessionId();
+    retryImpl.current = async fn => { await fn(); await fn(); };
+    const { rerender, unmount } = renderHook(
+      ({ isLoading, hasProduct }) => usePdpBotRenderTrace({ slug: 'oct28-session-parity', isLoading, hasProduct }),
+      { initialProps: { isLoading: true, hasProduct: false } },
+    );
+    await actFlush();
+    rerender({ isLoading: false, hasProduct: true });
+    await actFlush();
+    const rows = invokeMock.mock.calls.map(([, opts]) => (opts as { body: { sessionId: string; idempotencyKey: string } }).body);
+    expect(rows).toHaveLength(4);
+    expect(rows.every(r => r.sessionId === sid)).toBe(true);
+    expect(rows[0].idempotencyKey).toBe(rows[1].idempotencyKey);
+    expect(rows[2].idempotencyKey).toBe(rows[3].idempotencyKey);
+    expect(rows[0].idempotencyKey).not.toBe(rows[2].idempotencyKey);
+    unmount();
+  });
   beforeEach(() => {
     vi.useFakeTimers();
     invokeMock.mockClear();

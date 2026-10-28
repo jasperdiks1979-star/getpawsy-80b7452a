@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { retryWithBackoff } from '@/hooks/useRetryWithBackoff';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 /**
  * usePdpBotRenderTrace
@@ -117,6 +118,10 @@ async function reportRenderState(
   inflightReports.add(key);
 
   try {
+    // Resolve once before retrying so every render stage joins the same
+    // canonical session; never send an unjoinable synthetic identity.
+    const sessionId = getCanonicalSessionId();
+    if (!sessionId) return;
     // Encode render state + durations in the URL so they land in
     // `crawler_visits.page_url` without requiring a schema change.
     // Format: ?_render=<state>&_t_mount=<ms>[&_t_shell=<ms>]
@@ -153,6 +158,7 @@ async function reportRenderState(
             userAgent: `${navigator.userAgent} ${uaSuffix}`,
             referrer: document.referrer,
             idempotencyKey,
+            sessionId,
           },
         });
         if (error) throw error;
