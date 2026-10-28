@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { retryWithBackoff } from '@/hooks/useRetryWithBackoff';
+import { getCanonicalSessionId } from '@/lib/canonicalSession';
 
 /**
  * usePdpBotRenderTrace
@@ -88,6 +89,10 @@ const RECENT_TTL_MS = 60_000; // suppress identical reports within 60s
 // all collapse to a single `crawler_visits` row instead of N duplicates.
 function makePageViewId(): string {
   try {
+    // Resolve once before retrying so every render stage joins the same
+    // canonical session; never send an unjoinable synthetic identity.
+    const sessionId = getCanonicalSessionId();
+    if (!sessionId) return;
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
     }
@@ -153,6 +158,7 @@ async function reportRenderState(
             userAgent: `${navigator.userAgent} ${uaSuffix}`,
             referrer: document.referrer,
             idempotencyKey,
+            sessionId,
           },
         });
         if (error) throw error;

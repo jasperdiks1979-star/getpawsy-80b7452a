@@ -1158,12 +1158,8 @@ const ProductDetail = () => {
     );
     const savings = earnedPercent > 0 ? ` (${earnedPercent}% off applied in cart!)` : "";
     toast.success(`${quantity}x ${product.name} added to cart!${savings}`);
-    trackCci('add_to_cart_success', {
-      product_id: product?.id,
-      variant_id: selectedVariant?.vid ? String(selectedVariant.vid) : null,
-      funnel_stage: 'add_to_cart',
-      meta: { quantity, price: Math.round(cartPrice * 100) / 100 },
-    });
+    // Success is emitted once per added unit by CartContext, including
+    // non-PDP entry points. Keep this tap event separate from success.
   };
 
   const handleWishlistToggle = () => {
