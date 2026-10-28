@@ -1,5 +1,10 @@
 # Roadmap
 
+## October 28 focused analytics repair
+- [ ] Diagnose live source/canonical ATC gap, classifier discrepancies, crawler identity and duplicate logging without writes.
+- [ ] Repair only demonstrated tracking/filter defects; regress funnel, UNKNOWN/bot parity, crawler identity/idempotency and guide attribution.
+- [ ] Run focused/full tests and verify browser flow without payment; require same-SHA release gates and healthy connections before publication.
+
 ## October 25 external PR claim and release audit
 - [x] Read actual draft PR diffs/checks #19/#16/#17/#20 and current main 12031cdefc47a0a125c7ce67ff8a6e6d0d04735b. Main already pins live checkout returns to HTTPS getpawsy.pet and rejects unknown modes; PR19 is redundant and permits broader test origins. No PR merged or checkout changed.
 - [ ] Pinterest release blocker: Tests & Performance 40137112070, job 121000857570, has 57 passed/6 failed. Three ambiguous score selectors and two APIRequestContext reads bypass browser mocks; anonymous deployed native gate returns 200 and source lacks authorization before service-role work. Preserve negative auth test; security repair requires guarded handler regression coverage and caller review before deployment.
