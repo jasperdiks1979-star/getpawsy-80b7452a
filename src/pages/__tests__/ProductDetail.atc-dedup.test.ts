@@ -57,9 +57,9 @@ describe("ProductDetail.handleAddToCart — ATC dedup regression", () => {
     expect(addItemStart).toBeGreaterThan(-1);
     expect(nextFunction).toBeGreaterThan(addItemStart);
     const addItemBody = contextSource.slice(addItemStart, nextFunction);
-    expect((addItemBody.match(/trackCci\\(\\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(1);
-    expect((body.match(/trackCci\\(\\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(0);
-    expect(body).toMatch(/addItem\\(/);
+    expect((addItemBody.match(/trackCci\(\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(1);
+    expect((body.match(/trackCci\(\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(0);
+    expect(body).toMatch(/addItem\(/);
   });
 
   it("preserves geo_lookup_failed soft signal for unknown country", () => {
