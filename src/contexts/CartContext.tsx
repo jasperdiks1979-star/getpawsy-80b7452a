@@ -616,18 +616,9 @@ export const useCart = () => {
         }
       } catch {}
     }
-    const noop = () => {};
-    return {
-      items: [] as CartItem[],
-      addItem: noop,
-      removeItem: noop,
-      updateQuantity: noop,
-      repriceItem: noop,
-      clearCart: noop,
-      setAbandonedCartEmail: noop,
-      totalItems: 0,
-      totalPrice: 0,
-    } as CartContextType;
+    // Fail visibly instead of returning an inert cart that silently drops orders.
+    // AppErrorBoundary presents a recoverable error state.
+    throw new Error('Cart unavailable: missing CartProvider context');
   }
   return context;
 };
