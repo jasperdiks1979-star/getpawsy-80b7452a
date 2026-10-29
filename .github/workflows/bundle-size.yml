@@ -105,7 +105,11 @@ jobs:
         run: |
           cd base-branch
           npm ci
-          npm run build -- --mode production
+          # Only compare the base bundle. The npm build script runs Vitest
+          # with a setup-file path that resolves against the PR checkout
+          # from this nested directory and fails before Vite can build.
+          # PR branch tests/build are run separately above and in CI.
+          npx vite build --mode production
           
           # Calculate base totals
           base_js=$(find dist/assets -name "*.js" -exec cat {} + 2>/dev/null | wc -c)
