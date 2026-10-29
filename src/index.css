@@ -21,7 +21,7 @@
     --popover-foreground: 24 14% 14%;
 
     /* Lively coral primary - playful but polished, AA on cream foreground */
-    --primary: 12 78% 39%;
+    --primary: 12 78% 38%;
     --primary-foreground: 40 50% 98%;
 
     /* Quiet beige secondary surfaces */
@@ -42,19 +42,19 @@
 
     --border: 38 30% 88%;
     --input: 38 30% 88%;
-    --ring: 12 78% 39%;
+    --ring: 12 78% 38%;
 
     --radius: 0.5rem;
 
     /* Sidebar */
     --sidebar-background: 38 38% 96%;
     --sidebar-foreground: 25 25% 22%;
-    --sidebar-primary: 12 78% 39%;
+    --sidebar-primary: 12 78% 38%;
     --sidebar-primary-foreground: 40 45% 99%;
     --sidebar-accent: 12 75% 94%;
     --sidebar-accent-foreground: 18 60% 28%;
     --sidebar-border: 38 30% 88%;
-    --sidebar-ring: 12 78% 39%;
+    --sidebar-ring: 12 78% 38%;
 
     /* Custom semantic colors */
     --success: 145 55% 38%;
