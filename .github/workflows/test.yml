@@ -467,7 +467,7 @@ jobs:
         run: npm run build
 
       - name: Run checkout E2E tests
-        run: npx playwright test e2e/checkout.spec.ts
+        run: npx playwright test e2e/checkout.spec.ts e2e/chunk-recovery.spec.ts
         env:
           CI: true
 
