@@ -45,7 +45,7 @@ describe('October 28 shared add tracking', () => {
     expect(new Set(rows.map(r => r.session_id)).size).toBe(1);
     expect(rows[0]).toMatchObject({ product_id: item.id, source: 'pinterest', meta: { quantity: 1, price: 39, utm_first_source: 'pinterest' } });
     const stages = ['CANONICAL_ADD_TO_CART', 'CANONICAL_ADD_TO_CART', 'CANONICAL_CART', 'CANONICAL_CHECKOUT'];
-    const canonical = rows.map((r, i) => ({ ...r, source_system: 'cci', source_event_id: String(i), canonical_name: stages[i], occurred_at: '2026-10-28T08:00:00Z', atc_qty: r.meta.quantity }));
+    const canonical = rows.map((r, i) => ({ ...r, session_id: r.session_id, product_id: r.product_id, source_system: 'cci', source_event_id: String(i), canonical_name: stages[i], occurred_at: '2026-10-28T08:00:00Z', atc_qty: r.meta.quantity }));
     const p = emptyPartial('', '');
     foldEvents(p, [...canonical, ...canonical], () => 'pinterest');
     expect(p.sessions[rows[0].session_id]).toMatchObject({ has_add_to_cart: true, has_view_cart: true, has_checkout: true });

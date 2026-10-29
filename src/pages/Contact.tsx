@@ -167,7 +167,7 @@ const Contact = () => {
             </p>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
               {RESPONSE_TIME}. Our support team is here to help with any questions about your order, shipping, returns, or products. You can also reach us at{' '}
-              <a href={`mailto:${INFO_EMAIL}`} className="text-primary hover:underline">{INFO_EMAIL}</a>.
+              <a href={`mailto:${INFO_EMAIL}`} className="text-primary underline underline-offset-2">{INFO_EMAIL}</a>.
             </p>
           </motion.div>
 
@@ -291,7 +291,7 @@ const Contact = () => {
                       {info.href ? (
                         <a 
                           href={info.href} 
-                          className="text-primary hover:underline font-medium"
+                          className="text-primary underline underline-offset-2 font-medium"
                         >
                           {info.content}
                         </a>
@@ -333,7 +333,7 @@ const Contact = () => {
                       </p>
                       <p className="text-muted-foreground">
                         <span className="text-foreground font-medium">Contact:</span>{' '}
-                        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline">{SUPPORT_EMAIL}</a>
+                        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline underline-offset-2">{SUPPORT_EMAIL}</a>
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-3">
@@ -355,7 +355,7 @@ const Contact = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Email:</span>
-                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary hover:underline font-medium">{SUPPORT_EMAIL}</a>
+                    <a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline underline-offset-2 font-medium">{SUPPORT_EMAIL}</a>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-muted-foreground min-w-[120px]">Response Time:</span>
