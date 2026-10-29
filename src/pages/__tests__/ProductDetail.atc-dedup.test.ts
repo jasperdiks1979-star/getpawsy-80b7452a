@@ -12,7 +12,8 @@ import { resolve } from "node:path";
  * analyzing the function body so any future regression that re-introduces a
  * second click emission inside the handler fails CI.
  *
- * It verifies that the shared CartContext.addItem writer (not the PDP) emits\n * success exactly once, avoiding duplicate conversion events.
+ * It verifies that the shared CartContext.addItem writer (not the PDP) emits
+ * success exactly once, avoiding duplicate conversion events.
  */
 describe("ProductDetail.handleAddToCart — ATC dedup regression", () => {
   const SRC = readFileSync(
