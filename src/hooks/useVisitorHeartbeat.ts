@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { isSyntheticTraffic } from "@/lib/syntheticTraffic";
 
 import { PRODUCTION_DOMAINS } from '@/lib/constants';
 
@@ -25,7 +26,7 @@ export const useVisitorHeartbeat = (intervalMs = 30000) => {
 
   const sendHeartbeat = useCallback(async () => {
     // Only send heartbeat on production domains
-    if (!isProductionDomain()) return;
+    if (!isProductionDomain() || isSyntheticTraffic()) return;
 
     const sessionId = getSessionId();
     if (!sessionId) return;
@@ -43,7 +44,7 @@ export const useVisitorHeartbeat = (intervalMs = 30000) => {
 
   useEffect(() => {
     // Only run on production
-    if (!isProductionDomain()) return;
+    if (!isProductionDomain() || isSyntheticTraffic()) return;
 
     // Send initial heartbeat
     sendHeartbeat();
