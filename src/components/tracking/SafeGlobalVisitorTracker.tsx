@@ -15,6 +15,7 @@ import { trackCci } from '@/lib/cci';
 import { getCanonicalSessionId } from '@/lib/canonicalSession';
 import { isTechnicalPath } from '@/lib/technicalRoutes';
 import { claimCrawlerLog } from '@/lib/crawlerCoverage';
+import { isSyntheticTraffic } from '@/lib/syntheticTraffic';
 
 /**
  * Safe Global Visitor Tracker — deferred gtag calls, never blocks rendering.
@@ -29,7 +30,7 @@ const TrackerInner = () => {
 
   useEffect(() => {
     const changed = () => {
-      if (isTechnicalPath(location.pathname) || !MARKETING_FLAGS.GOOGLE_ENABLED) return;
+      if (isSyntheticTraffic() || isTechnicalPath(location.pathname) || !MARKETING_FLAGS.GOOGLE_ENABLED) return;
       queueGa4PageView({ page_path: location.pathname, page_location: window.location.href, page_title: document.title });
     };
     window.addEventListener(CONSENT_CHANGED, changed);
@@ -52,6 +53,8 @@ const TrackerInner = () => {
 
   useEffect(() => {
     const path = location.pathname;
+    // Explicitly marked E2E traffic must not enter the commercial tracker.
+    if (isSyntheticTraffic()) return;
     // Guard: never dispatch commercial analytics for technical routes.
     if (isTechnicalPath(path)) return;
     // Geo/state refresh recreates callbacks but is not a navigation.

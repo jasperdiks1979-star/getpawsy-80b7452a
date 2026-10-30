@@ -5,6 +5,7 @@
 import { resolveUtm } from '@/lib/utmNormalizer';
 import { getCanonicalSessionId } from '@/lib/canonicalSession';
 import { isTechnicalPath } from '@/lib/technicalRoutes';
+import { isSyntheticTraffic } from '@/lib/syntheticTraffic';
 
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 const VISITOR_KEY = 'gp_visitor_id';
@@ -117,7 +118,7 @@ function device(): string {
 
 export function trackCci(event_name: CciEvent, extra?: Record<string, unknown>): void {
   try {
-    if (typeof window === 'undefined' || !PROJECT) return;
+    if (typeof window === 'undefined' || !PROJECT || isSyntheticTraffic()) return;
     // Never emit commercial events on technical routes (/api/*, /img/*,
     // sitemaps, static assets, healthchecks, admin, preview, _lovable_*).
     try { if (isTechnicalPath(location.pathname)) return; } catch { /* ignore */ }

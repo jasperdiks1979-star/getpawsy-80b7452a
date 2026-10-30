@@ -1,5 +1,6 @@
 import { getConsent } from './cookieConsent';
 import { canAutoGrantConsent } from './geoConsent';
+import { isSyntheticTraffic } from './syntheticTraffic';
 
 export const GA4_ID = 'G-5WYL8RJDZF';
 export const CONSENT_CHANGED = 'gp:consent-changed';
@@ -40,6 +41,9 @@ const buffer = createPageViewBuffer(
   view => window.gtag('event', 'page_view', { ...view, send_to: GA4_ID }),
   hasAnalyticsConsent,
 );
-export const queueGa4PageView = buffer.enqueue;
+export const queueGa4PageView = (view: PageView) => {
+  if (isSyntheticTraffic()) return;
+  buffer.enqueue(view);
+};
 export const markGa4Ready = buffer.ready;
 if (typeof window !== 'undefined') window.addEventListener(CONSENT_CHANGED, buffer.consentChanged);
