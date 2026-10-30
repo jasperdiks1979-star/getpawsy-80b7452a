@@ -89,6 +89,20 @@ test.describe("Accessibility Tests", () => {
       // The reviews section also fades in after a delayed motion transition.
       // Axe must inspect its settled colors, not a translucent animation frame.
       await expect(page.locator("#reviews")).toHaveCSS("opacity", "1");
+      // Related recommendations mount asynchronously and animate both the
+      // section and individual cards. A network-idle event does not mean
+      // those opacity transitions have finished. Axe would otherwise audit
+      // semi-transparent text and report transient color-contrast failures.
+      const relatedCarousel = page.locator("section").filter({
+        has: page.getByText("More from the same category", { exact: true }),
+      }).first();
+      if (await relatedCarousel.count()) {
+        await expect(relatedCarousel).toHaveCSS("opacity", "1");
+        const animatedCards = relatedCarousel.locator('[style*="scroll-snap-align"]');
+        for (let i = 0, count = await animatedCards.count(); i < count; i++) {
+          await expect(animatedCards.nth(i)).toHaveCSS("opacity", "1");
+        }
+      }
 
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa"])
