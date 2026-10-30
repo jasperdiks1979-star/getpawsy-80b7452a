@@ -172,11 +172,13 @@ async function main() {
         const allEnvelope = await callCanonical({ hours, geo: "all" });
         const expectedUsSessions = allEnvelope.sessions.filter((s) => isUS(s.country)).length;
         const geoScenario = `h=${hours} geo=US`;
-        if (expectedUsSessions > 0 && envelope.sessions.length !== expectedUsSessions) {
+        const windows = inspectGeoParityWindows(envelope, allEnvelope);
+        const sameWindow = windows.start_skew_seconds === 0 && windows.end_skew_seconds === 0;
+        const identitiesMatch = windows.overlap_missing_from_us_count === 0 && windows.overlap_extra_in_us_count === 0;
+        if (!sameWindow || !identitiesMatch || envelope.sessions.length !== expectedUsSessions) {
           // Independent caches have different rolling since/until boundaries.
           // Keep the hard failure, but show enough PII-free evidence to
           // distinguish boundary skew from a real geo-filter defect.
-          const windows = inspectGeoParityWindows(envelope, allEnvelope);
           console.error(`[parity-probe] ${geoScenario} cache-window diagnostics: ${JSON.stringify(windows)}`);
           drifts.push({
             scenario: geoScenario,
