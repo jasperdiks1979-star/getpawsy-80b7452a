@@ -4,6 +4,7 @@ import { resolveUtm } from "@/lib/utmNormalizer";
 import { sanitizeTrackingFields, isBotUserAgent } from "@/lib/eventSanitizer";
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { isTechnicalPath } from "@/lib/technicalRoutes";
+import { isSyntheticTraffic } from "@/lib/syntheticTraffic";
 
 type ActivityType = "browsing" | "cart" | "checkout" | "begin_checkout" | "product_view" | "add_to_cart" | "view_cart" | "remove_from_cart" | "purchase";
 
@@ -356,7 +357,7 @@ export const useVisitorTracking = () => {
     activityType: ActivityType,
     options?: TrackingOptions
   ) => {
-    if (!isProductionDomain()) return;
+    if (isSyntheticTraffic() || !isProductionDomain()) return;
     if (isBot()) return;
 
     const currentPath = options?.pagePath || window.location.pathname;
@@ -503,7 +504,7 @@ export const trackVisitorEvent = async (
   activityType: ActivityType,
   options?: TrackingOptions
 ) => {
-  if (!isProductionDomain() || isBot()) return;
+  if (isSyntheticTraffic() || !isProductionDomain() || isBot()) return;
   const path = options?.pagePath || window.location.pathname;
   if (isExcludedPath(path)) return;
 
