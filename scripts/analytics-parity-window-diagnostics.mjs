@@ -55,3 +55,28 @@ export function inspectGeoParityWindows(usEnvelope, allEnvelope) {
   summary.overlap_extra_in_us_count = [...usIds].filter((id) => !allUsIds.has(id)).length;
   return summary;
 }
+
+/**
+ * Strict, privacy-safe comparison of independently warmed geo envelopes.
+ * A passing result requires an identical (not rounded-to-seconds) window,
+ * matching US session identities and matching counts. An inconclusive
+ * comparison is never silently treated as a pass.
+ */
+export function assessGeoParity(usEnvelope, allEnvelope) {
+  const windows = inspectGeoParityWindows(usEnvelope, allEnvelope);
+  const expected = (allEnvelope?.sessions || []).filter((s) => isUS(s.country)).length;
+  const actual = (usEnvelope?.sessions || []).length;
+  const validWindows = windows.us_window !== null && windows.all_window !== null;
+  const sameWindow = validWindows &&
+    windows.us_window.since === windows.all_window.since &&
+    windows.us_window.until === windows.all_window.until;
+  const identitiesMatch = windows.overlap !== null &&
+    windows.overlap_missing_from_us_count === 0 &&
+    windows.overlap_extra_in_us_count === 0;
+  const countsMatch = actual === expected;
+  const reason = !validWindows ? "invalid_window" :
+    !sameWindow ? "window_skew" :
+    !identitiesMatch ? "session_identity_mismatch" :
+    !countsMatch ? "session_count_mismatch" : "ok";
+  return { ok: reason === "ok", reason, expected, actual, windows };
+}
