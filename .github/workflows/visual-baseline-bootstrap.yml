@@ -1,0 +1,61 @@
+name: Visual Baseline Bootstrap
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/visual-baseline-bootstrap.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: visual-baseline-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  import-reviewed-baselines:
+    name: Import 16 reviewed visual baselines
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download reviewed baseline artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -o /tmp/visual-baselines.zip \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/12963087824/zip"
+          rm -rf /tmp/visual-baselines
+          mkdir -p /tmp/visual-baselines
+          unzip -q /tmp/visual-baselines.zip -d /tmp/visual-baselines
+          test -d /tmp/visual-baselines/e2e/visual-regression.spec.ts-snapshots
+          rm -rf e2e/visual-regression.spec.ts-snapshots
+          cp -a /tmp/visual-baselines/e2e/visual-regression.spec.ts-snapshots e2e/
+          count="$(find e2e/visual-regression.spec.ts-snapshots -type f -name '*.png' | wc -l | tr -d ' ')"
+          echo "Baseline PNG count: $count"
+          test "$count" = "16"
+
+      - name: Commit PNG baselines only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add e2e/visual-regression.spec.ts-snapshots/
+          if git diff --cached --quiet; then
+            echo "Baselines already present."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(visual): add reviewed baseline snapshots"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
