@@ -1534,8 +1534,8 @@ const ProductDetail = () => {
                     {formatKlarnaInstallment(activePrice, 'USD')}
                   </span>{' '}
                   with{' '}
-                  <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
-                  <span className="text-muted-foreground/80">. Available at checkout.</span>
+                  <span className="font-semibold" style={{ color: '#9B2450' }}>Klarna</span>
+                  <span className="text-muted-foreground">. Available at checkout.</span>
                 </p>
               )}
 
