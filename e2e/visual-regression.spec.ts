@@ -1,6 +1,14 @@
 import { test, expect } from "../playwright-fixture";
 
 test.describe("Visual Regression Tests", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('gp_dev_geo_panel_open', '0');
+    });
+    await page.addStyleTag({
+      content: '[aria-label="Open dev consent panel"], [aria-label="Dev consent simulator"] { display: none !important; }',
+    });
+  });
   test.describe("Homepage", () => {
     test("homepage desktop", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
