@@ -273,8 +273,6 @@ jobs:
   visual-regression:
     name: Visual Regression Tests
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -329,37 +327,9 @@ jobs:
         run: npm run build
 
       - name: Run visual regression tests
-        run: npx playwright test e2e/visual-regression.spec.ts --update-snapshots
+        run: npx playwright test e2e/visual-regression.spec.ts --update-snapshots=none
         env:
           CI: true
-
-      # One-time bootstrap on this branch only. The generated images were
-      # reviewed from the preceding fail-closed run. Restore this workflow
-      # from the parent commit before committing the baselines, so the branch
-      # immediately returns to --update-snapshots=none.
-      - name: Commit reviewed visual baselines and restore fail-closed gate
-        if: success() && github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          # Screenshots were generated against GitHub's PR merge commit. Preserve
-          # them, then commit them onto the actual PR branch (never the synthetic
-          # merge ref). Restore the known reviewed fail-closed workflow first.
-          rm -rf /tmp/getpawsy-visual-baselines
-          cp -a e2e/visual-regression.spec.ts-snapshots /tmp/getpawsy-visual-baselines
-          git fetch origin "${GITHUB_HEAD_REF}" --depth=10
-          git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
-          git show 3bb548189cd890d457c6be477feb92bba627929b:.github/workflows/test.yml > .github/workflows/test.yml
-          rm -rf e2e/visual-regression.spec.ts-snapshots
-          cp -a /tmp/getpawsy-visual-baselines e2e/visual-regression.spec.ts-snapshots
-          git add .github/workflows/test.yml e2e/visual-regression.spec.ts-snapshots/
-          if git diff --cached --quiet; then
-            echo "No visual baseline changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(visual): add reviewed baseline snapshots"
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
 
       - name: Upload visual diff artifacts
         uses: actions/upload-artifact@v4
