@@ -137,10 +137,7 @@ test.describe("Visual Regression Tests", () => {
       // Cross-sell products are intentionally shuffled from the live catalog.
       // Verify the recommendation UI exists, but mask its dynamic contents so
       // the visual baseline still guards the cart, totals, trust and checkout UI.
-      const dynamicUpsells = page
-        .getByRole("heading", { name: /You may also like|You might also like|Complete Your Dog's Comfort Setup/i })
-        .locator("..")
-        .locator("..");
+      const dynamicUpsells = page.getByTestId("cart-upsell");
       await expect(dynamicUpsells.first()).toBeVisible();
 
       await expect(page).toHaveScreenshot("cart-with-items-desktop.png", {
