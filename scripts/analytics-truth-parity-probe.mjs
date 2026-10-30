@@ -19,6 +19,8 @@
 //   PROBE_GEOS    comma list, default "US,all"
 //   PROBE_CLEAN   comma list of booleans, default "true,false"  (exclude internal on/off)
 
+import { isUS, inspectGeoParityWindows } from "./analytics-parity-window-diagnostics.mjs";
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -78,10 +80,6 @@ const METRICS = [
 // computation. Rounded to 4 decimals to match JS number stability.
 const DERIVED_METRICS = ["aov", "rpv", "rps"];
 function round4(n) { return Math.round(n * 10000) / 10000; }
-function isUS(country) {
-  const c = String(country || "").trim().toLowerCase();
-  return c === "us" || c === "usa" || c === "united states" || c === "united states of america";
-}
 function derivedFromTotals(t) {
   return {
     aov: t.purchases > 0 ? round4(t.revenue / t.purchases) : 0,
@@ -175,6 +173,11 @@ async function main() {
         const expectedUsSessions = allEnvelope.sessions.filter((s) => isUS(s.country)).length;
         const geoScenario = `h=${hours} geo=US`;
         if (expectedUsSessions > 0 && envelope.sessions.length !== expectedUsSessions) {
+          // Independent caches have different rolling since/until boundaries.
+          // Keep the hard failure, but show enough PII-free evidence to
+          // distinguish boundary skew from a real geo-filter defect.
+          const windows = inspectGeoParityWindows(envelope, allEnvelope);
+          console.error(`[parity-probe] ${geoScenario} cache-window diagnostics: ${JSON.stringify(windows)}`);
           drifts.push({
             scenario: geoScenario,
             source: "US geo filter",
