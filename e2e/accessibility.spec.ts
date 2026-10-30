@@ -86,6 +86,9 @@ test.describe("Accessibility Tests", () => {
       const breadcrumb = page.locator('nav[aria-label="breadcrumb"]');
       await expect(breadcrumb).toBeVisible();
       await expect(breadcrumb.locator('xpath=..')).toHaveCSS("opacity", "1");
+      // The reviews section also fades in after a delayed motion transition.
+      // Axe must inspect its settled colors, not a translucent animation frame.
+      await expect(page.locator("#reviews")).toHaveCSS("opacity", "1");
 
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa"])
