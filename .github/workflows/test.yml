@@ -273,8 +273,6 @@ jobs:
   visual-regression:
     name: Visual Regression Tests
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -329,29 +327,9 @@ jobs:
         run: npm run build
 
       - name: Run visual regression tests
-        run: npx playwright test e2e/visual-regression.spec.ts --update-snapshots
+        run: npx playwright test e2e/visual-regression.spec.ts --update-snapshots=none
         env:
           CI: true
-
-      - name: Commit reviewed visual baselines to PR branch
-        if: success() && github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          rm -rf /tmp/getpawsy-visual-baselines
-          cp -a e2e/visual-regression.spec.ts-snapshots /tmp/getpawsy-visual-baselines
-          git fetch origin "${GITHUB_HEAD_REF}" --depth=10
-          git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
-          rm -rf e2e/visual-regression.spec.ts-snapshots
-          cp -a /tmp/getpawsy-visual-baselines e2e/visual-regression.spec.ts-snapshots
-          git add e2e/visual-regression.spec.ts-snapshots/
-          if git diff --cached --quiet; then
-            echo "No visual baseline changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(visual): refresh deterministic cart baseline"
-          git push origin "HEAD:${GITHUB_HEAD_REF}"
 
       - name: Upload visual diff artifacts
         uses: actions/upload-artifact@v4
