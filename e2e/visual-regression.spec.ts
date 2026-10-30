@@ -133,9 +133,19 @@ test.describe("Visual Regression Tests", () => {
       await page.goto("/cart");
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(1000);
-      
+
+      // Cross-sell products are intentionally shuffled from the live catalog.
+      // Verify the recommendation UI exists, but mask its dynamic contents so
+      // the visual baseline still guards the cart, totals, trust and checkout UI.
+      const dynamicUpsells = page
+        .getByRole("heading", { name: /You may also like|You might also like|Complete Your Dog's Comfort Setup/i })
+        .locator("..")
+        .locator("..");
+      await expect(dynamicUpsells.first()).toBeVisible();
+
       await expect(page).toHaveScreenshot("cart-with-items-desktop.png", {
         maxDiffPixelRatio: 0.05,
+        mask: [dynamicUpsells],
       });
     });
   });
