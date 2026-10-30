@@ -4,6 +4,7 @@
  * Non-blocking; uses sendBeacon when available.
  */
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
+import { isSyntheticTraffic } from "@/lib/syntheticTraffic";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 const RETURN_KEY = "gp_returning_visitor_v1";
 
@@ -26,6 +27,7 @@ function getSessionId(): string {
 }
 
 function flush() {
+  if (isSyntheticTraffic()) return;
   const session_id = getSessionId();
   if (!session_id || !PROJECT) return;
   const now = Date.now();
@@ -60,7 +62,7 @@ function flush() {
 }
 
 export function installSessionQuality(): void {
-  if (installed || typeof window === "undefined") return;
+  if (installed || typeof window === "undefined" || isSyntheticTraffic()) return;
   installed = true;
   try {
     if (localStorage.getItem(RETURN_KEY) === "1") {/* keep */} else {
