@@ -117,7 +117,7 @@ test.describe("Visual Regression Tests", () => {
       await page.locator('a[href*="/products/"]').first().click();
       await page.waitForLoadState("networkidle");
       
-      const addToCartButton = page.getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i });
+      const addToCartButton = page.locator("#pdp-buy-box").getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i }).first();
       await expect(addToCartButton).toBeVisible();
       await addToCartButton.click();
       await expect(page.getByText(/added to (your )?cart/i).first()).toBeVisible();
