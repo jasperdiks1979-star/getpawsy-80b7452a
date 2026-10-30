@@ -118,10 +118,9 @@ test.describe("Visual Regression Tests", () => {
       await page.waitForLoadState("networkidle");
       
       const addToCartButton = page.getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i });
-      if (await addToCartButton.count() > 0) {
-        await addToCartButton.click();
-        await page.waitForTimeout(1000);
-      }
+      await expect(addToCartButton).toBeVisible();
+      await addToCartButton.click();
+      await expect(page.getByText(/added to (your )?cart/i).first()).toBeVisible();
       
       await page.goto("/cart");
       await page.waitForLoadState("networkidle");
@@ -162,18 +161,13 @@ test.describe("Visual Regression Tests", () => {
       await page.waitForLoadState("networkidle");
       
       // Open mobile menu
-      const menuButton = page.locator('[aria-label*="menu"]')
-        .or(page.locator('[data-testid="mobile-menu-button"]'))
-        .or(page.locator('button:has(svg)').first());
-      
-      if (await menuButton.count() > 0) {
-        await menuButton.first().click();
-        await page.waitForTimeout(500);
-        
-        await expect(page).toHaveScreenshot("mobile-menu-open.png", {
-          maxDiffPixelRatio: 0.05,
-        });
-      }
+      const menuButton = page.getByRole('button', { name: 'Open menu', exact: true });
+      await expect(menuButton).toBeVisible();
+      await menuButton.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page).toHaveScreenshot("mobile-menu-open.png", {
+        maxDiffPixelRatio: 0.05,
+      });
     });
 
     test("footer", async ({ page }) => {

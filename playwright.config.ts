@@ -12,11 +12,17 @@ export default defineConfig({
   } : undefined,
   use: {
     baseURL: "http://localhost:8080",
+    serviceWorkers: "block",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
   projects: [
+    {
+      name: "mobile-chromium",
+      testMatch: /checkout\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
     {
       name: "chromium",
       use: {
