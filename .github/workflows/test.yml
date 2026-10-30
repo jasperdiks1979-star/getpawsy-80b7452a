@@ -341,7 +341,16 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         shell: bash
         run: |
-          git show HEAD^:.github/workflows/test.yml > .github/workflows/test.yml
+          # Screenshots were generated against GitHub's PR merge commit. Preserve
+          # them, then commit them onto the actual PR branch (never the synthetic
+          # merge ref). Restore the known reviewed fail-closed workflow first.
+          rm -rf /tmp/getpawsy-visual-baselines
+          cp -a e2e/visual-regression.spec.ts-snapshots /tmp/getpawsy-visual-baselines
+          git fetch origin "${GITHUB_HEAD_REF}" --depth=10
+          git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
+          git show 3bb548189cd890d457c6be477feb92bba627929b:.github/workflows/test.yml > .github/workflows/test.yml
+          rm -rf e2e/visual-regression.spec.ts-snapshots
+          cp -a /tmp/getpawsy-visual-baselines e2e/visual-regression.spec.ts-snapshots
           git add .github/workflows/test.yml e2e/visual-regression.spec.ts-snapshots/
           if git diff --cached --quiet; then
             echo "No visual baseline changes to commit."
