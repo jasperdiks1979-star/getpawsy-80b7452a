@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Validate live parity probe syntax
+        run: node --check scripts/analytics-truth-parity-probe.mjs
       - name: Analytics parity snapshot diagnostics unit tests
         run: node --test scripts/analytics-parity-window-diagnostics.test.mjs
       - name: Analytics Truth live-parity probe
