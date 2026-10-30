@@ -4,6 +4,7 @@
  */
 import { getCanonicalSessionId } from "@/lib/canonicalSession";
 import { isTechnicalPath } from "@/lib/technicalRoutes";
+import { isSyntheticTraffic } from "@/lib/syntheticTraffic";
 const PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
 
 export type FunnelStep =
@@ -27,7 +28,7 @@ function ensureSessionId(): string | null {
 
 export function recordFunnelStep(step: FunnelStep, extra?: Record<string, unknown>): void {
   try {
-    if (typeof window === "undefined" || !PROJECT) return;
+    if (typeof window === "undefined" || !PROJECT || isSyntheticTraffic()) return;
     try { if (isTechnicalPath(location.pathname)) return; } catch { /* ignore */ }
     const session_id = ensureSessionId();
     if (!session_id) return;
