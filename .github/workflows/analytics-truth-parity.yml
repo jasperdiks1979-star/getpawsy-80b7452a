@@ -8,6 +8,7 @@ on:
       - "src/components/admin/VisitorWorldMap.tsx"
       - "src/components/admin/CleanAnalyticsPanel.tsx"
       - "scripts/analytics-truth-parity-probe.mjs"
+      - "scripts/analytics-parity-window-diagnostics*.mjs"
       - ".github/workflows/analytics-truth-parity.yml"
   schedule:
     # Hourly live probe against production so drift is detected within 60m.
@@ -26,6 +27,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Validate live parity probe syntax
+        run: node --check scripts/analytics-truth-parity-probe.mjs
+      - name: Analytics parity snapshot diagnostics unit tests
+        run: node --test scripts/analytics-parity-window-diagnostics.test.mjs
       - name: Analytics Truth live-parity probe
         # The probe authenticates with a GitHub-signed OIDC token whose claims
         # pin this repo's main branch and this workflow. Pull-request runs

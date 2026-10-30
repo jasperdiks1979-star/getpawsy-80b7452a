@@ -19,6 +19,8 @@
 //   PROBE_GEOS    comma list, default "US,all"
 //   PROBE_CLEAN   comma list of booleans, default "true,false"  (exclude internal on/off)
 
+import { assessGeoParity } from "./analytics-parity-window-diagnostics.mjs";
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -78,10 +80,6 @@ const METRICS = [
 // computation. Rounded to 4 decimals to match JS number stability.
 const DERIVED_METRICS = ["aov", "rpv", "rps"];
 function round4(n) { return Math.round(n * 10000) / 10000; }
-function isUS(country) {
-  const c = String(country || "").trim().toLowerCase();
-  return c === "us" || c === "usa" || c === "united states" || c === "united states of america";
-}
 function derivedFromTotals(t) {
   return {
     aov: t.purchases > 0 ? round4(t.revenue / t.purchases) : 0,
@@ -172,19 +170,23 @@ async function main() {
       const envelope = await callCanonical({ hours, geo });
       if (geo === "US") {
         const allEnvelope = await callCanonical({ hours, geo: "all" });
-        const expectedUsSessions = allEnvelope.sessions.filter((s) => isUS(s.country)).length;
         const geoScenario = `h=${hours} geo=US`;
-        if (expectedUsSessions > 0 && envelope.sessions.length !== expectedUsSessions) {
+        const parity = assessGeoParity(envelope, allEnvelope);
+        if (!parity.ok) {
+          // The independent geo caches cannot prove exact parity unless
+          // their windows and underlying session identities both agree.
+          // Keep this a hard failure; log only PII-free aggregate diagnostics.
+          console.error(`[parity-probe] ${geoScenario} reason=${parity.reason} diagnostics: ${JSON.stringify(parity.windows)}`);
           drifts.push({
             scenario: geoScenario,
-            source: "US geo filter",
-            metric: "sessions",
-            expected: expectedUsSessions,
-            actual: envelope.sessions.length,
-            delta: envelope.sessions.length - expectedUsSessions,
+            source: "US geo parity",
+            metric: parity.reason,
+            expected: parity.expected,
+            actual: parity.actual,
+            delta: parity.actual - parity.expected,
           });
         } else {
-          passes.push(`${geoScenario} — US geo filter ≡ enriched canonical sessions`);
+          passes.push(`${geoScenario} — US geo filter ≡ enriched canonical sessions (identical window and identities)`);
         }
       }
       for (const clean of CLEANS) {
