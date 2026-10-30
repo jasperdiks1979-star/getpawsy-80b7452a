@@ -49,6 +49,10 @@ const ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vanZnZmJjamdpcGp4cGZhdG1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0MTMxOTYsImV4cCI6MjA4Mzk4OTE5Nn0.gfjmYf9aB-BCIrCnH14Zmnm6GBEKX7QMWP1ELL_i9dc";
 
 test.describe("Visitor-perspective storefront forensic", () => {
+  test.beforeEach(async ({ context }) => {
+    // Set before any app script runs; tab-local and preserved across navigation.
+    await context.addInitScript(() => sessionStorage.setItem("gp_synthetic_traffic_v1", "playwright-e2e"));
+  });
   test("all core + footer routes render without crashing", async ({ page }) => {
     for (const path of FOOTER_PATHS) {
       const resp = await page.goto(path, { waitUntil: "domcontentloaded" });
