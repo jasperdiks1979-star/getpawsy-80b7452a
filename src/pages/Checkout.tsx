@@ -1318,7 +1318,7 @@ const Checkout = () => {
                     {formatKlarnaInstallment(stripeChargedTotal, 'USD')}
                   </span>{' '}
                   with{' '}
-                  <span className="font-semibold" style={{ color: '#FFA8C5' }}>Klarna</span>
+                  <span className="font-semibold" style={{ color: '#9B2450' }}>Klarna</span>
                   . Select at checkout.
                 </p>
               )}

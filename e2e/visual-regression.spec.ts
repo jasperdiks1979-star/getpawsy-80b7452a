@@ -1,6 +1,14 @@
 import { test, expect } from "../playwright-fixture";
 
 test.describe("Visual Regression Tests", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('gp_dev_geo_panel_open', '0');
+    });
+    await page.addStyleTag({
+      content: '[aria-label="Open dev consent panel"], [aria-label="Dev consent simulator"] { display: none !important; }',
+    });
+  });
   test.describe("Homepage", () => {
     test("homepage desktop", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
@@ -117,18 +125,24 @@ test.describe("Visual Regression Tests", () => {
       await page.locator('a[href*="/products/"]').first().click();
       await page.waitForLoadState("networkidle");
       
-      const addToCartButton = page.getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i });
-      if (await addToCartButton.count() > 0) {
-        await addToCartButton.click();
-        await page.waitForTimeout(1000);
-      }
+      const addToCartButton = page.locator("#pdp-buy-box").getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i }).first();
+      await expect(addToCartButton).toBeVisible();
+      await addToCartButton.click();
+      await expect(page.getByText(/added to (your )?cart/i).first()).toBeVisible();
       
       await page.goto("/cart");
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(1000);
-      
+
+      // Cross-sell products are intentionally shuffled from the live catalog.
+      // Verify the recommendation UI exists, but mask its dynamic contents so
+      // the visual baseline still guards the cart, totals, trust and checkout UI.
+      const dynamicUpsells = page.getByTestId("cart-upsell");
+      await expect(dynamicUpsells.first()).toBeVisible();
+
       await expect(page).toHaveScreenshot("cart-with-items-desktop.png", {
         maxDiffPixelRatio: 0.05,
+        mask: [dynamicUpsells],
       });
     });
   });
@@ -162,18 +176,13 @@ test.describe("Visual Regression Tests", () => {
       await page.waitForLoadState("networkidle");
       
       // Open mobile menu
-      const menuButton = page.locator('[aria-label*="menu"]')
-        .or(page.locator('[data-testid="mobile-menu-button"]'))
-        .or(page.locator('button:has(svg)').first());
-      
-      if (await menuButton.count() > 0) {
-        await menuButton.first().click();
-        await page.waitForTimeout(500);
-        
-        await expect(page).toHaveScreenshot("mobile-menu-open.png", {
-          maxDiffPixelRatio: 0.05,
-        });
-      }
+      const menuButton = page.getByRole('button', { name: 'Open menu', exact: true });
+      await expect(menuButton).toBeVisible();
+      await menuButton.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page).toHaveScreenshot("mobile-menu-open.png", {
+        maxDiffPixelRatio: 0.05,
+      });
     });
 
     test("footer", async ({ page }) => {

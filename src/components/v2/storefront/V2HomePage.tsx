@@ -23,9 +23,15 @@ import {
   RETURN_WINDOW_DAYS,
 } from '@/lib/shipping-constants';
 
-// Local Vite does not proxy the hosting asset endpoint; published pages use
-// the same-origin asset URLs. Both origins serve the same immutable photos.
-const photoUrl = (url: string) => import.meta.env.DEV ? `https://getpawsy.lovable.app${url}` : url;
+// Local Vite dev/preview does not proxy Lovable's hosted asset endpoint.
+// Real published hosts use the same-origin asset URLs; localhost must point
+// at the immutable Lovable-hosted copy even when Vite was built in production mode.
+const photoUrl = (url: string) => {
+  if (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    return `https://getpawsy.lovable.app${url}`;
+  }
+  return url;
+};
 
 // Verified curator picks: visible, active products with verified stock, a
 // live PDP, a purchasable variant, and a stable rehosted primary image.

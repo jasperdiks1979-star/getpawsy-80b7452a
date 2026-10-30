@@ -207,31 +207,35 @@ const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType }>
     try {
       return await importFn();
     } catch (error) {
-      console.error("[LazyLoad] Import failed, attempting recovery:", error);
-
-      // Chunk load failure = likely stale SW cache after deployment
-      // Unregister SW, clear caches, and force reload ONCE
-      const reloadKey = "chunk-reload-" + window.location.pathname;
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, "1");
-        try {
-          if ("serviceWorker" in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.map((r) => r.unregister()));
-          }
-          if ("caches" in window) {
-            const keys = await caches.keys();
-            await Promise.all(keys.map((k) => caches.delete(k)));
-          }
-        } catch (swErr) {
-          console.error("[LazyLoad] SW cleanup failed:", swErr);
-        }
-        window.location.href = window.location.pathname + "?cb=" + Date.now();
-        return new Promise(() => {});
+      console.error("[LazyLoad] Import failed:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      // Do not mask module execution errors as network/cache problems.
+      if (!/failed to fetch dynamically imported module|importing a module script failed|loading (css )?chunk|chunkloaderror/i.test(message)) {
+        throw error;
       }
 
-      // Second failure after reload — show recovery UI instead of blank screen
-      console.error("[LazyLoad] Chunk still unavailable after reload, showing recovery UI");
+      // The index.html boot script owns the ONE session-wide reload guard.
+      // A separate per-path guard caused extra reloads and duplicate ?cb hits.
+      const boot = window as Window & {
+        __RELOAD_GUARD_KEY__?: string;
+        __doChunkReload__?: () => void;
+      };
+      const guardKey = boot.__RELOAD_GUARD_KEY__ || "gp_reload_guard_v2";
+      const alreadyRetried = (parseInt(sessionStorage.getItem(guardKey) || "0", 10) || 0) >= 1;
+      if (!alreadyRetried) {
+        if (typeof boot.__doChunkReload__ === "function") {
+          boot.__doChunkReload__();
+        } else {
+          // Defensive fallback for preview/test shells without the boot script.
+          sessionStorage.setItem(guardKey, "1");
+          const retryUrl = new URL(window.location.href);
+          retryUrl.searchParams.set("cb", String(Date.now()));
+          window.location.replace(retryUrl.pathname + retryUrl.search + retryUrl.hash);
+        }
+        return new Promise<{ default: React.ComponentType }>(() => {});
+      }
+
+      // Second failure: render recovery UI rather than looping or blanking.
       return { default: ChunkLoadError };
     }
   });

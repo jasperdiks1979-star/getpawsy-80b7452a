@@ -143,7 +143,7 @@ export const VolumeDiscountSelector = ({
                     ${tier.discountedPrice.toFixed(2)}
                   </p>
                   {tier.discount > 0 && (
-                    <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                    <p className="text-[10px] text-green-800 dark:text-green-300 font-medium">
                       ${tier.pricePerItem.toFixed(2)}/each
                     </p>
                   )}

@@ -1,132 +1,75 @@
-import { test, expect } from "../playwright-fixture";
+import { test, expect } from '../playwright-fixture';
 
-test.describe("Checkout Flow", () => {
-  test.beforeEach(async ({ page }) => {
-    // Block writes and payment requests throughout the isolated CI journey.
-    await page.route('**/*', async route => {
+// Isolated UI contract. No production API, analytics, order or payment request
+// may leave this browser. Live backend health is a separate release gate.
+const product = {
+  id: '00000000-0000-4000-8000-000000000023',
+  name: 'Checkout fixture', slug: 'checkout-fixture', price: 40,
+  quantity: 1, image: '', stock: 20, variants: [], supplier_warehouse: 'US',
+};
+
+test.describe('Checkout Flow', () => {
+  test.beforeEach(async ({ page, context }) => {
+    await context.route('**/*', async route => {
       const request = route.request();
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) ||
-          /stripe\.com|\/create-checkout/.test(request.url())) {
-        await route.abort();
-        return;
+      const url = new URL(request.url());
+      if (url.origin === 'http://localhost:8080' && request.method() === 'GET') {
+        return route.continue();
       }
-      await route.continue();
+      const json = (data: unknown) => route.fulfill({
+        status: 200, contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(data),
+      });
+      if (url.pathname === '/rest/v1/products' ||
+          url.pathname === '/rest/v1/rpc/product_option_metadata') return json([product]);
+      if (url.pathname === '/functions/v1/geo-classify') return json({ country: 'US' });
+      // Fail closed, including same-origin writes and all payment calls.
+      return route.abort();
     });
-    if (test.info().title === 'should calculate correct totals') {
-      await page.goto('/');
-      await page.evaluate(() => localStorage.setItem('pawsy-cart', JSON.stringify([
-        { id: 'ci-cart-fixture', name: 'CI fixture', price: 40, quantity: 1, image: '' },
-      ])));
-      return;
-    }
-    // Add a product to cart before each checkout test
-    await page.goto("/products");
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Click first product
-    await page.locator('a[href*="/products/"]').first().click();
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Add to cart
-    const addToCartButton = page.getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i });
-    if (await addToCartButton.count() > 0) {
-      await addToCartButton.click();
-      await page.waitForTimeout(1000);
-    }
+    await page.addInitScript(item => {
+      localStorage.setItem('pawsy-cart', JSON.stringify([item]));
+    }, product);
   });
 
-  test("should navigate to checkout from cart", async ({ page }) => {
-    await page.goto("/cart");
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Find checkout button
-    const checkoutButton = page.getByRole("button", { name: /checkout|afrekenen|bestellen/i })
-      .or(page.getByRole("link", { name: /checkout|afrekenen|bestellen/i }));
-    
-    if (await checkoutButton.count() > 0) {
-      await checkoutButton.first().click();
-      
-      // Payment endpoints are blocked: only the storefront checkout may open
-      await page.waitForLoadState("domcontentloaded");
-      
-      // Confirm storefront checkout without creating a payment session
-      const url = page.url();
-      const isCheckout = url.includes("/checkout");
-      expect(isCheckout).toBeTruthy();
-    }
+  test('navigates from a populated cart to checkout', async ({ page }) => {
+    await page.goto('/cart');
+    await expect(page.getByText(product.name, { exact: true }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Secure Checkout', exact: true }).click();
+    await expect(page).toHaveURL(/\/checkout/);
+    await expect(page.getByLabel('Email Address', { exact: true })).toBeVisible();
   });
 
-  test("should display order summary on checkout", async ({ page }) => {
-    await page.goto("/checkout");
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Check for order summary elements
-    const orderSummary = page.locator('[data-testid="order-summary"]')
-      .or(page.locator('.order-summary'))
-      .or(page.locator('text=/order summary|bestelling|overzicht/i'));
-    
-    // Should show products or redirect to Stripe
-    const url = page.url();
-    if (!url.includes("stripe.com")) {
-      // If still on our site, check for summary
-      const prices = page.locator('text=/[€$]\\d+/');
-      await expect(prices.first()).toBeVisible({ timeout: 5000 });
-    }
+  test('renders checkout summary and shipping destination', async ({ page }) => {
+    await page.goto('/checkout');
+    await expect(page.getByText(product.name, { exact: true }).first()).toBeVisible();
+    await expect(page.getByLabel('Email Address', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Ship to', { exact: true })).toHaveValue('US');
+    await expect(page.locator('[data-testid^="checkout-cta-"]:visible').first()).toBeEnabled();
   });
 
-  test("should show shipping form fields", async ({ page }) => {
-    await page.goto("/checkout");
-    await page.waitForLoadState("domcontentloaded");
-    
-    const url = page.url();
-    
-    // Only check form fields if not redirected to Stripe
-    if (!url.includes("stripe.com")) {
-      // Look for common shipping form fields
-      const emailField = page.getByLabel(/email/i).or(page.locator('input[type="email"]'));
-      const nameField = page.getByLabel(/name|naam/i).or(page.locator('input[name*="name"]'));
-      const addressField = page.getByLabel(/address|adres/i).or(page.locator('input[name*="address"]'));
-      
-      // At least email should be present for guest checkout
-      if (await emailField.count() > 0) {
-        await expect(emailField.first()).toBeVisible();
-      }
-    }
+  test('rejects missing email before calling checkout', async ({ page }) => {
+    const invocations: string[] = [];
+    page.on('request', request => {
+      if (request.url().includes('/create-checkout')) invocations.push(request.url());
+    });
+    await page.goto('/checkout');
+    const button = page.locator('[data-testid^="checkout-cta-"]:visible').first();
+    await expect(button).toBeEnabled();
+    await button.click();
+    await expect(page.getByText('Please enter a valid email address', { exact: true })).toBeVisible();
+    expect(invocations).toEqual([]);
   });
 
-  test("should validate required checkout fields", async ({ page }) => {
-    await page.goto("/checkout");
-    await page.waitForLoadState("domcontentloaded");
-    
-    const url = page.url();
-    
-    if (!url.includes("stripe.com")) {
-      // Try to submit without filling required fields
-      const submitButton = page.getByRole("button", { name: /pay|betalen|submit|bestellen/i });
-      
-      if (await submitButton.count() > 0) {
-        await submitButton.first().click();
-        
-        // Should show validation errors
-        await page.waitForTimeout(500);
-        
-        const errorMessages = page.locator('[role="alert"]')
-          .or(page.locator('.error'))
-          .or(page.locator('text=/required|verplicht|invalid/i'));
-        
-        // Either errors shown or form prevented submission
-      }
-    }
-  });
-
-  test("should calculate correct totals", async ({ page }) => {
-    await page.goto("/cart");
-    await page.waitForLoadState("domcontentloaded");
-    
-    // Check that subtotal, shipping, and total are displayed
+  test('calculates cart totals and removes the line', async ({ page }) => {
+    await page.goto('/cart');
     const subtotal = page.getByText('Subtotal', { exact: true }).locator('..');
-    const total = page.getByText('Total', { exact: true }).first().locator('..');
     await expect(subtotal).toContainText('$40.00');
-    await expect(total).toContainText('$40.00');
+    await page.getByRole('button', { name: `Increase quantity of ${product.name}`, exact: true }).click();
+    await expect(subtotal).toContainText('$80.00');
+    await page.getByRole('button', { name: `Decrease quantity of ${product.name}`, exact: true }).click();
+    await expect(subtotal).toContainText('$40.00');
+    await page.getByRole('button', { name: `Remove ${product.name} from cart`, exact: true }).click();
+    await expect(page.getByRole('heading', { name: /^(Your cart is empty|Nothing here yet)$/ })).toBeVisible();
+    await expect(page.getByText(product.name, { exact: true })).toHaveCount(0);
   });
 });

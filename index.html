@@ -104,7 +104,9 @@
         try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(count + 1)); } catch(_) {}
         console.warn('[BOOT] Chunk load failed — refreshing once');
         // Synchronous redirect — no async cache clearing to avoid race conditions
-        window.location.replace(window.location.pathname + '?cb=' + Date.now());
+        var retryUrl = new URL(window.location.href);
+        retryUrl.searchParams.set('cb', String(Date.now()));
+        window.location.replace(retryUrl.pathname + retryUrl.search + retryUrl.hash);
       }
 
       function showChunkRecovery() {
@@ -125,6 +127,7 @@
       // can check/increment the SAME counter instead of using their own keys.
       window.__RELOAD_GUARD_KEY__ = RELOAD_GUARD_KEY;
       window.__getReloadCount__ = getReloadCount;
+      window.__doChunkReload__ = doChunkReload;
 
       // Catch chunk failures via error event (message-based)
       window.addEventListener('error', function(e) {
@@ -155,13 +158,11 @@
         }
       }, 4000);
 
-      // Clear the reload guard on successful boot so future deploys can retry
+      // Keep the guard after initial boot: lazy routes may still fail later.
+      // Clearing it on root.render() caused repeated reloads for stale chunks.
       Object.defineProperty(window, '__BOOT_OK__', {
         set: function(v) {
           this.__boot_ok_val = v;
-          if (v === true) {
-            try { sessionStorage.removeItem(RELOAD_GUARD_KEY); } catch(_) {}
-          }
         },
         get: function() { return this.__boot_ok_val; },
         configurable: true,

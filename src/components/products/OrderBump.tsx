@@ -139,7 +139,7 @@ export const OrderBump = ({
             <span className="text-xs text-muted-foreground line-through">
               ${product.price.toFixed(2)}
             </span>
-            <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+            <span className="text-[10px] text-green-800 dark:text-green-300 font-medium">
               Save ${savings.toFixed(2)}
             </span>
           </div>

@@ -594,40 +594,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    // PRODUCTION RESILIENCE: a stale lazy chunk can transiently import a
-    // different CartContext module identity (deploy mid-session). Throwing
-    // there crashes the whole route — including PDP "Add to Cart". Instead,
-    // log + report and return a safe no-op so the page keeps rendering;
-    // the next click triggers our chunk-reload guard which refreshes to
-    // the new build. In dev we keep the loud error to catch real bugs.
-    if (import.meta.env.DEV) {
-      throw new Error('useCart must be used within a CartProvider');
-    }
+    // A missing provider must never return a no-op cart: that silently drops
+    // add-to-cart actions. The app error boundary offers a manual recovery.
+    // Do NOT schedule an automatic reload here: boot success resets some
+    // guards before lazy routes mount, which can otherwise cause a reload loop.
     if (typeof window !== 'undefined') {
-      console.error('[useCart] Context missing — likely stale chunk after deploy. Returning safe no-op.');
-      try {
-        // Trigger the unified reload guard (debounced via session key) on next tick.
-        import('@/lib/boot-diagnostics').catch(() => {});
-        const guardKey = (window as any).__RELOAD_GUARD_KEY__ || 'gp_reload_guard_v2';
-        const count = parseInt(sessionStorage.getItem(guardKey) || '0', 10) || 0;
-        if (count === 0) {
-          sessionStorage.setItem(guardKey, '1');
-          setTimeout(() => window.location.reload(), 250);
-        }
-      } catch {}
+      console.error('[useCart] Missing CartProvider — showing recovery UI');
     }
-    const noop = () => {};
-    return {
-      items: [] as CartItem[],
-      addItem: noop,
-      removeItem: noop,
-      updateQuantity: noop,
-      repriceItem: noop,
-      clearCart: noop,
-      setAbandonedCartEmail: noop,
-      totalItems: 0,
-      totalPrice: 0,
-    } as CartContextType;
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 };

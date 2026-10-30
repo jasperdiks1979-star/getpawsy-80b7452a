@@ -264,6 +264,7 @@ const Cart = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label={`Remove ${item.name} from cart`}
                     onClick={() => removeItem(item.id)}
                     className="text-muted-foreground hover:text-destructive"
                   >
@@ -274,6 +275,7 @@ const Cart = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
+                      aria-label={`Decrease quantity of ${item.name}`}
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     >
                       <Minus className="w-3 h-3" />
@@ -285,6 +287,7 @@ const Cart = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
+                      aria-label={`Increase quantity of ${item.name}`}
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     >
                       <Plus className="w-3 h-3" />

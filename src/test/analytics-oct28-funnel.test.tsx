@@ -19,7 +19,11 @@ import { CartProvider, useCart } from '@/contexts/CartContext';
 import { trackCci } from '@/lib/cci';
 const beacon = vi.fn(() => true);
 class PayloadBlob { _text: string; constructor(parts: string[]) { this._text = parts.join(''); } }
-const readBodies = (): Array<Record<string, any>> => beacon.mock.calls.map(call => JSON.parse(((call as unknown[])[1] as PayloadBlob)._text));
+const readBodies = (): Array<Record<string, any>> => beacon.mock.calls
+  // Other analytics/diagnostic beacons can share the test navigator mock.
+  // Assert only canonical CCI payloads; do not hide malformed CCI events.
+  .filter(call => String((call as unknown[])[0]).endsWith('/functions/v1/cci-ingest'))
+  .map(call => JSON.parse(((call as unknown[])[1] as PayloadBlob)._text));
 
 beforeEach(() => {
   localStorage.clear(); sessionStorage.clear(); beacon.mockClear();
@@ -45,7 +49,7 @@ describe('October 28 shared add tracking', () => {
     expect(new Set(rows.map(r => r.session_id)).size).toBe(1);
     expect(rows[0]).toMatchObject({ product_id: item.id, source: 'pinterest', meta: { quantity: 1, price: 39, utm_first_source: 'pinterest' } });
     const stages = ['CANONICAL_ADD_TO_CART', 'CANONICAL_ADD_TO_CART', 'CANONICAL_CART', 'CANONICAL_CHECKOUT'];
-    const canonical = rows.map((r, i) => ({ ...r, source_system: 'cci', source_event_id: String(i), canonical_name: stages[i], occurred_at: '2026-10-28T08:00:00Z', atc_qty: r.meta.quantity }));
+    const canonical = rows.map((r, i) => ({ ...r, session_id: r.session_id, product_id: r.product_id, source_system: 'cci', source_event_id: String(i), canonical_name: stages[i], occurred_at: '2026-10-28T08:00:00Z', atc_qty: r.meta.quantity }));
     const p = emptyPartial('', '');
     foldEvents(p, [...canonical, ...canonical], () => 'pinterest');
     expect(p.sessions[rows[0].session_id]).toMatchObject({ has_add_to_cart: true, has_view_cart: true, has_checkout: true });

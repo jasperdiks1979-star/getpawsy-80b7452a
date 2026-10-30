@@ -252,7 +252,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
 
   if (variant === 'compact') {
     return (
-      <div ref={containerRef} className="space-y-3">
+      <div ref={containerRef} data-testid="cart-upsell" className="space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground">
           <Sparkles className="w-4 h-4" />
           You might also like
@@ -311,7 +311,7 @@ export const CartUpsell = ({ currentItemIds, variant = 'default', maxItems = 4 }
   );
 
   return (
-    <div ref={containerRef} className="space-y-4">
+    <div ref={containerRef} data-testid="cart-upsell" className="space-y-4">
       <div className="flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-primary" />
         <div>

@@ -12,7 +12,8 @@ import { resolve } from "node:path";
  * analyzing the function body so any future regression that re-introduces a
  * second click emission inside the handler fails CI.
  *
- * It also asserts that `add_to_cart_success` emission is preserved.
+ * It verifies that the shared CartContext.addItem writer (not the PDP) emits
+ * success exactly once, avoiding duplicate conversion events.
  */
 describe("ProductDetail.handleAddToCart — ATC dedup regression", () => {
   const SRC = readFileSync(
@@ -49,9 +50,16 @@ describe("ProductDetail.handleAddToCart — ATC dedup regression", () => {
     ).toBe(1);
   });
 
-  it("still emits add_to_cart_success (success path untouched)", () => {
-    const successes = body.match(/trackCci\(\s*['"]add_to_cart_success['"]/g) ?? [];
-    expect(successes.length).toBeGreaterThanOrEqual(1);
+  it("emits success once in shared CartContext.addItem, never again in PDP", () => {
+    const contextSource = readFileSync(resolve(__dirname, "..", "..", "contexts", "CartContext.tsx"), "utf8");
+    const addItemStart = contextSource.indexOf("const addItem = (");
+    const nextFunction = contextSource.indexOf("const removeItem =", addItemStart);
+    expect(addItemStart).toBeGreaterThan(-1);
+    expect(nextFunction).toBeGreaterThan(addItemStart);
+    const addItemBody = contextSource.slice(addItemStart, nextFunction);
+    expect((addItemBody.match(/trackCci\(\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(1);
+    expect((body.match(/trackCci\(\s*['"]add_to_cart_success['"]/g) ?? [])).toHaveLength(0);
+    expect(body).toMatch(/addItem\(/);
   });
 
   it("preserves geo_lookup_failed soft signal for unknown country", () => {
