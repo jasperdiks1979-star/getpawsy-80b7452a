@@ -69,6 +69,7 @@ test.describe('Checkout Flow', () => {
     await page.getByRole('button', { name: `Decrease quantity of ${product.name}`, exact: true }).click();
     await expect(subtotal).toContainText('$40.00');
     await page.getByRole('button', { name: `Remove ${product.name} from cart`, exact: true }).click();
-    await expect(page.getByText('Your cart is empty', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^(Your cart is empty|Nothing here yet)$/ })).toBeVisible();
+    await expect(page.getByText(product.name, { exact: true })).toHaveCount(0);
   });
 });
