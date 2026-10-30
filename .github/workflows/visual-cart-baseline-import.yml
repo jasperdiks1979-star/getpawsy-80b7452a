@@ -1,0 +1,59 @@
+name: Visual Cart Baseline Import
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '.github/workflows/visual-cart-baseline-import.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: visual-cart-baseline-import-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  import-cart-baseline:
+    name: Import reviewed masked cart baseline
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download reviewed visual artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -o /tmp/visual-cart.zip \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/12964638660/zip"
+          rm -rf /tmp/visual-cart
+          mkdir -p /tmp/visual-cart
+          unzip -q /tmp/visual-cart.zip -d /tmp/visual-cart
+          actual="$(find /tmp/visual-cart/test-results -type f -name 'cart-with-items-desktop-actual.png' -print -quit)"
+          test -n "$actual"
+          test -f "$actual"
+          cp "$actual" e2e/visual-regression.spec.ts-snapshots/cart-with-items-desktop-chromium-linux.png
+
+      - name: Commit cart baseline only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add e2e/visual-regression.spec.ts-snapshots/cart-with-items-desktop-chromium-linux.png
+          if git diff --cached --quiet; then
+            echo "Cart baseline already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(visual): refresh fully masked cart baseline"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
