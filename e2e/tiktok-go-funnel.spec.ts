@@ -1,4 +1,5 @@
-import { test, expect, devices } from "@playwright/test";
+import { test, expect } from "../playwright-fixture";
+import { devices } from "@playwright/test";
 
 /**
  * /go TikTok funnel smoke tests — mobile Safari (iPhone 13).
