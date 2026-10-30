@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../playwright-fixture';
 
 test('missing app chunks trigger one bounded reload without losing attribution', async ({ page }) => {
   let failedChunks = 0;
