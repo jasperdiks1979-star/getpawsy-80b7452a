@@ -144,15 +144,15 @@ jobs:
                 title: '🚨 CI Failure: ${{ github.event.workflow_run.name }}',
                 body: `## CI Build Failed
                 
-**Workflow:** ${{ github.event.workflow_run.name }}
-**Branch:** ${{ github.event.workflow_run.head_branch }}
-**Commit:** \`${{ github.event.workflow_run.head_sha }}\`
-**Triggered by:** @${{ github.event.workflow_run.actor.login }}
+                **Workflow:** ${{ github.event.workflow_run.name }}
+                **Branch:** ${{ github.event.workflow_run.head_branch }}
+                **Commit:** \`${{ github.event.workflow_run.head_sha }}\`
+                **Triggered by:** @${{ github.event.workflow_run.actor.login }}
 
-[View Workflow Run](${{ github.event.workflow_run.html_url }})
+                [View Workflow Run](${{ github.event.workflow_run.html_url }})
 
----
-*This issue was automatically created by the CI failure notification workflow.*`,
+                ---
+                *This issue was automatically created by the CI failure notification workflow.*`,
                 labels: ['ci-failure', 'bug', 'priority:high'],
               });
             }
