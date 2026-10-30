@@ -19,7 +19,11 @@ import { CartProvider, useCart } from '@/contexts/CartContext';
 import { trackCci } from '@/lib/cci';
 const beacon = vi.fn(() => true);
 class PayloadBlob { _text: string; constructor(parts: string[]) { this._text = parts.join(''); } }
-const readBodies = (): Array<Record<string, any>> => beacon.mock.calls.map(call => JSON.parse(((call as unknown[])[1] as PayloadBlob)._text));
+const readBodies = (): Array<Record<string, any>> => beacon.mock.calls
+  // Other analytics/diagnostic beacons can share the test navigator mock.
+  // Assert only canonical CCI payloads; do not hide malformed CCI events.
+  .filter(call => String((call as unknown[])[0]).endsWith('/functions/v1/cci-ingest'))
+  .map(call => JSON.parse(((call as unknown[])[1] as PayloadBlob)._text));
 
 beforeEach(() => {
   localStorage.clear(); sessionStorage.clear(); beacon.mockClear();
