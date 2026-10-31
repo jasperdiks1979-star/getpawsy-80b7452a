@@ -5,6 +5,11 @@ on:
     paths:
       - 'scripts/live-storefront-smoke.mjs'
       - '.github/workflows/live-storefront-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/live-storefront-smoke.mjs'
+      - '.github/workflows/live-storefront-smoke.yml'
   workflow_dispatch:
 
 permissions:
