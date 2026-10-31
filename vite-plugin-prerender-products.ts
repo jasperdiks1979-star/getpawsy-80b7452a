@@ -35,6 +35,7 @@ interface ProductRecord {
   is_active: boolean | null;
   stock_sync_status?: string | null;
   supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
   updated_at: string | null;
   seo_noindex?: boolean | null;
   seo_tier?: string | null;
@@ -254,7 +255,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,variants,image_url,images,category,stock,is_active,stock_sync_status,supplier_warehouse,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,variants,image_url,images,category,stock,is_active,stock_sync_status,supplier_warehouse,last_stock_sync_at,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {
