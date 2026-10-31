@@ -14,6 +14,8 @@
  * shipping the lie "In stock — ready to ship" on PDPs whose stock is 0.
  */
 
+export const MAX_STOCK_SYNC_AGE_MS = 48 * 60 * 60 * 1000;
+
 export interface AvailabilityProduct {
   stock?: number | null;
   is_active?: boolean | null;
@@ -22,6 +24,7 @@ export interface AvailabilityProduct {
   cn_stock?: number | null;
   stock_sync_status?: string | null;
   supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
 }
 
 export interface AvailabilityResult {
@@ -31,11 +34,19 @@ export interface AvailabilityResult {
 
 /** Fail closed for supplier-backed catalog rows, including stale browser caches. */
 export function isSupplierStockVerified(
-  product: Pick<AvailabilityProduct, 'stock_sync_status' | 'supplier_warehouse'> | null | undefined,
+  product: Pick<AvailabilityProduct, 'stock_sync_status' | 'supplier_warehouse' | 'last_stock_sync_at'> | null | undefined,
+  nowMs = Date.now(),
 ): boolean {
   if (product?.stock_sync_status !== 'ok') return false;
   const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
-  return ['US', 'CN', 'DE'].includes(warehouse);
+  if (!['US', 'CN', 'DE'].includes(warehouse)) return false;
+  // A prior successful sync is not proof of CURRENT supplier availability.
+  // Missing, malformed, future-dated, and >48h-old checks must fail closed.
+  if (!product.last_stock_sync_at) return false;
+  const checkedAt = Date.parse(product.last_stock_sync_at);
+  return Number.isFinite(checkedAt) &&
+    checkedAt <= nowMs + 5 * 60 * 1000 &&
+    nowMs - checkedAt <= MAX_STOCK_SYNC_AGE_MS;
 }
 
 /**
@@ -64,7 +75,8 @@ export function computeAvailability(
   // Legacy test/local objects without these fields retain their prior behavior.
   const hasSupplierMetadata =
     Object.prototype.hasOwnProperty.call(product, 'stock_sync_status') ||
-    Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse');
+    Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse') ||
+    Object.prototype.hasOwnProperty.call(product, 'last_stock_sync_at');
   if (hasSupplierMetadata) {
     if (!isSupplierStockVerified(product)) {
       return { isInStock: false, reason: 'Supplier inventory or checkout-compatible warehouse not confirmed' };
