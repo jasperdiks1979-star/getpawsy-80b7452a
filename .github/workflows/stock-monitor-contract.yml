@@ -1,0 +1,26 @@
+name: Stock Monitor Contract
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/stock-refresh-monitor/**'
+      - 'supabase/functions/_shared/stock-sync-health*'
+      - '.github/workflows/stock-monitor-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stock-monitor-deno:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck monitor Edge Function
+        run: deno check supabase/functions/stock-refresh-monitor/index.ts
+      - name: Run read-only sync stall regression tests
+        run: deno test supabase/functions/_shared/stock-sync-health_test.ts
