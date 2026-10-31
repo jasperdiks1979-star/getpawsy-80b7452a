@@ -34,7 +34,7 @@ import { generateCategoryMetaDescription, getKeywordsForCategory } from '@/lib/s
 import { CATEGORY_SEO_DATA } from '@/lib/category-seo-data';
 import { trackViewItemList } from '@/lib/analytics';
 import { dedupeProducts } from '@/lib/dedupe-products';
-import { isSupplierStockVerified } from '@/lib/availability';
+import { isSupplierStockVerified, MAX_STOCK_SYNC_AGE_MS } from '@/lib/availability';
 import { markGridRendered } from '@/lib/lcp-debug';
 import { getCachedProducts, setCachedProducts } from '@/hooks/useProductsCache';
 import { useCategoryProducts } from '@/hooks/useCategoryProducts';
@@ -125,11 +125,12 @@ const Products = () => {
         // long-tail products keep working URLs but never appear in listings.
         .from('products_shop')
         .select(
-          'id, name, name_clean, slug, description, category, image_url, price, compare_at_price, sku, stock, is_active, shipping_time, supplier_name, created_at, updated_at, primary_species, is_duplicate, dedupe_key, canonical_product_id, cj_product_id, seo_tier, merch_role, merch_rank, stock_sync_status, supplier_warehouse',
+          'id, name, name_clean, slug, description, category, image_url, price, compare_at_price, sku, stock, is_active, shipping_time, supplier_name, created_at, updated_at, primary_species, is_duplicate, dedupe_key, canonical_product_id, cj_product_id, seo_tier, merch_role, merch_rank, stock_sync_status, supplier_warehouse, last_stock_sync_at',
         )
         .eq('is_active', true)
         .eq('stock_sync_status', 'ok')
         .in('supplier_warehouse', ['US', 'CN', 'DE'])
+        .gte('last_stock_sync_at', new Date(Date.now() - MAX_STOCK_SYNC_AGE_MS).toISOString())
         .order('created_at', { ascending: false });
       
       if (error) throw error;
