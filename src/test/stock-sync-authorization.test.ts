@@ -6,7 +6,7 @@ describe("stock-sync service authorization", () => {
   it("rejects unauthenticated and anon calls even if body claims cron", () => {
     expect(isAuthorizedStockSyncServiceRequest(null, key)).toBe(false);
     expect(isAuthorizedStockSyncServiceRequest("Bearer public-anon-token", key)).toBe(false);
-    expect(isAuthorizedStockSyncServiceRequest("Bearer public-anon-token", key)).toBe(false);
+    expect(isAuthorizedStockSyncServiceRequest("Bearer", key)).toBe(false);
   });
   it("accepts only the exact service-role bearer credential", () => {
     expect(isAuthorizedStockSyncServiceRequest(`Bearer ${key}`, key)).toBe(true);
