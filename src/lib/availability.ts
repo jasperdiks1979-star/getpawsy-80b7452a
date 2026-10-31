@@ -29,6 +29,15 @@ export interface AvailabilityResult {
   reason: string;
 }
 
+/** Fail closed for supplier-backed catalog rows, including stale browser caches. */
+export function isSupplierStockVerified(
+  product: Pick<AvailabilityProduct, 'stock_sync_status' | 'supplier_warehouse'> | null | undefined,
+): boolean {
+  if (product?.stock_sync_status !== 'ok') return false;
+  const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
+  return ['US', 'CN', 'DE'].includes(warehouse);
+}
+
 /**
  * Compute availability for a product.
  * 
@@ -57,12 +66,8 @@ export function computeAvailability(
     Object.prototype.hasOwnProperty.call(product, 'stock_sync_status') ||
     Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse');
   if (hasSupplierMetadata) {
-    if (product.stock_sync_status !== 'ok') {
-      return { isInStock: false, reason: 'Supplier inventory not confirmed' };
-    }
-    const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
-    if (!['US', 'CN', 'DE'].includes(warehouse)) {
-      return { isInStock: false, reason: 'No checkout-compatible supplier warehouse' };
+    if (!isSupplierStockVerified(product)) {
+      return { isInStock: false, reason: 'Supplier inventory or checkout-compatible warehouse not confirmed' };
     }
   }
 
