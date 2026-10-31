@@ -28,6 +28,12 @@ async function check(label, device) {
     if (!collection || collection.status() >= 400) throw new Error(`Collection HTTP ${collection?.status()}`);
     await expect(page.locator('a[href*="/products/"]').first()).toBeVisible({ timeout: 25_000 });
     await expect(page.getByText('Loading products...', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+    // Product links alone do not prove that prices have resolved from the backend.
+    const cards = page.getByTestId('product-card');
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[aria-label="Loading price"]')).toHaveCount(0, { timeout: 30_000 });
+    await expect(cards.first()).toContainText(/\$\d{1,3}(?:,\d{3})*\.\d{2}/, { timeout: 15_000 });
+    console.log(`[${label}] real product card and dollar price rendered; no price skeletons remain`);
     console.log(`[${label}] collection HTTP ${collection.status()}, product links rendered without stuck loading`);
 
     const pdp = await page.goto(origin + '/products/' + slug, { waitUntil: 'domcontentloaded', timeout: 60_000 });
