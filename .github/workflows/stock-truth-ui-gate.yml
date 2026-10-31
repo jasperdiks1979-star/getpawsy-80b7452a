@@ -1,0 +1,34 @@
+name: Stock Truth UI Typecheck and Build
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/availability.ts'
+      - 'src/lib/catalog-eligibility.ts'
+      - 'src/components/home/ProductRail.tsx'
+      - 'src/pages/CatHub.tsx'
+      - 'src/test/availability-stock-gate.test.ts'
+      - '.github/workflows/stock-truth-ui-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stock-truth-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Typecheck application
+        run: npx tsc --noEmit -p tsconfig.app.json
+      - name: Production build and checkout idempotency guard
+        run: npm run build

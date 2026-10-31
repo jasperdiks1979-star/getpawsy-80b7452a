@@ -125,6 +125,8 @@ export function useCategoryProducts(categorySlug: string | null) {
         .select('*')
         .eq('is_active', true)
         .gt('stock', 0)
+        .eq('stock_sync_status', 'ok')
+        .in('supplier_warehouse', ['US', 'CN', 'DE'])
         .in('category', categoryNames)
         .order('created_at', { ascending: false })
         .limit(24);

@@ -366,6 +366,8 @@ function logFeedPreview(label: string, content: string): void {
 // ── Merchant Feed generation ──────────────────────────────────────────
 
 interface MerchantProduct {
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
   id: string;
   name: string;
   description: string | null;
@@ -681,13 +683,11 @@ function getProductType(cat: string | null): string {
   return t;
 }
 
-function getAvailability(stock: number | null, isActive: boolean | null): string {
-  // Merchant Center truth rule: availability must match what a shopper can
-  // actually buy. The public RLS policy hides products with stock <= 0, so any
-  // such product has NO reachable landing page and must never be advertised
-  // as "in stock".
-  if (isActive === false) return 'out of stock';
-  if (stock !== null && stock !== undefined && stock <= 0) return 'out of stock';
+function getAvailability(p: MerchantProduct): string {
+  // Feed must never advertise checkout-rejected or unverified supplier stock.
+  if (p.is_active === false || !(Number(p.stock) > 0)) return 'out of stock';
+  if (p.stock_sync_status !== 'ok') return 'out of stock';
+  if (!['US', 'CN', 'DE'].includes((p.supplier_warehouse ?? '').trim().toUpperCase())) return 'out of stock';
   return 'in stock';
 }
 
@@ -758,7 +758,7 @@ function productItemXml(p: MerchantProduct, bestsellersSet: Set<string>): XmlNod
   const desc = truncate(descSource || cleanProductName(p.name), 5000);
 
   const priceStr = (v: number) => `${v.toFixed(2)} USD`;
-  const avail = getAvailability(p.stock, p.is_active);
+  const avail = getAvailability(p);
   const shippingWeight = normalizeShippingWeight(p.weight, p.name);
   const season = getCurrentSeason();
   const margin = p.compare_at_price && p.compare_at_price > 0
@@ -838,7 +838,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProductsDb, bestsellers] = await Promise.all([
     supaRestPaged<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,variants&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,stock_sync_status,supplier_warehouse,variants&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
@@ -867,7 +867,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     if (!p.image_url || p.image_url.trim() === '') { exclusionStats.no_image++; ok = false; }
     if (!p.slug || p.slug.trim() === '') { exclusionStats.no_slug++; ok = false; }
     if (!p.description || p.description.trim() === '') { exclusionStats.no_description++; ok = false; }
-    if (p.stock !== null && p.stock !== undefined && p.stock <= 0) { exclusionStats.not_purchasable++; ok = false; }
+    if (getAvailability(p) !== 'in stock') { exclusionStats.not_purchasable++; ok = false; }
     // Feed / sitemap parity: scripts/generate-sitemaps.mjs keeps bird, reptile,
     // rodent, fish and rabbit-hutch products out of the indexable sitemap, so
     // advertising those same URLs would submit landing pages the site itself
@@ -921,7 +921,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
     link: `${BASE_URL}/products/${p.slug || p.id}`,
     image_link: sanitizeImageUrl(p.image_url || (p.images && p.images[0]) || null),
     price: `${p.price.toFixed(2)} USD`,
-    availability: getAvailability(p.stock, p.is_active),
+    availability: getAvailability(p),
     brand: resolveProductIdentifiers(p).brand ?? '',
     condition: 'new',
   }));

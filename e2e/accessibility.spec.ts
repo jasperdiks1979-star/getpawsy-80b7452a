@@ -1,5 +1,15 @@
 import { test, expect } from "../playwright-fixture";
 import AxeBuilder from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
+// Catalog API requests can remain active; wait for shopper-visible readiness,
+// not networkidle (which can time out despite fully rendered products).
+async function waitForCatalogReady(page: Page) {
+  await expect(page.locator('a[href^="/products/"]').first()).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByText("Loading products...", { exact: true })).toHaveCount(0);
+  // Product links alone are insufficient: prices must not remain as skeletons.
+  await expect(page.getByRole("status", { name: "Loading price" })).toHaveCount(0, { timeout: 25_000 });
+}
+
 
 test.describe("Accessibility Tests", () => {
   test.beforeEach(async ({ page }) => {
@@ -48,8 +58,8 @@ test.describe("Accessibility Tests", () => {
 
   test.describe("Products Page", () => {
     test("should have no critical accessibility issues", async ({ page }) => {
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
 
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa"])
@@ -63,8 +73,8 @@ test.describe("Accessibility Tests", () => {
     });
 
     test("should have accessible product cards", async ({ page }) => {
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
 
       const results = await new AxeBuilder({ page })
         .withRules(["image-alt", "link-name", "button-name"])
@@ -76,10 +86,10 @@ test.describe("Accessibility Tests", () => {
 
   test.describe("Product Detail Page", () => {
     test("should have no critical accessibility issues", async ({ page }) => {
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       await page.locator('a[href*="/products/"]').first().click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#pdp-buy-box")).toBeVisible({ timeout: 25_000 });
       // The PDP breadcrumb wrapper animates from opacity 0 to 1. Network-idle
       // does not wait for that animation, so axe can sample faded text.
       // Audit at the final rendered opacity; do not suppress contrast failures.
@@ -102,10 +112,10 @@ test.describe("Accessibility Tests", () => {
     });
 
     test("should have accessible form controls", async ({ page }) => {
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       await page.locator('a[href*="/products/"]').first().click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#pdp-buy-box")).toBeVisible({ timeout: 25_000 });
 
       const results = await new AxeBuilder({ page })
         .withRules(["label", "select-name", "button-name"])

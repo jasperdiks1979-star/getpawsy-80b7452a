@@ -20,11 +20,22 @@ export interface AvailabilityProduct {
   us_stock?: number | null;
   eu_stock?: number | null;
   cn_stock?: number | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
 }
 
 export interface AvailabilityResult {
   isInStock: boolean;
   reason: string;
+}
+
+/** Fail closed for supplier-backed catalog rows, including stale browser caches. */
+export function isSupplierStockVerified(
+  product: Pick<AvailabilityProduct, 'stock_sync_status' | 'supplier_warehouse'> | null | undefined,
+): boolean {
+  if (product?.stock_sync_status !== 'ok') return false;
+  const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
+  return ['US', 'CN', 'DE'].includes(warehouse);
 }
 
 /**
@@ -45,6 +56,19 @@ export function computeAvailability(
 
   if (product.is_active === false) {
     return { isInStock: false, reason: 'Product disabled (is_active=false)' };
+  }
+
+  // Checkout locks fulfillment to US/CN/DE and rejects unknown warehouses.
+  // When authoritative supplier metadata is present, do not advertise an
+  // unverified/no_data product as buyable merely because old stock is positive.
+  // Legacy test/local objects without these fields retain their prior behavior.
+  const hasSupplierMetadata =
+    Object.prototype.hasOwnProperty.call(product, 'stock_sync_status') ||
+    Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse');
+  if (hasSupplierMetadata) {
+    if (!isSupplierStockVerified(product)) {
+      return { isInStock: false, reason: 'Supplier inventory or checkout-compatible warehouse not confirmed' };
+    }
   }
 
   // Multi-warehouse (Item 14): any warehouse > 0 keeps the product purchasable.
