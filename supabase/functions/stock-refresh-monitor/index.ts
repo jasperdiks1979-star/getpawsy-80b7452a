@@ -18,7 +18,7 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-type SupaClient = ReturnType<typeof createClient>;
+type SupaClient = ReturnType<typeof createClient<any>>;
 
 interface AttemptResult {
   ok: boolean;
