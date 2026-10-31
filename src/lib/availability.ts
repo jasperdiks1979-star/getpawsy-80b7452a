@@ -20,6 +20,8 @@ export interface AvailabilityProduct {
   us_stock?: number | null;
   eu_stock?: number | null;
   cn_stock?: number | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
 }
 
 export interface AvailabilityResult {
@@ -45,6 +47,23 @@ export function computeAvailability(
 
   if (product.is_active === false) {
     return { isInStock: false, reason: 'Product disabled (is_active=false)' };
+  }
+
+  // Checkout locks fulfillment to US/CN/DE and rejects unknown warehouses.
+  // When authoritative supplier metadata is present, do not advertise an
+  // unverified/no_data product as buyable merely because old stock is positive.
+  // Legacy test/local objects without these fields retain their prior behavior.
+  const hasSupplierMetadata =
+    Object.prototype.hasOwnProperty.call(product, 'stock_sync_status') ||
+    Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse');
+  if (hasSupplierMetadata) {
+    if (product.stock_sync_status !== 'ok') {
+      return { isInStock: false, reason: 'Supplier inventory not confirmed' };
+    }
+    const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
+    if (!['US', 'CN', 'DE'].includes(warehouse)) {
+      return { isInStock: false, reason: 'No checkout-compatible supplier warehouse' };
+    }
   }
 
   // Multi-warehouse (Item 14): any warehouse > 0 keeps the product purchasable.
