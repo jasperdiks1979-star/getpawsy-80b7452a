@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuickAdd } from '@/hooks/useQuickAdd';
+import { MAX_STOCK_SYNC_AGE_MS } from '@/lib/availability';
 
 interface Props {
   title: string;
@@ -41,6 +42,7 @@ export function ProductRail({
         .gt('stock', 0)
         .eq('stock_sync_status', 'ok')
         .in('supplier_warehouse', ['US', 'CN', 'DE'])
+        .gte('last_stock_sync_at', new Date(Date.now() - MAX_STOCK_SYNC_AGE_MS).toISOString())
         .gte('price', 15)
         // First-Sale Strike: cap the homepage rails at an approachable price
         // band and lead with the most affordable in-stock items. The rails
