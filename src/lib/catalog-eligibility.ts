@@ -14,6 +14,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { isSupplierStockVerified, MAX_STOCK_SYNC_AGE_MS } from '@/lib/availability';
 
 export interface EligibleProduct {
   id: string;
@@ -27,10 +28,11 @@ export interface EligibleProduct {
   primary_species: string | null;
   stock_sync_status: string | null;
   supplier_warehouse: string | null;
+  last_stock_sync_at: string | null;
 }
 
 export const ELIGIBLE_SELECT =
-  'id, name, slug, price, compare_at_price, image_url, stock, category, primary_species, stock_sync_status, supplier_warehouse';
+  'id, name, slug, price, compare_at_price, image_url, stock, category, primary_species, stock_sync_status, supplier_warehouse, last_stock_sync_at';
 
 /** Canonical shopper-facing product URL. Never emit the legacy /product/:slug form. */
 export const productUrl = (slug: string) => `/products/${slug}`;
@@ -45,8 +47,7 @@ export function eligibleForPromotion(p: Partial<EligibleProduct> & { is_active?:
       typeof p.price === 'number' &&
       p.price > 0 &&
       (p.stock ?? 0) > 0 &&
-      p.stock_sync_status === 'ok' &&
-      ['US', 'CN', 'DE'].includes((p.supplier_warehouse ?? '').toUpperCase()) &&
+      isSupplierStockVerified(p) &&
       p.is_active !== false &&
       p.is_duplicate !== true,
   );
@@ -70,6 +71,7 @@ export async function fetchEligibleProducts(opts: FetchOpts = {}): Promise<Eligi
     .gt('stock', 0)
     .eq('stock_sync_status', 'ok')
     .in('supplier_warehouse', ['US', 'CN', 'DE'])
+    .gte('last_stock_sync_at', new Date(Date.now() - MAX_STOCK_SYNC_AGE_MS).toISOString())
     .not('is_duplicate', 'is', true)
     .not('slug', 'is', null)
     .not('image_url', 'is', null)
