@@ -17,7 +17,7 @@ const CatHub = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products_shop')
-        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
+        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at,stock_sync_status,supplier_warehouse,last_stock_sync_at')
         .eq('is_active', true)
         .eq('stock_sync_status', 'ok')
         .in('supplier_warehouse', ['US', 'CN', 'DE'])
