@@ -22,6 +22,7 @@ import {
 import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import { resolveProductIdentifiers } from './src/lib/product-identifiers';
 import { listingPrice } from './src/lib/listingPrice';
+import { isSupplierStockVerified } from './src/lib/availability';
 
 const BASE_URL = 'https://getpawsy.pet';
 // Feed generation must target the SAME backend as the app being built. Prefer
@@ -368,6 +369,7 @@ function logFeedPreview(label: string, content: string): void {
 interface MerchantProduct {
   stock_sync_status?: string | null;
   supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
   id: string;
   name: string;
   description: string | null;
@@ -686,8 +688,7 @@ function getProductType(cat: string | null): string {
 function getAvailability(p: MerchantProduct): string {
   // Feed must never advertise checkout-rejected or unverified supplier stock.
   if (p.is_active === false || !(Number(p.stock) > 0)) return 'out of stock';
-  if (p.stock_sync_status !== 'ok') return 'out of stock';
-  if (!['US', 'CN', 'DE'].includes((p.supplier_warehouse ?? '').trim().toUpperCase())) return 'out of stock';
+  if (!isSupplierStockVerified(p)) return 'out of stock';
   return 'in stock';
 }
 
@@ -838,7 +839,7 @@ async function buildMerchantFeed(maxItems?: number): Promise<string> {
   const [rawProductsDb, bestsellers] = await Promise.all([
     supaRestPaged<MerchantProduct>(
       'products_public',
-      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,stock_sync_status,supplier_warehouse,variants&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
+      'select=id,name,description,price,compare_at_price,image_url,images,stock,category,sku,slug,weight,is_active,stock_sync_status,supplier_warehouse,last_stock_sync_at,variants&is_active=eq.true&is_duplicate=eq.false&price=gt.0&image_url=not.is.null&slug=not.is.null&description=not.is.null'
     ),
     supaRest<{ product_id: string }>('bestsellers', 'select=product_id&is_active=eq.true'),
   ]);
