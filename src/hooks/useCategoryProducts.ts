@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { dedupeProducts } from '@/lib/dedupe-products';
+import { MAX_STOCK_SYNC_AGE_MS } from '@/lib/availability';
 import { getCachedCategoryProducts, setCachedCategoryProducts } from '@/lib/category-cache-idb';
 import { markProductsLoadEnd, markProductsLoadStart, markProductsFetchInitiated } from '@/lib/grid-timing';
 
@@ -127,6 +128,7 @@ export function useCategoryProducts(categorySlug: string | null) {
         .gt('stock', 0)
         .eq('stock_sync_status', 'ok')
         .in('supplier_warehouse', ['US', 'CN', 'DE'])
+        .gte('last_stock_sync_at', new Date(Date.now() - MAX_STOCK_SYNC_AGE_MS).toISOString())
         .in('category', categoryNames)
         .order('created_at', { ascending: false })
         .limit(24);
