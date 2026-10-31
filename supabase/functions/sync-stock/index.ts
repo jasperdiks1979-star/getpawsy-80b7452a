@@ -277,12 +277,13 @@ async function getProductInventory(accessToken: string, productId: string): Prom
 
 // deno-lint-ignore no-explicit-any
 async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
-  const { data } = await supabase
+  const { data, error: readError } = await supabase
     .from('sync_progress')
     .select('*')
     .eq('id', 'stock-sync')
     .maybeSingle();
 
+  if (readError) throw new Error(`Failed to read stock sync progress: ${readError.message}`);
   if (data) return data as SyncProgress;
 
   const newProgress: Partial<SyncProgress> = {
@@ -295,16 +296,28 @@ async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
     error_messages: [],
   };
 
-  await supabase.from('sync_progress').upsert(newProgress);
+  const { error: insertError } = await supabase.from('sync_progress').upsert(newProgress);
+  if (insertError) throw new Error(`Failed to initialize stock sync progress: ${insertError.message}`);
   return newProgress as SyncProgress;
 }
 
 // deno-lint-ignore no-explicit-any
-async function updateSyncProgress(supabase: any, updates: Partial<SyncProgress>): Promise<void> {
-  await supabase
-    .from('sync_progress')
+async function updateSyncProgress(
+  supabase: any,
+  updates: Partial<SyncProgress>,
+  expectedOffset?: number,
+): Promise<void> {
+  // The offset condition prevents overlapping/replayed batches from overwriting
+  // a newer checkpoint. Returning rows also catches zero-row updates.
+  let query = supabase.from('sync_progress')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', 'stock-sync');
+  if (expectedOffset !== undefined) query = query.eq('last_offset', expectedOffset);
+  const { data, error } = await query.select('id');
+  if (error) throw new Error(`Failed to persist stock sync progress: ${error.message}`);
+  if (!Array.isArray(data) || data.length !== 1) {
+    throw new Error(`Stock sync checkpoint not updated (expected offset ${expectedOffset ?? 'any'}); refusing to report success`);
+  }
 }
 
 // deno-lint-ignore no-explicit-any
@@ -315,6 +328,11 @@ async function syncBatch(
   isCronJob: boolean
 ): Promise<Record<string, unknown>> {
   const progress = await getOrCreateSyncProgress(supabase);
+  // Never process a stale/replayed or skipped continuation: doing so could
+  // corrupt synced_count and allow older batches to overwrite newer stock.
+  if (offset > 0 && (progress.status !== 'running' || progress.last_offset !== offset)) {
+    throw new Error(`Out-of-order stock sync batch: requested ${offset}, checkpoint ${progress.last_offset} (${progress.status})`);
+  }
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
@@ -453,7 +471,7 @@ async function syncBatch(
     last_sync_at: new Date().toISOString(),
     status: hasMore ? 'running' : 'completed',
     completed_at: hasMore ? null : new Date().toISOString(),
-  });
+  }, offset);
 
   return {
     success: batchErrors === 0,
