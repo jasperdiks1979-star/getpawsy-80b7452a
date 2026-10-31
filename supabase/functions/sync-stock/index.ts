@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAuthorizedStockSyncServiceRequest } from "../_shared/stock-sync-auth.ts";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -555,6 +555,7 @@ serve(async (req) => {
     const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
 
     // Auth check for non-cron requests
+    let isAuthenticatedAdmin = false;
     if (!isCronJob) {
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -569,6 +570,7 @@ serve(async (req) => {
       if (!roleData) {
         return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      isAuthenticatedAdmin = true;
     }
 
     const action = body.action || 'sync-batch';
@@ -611,7 +613,7 @@ serve(async (req) => {
     // An authenticated admin can explicitly resume a stalled sync without resetting
     // its saved offset. The continuation itself uses the server-side service key.
     // This never grants cron privileges to an anonymous source=cron request.
-    const shouldContinue = isCronJob || action === 'resume';
+    const shouldContinue = shouldContinueStockSync(isCronJob, isAuthenticatedAdmin, action);
     if (shouldContinue && offset === 0) {
       const existingProgress = await getOrCreateSyncProgress(supabase);
       if (existingProgress.status === 'running' && existingProgress.last_offset > 0) {
