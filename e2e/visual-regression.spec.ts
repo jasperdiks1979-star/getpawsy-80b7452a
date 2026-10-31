@@ -1,4 +1,11 @@
 import { test, expect } from "../playwright-fixture";
+import type { Page } from "@playwright/test";
+
+// Catalog requests may remain active; screenshots must wait for visible products.
+async function waitForCatalogReady(page: Page) {
+  await expect(page.locator('a[href^="/products/"]').first()).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByText("Loading products...", { exact: true })).toHaveCount(0);
+}
 
 test.describe("Visual Regression Tests", () => {
   test.beforeEach(async ({ page }) => {
@@ -52,8 +59,8 @@ test.describe("Visual Regression Tests", () => {
   test.describe("Products Page", () => {
     test("products grid desktop", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       await page.waitForTimeout(2000);
       
       await expect(page).toHaveScreenshot("products-grid-desktop.png", {
@@ -63,8 +70,8 @@ test.describe("Visual Regression Tests", () => {
 
     test("products grid mobile", async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       await page.waitForTimeout(2000);
       
       await expect(page).toHaveScreenshot("products-grid-mobile.png", {
@@ -76,12 +83,12 @@ test.describe("Visual Regression Tests", () => {
   test.describe("Product Detail Page", () => {
     test("product detail desktop", async ({ page }) => {
       await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       
       // Navigate to first product
       await page.locator('a[href*="/products/"]').first().click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#pdp-buy-box")).toBeVisible({ timeout: 25_000 });
       await page.waitForTimeout(2000);
       
       await expect(page).toHaveScreenshot("product-detail-desktop.png", {
@@ -91,11 +98,11 @@ test.describe("Visual Regression Tests", () => {
 
     test("product detail mobile", async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       
       await page.locator('a[href*="/products/"]').first().click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#pdp-buy-box")).toBeVisible({ timeout: 25_000 });
       await page.waitForTimeout(2000);
       
       await expect(page).toHaveScreenshot("product-detail-mobile.png", {
@@ -120,10 +127,10 @@ test.describe("Visual Regression Tests", () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       
       // Add a product first
-      await page.goto("/products");
-      await page.waitForLoadState("networkidle");
+      await page.goto("/products", { waitUntil: "domcontentloaded" });
+      await waitForCatalogReady(page);
       await page.locator('a[href*="/products/"]').first().click();
-      await page.waitForLoadState("networkidle");
+      await expect(page.locator("#pdp-buy-box")).toBeVisible({ timeout: 25_000 });
       
       const addToCartButton = page.locator("#pdp-buy-box").getByRole("button", { name: /add to cart|toevoegen|in winkelwagen/i }).first();
       await expect(addToCartButton).toBeVisible();
