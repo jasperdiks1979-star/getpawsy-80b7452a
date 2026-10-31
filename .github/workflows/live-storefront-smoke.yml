@@ -17,7 +17,8 @@ permissions:
 
 jobs:
   live-browser:
-    runs-on: ubuntu-latest
+    # Playwright 1.57 does not support the ubuntu-latest 26.04 image yet.
+    runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
