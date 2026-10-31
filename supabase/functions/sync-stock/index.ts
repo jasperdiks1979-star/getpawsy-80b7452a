@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAuthorizedStockSyncServiceRequest } from "../_shared/stock-sync-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -551,7 +552,7 @@ serve(async (req) => {
     try { body = await req.json(); } catch { /* empty body ok */ }
 
     const authHeader = req.headers.get('Authorization');
-    const isCronJob = body.source === 'cron' || authHeader === `Bearer ${supabaseServiceKey}`;
+    const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
 
     // Auth check for non-cron requests
     if (!isCronJob) {
@@ -629,11 +630,24 @@ serve(async (req) => {
       const nextOffset = (result as { progress?: { current: number } }).progress?.current;
       console.log(`Cron job scheduling next batch at offset ${nextOffset}`);
       const functionUrl = `${supabaseUrl}/functions/v1/sync-stock`;
-      fetch(functionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
-        body: JSON.stringify({ source: 'cron', offset: nextOffset }),
-      }).catch(err => console.error('Failed to trigger next batch:', err));
+      // One product per batch: enforce the CJ pacing across invocations.
+      // waitUntil keeps the runtime alive after the response, unlike a bare fetch.
+      const continueSync = async () => {
+        await sleep(API_DELAY_MS);
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
+          body: JSON.stringify({ source: 'cron', offset: nextOffset }),
+        });
+        if (!response.ok) {
+          throw new Error(`Stock sync continuation HTTP ${response.status}: ${(await response.text()).slice(0, 300)}`);
+        }
+        console.log(`Stock sync continuation returned HTTP ${response.status} at offset ${nextOffset}`);
+      };
+      // @ts-ignore EdgeRuntime is supplied by the Supabase Edge runtime.
+      EdgeRuntime.waitUntil(continueSync().catch((err: unknown) => {
+        console.error(`Stock sync continuation failed at offset ${nextOffset}:`, err);
+      }));
     }
 
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
