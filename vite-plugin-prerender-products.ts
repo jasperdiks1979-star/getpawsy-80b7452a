@@ -11,6 +11,7 @@ import { US_HANDLING_DAYS, US_TRANSIT_DAYS } from './src/lib/shipping-windows';
 import type { Plugin } from 'vite';
 import { buildConsolidationStub } from './vite-plugin-prerender-guides';
 import { listingPrice } from './src/lib/listingPrice';
+import { isSupplierStockVerified } from './src/lib/availability';
 import { retiredStubSlugs } from './src/lib/retired-product-slugs';
 import { products as staticProducts } from './src/data/products';
 import { resolveToCanonical, getCanonicalCategory } from './src/lib/canonical-category-registry';
@@ -32,6 +33,8 @@ interface ProductRecord {
   category: string | null;
   stock: number | null;
   is_active: boolean | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
   updated_at: string | null;
   seo_noindex?: boolean | null;
   seo_tier?: string | null;
@@ -79,7 +82,7 @@ const ROBOTS_INDEX = 'index, follow, max-image-preview:large, max-snippet:-1, ma
 const ROBOTS_NOINDEX_FOLLOW = 'noindex, follow';
 
 function isInStock(p: ProductRecord): boolean {
-  return p.is_active !== false && Number(p.stock || 0) > 0;
+  return p.is_active !== false && Number(p.stock || 0) > 0 && isSupplierStockVerified(p);
 }
 
 /** Base listing gate: in stock, indexable, priced. Merch visibility is applied per surface. */
@@ -139,7 +142,7 @@ function formatPrice(price: number): string {
 }
 
 function buildProductSchema(product: ProductRecord, canonical: string, description: string, primaryImage: string) {
-  const inStock = product.is_active !== false && Number(product.stock || 0) > 0;
+  const inStock = isInStock(product);
   const priceValidUntil = new Date();
   priceValidUntil.setFullYear(priceValidUntil.getFullYear() + 1);
   const ids = resolveProductIdentifiers(product);
@@ -251,7 +254,7 @@ async function fetchAllProducts(): Promise<ProductRecord[]> {
     let offset = 0;
     let size = pageSize;
     while (offset < 20000) {
-      const params = `select=id,slug,name,description,price,variants,image_url,images,category,stock,is_active,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
+      const params = `select=id,slug,name,description,price,variants,image_url,images,category,stock,is_active,stock_sync_status,supplier_warehouse,updated_at,seo_noindex,seo_tier,merch_hidden,sku&is_active=eq.true&is_duplicate=eq.false&slug=not.is.null&order=id.asc`;
       // Adaptive paging: statement timeouts (57014) shrink with smaller pages.
       let page: ProductRecord[] | undefined;
       while (page === undefined) {
