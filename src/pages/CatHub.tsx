@@ -18,6 +18,8 @@ const CatHub = () => {
         .from('products_shop')
         .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
         .eq('is_active', true)
+        .eq('stock_sync_status', 'ok')
+        .in('supplier_warehouse', ['US', 'CN', 'DE'])
         .in('category', CAT_SILO.categories)
         .order('price', { ascending: false })
         .limit(24);
