@@ -6,6 +6,8 @@ on:
       - 'supabase/functions/sync-stock/**'
       - 'supabase/functions/_shared/stock-sync-auth.ts'
       - 'supabase/functions/_shared/stock-sync-auth_test.ts'
+      - 'supabase/functions/_shared/stock-sync-progress.ts'
+      - 'supabase/functions/_shared/stock-sync-progress_test.ts'
       - '.github/workflows/stock-sync-contract.yml'
   workflow_dispatch:
 
@@ -23,5 +25,5 @@ jobs:
           deno-version: v2.x
       - name: Typecheck production Edge function
         run: deno check supabase/functions/sync-stock/index.ts
-      - name: Run isolated Deno authorization regression
-        run: deno test supabase/functions/_shared/stock-sync-auth_test.ts
+      - name: Run isolated Deno authorization and checkpoint regressions
+        run: deno test supabase/functions/_shared/stock-sync-auth_test.ts supabase/functions/_shared/stock-sync-progress_test.ts
