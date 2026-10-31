@@ -6,6 +6,8 @@ import type { Page } from "@playwright/test";
 async function waitForCatalogReady(page: Page) {
   await expect(page.locator('a[href^="/products/"]').first()).toBeVisible({ timeout: 25_000 });
   await expect(page.getByText("Loading products...", { exact: true })).toHaveCount(0);
+  // Product links alone are insufficient: prices must not remain as skeletons.
+  await expect(page.getByRole("status", { name: "Loading price" })).toHaveCount(0, { timeout: 25_000 });
 }
 
 
