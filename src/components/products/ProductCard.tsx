@@ -357,7 +357,7 @@ export const ProductCard = memo(
 
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-auto pt-1">
                 <span className="text-base md:text-lg font-semibold text-foreground">
-                  {priceLoading ? <span className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
+                  {priceLoading ? <span role="status" className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
                 </span>
                 {!priceLoading && cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
