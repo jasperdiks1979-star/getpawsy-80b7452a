@@ -34,10 +34,14 @@ describe("listingPrice — one advertised price for PDP, schema and feed", () =>
   it("feed generator, prerender and PDP all use listingPrice with variants", () => {
     const feed = readFileSync("vite-plugin-sitemaps.ts", "utf8");
     expect(feed).toContain("listingPrice(p.price, p.variants).price");
-    expect(feed).toMatch(/weight,is_active,variants&is_active=eq\.true&is_duplicate=eq\.false&price=gt\.0/);
+    expect(feed).toMatch(/weight,is_active,stock_sync_status,supplier_warehouse,last_stock_sync_at,variants&is_active=eq\.true&is_duplicate=eq\.false&price=gt\.0/);
+    expect(feed).toContain("getAvailability(p) !== 'in stock'");
+    expect(feed).toContain("if (!isSupplierStockVerified(p)) return 'out of stock'");
     const pre = readFileSync("vite-plugin-prerender-products.ts", "utf8");
     expect(pre).toContain("listingPrice(product.price, product.variants).price");
     expect(pre).toContain("select=id,slug,name,description,price,variants,");
+    expect(pre).toContain("isSupplierStockVerified(p)");
+    expect(pre).toContain("stock_sync_status,supplier_warehouse,last_stock_sync_at,updated_at");
     const pdp = readFileSync("src/pages/ProductDetail.tsx", "utf8");
     expect(pdp).toContain("listingPrice(Number(product.price), product.variants)");
   });

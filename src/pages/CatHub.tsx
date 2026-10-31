@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { safeProduct, SafeProduct } from '@/lib/safe-render';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { CAT_SILO } from '@/lib/silo-config';
+import { MAX_STOCK_SYNC_AGE_MS } from '@/lib/availability';
 
 const ProductCard = lazy(() => import('@/components/products/ProductCard').then(m => ({ default: m.ProductCard })));
 
@@ -16,8 +17,11 @@ const CatHub = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products_shop')
-        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at')
+        .select('id,name,slug,image_url,price,compare_at_price,category,stock,is_active,created_at,updated_at,stock_sync_status,supplier_warehouse,last_stock_sync_at')
         .eq('is_active', true)
+        .eq('stock_sync_status', 'ok')
+        .in('supplier_warehouse', ['US', 'CN', 'DE'])
+        .gte('last_stock_sync_at', new Date(Date.now() - MAX_STOCK_SYNC_AGE_MS).toISOString())
         .in('category', CAT_SILO.categories)
         .order('price', { ascending: false })
         .limit(24);

@@ -14,17 +14,39 @@
  * shipping the lie "In stock — ready to ship" on PDPs whose stock is 0.
  */
 
+export const MAX_STOCK_SYNC_AGE_MS = 48 * 60 * 60 * 1000;
+
 export interface AvailabilityProduct {
   stock?: number | null;
   is_active?: boolean | null;
   us_stock?: number | null;
   eu_stock?: number | null;
   cn_stock?: number | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
 }
 
 export interface AvailabilityResult {
   isInStock: boolean;
   reason: string;
+}
+
+/** Fail closed for supplier-backed catalog rows, including stale browser caches. */
+export function isSupplierStockVerified(
+  product: Pick<AvailabilityProduct, 'stock_sync_status' | 'supplier_warehouse' | 'last_stock_sync_at'> | null | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (product?.stock_sync_status !== 'ok') return false;
+  const warehouse = (product.supplier_warehouse ?? '').trim().toUpperCase();
+  if (!['US', 'CN', 'DE'].includes(warehouse)) return false;
+  // A prior successful sync is not proof of CURRENT supplier availability.
+  // Missing, malformed, future-dated, and >48h-old checks must fail closed.
+  if (!product.last_stock_sync_at) return false;
+  const checkedAt = Date.parse(product.last_stock_sync_at);
+  return Number.isFinite(checkedAt) &&
+    checkedAt <= nowMs + 5 * 60 * 1000 &&
+    nowMs - checkedAt <= MAX_STOCK_SYNC_AGE_MS;
 }
 
 /**
@@ -45,6 +67,20 @@ export function computeAvailability(
 
   if (product.is_active === false) {
     return { isInStock: false, reason: 'Product disabled (is_active=false)' };
+  }
+
+  // Checkout locks fulfillment to US/CN/DE and rejects unknown warehouses.
+  // When authoritative supplier metadata is present, do not advertise an
+  // unverified/no_data product as buyable merely because old stock is positive.
+  // Legacy test/local objects without these fields retain their prior behavior.
+  const hasSupplierMetadata =
+    Object.prototype.hasOwnProperty.call(product, 'stock_sync_status') ||
+    Object.prototype.hasOwnProperty.call(product, 'supplier_warehouse') ||
+    Object.prototype.hasOwnProperty.call(product, 'last_stock_sync_at');
+  if (hasSupplierMetadata) {
+    if (!isSupplierStockVerified(product)) {
+      return { isInStock: false, reason: 'Supplier inventory or checkout-compatible warehouse not confirmed' };
+    }
   }
 
   // Multi-warehouse (Item 14): any warehouse > 0 keeps the product purchasable.

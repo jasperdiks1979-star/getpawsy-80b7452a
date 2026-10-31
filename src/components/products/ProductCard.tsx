@@ -41,6 +41,9 @@ export interface Product {
   sku?: string | null;
   variants?: unknown;
   stock?: number | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
   is_active?: boolean | null;
   weight?: number | null;
   shipping_time?: string | null;
@@ -357,7 +360,7 @@ export const ProductCard = memo(
 
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-auto pt-1">
                 <span className="text-base md:text-lg font-semibold text-foreground">
-                  {priceLoading ? <span className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
+                  {priceLoading ? <span role="status" className="inline-block h-5 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Loading price" /> : cardCanonical.displayPrice}
                 </span>
                 {!priceLoading && cardCanonical.displayCompareAt && (
                   <span className="text-sm text-muted-foreground line-through">
