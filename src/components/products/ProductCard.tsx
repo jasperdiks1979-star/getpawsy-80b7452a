@@ -41,6 +41,9 @@ export interface Product {
   sku?: string | null;
   variants?: unknown;
   stock?: number | null;
+  stock_sync_status?: string | null;
+  supplier_warehouse?: string | null;
+  last_stock_sync_at?: string | null;
   is_active?: boolean | null;
   weight?: number | null;
   shipping_time?: string | null;
