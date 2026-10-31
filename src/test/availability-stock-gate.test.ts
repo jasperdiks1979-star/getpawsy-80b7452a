@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAvailability } from "../lib/availability";
+import { computeAvailability, isSupplierStockVerified } from "../lib/availability";
 
 describe("supplier-verified storefront availability", () => {
   it("rejects preserved positive stock when CJ returned no_data", () => {
@@ -17,5 +17,13 @@ describe("supplier-verified storefront availability", () => {
   });
   it("preserves legacy behavior for local objects with no supplier metadata", () => {
     expect(computeAvailability({ is_active: true, stock: 10 }).isInStock).toBe(true);
+  });
+  it("never exposes unverified or legacy cached catalog rows as buyable", () => {
+    expect(isSupplierStockVerified({ stock_sync_status: "no_data", supplier_warehouse: "unknown" })).toBe(false);
+    expect(isSupplierStockVerified({ stock_sync_status: null, supplier_warehouse: null })).toBe(false);
+    expect(isSupplierStockVerified({})).toBe(false);
+    expect(isSupplierStockVerified({ stock_sync_status: "ok", supplier_warehouse: " US " })).toBe(true);
+    expect(isSupplierStockVerified({ stock_sync_status: "ok", supplier_warehouse: "CN" })).toBe(true);
+    expect(isSupplierStockVerified({ stock_sync_status: "ok", supplier_warehouse: "unknown" })).toBe(false);
   });
 });
