@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
+import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -330,9 +331,7 @@ async function syncBatch(
   const progress = await getOrCreateSyncProgress(supabase);
   // Never process a stale/replayed or skipped continuation: doing so could
   // corrupt synced_count and allow older batches to overwrite newer stock.
-  if (offset > 0 && (progress.status !== 'running' || progress.last_offset !== offset)) {
-    throw new Error(`Out-of-order stock sync batch: requested ${offset}, checkpoint ${progress.last_offset} (${progress.status})`);
-  }
+  assertStockSyncBatchOffset(offset, progress);
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
