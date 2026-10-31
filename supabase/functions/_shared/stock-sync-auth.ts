@@ -8,3 +8,14 @@ export function isAuthorizedStockSyncServiceRequest(
 ): boolean {
   return Boolean(serviceRoleKey) && authorizationHeader === `Bearer ${serviceRoleKey}`;
 }
+
+/** The caller cannot choose its own privilege level via a JSON action.
+ * An explicit resume is permitted only after verified admin authentication.
+ */
+export function shouldContinueStockSync(
+  isServiceRequest: boolean,
+  isAuthenticatedAdmin: boolean,
+  action: string,
+): boolean {
+  return isServiceRequest || (isAuthenticatedAdmin && action === "resume");
+}
