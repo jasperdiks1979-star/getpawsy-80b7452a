@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { assessStockSyncHealth, type StockSyncHealth } from "../_shared/stock-sync-health.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +30,9 @@ interface AttemptResult {
   runId: string | null;
   totalInitial: number;
   noActiveRun?: boolean;
+  syncHealth?: StockSyncHealth;
+  syncOffset?: number | null;
+  syncTotal?: number | null;
 }
 
 async function logAttempt(
@@ -76,8 +80,21 @@ async function runMonitorOnce(supabase: SupaClient): Promise<AttemptResult> {
 
   if (runErr) throw runErr;
   if (!run) {
+    // This legacy refresh monitor uses stock_refresh_runs, but the CJ sync
+    // reports progress in sync_progress. A missing refresh run is NOT proof
+    // that the supplier sync is healthy.
+    const { data: cjProgress, error: cjError } = await supabase
+      .from("sync_progress")
+      .select("id,status,started_at,last_sync_at,last_offset,total_products")
+      .eq("id", "stock-sync")
+      .maybeSingle();
+    if (cjError) throw cjError;
+    const syncHealth = assessStockSyncHealth(cjProgress);
     return {
-      ok: true,
+      ok: !syncHealth.stalled,
+      syncHealth,
+      syncOffset: cjProgress?.last_offset ?? null,
+      syncTotal: cjProgress?.total_products ?? null,
       remaining: 0,
       syncedOk: 0,
       syncedError: 0,
@@ -220,21 +237,40 @@ serve(async (req) => {
       lastRunId = result.runId;
 
       if (result.noActiveRun) {
+        const stalled = result.syncHealth?.stalled === true;
         await logAttempt(supabase, {
           runId: null,
           trace,
           attemptNumber: attempt,
-          status: "success",
+          status: stalled ? "error" : "success",
+          errorMessage: stalled
+            ? `CJ sync stalled: offset ${result.syncOffset ?? "unknown"}/${result.syncTotal ?? "unknown"}; last progress ${result.syncHealth?.ageMinutes ?? "unknown"} minutes ago`
+            : undefined,
           durationMs,
         });
         return new Response(
           JSON.stringify({
-            ok: true,
+            ok: !stalled,
             traceId: trace,
             attempts: attempt,
-            message: "No active refresh run",
+            message: stalled
+              ? "CJ stock sync stalled"
+              : result.syncHealth?.running
+                ? "No active refresh run; CJ sync is progressing"
+                : "No active refresh run",
+            stock_sync: result.syncHealth?.running
+              ? {
+                  status: stalled ? "stalled" : "running",
+                  last_progress_age_minutes: result.syncHealth.ageMinutes,
+                  last_offset: result.syncOffset,
+                  total_products: result.syncTotal,
+                }
+              : undefined,
           }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          {
+            status: stalled ? 503 : 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
 
