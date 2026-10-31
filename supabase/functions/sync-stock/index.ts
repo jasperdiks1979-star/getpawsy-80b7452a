@@ -608,8 +608,11 @@ serve(async (req) => {
       return new Response(JSON.stringify(result, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // For cron jobs, resume or start fresh
-    if (isCronJob && offset === 0) {
+    // An authenticated admin can explicitly resume a stalled sync without resetting
+    // its saved offset. The continuation itself uses the server-side service key.
+    // This never grants cron privileges to an anonymous source=cron request.
+    const shouldContinue = isCronJob || action === 'resume';
+    if (shouldContinue && offset === 0) {
       const existingProgress = await getOrCreateSyncProgress(supabase);
       if (existingProgress.status === 'running' && existingProgress.last_offset > 0) {
         offset = existingProgress.last_offset;
@@ -625,8 +628,8 @@ serve(async (req) => {
     const accessToken = await getAccessToken(supabase);
     const result = await syncBatch(supabase, accessToken, offset, isCronJob);
 
-    // For cron jobs with more to process, trigger next batch
-    if (isCronJob && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
+    // Continue only for service cron or explicitly authenticated admin resume.
+    if (shouldContinue && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
       const nextOffset = (result as { progress?: { current: number } }).progress?.current;
       console.log(`Cron job scheduling next batch at offset ${nextOffset}`);
       const functionUrl = `${supabaseUrl}/functions/v1/sync-stock`;
