@@ -24,6 +24,12 @@ async function check(label, device) {
     await expect(page.getByText(/We couldn't reach the server/i)).toHaveCount(0);
     console.log(`[${label}] homepage HTTP ${home.status()}`);
 
+    const collection = await page.goto(origin + '/collections/cat', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    if (!collection || collection.status() >= 400) throw new Error(`Collection HTTP ${collection?.status()}`);
+    await expect(page.locator('a[href*="/products/"]').first()).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByText('Loading products...', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+    console.log(`[${label}] collection HTTP ${collection.status()}, product links rendered without stuck loading`);
+
     const pdp = await page.goto(origin + '/products/' + slug, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     if (!pdp || pdp.status() >= 400) throw new Error(`PDP HTTP ${pdp?.status()}`);
     await expect(page.getByRole('heading', { name: productName }).first()).toBeVisible({ timeout: 30_000 });
@@ -37,6 +43,13 @@ async function check(label, device) {
     await page.goto(origin + '/checkout', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await expect(page.getByLabel('Email Address', { exact: true })).toBeVisible({ timeout: 20_000 });
     console.log(`[${label}] checkout form visible; NO payment or checkout request submitted`);
+
+    await page.goto(origin + '/cart', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.getByRole('button', { name: /Increase quantity of/i }).first().click();
+    await page.getByRole('button', { name: /Decrease quantity of/i }).first().click();
+    await page.getByRole('button', { name: /Remove .* from cart/i }).first().click();
+    await expect(page.getByRole('heading', { name: /Your cart is empty|Nothing here yet/i })).toBeVisible({ timeout: 15_000 });
+    console.log(`[${label}] cart quantity increase/decrease and removal verified`);
 
     await page.goto(origin + '/admin', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await expect(page.locator('#root')).toBeVisible({ timeout: 20_000 });
