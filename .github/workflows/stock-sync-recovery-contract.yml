@@ -1,0 +1,27 @@
+name: Stock Sync Recovery Contract
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/stock-sync-watchdog/**'
+      - 'supabase/functions/_shared/stock-sync-watchdog-policy*'
+      - 'supabase/migrations/*stock_sync_recovery_lease.sql'
+      - '.github/workflows/stock-sync-recovery-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-deno:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck watchdog Edge Function
+        run: deno check supabase/functions/stock-sync-watchdog/index.ts
+      - name: Test fail-closed service authorization and opt-in
+        run: deno test supabase/functions/_shared/stock-sync-watchdog-policy_test.ts
