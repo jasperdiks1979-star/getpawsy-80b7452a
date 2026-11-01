@@ -60,6 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           psql -X -v ON_ERROR_STOP=1 -c "UPDATE public.sync_progress SET status='running', last_offset=400, last_sync_at=clock_timestamp()-interval '2 hours' WHERE id='stock-sync';"
+          # A previous checkpoint lease may still be active; simulate its expiry before racing new claims.
+          psql -X -v ON_ERROR_STOP=1 -c "UPDATE public.stock_sync_recovery_leases SET lease_until=clock_timestamp()-interval '1 minute', next_attempt_at=clock_timestamp()-interval '1 minute' WHERE id='stock-sync';"
           (psql -X -q -tA -v ON_ERROR_STOP=1 -c "SET request.jwt.claim.role='service_role'; SELECT public.claim_stalled_stock_sync_recovery(400);" > /tmp/claim1) &
           first=$!
           (psql -X -q -tA -v ON_ERROR_STOP=1 -c "SET request.jwt.claim.role='service_role'; SELECT public.claim_stalled_stock_sync_recovery(400);" > /tmp/claim2) &
