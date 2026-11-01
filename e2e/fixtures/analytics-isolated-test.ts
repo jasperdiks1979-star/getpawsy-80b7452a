@@ -15,6 +15,7 @@ export const test = base.extend<{ _analyticsIsolation: void }>({
       await context.addInitScript(() => {
         try {
           window.localStorage.setItem('gp_founder', '1');
+          window.localStorage.setItem('gp_internal', '1');
         } catch {
           // Storage can be unavailable on about:blank; it is retried on navigation.
         }
