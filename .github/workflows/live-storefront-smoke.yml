@@ -1,0 +1,32 @@
+name: Live Storefront Browser Smoke (No Payments)
+on:
+  push:
+    branches: [test/live-storefront-browser-smoke-20261031]
+    paths:
+      - 'scripts/live-storefront-smoke.mjs'
+      - '.github/workflows/live-storefront-smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/live-storefront-smoke.mjs'
+      - '.github/workflows/live-storefront-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-browser:
+    # Playwright 1.57 does not support the ubuntu-latest 26.04 image yet.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Live desktop and mobile product/cart/checkout form/admin-route smoke
+        run: node scripts/live-storefront-smoke.mjs
