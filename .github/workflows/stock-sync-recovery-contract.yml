@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/functions/stock-sync-watchdog/**'
       - 'supabase/functions/_shared/stock-sync-watchdog-policy*'
+      - 'supabase/functions/_shared/stock-sync-recovery-proof*'
       - 'supabase/migrations/*stock_sync_recovery_lease.sql'
       - '.github/workflows/stock-sync-recovery-contract.yml'
   workflow_dispatch:
@@ -23,5 +24,5 @@ jobs:
           deno-version: v2.x
       - name: Typecheck watchdog Edge Function
         run: deno check supabase/functions/stock-sync-watchdog/index.ts
-      - name: Test fail-closed service authorization and opt-in
-        run: deno test supabase/functions/_shared/stock-sync-watchdog-policy_test.ts
+      - name: Test service authorization and durable checkpoint proof
+        run: deno test supabase/functions/_shared/stock-sync-watchdog-policy_test.ts supabase/functions/_shared/stock-sync-recovery-proof_test.ts
