@@ -1,0 +1,29 @@
+name: Stock Sync Edge Contract
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/sync-stock/**'
+      - 'supabase/functions/_shared/stock-sync-auth.ts'
+      - 'supabase/functions/_shared/stock-sync-auth_test.ts'
+      - 'supabase/functions/_shared/stock-sync-progress.ts'
+      - 'supabase/functions/_shared/stock-sync-progress_test.ts'
+      - '.github/workflows/stock-sync-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stock-sync-deno:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck production Edge function
+        run: deno check supabase/functions/sync-stock/index.ts
+      - name: Run isolated Deno authorization and checkpoint regressions
+        run: deno test supabase/functions/_shared/stock-sync-auth_test.ts supabase/functions/_shared/stock-sync-progress_test.ts
