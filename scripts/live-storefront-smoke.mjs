@@ -9,7 +9,15 @@ let failures = 0;
 
 async function check(label, device) {
   const context = await browser.newContext({ ...device, serviceWorkers: 'block' });
-  // Install internal-traffic flags before the first live navigation. These are\n  // analytics markers only; they grant no admin or checkout privileges.\n  await context.addInitScript(() => {\n    try {\n      window.localStorage.setItem('gp_founder', '1');\n      window.localStorage.setItem('gp_internal', '1');\n    } catch { /* storage may be unavailable on blank documents */ }\n  });\n  const page = await context.newPage();
+  // Install internal-traffic flags before the first live navigation. These are
+  // analytics markers only; they grant no admin or checkout privileges.
+  await context.addInitScript(() => {
+    try {
+      window.localStorage.setItem('gp_founder', '1');
+      window.localStorage.setItem('gp_internal', '1');
+    } catch { /* storage may be unavailable on blank documents */ }
+  });
+  const page = await context.newPage();
   const errors = [];
   page.on('pageerror', err => errors.push(err.message.slice(0, 250)));
   page.on('response', response => {
@@ -20,7 +28,9 @@ async function check(label, device) {
   try {
     const home = await page.goto(origin + '/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     if (!home || home.status() >= 400) throw new Error(`Homepage HTTP ${home?.status()}`);
-    await expect(page.locator('#root')).toBeVisible({ timeout: 25_000 });\n    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('gp_founder'))).toBe('1');\n    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('gp_internal'))).toBe('1');
+    await expect(page.locator('#root')).toBeVisible({ timeout: 25_000 });
+    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('gp_founder'))).toBe('1');
+    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('gp_internal'))).toBe('1');
     await expect(page.getByText(/We couldn't reach the server/i)).toHaveCount(0);
     console.log(`[${label}] homepage HTTP ${home.status()}`);
 
