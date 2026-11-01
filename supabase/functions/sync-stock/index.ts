@@ -596,7 +596,6 @@ serve(async (req) => {
     if (action === 'status') {
       const progress = await getOrCreateSyncProgress(supabase);
       // Also get stock distribution
-      const { data: stats } = await supabase.rpc('', {}).maybeSingle(); // won't work, use raw query via select
       // Get stock stats from products
       const { data: products } = await supabase.from('products').select('stock, stock_sync_status').not('cj_product_id', 'is', null);
       const stockStats = {
