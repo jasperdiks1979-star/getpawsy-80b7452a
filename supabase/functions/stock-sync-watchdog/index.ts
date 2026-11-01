@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canRunStockSyncWatchdog } from "../_shared/stock-sync-watchdog-policy.ts";
+import { assertPersistedStockSyncProgress } from "../_shared/stock-sync-recovery-proof.ts";
 
 /**
  * Independent, opt-in watchdog. Scheduling is deliberately NOT installed here:
@@ -64,11 +65,17 @@ serve(async (req) => {
     if (result?.success === false || result?.error) {
       throw new Error(`Recovery rejected: ${String(result.error ?? "batch error").slice(0, 200)}`);
     }
+    // sync-stock awaits the batch checkpoint write before replying.
+    // Verify the durable DB state instead of trusting HTTP 200 or response JSON.
+    const { data: persisted, error: verifyError } = await supabase.from("sync_progress")
+      .select("last_offset,status").eq("id", "stock-sync").maybeSingle();
+    if (verifyError) throw verifyError;
+    const confirmedOffset = assertPersistedStockSyncProgress(progress.last_offset, persisted);
     return Response.json({
       claimed: true,
       checkpoint_before: progress.last_offset,
-      checkpoint_reported: result?.progress?.current ?? null,
-      note: "Check sync_progress for persisted progress; a 200 alone is not proof",
+      checkpoint_persisted: confirmedOffset,
+      status: persisted!.status,
     });
   } catch (error) {
     console.error("Stock sync recovery failed:", error instanceof Error ? error.message : "unknown");
