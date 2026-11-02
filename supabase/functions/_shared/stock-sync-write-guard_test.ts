@@ -32,3 +32,10 @@ Deno.test("unexpected multiple product rows must not consume checkpoint", () => 
     Error, "affected 2 rows; checkpoint preserved",
   );
 });
+
+Deno.test("database error takes precedence even if a row was returned", () => {
+  assertThrows(
+    () => assertStockProductUpdateSucceeded({ message: "transaction aborted" }, [{ id: "product-1" }]),
+    Error, "transaction aborted",
+  );
+});
