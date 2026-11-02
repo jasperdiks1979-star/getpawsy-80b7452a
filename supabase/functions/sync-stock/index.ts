@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { CJRateLimitError, isCJRateLimited, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJUnverifiedInventoryError, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
@@ -160,6 +160,10 @@ async function getProductInventory(accessToken: string, productId: string): Prom
 
       // HTTP 429 is backpressure, not a processed product.
       if (isCJRateLimited(response.status)) throw new CJRateLimitError();
+      // An auth failure or CJ 5xx is not a valid stock observation.
+      if (isCJUnverifiedInventoryStatus(response.status)) {
+        throw new CJUnverifiedInventoryError(response.status);
+      }
       const responseText = await response.text();
       let parsed;
       try {
@@ -169,6 +173,9 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       }
 
       if (isCJRateLimited(response.status, parsed?.code)) throw new CJRateLimitError();
+      if (isCJUnverifiedInventoryStatus(Number(parsed?.code))) {
+        throw new CJUnverifiedInventoryError(Number(parsed.code));
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${parsed.message || 'Unknown'}`);
@@ -269,7 +276,9 @@ async function getProductInventory(accessToken: string, productId: string): Prom
     };
   } catch (err) {
     // Do not consume a checkpoint when the supplier asks us to slow down.
-    if (mustHaltStockBatch(err)) throw err;
+    // Network failures exhausted their immediate retries; do not count them
+    // as processed supplier stock. The independent lease handles later retries.
+    if (mustHaltStockBatch(err) || (err instanceof Error && isRetryableError(err))) throw err;
     return {
       stock: null,
       confirmed: false,
