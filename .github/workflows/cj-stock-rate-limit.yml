@@ -1,0 +1,27 @@
+name: CJ Stock Rate Limit Checkpoint Safety
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/sync-stock/index.ts'
+      - 'supabase/functions/_shared/stock-sync-rate-limit.ts'
+      - 'supabase/functions/_shared/stock-sync-rate-limit_test.ts'
+      - '.github/workflows/cj-stock-rate-limit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cj-rate-limit-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck stock synchronization
+        run: deno check supabase/functions/sync-stock/index.ts
+      - name: Verify CJ 429 checkpoint preservation policy
+        run: deno test supabase/functions/_shared/stock-sync-rate-limit_test.ts
