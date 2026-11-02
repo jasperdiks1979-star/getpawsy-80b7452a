@@ -22,3 +22,17 @@ export function confirmedStockFreshnessFields(
     supplier_warehouse: result.warehouse,
   };
 }
+
+/** A processed checkpoint must represent a verified CJ inventory observation.
+ * A no_data or API-error result cannot be counted as a synced product merely
+ * because its diagnostic status was successfully written to Postgres.
+ * Throw before the product update so the current checkpoint remains retryable.
+ */
+export function assertVerifiedStockObservation(result: SupplierStockCheck): void {
+  if (!result.confirmed || !Number.isSafeInteger(result.stock) ||
+      result.stock === null || result.stock < 0 ||
+      (result.status !== "ok" && result.status !== "discontinued") ||
+      (result.status === "discontinued" && result.stock !== 0)) {
+    throw new Error("Unverified CJ stock observation; checkpoint must not advance");
+  }
+}
