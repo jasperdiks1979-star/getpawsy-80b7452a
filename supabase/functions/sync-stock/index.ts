@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
@@ -239,10 +239,10 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       for (const inv of inventoryList) {
         if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
         if (inv.countryCode === 'US') {
-          usStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          usStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
           hasUs = true;
         } else if (inv.countryCode === 'CN') {
-          cnStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          cnStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
         }
       }
 
@@ -254,7 +254,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         warehouse = 'CN';
       } else {
         for (const inv of inventoryList) {
-          totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
         }
         warehouse = inventoryList[0]?.countryCode || 'unknown';
       }
@@ -555,10 +555,10 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
       let totalStock = 0;
       let warehouse = 'unknown';
       for (const inv of inventoryList) {
-        if (inv.countryCode === 'US') { totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0; warehouse = 'US'; }
+        if (inv.countryCode === 'US') { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); warehouse = 'US'; }
       }
       if (warehouse === 'unknown') {
-        for (const inv of inventoryList) { totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0; }
+        for (const inv of inventoryList) { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); }
         warehouse = inventoryList[0]?.countryCode || 'unknown';
       }
       interpreted = { stock: totalStock, confirmed: true, warehouse, status: 'ok', message: `Stock: ${totalStock} (${warehouse})` };
