@@ -412,8 +412,36 @@ async function syncBatch(
     const product = batch[i];
 
     const result = await getProductInventory(accessToken, product.cj_product_id);
-    // Do not mark a supplier error or empty inventory response as processed.
-    // The watchdog retries the unchanged offset with a bounded lease budget.
+    // A supplier-confirmed empty inventory response is NOT a verified stock
+    // observation. Atomically record it in a durable deferred queue and move
+    // only the scan cursor. synced_count stays unchanged. Do not touch product
+    // stock or freshness; never mark a scan with unresolved items completed.
+    // A separate, bounded deferred-retry worker is REQUIRED before deployment.
+    if (result.status === 'no_data' && !result.confirmed && result.stock === null) {
+      const { data: deferredOffset, error: deferError } = await supabase.rpc(
+        'defer_unverified_stock_sync_product',
+        {
+          p_expected_offset: offset,
+          p_product_id: product.id,
+          p_reason: 'no_data',
+          p_message: result.message,
+        },
+      );
+      if (deferError || deferredOffset !== offset + 1) {
+        throw new Error(`Failed to atomically defer CJ no_data at offset ${offset}: ${deferError?.message ?? 'checkpoint mismatch'}`);
+      }
+      const hasMore = deferredOffset < totalProducts;
+      return {
+        success: false, verified: false, deferred: 1, synced: 0, errors: 1,
+        message: 'CJ inventory unverified; scan cursor advanced with durable deferral',
+        progress: {
+          current: deferredOffset, total: totalProducts,
+          status: hasMore ? 'running' : 'needs_review', hasMore,
+        },
+      };
+    }
+    // Transport, auth and unverified supplier errors fail closed without
+    // advancing the scan cursor or mutating storefront stock.
     assertVerifiedStockObservation(result);
 
     // Build update based on result
