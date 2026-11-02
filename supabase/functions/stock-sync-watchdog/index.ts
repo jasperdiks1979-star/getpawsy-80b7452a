@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canRunStockSyncWatchdog } from "../_shared/stock-sync-watchdog-policy.ts";
 import { assertVerifiedRecoveredProduct } from "../_shared/stock-sync-recovery-proof.ts";
+import { assertPersistedDeferredStockSyncProgress } from "../_shared/stock-sync-deferred-recovery-proof.ts";
 
 /**
  * Independent, opt-in watchdog. Scheduling is deliberately NOT installed here:
@@ -28,7 +29,7 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceKey);
   try {
     const { data: progress, error: readError } = await supabase.from("sync_progress")
-      .select("status,last_offset,total_products,last_sync_at")
+      .select("status,last_offset,total_products,last_sync_at,error_count")
       .eq("id", "stock-sync").maybeSingle();
     if (readError) throw readError;
     if (!progress || progress.status !== "running" ||
@@ -51,7 +52,7 @@ serve(async (req) => {
     // Resolve the exact product before the attempt. A bare offset increase
     // cannot prove verified stock: older code counted CJ no_data as processed.
     const { data: target, error: targetError } = await supabase.from("products")
-      .select("id").not("cj_product_id", "is", null)
+      .select("id,stock,stock_sync_status,stock_source,last_stock_sync_at").not("cj_product_id", "is", null)
       .order("id", { ascending: true })
       .range(progress.last_offset, progress.last_offset).maybeSingle();
     if (targetError) throw targetError;
@@ -72,18 +73,40 @@ serve(async (req) => {
       throw new Error(`Recovery trigger HTTP ${response.status}: ${responseText.slice(0, 200)}`);
     }
     const result = JSON.parse(responseText);
-    if (result?.success === false || result?.error) {
+    const isDeferred = result?.success === false && result?.verified === false &&
+      result?.deferred === 1 && result?.progress?.current === progress.last_offset + 1;
+    if (!isDeferred && (result?.success === false || result?.error)) {
       throw new Error(`Recovery rejected: ${String(result.error ?? "batch error").slice(0, 200)}`);
     }
     // sync-stock awaits the batch checkpoint write before replying.
     // Verify the durable DB state instead of trusting HTTP 200 or response JSON.
     const { data: persisted, error: verifyError } = await supabase.from("sync_progress")
-      .select("last_offset,status").eq("id", "stock-sync").maybeSingle();
+      .select("last_offset,status,total_products,error_count").eq("id", "stock-sync").maybeSingle();
     if (verifyError) throw verifyError;
     const { data: verifiedProduct, error: productError } = await supabase.from("products")
       .select("id,stock,stock_sync_status,stock_source,last_stock_sync_at")
       .eq("id", target.id).maybeSingle();
     if (productError) throw productError;
+    if (isDeferred) {
+      // A deferred scan step is NOT supplier-verified inventory. Accept only
+      // a fresh exact queue record, one cursor step, incremented error count,
+      // and an unchanged product. Never claim a verified stock update.
+      const { data: deferredRow, error: queueError } = await supabase
+        .from("stock_sync_deferred")
+        .select("product_id,last_offset,reason,state,last_attempt_at")
+        .eq("product_id", target.id).maybeSingle();
+      if (queueError) throw queueError;
+      const deferredOffset = assertPersistedDeferredStockSyncProgress(
+        progress.last_offset, progress.error_count, target,
+        persisted, deferredRow, verifiedProduct, recoveryStartedAt,
+      );
+      return Response.json({
+        claimed: true, verified: false, deferred: true,
+        checkpoint_before: progress.last_offset,
+        checkpoint_persisted: deferredOffset,
+        status: persisted!.status,
+      });
+    }
     const confirmedOffset = assertVerifiedRecoveredProduct(
       progress.last_offset, persisted, target.id, verifiedProduct, recoveryStartedAt,
     );
