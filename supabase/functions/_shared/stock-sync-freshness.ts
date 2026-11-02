@@ -29,8 +29,8 @@ export function confirmedStockFreshnessFields(
  * Throw before the product update so the current checkpoint remains retryable.
  */
 export function assertVerifiedStockObservation(result: SupplierStockCheck): void {
-  if (!result.confirmed || !Number.isSafeInteger(result.stock) ||
-      result.stock === null || result.stock < 0 ||
+  if (!result.confirmed || result.stock === null ||
+      !Number.isSafeInteger(result.stock) || result.stock < 0 ||
       (result.status !== "ok" && result.status !== "discontinued") ||
       (result.status === "discontinued" && result.stock !== 0)) {
     throw new Error("Unverified CJ stock observation; checkpoint must not advance");
