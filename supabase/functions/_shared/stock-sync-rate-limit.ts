@@ -47,8 +47,29 @@ export async function fetchCJInventoryResponse(request: () => Promise<Response>)
   }
 }
 
+/** An absent, malformed or negative CJ quantity is not a verified zero.
+ * A literal zero must NOT fall back to cjInventoryNum via JavaScript ||.
+ */
+export class CJUnverifiedInventoryQuantityError extends Error {
+  constructor() {
+    super("CJ inventory quantity missing or invalid; batch checkpoint unchanged");
+    this.name = "CJUnverifiedInventoryQuantityError";
+  }
+}
+
+export function readCJStockQuantity(totalInventoryNum: unknown, cjInventoryNum: unknown): number {
+  const raw = totalInventoryNum ?? cjInventoryNum;
+  const quantity = typeof raw === "number" ? raw
+    : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : Number.NaN;
+  if (!Number.isSafeInteger(quantity) || quantity < 0) {
+    throw new CJUnverifiedInventoryQuantityError();
+  }
+  return quantity;
+}
+
 export function mustHaltStockBatch(error: unknown): boolean {
   return error instanceof CJRateLimitError ||
     error instanceof CJUnverifiedInventoryError ||
+    error instanceof CJUnverifiedInventoryQuantityError ||
     error instanceof CJTransportError;
 }
