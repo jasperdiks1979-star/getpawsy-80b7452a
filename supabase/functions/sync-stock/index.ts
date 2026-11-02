@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { CJRateLimitError, isCJRateLimited, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
@@ -12,7 +13,6 @@ const corsHeaders = {
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 const BATCH_SIZE = 1;
 const API_DELAY_MS = 15000;
-const RATE_LIMIT_DELAY_MS = 60000;
 
 interface SyncProgress {
   id: string;
@@ -82,6 +82,8 @@ async function withRetry<T>(
 }
 
 function isRetryableError(error: Error): boolean {
+  // CJ 429 must preserve the checkpoint for a later, lease-limited retry.
+  if (mustHaltStockBatch(error)) return false;
   const message = error.message.toLowerCase();
   return (
     message.includes('network') ||
@@ -155,6 +157,8 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         }
       );
 
+      // HTTP 429 is backpressure, not a processed product.
+      if (isCJRateLimited(response.status)) throw new CJRateLimitError();
       const responseText = await response.text();
       let parsed;
       try {
@@ -163,11 +167,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         throw new Error(`Invalid JSON: ${responseText.substring(0, 100)}`);
       }
 
-      if (response.status === 429) {
-        console.log(`Rate limited on ${productId}, waiting ${RATE_LIMIT_DELAY_MS / 1000}s...`);
-        await sleep(RATE_LIMIT_DELAY_MS);
-        throw new Error('Rate limited (429)');
-      }
+      if (isCJRateLimited(response.status, parsed?.code)) throw new CJRateLimitError();
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${parsed.message || 'Unknown'}`);
@@ -267,6 +267,8 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       vid: firstVid,
     };
   } catch (err) {
+    // Do not consume a checkpoint when the supplier asks us to slow down.
+    if (mustHaltStockBatch(err)) throw err;
     return {
       stock: null,
       confirmed: false,
