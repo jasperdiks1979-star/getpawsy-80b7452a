@@ -1,4 +1,4 @@
-import { CJRateLimitError, CJUnverifiedInventoryError, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "./stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "./stock-sync-rate-limit.ts";
 
 Deno.test("CJ throttling is recognized in HTTP status or CJ payload", () => {
   for (const [status, code] of [[429, undefined], [200, 429], [200, "429"]] as const) {
@@ -32,4 +32,28 @@ Deno.test("CJ auth and upstream outages preserve the checkpoint for bounded reco
   for (const status of [200, 201, 400, 404, 409, 429]) {
     if (isCJUnverifiedInventoryStatus(status)) throw new Error(`False unverified status ${status}`);
   }
+});
+
+Deno.test("rejected CJ fetch is checkpoint-preserving regardless of runtime error text", async () => {
+  for (const reason of [
+    new TypeError("error sending request for url"),
+    new TypeError("connection reset by peer"),
+    new Error("TLS handshake failed"),
+  ]) {
+    let caught: unknown;
+    try {
+      await fetchCJInventoryResponse(async () => { throw reason; });
+    } catch (error) {
+      caught = error;
+    }
+    if (!(caught instanceof CJTransportError) || !mustHaltStockBatch(caught)) {
+      throw new Error("CJ transport rejection must stop batch before checkpoint advancement");
+    }
+  }
+});
+
+Deno.test("successful CJ fetch response remains unchanged", async () => {
+  const response = new Response('{"result":true}', { status: 200 });
+  const returned = await fetchCJInventoryResponse(async () => response);
+  if (returned !== response) throw new Error("Successful CJ response unexpectedly modified");
 });
