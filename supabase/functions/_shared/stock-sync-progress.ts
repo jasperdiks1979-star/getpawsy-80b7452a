@@ -20,3 +20,25 @@ export function assertStockSyncBatchOffset(
     );
   }
 }
+
+/**
+ * An offset is only meaningful for the catalog size captured when the run
+ * started. Inserting/deleting CJ products mid-run can shift sorted offsets
+ * and silently skip a product. Stop without advancing the checkpoint.
+ *
+ * This guard catches count drift; a stable ID snapshot is still needed to
+ * detect replacements that leave the count unchanged.
+ */
+export function assertStockSyncCatalogStable(
+  offset: number,
+  savedTotal: number,
+  currentTotal: number,
+): void {
+  if (offset === 0) return; // New run captures a fresh catalog size.
+  if (!Number.isSafeInteger(savedTotal) || savedTotal <= 0 ||
+      !Number.isSafeInteger(currentTotal) || currentTotal !== savedTotal) {
+    throw new Error(
+      `Stock sync catalog changed during active run (saved=${savedTotal}, current=${currentTotal}); checkpoint preserved`,
+    );
+  }
+}
