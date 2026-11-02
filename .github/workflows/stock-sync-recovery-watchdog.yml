@@ -78,7 +78,7 @@ jobs:
 
           jq -r '
             if .claimed == true then
-              "Persisted stock checkpoint: \\(.checkpoint_before) -> \\(.checkpoint_persisted) (\\(.status))"
+              "Persisted stock checkpoint: \(.checkpoint_before) -> \(.checkpoint_persisted) (\(.status))"
             else
               "No recovery claimed (no progress asserted)"
             end
