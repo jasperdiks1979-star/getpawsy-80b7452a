@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { CJRateLimitError, CJUnverifiedInventoryError, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
@@ -83,7 +83,10 @@ async function withRetry<T>(
 }
 
 function isRetryableError(error: Error): boolean {
-  // CJ 429 must preserve the checkpoint for a later, lease-limited retry.
+  // Retry rejected CJ fetches immediately a bounded number of times, then
+  // leave the checkpoint intact for the independently scheduled watchdog.
+  if (error instanceof CJTransportError) return true;
+  // CJ 429/auth/upstream errors should be deferred, not retried in a tight loop.
   if (mustHaltStockBatch(error)) return false;
   const message = error.message.toLowerCase();
   return (
@@ -147,7 +150,7 @@ async function getAccessToken(supabase: any): Promise<string> {
 async function getProductInventory(accessToken: string, productId: string): Promise<StockResult> {
   try {
     const jsonData = await withRetry(async () => {
-      const response = await fetch(
+      const response = await fetchCJInventoryResponse(() => fetch(
         `${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`,
         {
           method: 'GET',
@@ -156,7 +159,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
             'CJ-Access-Token': accessToken,
           },
         }
-      );
+      ));
 
       // HTTP 429 is backpressure, not a processed product.
       if (isCJRateLimited(response.status)) throw new CJRateLimitError();
