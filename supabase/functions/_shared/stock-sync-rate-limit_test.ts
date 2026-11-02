@@ -23,6 +23,12 @@ Deno.test("CJ auth and upstream outages preserve the checkpoint for bounded reco
       throw new Error(`CJ ${status} must stop batch before checkpoint advancement`);
     }
   }
+  // CJ also returns numeric error codes encoded as JSON strings on HTTP 200.
+  for (const code of ["401", "503", "504"]) {
+    if (!isCJUnverifiedInventoryStatus(Number(code))) {
+      throw new Error(`Missed CJ payload code ${code}`);
+    }
+  }
   for (const status of [200, 201, 400, 404, 409, 429]) {
     if (isCJUnverifiedInventoryStatus(status)) throw new Error(`False unverified status ${status}`);
   }
