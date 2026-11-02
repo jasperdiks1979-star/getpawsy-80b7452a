@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canRunStockSyncWatchdog } from "../_shared/stock-sync-watchdog-policy.ts";
-import { assertPersistedStockSyncProgress } from "../_shared/stock-sync-recovery-proof.ts";
+import { assertPersistedStockSyncProgress, isStockSyncRecoveryRetryExhausted } from "../_shared/stock-sync-recovery-proof.ts";
 
 /**
  * Independent, opt-in watchdog. Scheduling is deliberately NOT installed here:
@@ -45,7 +45,24 @@ serve(async (req) => {
     );
     if (claimError) throw claimError;
     if (claimed !== true) {
-      return Response.json({ claimed: false, checkpoint: progress.last_offset });
+      // A rejected lease can mean healthy backoff, concurrent ownership, or
+      // a PERMANENT three-attempt exhaustion. Re-read both rows to distinguish
+      // them; never report an exhausted checkpoint as a successful no-op.
+      const { data: persisted, error: persistedError } = await supabase.from("sync_progress")
+        .select("last_offset,status").eq("id", "stock-sync").maybeSingle();
+      if (persistedError) throw persistedError;
+      const { data: lease, error: leaseError } = await supabase.from("stock_sync_recovery_leases")
+        .select("checkpoint,attempts").eq("id", "stock-sync").maybeSingle();
+      if (leaseError) throw leaseError;
+      if (isStockSyncRecoveryRetryExhausted(progress.last_offset, persisted, lease)) {
+        console.error(`Stock sync recovery exhausted at checkpoint ${progress.last_offset} after ${lease!.attempts} attempts`);
+        return Response.json({
+          error: "Recovery retry budget exhausted; investigate CJ response and checkpoint",
+          checkpoint: progress.last_offset,
+          attempts: lease!.attempts,
+        }, { status: 503 });
+      }
+      return Response.json({ claimed: false, checkpoint: persisted?.last_offset ?? progress.last_offset });
     }
 
     const response = await fetch(`${supabaseUrl}/functions/v1/sync-stock`, {
