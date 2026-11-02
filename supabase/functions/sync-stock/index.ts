@@ -444,14 +444,15 @@ async function syncBatch(
       batchErrors++;
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from('products')
       .update(updateData)
-      .eq('id', product.id);
+      .eq('id', product.id)
+      .select('id');
 
-    // A failed product write must not consume its checkpoint: the next
-    // lease-limited retry must process this same supplier product again.
-    assertStockProductUpdateSucceeded(updateError);
+    // A PostgREST UPDATE with no matching rows can return error=null.
+    // Only consume the checkpoint after exactly one row is persisted.
+    assertStockProductUpdateSucceeded(updateError, updatedRows);
 
     if (i < batch.length - 1) await sleep(API_DELAY_MS);
   }
