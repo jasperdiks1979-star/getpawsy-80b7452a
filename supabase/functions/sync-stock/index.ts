@@ -6,7 +6,7 @@ import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_sh
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 import { assertDeferredCursorProgress, isDeferrableNoData } from "../_shared/stock-sync-deferred-policy.ts";
-import { decideStockSyncFinalStatus } from "../_shared/stock-sync-final-status.ts";
+import { decideStockSyncFinalStatus, decideStockSyncBatchOutcome } from "../_shared/stock-sync-final-status.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -518,7 +518,8 @@ async function syncBatch(
   const newErrorCount = (currentProgress.error_count || 0) + batchErrors;
   const newErrorMessages = [...(currentProgress.error_messages || []), ...batchErrorMessages].slice(-50);
   const hasMore = newOffset < totalProducts;
-  const finalStatus = decideStockSyncFinalStatus(hasMore, newErrorCount);
+  const outcome = decideStockSyncBatchOutcome(hasMore, currentProgress.error_count || 0, batchErrors);
+  const finalStatus = outcome.status;
 
   await updateSyncProgress(supabase, {
     last_offset: newOffset,
@@ -531,7 +532,7 @@ async function syncBatch(
   }, offset);
 
   return {
-    success: newErrorCount === 0,
+    success: outcome.success, allVerified: outcome.allVerified,
     synced: batchSynced, errors: batchErrors,
     errorMessages: batchErrorMessages,
     message: hasMore
