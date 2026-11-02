@@ -3,6 +3,7 @@ import { CJRateLimitError, isCJRateLimited, mustHaltStockBatch } from "../_share
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
+import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
 const corsHeaders = {
@@ -448,10 +449,9 @@ async function syncBatch(
       .update(updateData)
       .eq('id', product.id);
 
-    if (updateError) {
-      console.error(`DB update error for ${product.name}:`, updateError.message);
-      batchErrors++;
-    }
+    // A failed product write must not consume its checkpoint: the next
+    // lease-limited retry must process this same supplier product again.
+    assertStockProductUpdateSucceeded(updateError);
 
     if (i < batch.length - 1) await sleep(API_DELAY_MS);
   }
