@@ -1,4 +1,4 @@
-import { assertStockSyncBatchOffset } from "./stock-sync-progress.ts";
+import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "./stock-sync-progress.ts";
 
 Deno.test("stock sync resumes only at the saved checkpoint", () => {
   assertStockSyncBatchOffset(211, { last_offset: 211, status: "running" });
@@ -29,4 +29,25 @@ Deno.test("stock sync rejects replayed, skipped, completed and invalid offsets",
       throw new Error(`Unsafe batch accepted: requested=${requested} saved=${saved} status=${status}`);
     }
   }
+});
+
+Deno.test("stock sync preserves checkpoint if catalog grows or shrinks during resume", () => {
+  assertStockSyncCatalogStable(0, 773, 774); // Fresh run captures current catalog.
+  assertStockSyncCatalogStable(284, 773, 773);
+  for (const total of [772, 774, 0, Number.NaN]) {
+    let rejected = false;
+    try {
+      assertStockSyncCatalogStable(284, 773, total);
+    } catch {
+      rejected = true;
+    }
+    if (!rejected) throw new Error(`Catalog drift accepted: saved=773 current=${total}`);
+  }
+  let rejectedInvalidSavedTotal = false;
+  try {
+    assertStockSyncCatalogStable(284, 0, 773);
+  } catch {
+    rejectedInvalidSavedTotal = true;
+  }
+  if (!rejectedInvalidSavedTotal) throw new Error("Missing saved catalog size accepted");
 });
