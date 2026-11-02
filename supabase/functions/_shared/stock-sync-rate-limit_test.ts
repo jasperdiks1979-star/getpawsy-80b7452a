@@ -1,4 +1,4 @@
-import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "./stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity, CJUnverifiedInventoryQuantityError } from "./stock-sync-rate-limit.ts";
 
 Deno.test("CJ throttling is recognized in HTTP status or CJ payload", () => {
   for (const [status, code] of [[429, undefined], [200, 429], [200, "429"]] as const) {
@@ -56,4 +56,31 @@ Deno.test("successful CJ fetch response remains unchanged", async () => {
   const response = new Response('{"result":true}', { status: 200 });
   const returned = await fetchCJInventoryResponse(async () => response);
   if (returned !== response) throw new Error("Successful CJ response unexpectedly modified");
+});
+
+Deno.test("CJ explicit zero is authoritative even when fallback is positive", () => {
+  for (const [primary, fallback, expected] of [
+    [0, 19, 0], ["0", "19", 0], [7, 19, 7], ["7", "19", 7],
+    [null, "3", 3], [undefined, 4, 4],
+  ] as const) {
+    if (readCJStockQuantity(primary, fallback) !== expected) {
+      throw new Error("CJ zero/fallback quantity was misinterpreted");
+    }
+  }
+  if (readCJStockQuantity("2", "8") + readCJStockQuantity("3", "8") !== 5) {
+    throw new Error("CJ string quantities must add numerically, not concatenate");
+  }
+});
+
+Deno.test("unverified CJ quantity preserves checkpoint instead of becoming zero", () => {
+  for (const [primary, fallback] of [
+    [null, null], [undefined, undefined], ["", 3], ["bad", 2],
+    [-1, 2], [1.5, 2], [Number.NaN, 2], [true, 2],
+  ] as const) {
+    let caught: unknown;
+    try { readCJStockQuantity(primary, fallback); } catch (error) { caught = error; }
+    if (!(caught instanceof CJUnverifiedInventoryQuantityError) || !mustHaltStockBatch(caught)) {
+      throw new Error("Malformed CJ inventory must stop the batch before checkpoint advancement");
+    }
+  }
 });
