@@ -21,3 +21,26 @@ Deno.test("recovery proof requires a persisted checkpoint increase", () => {
     if (!rejected) throw new Error(`Unverified recovery accepted: ${JSON.stringify(after)}`);
   }
 });
+
+
+Deno.test("exhausted retries are a hard block, never a green no-op", async () => {
+  const { isStockSyncRecoveryRetryExhausted } = await import("./stock-sync-recovery-proof.ts");
+  const progress = { last_offset: 284, status: "running" };
+  if (!isStockSyncRecoveryRetryExhausted(284, progress, { checkpoint: 284, attempts: 3 })) {
+    throw new Error("Three exhausted retries at unchanged checkpoint must escalate");
+  }
+  const benign = [
+    { expected: 284, progress, lease: { checkpoint: 284, attempts: 2 } },
+    { expected: 284, progress, lease: { checkpoint: 283, attempts: 3 } },
+    { expected: 284, progress: { last_offset: 285, status: "running" }, lease: { checkpoint: 284, attempts: 3 } },
+    { expected: 284, progress: { last_offset: 284, status: "completed" }, lease: { checkpoint: 284, attempts: 3 } },
+    { expected: 284, progress, lease: null },
+    { expected: -1, progress, lease: { checkpoint: 284, attempts: 3 } },
+    { expected: 284, progress, lease: { checkpoint: 284, attempts: Number.NaN } },
+  ];
+  for (const c of benign) {
+    if (isStockSyncRecoveryRetryExhausted(c.expected, c.progress, c.lease)) {
+      throw new Error("Non-exhausted or raced recovery incorrectly escalated");
+    }
+  }
+});
