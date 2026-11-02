@@ -1,0 +1,85 @@
+# Independent, opt-in stock-sync recovery scheduler.
+# This workflow is deliberately inert unless a repository administrator explicitly
+# enables the repository variable STOCK_SYNC_RECOVERY_ENABLED=true.
+#
+# Production prerequisites (NOT performed by this workflow):
+# 1. Review and deploy the additive recovery-lease migration.
+# 2. Deploy sync-stock and stock-sync-watchdog with the service-role auth guard.
+# 3. Enable the Edge Function's STOCK_SYNC_RECOVERY_ENABLED flag.
+# 4. Explicitly authorize an existing GitHub Actions secret named
+#    STOCK_SYNC_SERVICE_ROLE_KEY. Never put the key in this file or logs.
+# 5. Confirm the separate anon daily-stock-sync cron incompatibility is addressed.
+#
+# GitHub-hosted runners may incur Actions minutes. Obtain a usage ceiling and
+# approval before enabling the repository variable. PRs cannot trigger this job.
+name: Stock Sync Recovery Watchdog (opt-in)
+
+on:
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stock-sync-recovery-watchdog
+  cancel-in-progress: false
+
+jobs:
+  resume:
+    if: ${{ vars.STOCK_SYNC_RECOVERY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require authorized service credential and verify persisted progress
+        env:
+          STOCK_SYNC_SERVICE_ROLE_KEY: ${{ secrets.STOCK_SYNC_SERVICE_ROLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${STOCK_SYNC_SERVICE_ROLE_KEY:-}" ]]; then
+            echo "::error::Recovery disabled: approved service credential is missing"
+            exit 1
+          fi
+
+          response="$(mktemp)"
+          trap 'rm -f "$response"' EXIT
+          # Fixed destination: never send a privileged credential to a
+          # repository variable, pull-request-supplied URL or redirect.
+          code="$(curl --silent --show-error --max-time 60 --connect-timeout 10 \
+            --retry 0 --max-redirs 0 --output "$response" --write-out '%{http_code}' \
+            --request POST \
+            --header "Authorization: Bearer ${STOCK_SYNC_SERVICE_ROLE_KEY}" \
+            --header 'Content-Type: application/json' \
+            --data '{}' \
+            'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/stock-sync-watchdog')"
+
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Stock sync watchdog HTTP $code (response suppressed)"
+            exit 1
+          fi
+
+          # A claimed recovery must prove a persisted checkpoint advance.
+          # A lease denial or a non-stalled run is not reported as progress.
+          if ! jq -e '
+            if .claimed == true then
+              (.checkpoint_before | type == "number") and
+              (.checkpoint_persisted | type == "number") and
+              (.checkpoint_persisted > .checkpoint_before) and
+              (.status == "running" or .status == "completed")
+            elif .claimed == false then
+              (.reason == "No partial running sync" or (.checkpoint | type == "number"))
+            else false end
+          ' "$response" >/dev/null; then
+            echo "::error::Recovery response lacks valid persisted checkpoint proof"
+            exit 1
+          fi
+
+          jq -r '
+            if .claimed == true then
+              "Persisted stock checkpoint: \\(.checkpoint_before) -> \\(.checkpoint_persisted) (\\(.status))"
+            else
+              "No recovery claimed (no progress asserted)"
+            end
+          ' "$response"
