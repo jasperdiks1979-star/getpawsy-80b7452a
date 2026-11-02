@@ -325,6 +325,9 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          # Vite transforms >6k modules; default Node ~2GB heap caused OOM (exit 134).
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run visual regression tests
         run: npx playwright test e2e/visual-regression.spec.ts --update-snapshots=none

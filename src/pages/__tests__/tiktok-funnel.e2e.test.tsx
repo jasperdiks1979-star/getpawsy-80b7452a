@@ -149,7 +149,7 @@ describe('TikTok funnel — end-to-end attribution chain', () => {
     );
 
     // Click the first CTA on /go
-    const link = screen.getAllByRole('link', { name: /get yours now/i })[0];
+    const link = screen.getAllByRole('link', { name: /opens self-cleaning litter box product page/i })[0];
     act(() => fireEvent.click(link));
 
     // 1. Final landing path is the canonical /product/, NOT the legacy /products/.
@@ -185,7 +185,7 @@ describe('TikTok funnel — end-to-end attribution chain', () => {
     // (first visitor on this fresh device → counter starts at 0).
     renderFullFunnel('/go');
 
-    const link = screen.getAllByRole('link', { name: /get yours now/i })[0];
+    const link = screen.getAllByRole('link', { name: /opens self-cleaning litter box product page/i })[0];
     act(() => fireEvent.click(link));
 
     await waitFor(() => {
