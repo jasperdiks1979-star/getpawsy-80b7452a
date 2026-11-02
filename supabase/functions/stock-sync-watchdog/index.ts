@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canRunStockSyncWatchdog } from "../_shared/stock-sync-watchdog-policy.ts";
-import { assertPersistedStockSyncProgress } from "../_shared/stock-sync-recovery-proof.ts";
+import { assertVerifiedRecoveredProduct } from "../_shared/stock-sync-recovery-proof.ts";
 
 /**
  * Independent, opt-in watchdog. Scheduling is deliberately NOT installed here:
@@ -48,6 +48,16 @@ serve(async (req) => {
       return Response.json({ claimed: false, checkpoint: progress.last_offset });
     }
 
+    // Resolve the exact product before the attempt. A bare offset increase
+    // cannot prove verified stock: older code counted CJ no_data as processed.
+    const { data: target, error: targetError } = await supabase.from("products")
+      .select("id").not("cj_product_id", "is", null)
+      .order("id", { ascending: true })
+      .range(progress.last_offset, progress.last_offset).maybeSingle();
+    if (targetError) throw targetError;
+    if (!target?.id) throw new Error("Recovery target product not found");
+    const recoveryStartedAt = new Date().toISOString();
+
     const response = await fetch(`${supabaseUrl}/functions/v1/sync-stock`, {
       method: "POST",
       headers: {
@@ -70,7 +80,13 @@ serve(async (req) => {
     const { data: persisted, error: verifyError } = await supabase.from("sync_progress")
       .select("last_offset,status").eq("id", "stock-sync").maybeSingle();
     if (verifyError) throw verifyError;
-    const confirmedOffset = assertPersistedStockSyncProgress(progress.last_offset, persisted);
+    const { data: verifiedProduct, error: productError } = await supabase.from("products")
+      .select("id,stock,stock_sync_status,stock_source,last_stock_sync_at")
+      .eq("id", target.id).maybeSingle();
+    if (productError) throw productError;
+    const confirmedOffset = assertVerifiedRecoveredProduct(
+      progress.last_offset, persisted, target.id, verifiedProduct, recoveryStartedAt,
+    );
     return Response.json({
       claimed: true,
       checkpoint_before: progress.last_offset,
