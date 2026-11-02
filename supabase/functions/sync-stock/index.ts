@@ -5,6 +5,7 @@ import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "..
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
+import { assertDeferredCursorProgress, isDeferrableNoData } from "../_shared/stock-sync-deferred-policy.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -417,7 +418,7 @@ async function syncBatch(
     // only the scan cursor. synced_count stays unchanged. Do not touch product
     // stock or freshness; never mark a scan with unresolved items completed.
     // A separate, bounded deferred-retry worker is REQUIRED before deployment.
-    if (result.status === 'no_data' && !result.confirmed && result.stock === null) {
+    if (isDeferrableNoData(result)) {
       const { data: deferredOffset, error: deferError } = await supabase.rpc(
         'defer_unverified_stock_sync_product',
         {
@@ -427,15 +428,16 @@ async function syncBatch(
           p_message: result.message,
         },
       );
-      if (deferError || deferredOffset !== offset + 1) {
-        throw new Error(`Failed to atomically defer CJ no_data at offset ${offset}: ${deferError?.message ?? 'checkpoint mismatch'}`);
+      if (deferError) {
+        throw new Error(`Failed to atomically defer CJ no_data at offset ${offset}: ${deferError.message}`);
       }
-      const hasMore = deferredOffset < totalProducts;
+      const persistedOffset = assertDeferredCursorProgress(offset, deferredOffset, totalProducts);
+      const hasMore = persistedOffset < totalProducts;
       return {
         success: false, verified: false, deferred: 1, synced: 0, errors: 1,
         message: 'CJ inventory unverified; scan cursor advanced with durable deferral',
         progress: {
-          current: deferredOffset, total: totalProducts,
+          current: persistedOffset, total: totalProducts,
           status: hasMore ? 'running' : 'needs_review', hasMore,
         },
       };
