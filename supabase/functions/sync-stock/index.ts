@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
+import { confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -395,11 +396,10 @@ async function syncBatch(
 
     // Build update based on result
     // deno-lint-ignore no-explicit-any
+    const checkedAt = new Date().toISOString();
     const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-      last_stock_sync_at: new Date().toISOString(),
-      stock_source: 'CJ',
-      supplier_warehouse: result.warehouse,
+      updated_at: checkedAt,
+      ...confirmedStockFreshnessFields(result, checkedAt),
     };
 
     if (result.confirmed && result.stock !== null) {
