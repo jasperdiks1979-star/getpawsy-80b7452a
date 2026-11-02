@@ -6,6 +6,7 @@ import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_sh
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 import { assertDeferredCursorProgress, isDeferrableNoData } from "../_shared/stock-sync-deferred-policy.ts";
+import { decideStockSyncFinalStatus } from "../_shared/stock-sync-final-status.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -380,8 +381,12 @@ async function syncBatch(
   const batch = products.slice(offset, offset + BATCH_SIZE);
 
   if (batch.length === 0) {
-    await updateSyncProgress(supabase, { status: 'completed', completed_at: new Date().toISOString() });
     const finalProgress = await getOrCreateSyncProgress(supabase);
+    const finalStatus = decideStockSyncFinalStatus(false, finalProgress.error_count);
+    await updateSyncProgress(supabase, {
+      status: finalStatus,
+      completed_at: finalStatus === 'completed' ? new Date().toISOString() : null,
+    });
 
     if (isCronJob) {
       await supabase.from('cron_job_logs').insert({
@@ -399,7 +404,7 @@ async function syncBatch(
       errorMessages: finalProgress.error_messages || [],
       message: `Sync completed. ${finalProgress.synced_count} updated, ${finalProgress.error_count} errors.`,
       timestamp: new Date().toISOString(),
-      progress: { current: totalProducts, total: totalProducts, status: 'completed', hasMore: false },
+      progress: { current: totalProducts, total: totalProducts, status: finalStatus, hasMore: false },
     };
   }
 
@@ -513,6 +518,7 @@ async function syncBatch(
   const newErrorCount = (currentProgress.error_count || 0) + batchErrors;
   const newErrorMessages = [...(currentProgress.error_messages || []), ...batchErrorMessages].slice(-50);
   const hasMore = newOffset < totalProducts;
+  const finalStatus = decideStockSyncFinalStatus(hasMore, newErrorCount);
 
   await updateSyncProgress(supabase, {
     last_offset: newOffset,
@@ -520,19 +526,19 @@ async function syncBatch(
     error_count: newErrorCount,
     error_messages: newErrorMessages,
     last_sync_at: new Date().toISOString(),
-    status: hasMore ? 'running' : 'completed',
-    completed_at: hasMore ? null : new Date().toISOString(),
+    status: finalStatus,
+    completed_at: finalStatus === 'completed' ? new Date().toISOString() : null,
   }, offset);
 
   return {
-    success: batchErrors === 0,
+    success: newErrorCount === 0,
     synced: batchSynced, errors: batchErrors,
     errorMessages: batchErrorMessages,
     message: hasMore
       ? `Batch done. ${batchSynced} synced, ${batchErrors} errors. ${newOffset}/${totalProducts}...`
       : `Sync completed! ${newSyncedCount} updated, ${newErrorCount} errors.`,
     timestamp: new Date().toISOString(),
-    progress: { current: newOffset, total: totalProducts, status: hasMore ? 'running' : 'completed', hasMore },
+    progress: { current: newOffset, total: totalProducts, status: finalStatus, hasMore },
   };
 }
 
