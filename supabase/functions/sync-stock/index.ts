@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
-import { confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
+import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -412,6 +412,9 @@ async function syncBatch(
     const product = batch[i];
 
     const result = await getProductInventory(accessToken, product.cj_product_id);
+    // Do not mark a supplier error or empty inventory response as processed.
+    // The watchdog retries the unchanged offset with a bounded lease budget.
+    assertVerifiedStockObservation(result);
 
     // Build update based on result
     // deno-lint-ignore no-explicit-any
