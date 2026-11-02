@@ -83,3 +83,55 @@ BEGIN
     RAISE EXCEPTION 'Unverified stock changed product quantities';
   END IF;
 END $$;
+
+-- A later scan must not inherit an earlier resolved/exhausted retry budget.
+-- These are throwaway DB mutations only; the test never targets production.
+DO $$
+DECLARE
+  row_state text;
+  row_attempts integer;
+BEGIN
+  PERFORM set_config('request.jwt.claim.role','service_role',true);
+  UPDATE public.stock_sync_deferred SET state='resolved', attempts=3,
+    next_attempt_at=NULL, resolved_at=clock_timestamp()
+    WHERE product_id='00000000-0000-0000-0000-000000000001';
+  UPDATE public.stock_sync_deferred SET state='exhausted', attempts=3,
+    next_attempt_at=NULL
+    WHERE product_id='00000000-0000-0000-0000-000000000002';
+
+  UPDATE public.sync_progress SET status='running',last_offset=0
+    WHERE id='stock-sync';
+  PERFORM public.defer_unverified_stock_sync_product(
+    0,'00000000-0000-0000-0000-000000000001','no_data','new scan');
+  SELECT state,attempts INTO row_state,row_attempts FROM public.stock_sync_deferred
+    WHERE product_id='00000000-0000-0000-0000-000000000001';
+  IF row_state <> 'pending' OR row_attempts <> 1 THEN
+    RAISE EXCEPTION 'Resolved record incorrectly inherited old retry budget';
+  END IF;
+
+  PERFORM public.defer_unverified_stock_sync_product(
+    1,'00000000-0000-0000-0000-000000000002','no_data','new scan');
+  SELECT state,attempts INTO row_state,row_attempts FROM public.stock_sync_deferred
+    WHERE product_id='00000000-0000-0000-0000-000000000002';
+  IF row_state <> 'pending' OR row_attempts <> 1 THEN
+    RAISE EXCEPTION 'Exhausted record incorrectly inherited old retry budget';
+  END IF;
+
+  -- A still-pending record does NOT get a fresh budget.
+  PERFORM public.defer_unverified_stock_sync_product(
+    2,'00000000-0000-0000-0000-000000000003','no_data','retry');
+  SELECT state,attempts INTO row_state,row_attempts FROM public.stock_sync_deferred
+    WHERE product_id='00000000-0000-0000-0000-000000000003';
+  IF row_state <> 'pending' OR row_attempts <> 2 THEN
+    RAISE EXCEPTION 'Pending record lost its existing retry budget';
+  END IF;
+  UPDATE public.sync_progress SET status='running',last_offset=2
+    WHERE id='stock-sync';
+  PERFORM public.defer_unverified_stock_sync_product(
+    2,'00000000-0000-0000-0000-000000000003','no_data','last retry');
+  SELECT state,attempts INTO row_state,row_attempts FROM public.stock_sync_deferred
+    WHERE product_id='00000000-0000-0000-0000-000000000003';
+  IF row_state <> 'exhausted' OR row_attempts <> 3 THEN
+    RAISE EXCEPTION 'Third attempt did not exhaust bounded retry budget';
+  END IF;
+END $$;
