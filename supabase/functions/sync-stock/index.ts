@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
-import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
+import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
@@ -359,6 +359,10 @@ async function syncBatch(
 
   const products: Product[] = allProducts || [];
   const totalProducts = products.length;
+
+  // Prevent shifted offsets if CJ products were added/deleted mid-run.
+  // Check before any supplier calls, product writes, or checkpoint updates.
+  assertStockSyncCatalogStable(offset, progress.total_products, totalProducts);
 
   if (totalProducts === 0) {
     await updateSyncProgress(supabase, { status: 'completed', completed_at: new Date().toISOString() });
