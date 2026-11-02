@@ -12,6 +12,6 @@ export function isCJRateLimited(httpStatus: number, responseCode?: unknown): boo
   return httpStatus === 429 || responseCode === 429 || responseCode === "429";
 }
 
-export function mustHaltStockBatch(error: unknown): error is CJRateLimitError {
+export function mustHaltStockBatch(error: unknown): boolean {
   return error instanceof CJRateLimitError;
 }
