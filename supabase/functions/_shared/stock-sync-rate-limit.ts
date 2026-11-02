@@ -27,6 +27,28 @@ export function isCJUnverifiedInventoryStatus(status: number): boolean {
     status === 425 || (status >= 500 && status <= 599);
 }
 
+/** A rejected fetch is an unverified supplier observation regardless of the
+ * runtime-specific network error message (e.g. Deno's 'error sending request').
+ * Preserve the checkpoint after bounded immediate transport retries.
+ */
+export class CJTransportError extends Error {
+  constructor() {
+    super("CJ inventory transport failed; batch checkpoint unchanged");
+    this.name = "CJTransportError";
+  }
+}
+
+export async function fetchCJInventoryResponse(request: () => Promise<Response>): Promise<Response> {
+  try {
+    return await request();
+  } catch {
+    // Do not depend on platform-specific TypeError messages for retry policy.
+    throw new CJTransportError();
+  }
+}
+
 export function mustHaltStockBatch(error: unknown): boolean {
-  return error instanceof CJRateLimitError || error instanceof CJUnverifiedInventoryError;
+  return error instanceof CJRateLimitError ||
+    error instanceof CJUnverifiedInventoryError ||
+    error instanceof CJTransportError;
 }
