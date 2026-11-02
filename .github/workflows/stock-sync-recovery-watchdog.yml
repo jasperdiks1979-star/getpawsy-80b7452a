@@ -56,7 +56,17 @@ jobs:
             'https://nojvgfbcjgipjxpfatmm.supabase.co/functions/v1/stock-sync-watchdog')"
 
           if [[ "$code" != "200" ]]; then
-            echo "::error::Stock sync watchdog HTTP $code (response suppressed)"
+            # Show only validated non-secret checkpoint metadata. Never print
+            # raw response bodies, URLs, tokens or arbitrary supplier messages.
+            if [[ "$code" == "503" ]] && jq -e '
+              .error == "Recovery retry budget exhausted; investigate CJ response and checkpoint"
+              and (.checkpoint | type == "number")
+              and (.attempts | type == "number")
+            ' "$response" >/dev/null 2>&1; then
+              jq -r '"::error::Stock recovery retry budget exhausted at checkpoint \(.checkpoint) after \(.attempts) attempts; manual CJ diagnosis required"' "$response"
+            else
+              echo "::error::Stock sync watchdog HTTP $code (response suppressed)"
+            fi
             exit 1
           fi
 
