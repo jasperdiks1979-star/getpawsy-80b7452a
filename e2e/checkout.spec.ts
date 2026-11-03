@@ -72,4 +72,60 @@ test.describe('Checkout Flow', () => {
     await expect(page.getByRole('heading', { name: /^(Your cart is empty|Nothing here yet)$/ })).toBeVisible();
     await expect(page.getByText(product.name, { exact: true })).toHaveCount(0);
   });
+
+  test('submits checkout and follows only the mocked payment URL', async ({ page }) => {
+    const paymentUrl = 'https://checkout.stripe.com/c/pay/cs_test_isolated_checkout';
+    const payloads: Record<string, any>[] = [];
+    const redirects: string[] = [];
+    await page.route('**/functions/v1/create-checkout', async route => {
+      if (route.request().method() === 'OPTIONS') {
+        return route.fulfill({ status: 204, headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-headers': '*',
+          'access-control-allow-methods': 'POST, OPTIONS',
+        } });
+      }
+      payloads.push(route.request().postDataJSON());
+      await route.fulfill({ status: 200, contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ url: paymentUrl, sessionId: 'cs_test_isolated_checkout' }),
+      });
+    });
+    await page.route('https://checkout.stripe.com/**', async route => {
+      redirects.push(route.request().url());
+      await route.abort();
+    });
+    await page.goto('/checkout');
+    await page.getByLabel('Email Address', { exact: true }).fill('checkout@example.test');
+    await page.getByRole('checkbox', { name: /terms|accept/i }).check();
+    await page.locator('[data-testid^="checkout-cta-"]:visible').first().click();
+    await expect.poll(() => payloads.length).toBe(1);
+    await expect.poll(() => redirects).toEqual([paymentUrl]);
+    expect(payloads[0].customerEmail).toBe('checkout@example.test');
+    expect(payloads[0].shippingCountry).toBe('US');
+    expect(payloads[0].items).toHaveLength(1);
+    expect(payloads[0].items[0]).toMatchObject({ id: product.id, price: 40, quantity: 1 });
+  });
+
+  test('adds an available product from its product page to the cart', async ({ page }) => {
+    const detail = { ...product, description: 'Isolated cat toy fixture.',
+      category: 'Cat Toys', primary_species: 'cat', is_active: true,
+      is_duplicate: false, image_url: '', images: [], compare_at_price: null,
+      created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' };
+    await page.addInitScript(() => localStorage.removeItem('pawsy-cart'));
+    await page.route('**/rest/v1/products_detail?**', route => route.fulfill({
+      status: 200, contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify([detail]),
+    }));
+    await page.goto(`/products/${product.slug}`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(product.name);
+    const add = page.getByRole('button', { name: 'Add to Cart', exact: true }).first();
+    await expect(add).toBeEnabled();
+    await add.click();
+    await expect.poll(() => page.evaluate(() => {
+      const items = JSON.parse(localStorage.getItem('pawsy-cart') || '[]');
+      return items.map((item: { name: string; quantity: number }) => ({ name: item.name, quantity: item.quantity }));
+    })).toEqual([{ name: product.name, quantity: 1 }]);
+  });
 });

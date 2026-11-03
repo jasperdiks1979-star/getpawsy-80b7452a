@@ -1,4 +1,4 @@
-\\set ON_ERROR_STOP on
+\set ON_ERROR_STOP on
 -- Throwaway PostgreSQL integration harness ONLY. Never run against production.
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
@@ -28,7 +28,7 @@ CREATE TABLE public.sync_progress (
 );
 INSERT INTO public.sync_progress(id,status,last_offset,total_products,synced_count,error_count)
 VALUES ('stock-sync','running',0,3,0,0);
-\\ir ../supabase/migrations/20261102181000_stock_sync_deferred_queue.sql
+\ir ../supabase/migrations/20261102181000_stock_sync_deferred_queue.sql
 DO $$
 DECLARE n integer;
 BEGIN

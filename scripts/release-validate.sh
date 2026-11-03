@@ -8,12 +8,18 @@
 #    (read-only git) in a second isolated copy.
 # Usage: bash scripts/release-validate.sh [ROLLBACK_SHA]
 set -uo pipefail
+# The production bundle exceeds Node's default heap; CI uses the same limit.
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT=/tmp/release-validate
 LOG=/tmp/release-validate-build.log
 cd "$ROOT"
 echo "HEAD $(git rev-parse HEAD)"
 echo "dirty files: $(git status --porcelain | wc -l)"
+if [ -n "$(git status --porcelain)" ]; then
+  echo "RELEASE_VALIDATION=FAIL: commit the candidate before validating a release"
+  exit 1
+fi
 
 tsgo --noEmit -p tsconfig.app.json > /tmp/tsgo-app.log 2>&1; A=$?
 tsgo --noEmit -p tsconfig.node.json > /tmp/tsgo-node.log 2>&1; N=$?

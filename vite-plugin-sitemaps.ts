@@ -7,6 +7,7 @@
  * package.json "prebuild" scripts. This ensures sitemaps are always fresh.
  */
 import type { Plugin } from 'vite';
+import { withBuildTimeout } from './scripts/with-build-timeout';
 import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync } from 'child_process';
@@ -1125,12 +1126,9 @@ export default function merchantFeedPlugin(): Plugin {
       // PHASE 10B: fail closed. No previous artifact, no static catalog
       // fallback — the released feed must come from the current eligible
       // catalog or the build must stop.
-      const merchantFeed: string = await Promise.race([
-        buildMerchantFeed(),
-        new Promise<string>((_, reject) =>
-          setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
-        ),
-      ]);
+      const merchantFeed = await withBuildTimeout(
+        buildMerchantFeed(), 180000, 'Merchant feed generation timed out',
+      );
       assertGoogleFeedValid(merchantFeed, 'public/google-feed.xml (live DB)');
       assertNoSandboxFixtures(merchantFeed, 'public/google-feed.xml');
       writeFeedArtifacts(publicDir, merchantFeed, 'dist/google-feed.xml');
@@ -1187,12 +1185,9 @@ export default function merchantFeedPlugin(): Plugin {
       let regenError: string | null = null;
       if (!merchantFeed) {
         try {
-          const generated = await Promise.race([
-            buildMerchantFeed(),
-            new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error('Merchant feed generation timed out')), 180000)
-            ),
-          ]);
+          const generated = await withBuildTimeout(
+            buildMerchantFeed(), 180000, 'Merchant feed generation timed out',
+          );
           assertGoogleFeedValid(generated, 'dist/google-feed.xml (regen)');
           merchantFeed = generated;
         } catch (err) {
@@ -1225,12 +1220,9 @@ export default function merchantFeedPlugin(): Plugin {
       logFeedPreview('dist/google-feed.xml', finalDistFeed);
 
       try {
-        const diagnostics = await Promise.race([
-          buildMerchantDiagnostics(),
-          new Promise<string>((_, reject) =>
-            setTimeout(() => reject(new Error('Merchant diagnostics generation timed out')), 180000)
-          ),
-        ]);
+        const diagnostics = await withBuildTimeout(
+          buildMerchantDiagnostics(), 180000, 'Merchant diagnostics generation timed out',
+        );
         writeFileSync(join(outDir, 'merchant-diagnostics.xml'), diagnostics, 'utf-8');
         console.log(`[xml-plugin] ✓ merchant-diagnostics.xml (${diagnostics.length} bytes)`);
       } catch (err) {
