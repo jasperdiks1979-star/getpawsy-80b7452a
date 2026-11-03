@@ -8,6 +8,9 @@ Deno.test("recovery proof requires a persisted checkpoint increase", () => {
   if (assertPersistedStockSyncProgress(772, { last_offset: 773, status: "completed" }) !== 773) {
     throw new Error("Completed final batch must be accepted");
   }
+  if (assertPersistedStockSyncProgress(772, { last_offset: 773, status: "needs_review" }) !== 773) {
+    throw new Error("A final checkpoint with older deferred items must not be mistaken for no progress");
+  }
   const invalid = [
     null,
     { last_offset: 229, status: "running" },
@@ -36,6 +39,16 @@ Deno.test("recovery proof requires the exact freshly verified CJ product", () =>
       "p284", { ...valid, stock: 0, stock_sync_status: "discontinued" }, started) !== 773) {
     throw new Error("CJ-confirmed discontinued zero must be valid");
   }
+  if (assertVerifiedRecoveredProduct(772, { last_offset: 773, status: "needs_review" },
+      "p284", valid, started) !== 773) {
+    throw new Error("Fresh CJ stock must prove this final batch even if earlier deferrals remain");
+  }
+  let rejectedUnverifiedFinal = false;
+  try {
+    assertVerifiedRecoveredProduct(772, { last_offset: 773, status: "needs_review" },
+      "p284", { ...valid, stock_sync_status: "no_data" }, started);
+  } catch { rejectedUnverifiedFinal = true; }
+  if (!rejectedUnverifiedFinal) throw new Error("Deferred no_data must never count as verified final stock");
   const invalid: Array<[string, VerifiedStockRecoveryRow | null]> = [
     ["no_data", { ...valid, stock_sync_status: "no_data" }],
     ["error", { ...valid, stock_sync_status: "error" }],

@@ -8,7 +8,7 @@ export function assertPersistedStockSyncProgress(
   if (!Number.isSafeInteger(before) || before < 0 ||
       !after || !Number.isSafeInteger(after.last_offset) ||
       after.last_offset <= before ||
-      !["running", "completed"].includes(after.status)) {
+      !["running", "completed", "needs_review"].includes(after.status)) {
     throw new Error(`Recovery did not persist forward progress from checkpoint ${before}`);
   }
   return after.last_offset;
@@ -17,6 +17,8 @@ export function assertPersistedStockSyncProgress(
 /** A checkpoint increase alone is insufficient: older sync code advanced
  * offsets for CJ no_data. The watchdog must independently verify that the
  * exact product at the previous offset received fresh, CJ-confirmed stock.
+ * A final needs_review checkpoint can still prove THIS batch when older
+ * deferred CJ checks remain unresolved; it is never all-stock verified.
  */
 export interface VerifiedStockRecoveryRow {
   id: string;
