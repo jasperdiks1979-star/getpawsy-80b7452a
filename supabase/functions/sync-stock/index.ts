@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
@@ -688,6 +688,23 @@ serve(async (req) => {
     // An authenticated admin can explicitly resume a stalled sync without resetting
     // its saved offset. The continuation itself uses the server-side service key.
     // This never grants cron privileges to an anonymous source=cron request.
+    // Watchdog retries exactly the leased checkpoint once. It must not reset
+    // the run, follow a moved checkpoint, or start a background continuation.
+    if (action === 'watchdog-once') {
+      if (!isCronJob) {
+        return new Response(JSON.stringify({ error: 'Service role required' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const current = await getOrCreateSyncProgress(supabase);
+      try {
+        offset = resolveWatchdogSingleBatchOffset(isCronJob, action, offset, current)!;
+      } catch {
+        return new Response(JSON.stringify({ error: 'Recovery checkpoint changed' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
     const shouldContinue = shouldContinueStockSync(isCronJob, isAuthenticatedAdmin, action);
     if (shouldContinue && offset === 0) {
       const existingProgress = await getOrCreateSyncProgress(supabase);
