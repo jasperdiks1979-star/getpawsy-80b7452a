@@ -1,0 +1,76 @@
+name: Stock Sync Recovery Contract
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/stock-sync-watchdog/**'
+      - 'supabase/functions/_shared/stock-sync-watchdog-policy*'
+      - 'supabase/functions/_shared/stock-sync-recovery-proof*'
+      - 'supabase/migrations/*stock_sync_recovery_lease.sql'
+      - 'tests/stock-sync-recovery-lease.sql'
+      - '.github/workflows/stock-sync-recovery-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-deno:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck watchdog Edge Function
+        run: deno check supabase/functions/stock-sync-watchdog/index.ts
+      - name: Test service authorization and durable checkpoint proof
+        run: deno test supabase/functions/_shared/stock-sync-watchdog-policy_test.ts supabase/functions/_shared/stock-sync-recovery-proof_test.ts
+
+  recovery-postgres-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
+      - name: Test real PostgreSQL lease, service authorization and retry budget
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/stock-sync-recovery-lease.sql
+      - name: Test two simultaneous claims of the same checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -c "UPDATE public.sync_progress SET status='running', last_offset=400, last_sync_at=clock_timestamp()-interval '2 hours' WHERE id='stock-sync';"
+          # A previous checkpoint lease may still be active; simulate its expiry before racing new claims.
+          psql -X -v ON_ERROR_STOP=1 -c "UPDATE public.stock_sync_recovery_leases SET lease_until=clock_timestamp()-interval '1 minute', next_attempt_at=clock_timestamp()-interval '1 minute' WHERE id='stock-sync';"
+          (psql -X -q -tA -v ON_ERROR_STOP=1 -c "SET request.jwt.claim.role='service_role'; SELECT public.claim_stalled_stock_sync_recovery(400);" > /tmp/claim1) &
+          first=$!
+          (psql -X -q -tA -v ON_ERROR_STOP=1 -c "SET request.jwt.claim.role='service_role'; SELECT public.claim_stalled_stock_sync_recovery(400);" > /tmp/claim2) &
+          second=$!
+          wait "$first"
+          wait "$second"
+          results="$(cat /tmp/claim1 /tmp/claim2 | tr -d '\r' | sort | tr '\n' ' ')"
+          if [ "$results" != "f t " ]; then
+            echo "Expected exactly one successful claim and one rejected claim, got: $results"
+            exit 1
+          fi
+          echo "Concurrent claims correctly serialized: one accepted, one rejected."
