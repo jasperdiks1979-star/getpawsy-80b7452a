@@ -60,26 +60,6 @@ jobs:
             exit 1
           fi
 
-          # A claimed recovery must prove a persisted checkpoint advance.
-          # A lease denial or a non-stalled run is not reported as progress.
-          if ! jq -e '
-            if .claimed == true then
-              (.checkpoint_before | type == "number") and
-              (.checkpoint_persisted | type == "number") and
-              (.checkpoint_persisted > .checkpoint_before) and
-              (.status == "running" or .status == "completed")
-            elif .claimed == false then
-              (.reason == "No partial running sync" or (.checkpoint | type == "number"))
-            else false end
-          ' "$response" >/dev/null; then
-            echo "::error::Recovery response lacks valid persisted checkpoint proof"
-            exit 1
-          fi
-
-          jq -r '
-            if .claimed == true then
-              "Persisted stock checkpoint: \(.checkpoint_before) -> \(.checkpoint_persisted) (\(.status))"
-            else
-              "No recovery claimed (no progress asserted)"
-            end
-          ' "$response"
+          # Distinguish supplier-verified stock from a deferred scan cursor.
+          # The shared verifier is covered by 18 offline regression scenarios.
+          bash scripts/verify-stock-sync-watchdog-response.sh "$response"
