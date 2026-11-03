@@ -32,6 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      # The response verifier lives in this repository; scheduled workflows
+      # start with an empty runner workspace unless code is checked out.
+      - name: Check out trusted default-branch verifier
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Require authorized service credential and verify persisted progress
         env:
           STOCK_SYNC_SERVICE_ROLE_KEY: ${{ secrets.STOCK_SYNC_SERVICE_ROLE_KEY }}
