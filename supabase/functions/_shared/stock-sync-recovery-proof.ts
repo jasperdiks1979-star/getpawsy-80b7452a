@@ -16,7 +16,9 @@ export function assertPersistedStockSyncProgress(
 
 /** A checkpoint increase alone is insufficient: older sync code advanced
  * offsets for CJ no_data. The watchdog must independently verify that the
- * exact product at the previous offset received fresh, CJ-confirmed stock.\n * A final needs_review checkpoint can still prove THIS batch when older\n * deferred CJ checks remain unresolved; it is never all-stock verified.
+ * exact product at the previous offset received fresh, CJ-confirmed stock.
+ * A final needs_review checkpoint can still prove THIS batch when older
+ * deferred CJ checks remain unresolved; it is never all-stock verified.
  */
 export interface VerifiedStockRecoveryRow {
   id: string;
