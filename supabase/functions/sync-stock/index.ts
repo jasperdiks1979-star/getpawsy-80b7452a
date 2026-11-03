@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
+import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
+import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
+import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +14,6 @@ const corsHeaders = {
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 const BATCH_SIZE = 1;
 const API_DELAY_MS = 15000;
-const RATE_LIMIT_DELAY_MS = 60000;
 
 interface SyncProgress {
   id: string;
@@ -79,6 +83,11 @@ async function withRetry<T>(
 }
 
 function isRetryableError(error: Error): boolean {
+  // Retry rejected CJ fetches immediately a bounded number of times, then
+  // leave the checkpoint intact for the independently scheduled watchdog.
+  if (error instanceof CJTransportError) return true;
+  // CJ 429/auth/upstream errors should be deferred, not retried in a tight loop.
+  if (mustHaltStockBatch(error)) return false;
   const message = error.message.toLowerCase();
   return (
     message.includes('network') ||
@@ -141,7 +150,7 @@ async function getAccessToken(supabase: any): Promise<string> {
 async function getProductInventory(accessToken: string, productId: string): Promise<StockResult> {
   try {
     const jsonData = await withRetry(async () => {
-      const response = await fetch(
+      const response = await fetchCJInventoryResponse(() => fetch(
         `${CJ_API_BASE}/product/stock/getInventoryByPid?pid=${productId}`,
         {
           method: 'GET',
@@ -150,8 +159,14 @@ async function getProductInventory(accessToken: string, productId: string): Prom
             'CJ-Access-Token': accessToken,
           },
         }
-      );
+      ));
 
+      // HTTP 429 is backpressure, not a processed product.
+      if (isCJRateLimited(response.status)) throw new CJRateLimitError();
+      // An auth failure or CJ 5xx is not a valid stock observation.
+      if (isCJUnverifiedInventoryStatus(response.status)) {
+        throw new CJUnverifiedInventoryError(response.status);
+      }
       const responseText = await response.text();
       let parsed;
       try {
@@ -160,10 +175,9 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         throw new Error(`Invalid JSON: ${responseText.substring(0, 100)}`);
       }
 
-      if (response.status === 429) {
-        console.log(`Rate limited on ${productId}, waiting ${RATE_LIMIT_DELAY_MS / 1000}s...`);
-        await sleep(RATE_LIMIT_DELAY_MS);
-        throw new Error('Rate limited (429)');
+      if (isCJRateLimited(response.status, parsed?.code)) throw new CJRateLimitError();
+      if (isCJUnverifiedInventoryStatus(Number(parsed?.code))) {
+        throw new CJUnverifiedInventoryError(Number(parsed.code));
       }
 
       if (!response.ok) {
@@ -225,10 +239,10 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       for (const inv of inventoryList) {
         if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
         if (inv.countryCode === 'US') {
-          usStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          usStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
           hasUs = true;
         } else if (inv.countryCode === 'CN') {
-          cnStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          cnStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
         }
       }
 
@@ -240,7 +254,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         warehouse = 'CN';
       } else {
         for (const inv of inventoryList) {
-          totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0;
+          totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
         }
         warehouse = inventoryList[0]?.countryCode || 'unknown';
       }
@@ -264,6 +278,10 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       vid: firstVid,
     };
   } catch (err) {
+    // Do not consume a checkpoint when the supplier asks us to slow down.
+    // Network failures exhausted their immediate retries; do not count them
+    // as processed supplier stock. The independent lease handles later retries.
+    if (mustHaltStockBatch(err) || (err instanceof Error && isRetryableError(err))) throw err;
     return {
       stock: null,
       confirmed: false,
@@ -276,12 +294,13 @@ async function getProductInventory(accessToken: string, productId: string): Prom
 
 // deno-lint-ignore no-explicit-any
 async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
-  const { data } = await supabase
+  const { data, error: readError } = await supabase
     .from('sync_progress')
     .select('*')
     .eq('id', 'stock-sync')
     .maybeSingle();
 
+  if (readError) throw new Error(`Failed to read stock sync progress: ${readError.message}`);
   if (data) return data as SyncProgress;
 
   const newProgress: Partial<SyncProgress> = {
@@ -294,16 +313,28 @@ async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
     error_messages: [],
   };
 
-  await supabase.from('sync_progress').upsert(newProgress);
+  const { error: insertError } = await supabase.from('sync_progress').upsert(newProgress);
+  if (insertError) throw new Error(`Failed to initialize stock sync progress: ${insertError.message}`);
   return newProgress as SyncProgress;
 }
 
 // deno-lint-ignore no-explicit-any
-async function updateSyncProgress(supabase: any, updates: Partial<SyncProgress>): Promise<void> {
-  await supabase
-    .from('sync_progress')
+async function updateSyncProgress(
+  supabase: any,
+  updates: Partial<SyncProgress>,
+  expectedOffset?: number,
+): Promise<void> {
+  // The offset condition prevents overlapping/replayed batches from overwriting
+  // a newer checkpoint. Returning rows also catches zero-row updates.
+  let query = supabase.from('sync_progress')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', 'stock-sync');
+  if (expectedOffset !== undefined) query = query.eq('last_offset', expectedOffset);
+  const { data, error } = await query.select('id');
+  if (error) throw new Error(`Failed to persist stock sync progress: ${error.message}`);
+  if (!Array.isArray(data) || data.length !== 1) {
+    throw new Error(`Stock sync checkpoint not updated (expected offset ${expectedOffset ?? 'any'}); refusing to report success`);
+  }
 }
 
 // deno-lint-ignore no-explicit-any
@@ -314,6 +345,9 @@ async function syncBatch(
   isCronJob: boolean
 ): Promise<Record<string, unknown>> {
   const progress = await getOrCreateSyncProgress(supabase);
+  // Never process a stale/replayed or skipped continuation: doing so could
+  // corrupt synced_count and allow older batches to overwrite newer stock.
+  assertStockSyncBatchOffset(offset, progress);
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
@@ -325,6 +359,10 @@ async function syncBatch(
 
   const products: Product[] = allProducts || [];
   const totalProducts = products.length;
+
+  // Prevent shifted offsets if CJ products were added/deleted mid-run.
+  // Check before any supplier calls, product writes, or checkpoint updates.
+  assertStockSyncCatalogStable(offset, progress.total_products, totalProducts);
 
   if (totalProducts === 0) {
     await updateSyncProgress(supabase, { status: 'completed', completed_at: new Date().toISOString() });
@@ -374,14 +412,16 @@ async function syncBatch(
     const product = batch[i];
 
     const result = await getProductInventory(accessToken, product.cj_product_id);
+    // Do not mark a supplier error or empty inventory response as processed.
+    // The watchdog retries the unchanged offset with a bounded lease budget.
+    assertVerifiedStockObservation(result);
 
     // Build update based on result
     // deno-lint-ignore no-explicit-any
+    const checkedAt = new Date().toISOString();
     const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-      last_stock_sync_at: new Date().toISOString(),
-      stock_source: 'CJ',
-      supplier_warehouse: result.warehouse,
+      updated_at: checkedAt,
+      ...confirmedStockFreshnessFields(result, checkedAt),
     };
 
     if (result.confirmed && result.stock !== null) {
@@ -423,15 +463,15 @@ async function syncBatch(
       batchErrors++;
     }
 
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from('products')
       .update(updateData)
-      .eq('id', product.id);
+      .eq('id', product.id)
+      .select('id');
 
-    if (updateError) {
-      console.error(`DB update error for ${product.name}:`, updateError.message);
-      batchErrors++;
-    }
+    // A PostgREST UPDATE with no matching rows can return error=null.
+    // Only consume the checkpoint after exactly one row is persisted.
+    assertStockProductUpdateSucceeded(updateError, updatedRows);
 
     if (i < batch.length - 1) await sleep(API_DELAY_MS);
   }
@@ -452,7 +492,7 @@ async function syncBatch(
     last_sync_at: new Date().toISOString(),
     status: hasMore ? 'running' : 'completed',
     completed_at: hasMore ? null : new Date().toISOString(),
-  });
+  }, offset);
 
   return {
     success: batchErrors === 0,
@@ -518,10 +558,10 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
       let totalStock = 0;
       let warehouse = 'unknown';
       for (const inv of inventoryList) {
-        if (inv.countryCode === 'US') { totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0; warehouse = 'US'; }
+        if (inv.countryCode === 'US') { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); warehouse = 'US'; }
       }
       if (warehouse === 'unknown') {
-        for (const inv of inventoryList) { totalStock += inv.totalInventoryNum || inv.cjInventoryNum || 0; }
+        for (const inv of inventoryList) { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); }
         warehouse = inventoryList[0]?.countryCode || 'unknown';
       }
       interpreted = { stock: totalStock, confirmed: true, warehouse, status: 'ok', message: `Stock: ${totalStock} (${warehouse})` };
@@ -551,9 +591,10 @@ serve(async (req) => {
     try { body = await req.json(); } catch { /* empty body ok */ }
 
     const authHeader = req.headers.get('Authorization');
-    const isCronJob = body.source === 'cron' || authHeader === `Bearer ${supabaseServiceKey}`;
+    const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
 
     // Auth check for non-cron requests
+    let isAuthenticatedAdmin = false;
     if (!isCronJob) {
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -568,6 +609,7 @@ serve(async (req) => {
       if (!roleData) {
         return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      isAuthenticatedAdmin = true;
     }
 
     const action = body.action || 'sync-batch';
@@ -576,7 +618,6 @@ serve(async (req) => {
     if (action === 'status') {
       const progress = await getOrCreateSyncProgress(supabase);
       // Also get stock distribution
-      const { data: stats } = await supabase.rpc('', {}).maybeSingle(); // won't work, use raw query via select
       // Get stock stats from products
       const { data: products } = await supabase.from('products').select('stock, stock_sync_status').not('cj_product_id', 'is', null);
       const stockStats = {
@@ -607,8 +648,11 @@ serve(async (req) => {
       return new Response(JSON.stringify(result, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // For cron jobs, resume or start fresh
-    if (isCronJob && offset === 0) {
+    // An authenticated admin can explicitly resume a stalled sync without resetting
+    // its saved offset. The continuation itself uses the server-side service key.
+    // This never grants cron privileges to an anonymous source=cron request.
+    const shouldContinue = shouldContinueStockSync(isCronJob, isAuthenticatedAdmin, action);
+    if (shouldContinue && offset === 0) {
       const existingProgress = await getOrCreateSyncProgress(supabase);
       if (existingProgress.status === 'running' && existingProgress.last_offset > 0) {
         offset = existingProgress.last_offset;
@@ -624,16 +668,29 @@ serve(async (req) => {
     const accessToken = await getAccessToken(supabase);
     const result = await syncBatch(supabase, accessToken, offset, isCronJob);
 
-    // For cron jobs with more to process, trigger next batch
-    if (isCronJob && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
+    // Continue only for service cron or explicitly authenticated admin resume.
+    if (shouldContinue && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
       const nextOffset = (result as { progress?: { current: number } }).progress?.current;
       console.log(`Cron job scheduling next batch at offset ${nextOffset}`);
       const functionUrl = `${supabaseUrl}/functions/v1/sync-stock`;
-      fetch(functionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
-        body: JSON.stringify({ source: 'cron', offset: nextOffset }),
-      }).catch(err => console.error('Failed to trigger next batch:', err));
+      // One product per batch: enforce the CJ pacing across invocations.
+      // waitUntil keeps the runtime alive after the response, unlike a bare fetch.
+      const continueSync = async () => {
+        await sleep(API_DELAY_MS);
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
+          body: JSON.stringify({ source: 'cron', offset: nextOffset }),
+        });
+        if (!response.ok) {
+          throw new Error(`Stock sync continuation HTTP ${response.status}: ${(await response.text()).slice(0, 300)}`);
+        }
+        console.log(`Stock sync continuation returned HTTP ${response.status} at offset ${nextOffset}`);
+      };
+      // @ts-ignore EdgeRuntime is supplied by the Supabase Edge runtime.
+      EdgeRuntime.waitUntil(continueSync().catch((err: unknown) => {
+        console.error(`Stock sync continuation failed at offset ${nextOffset}:`, err);
+      }));
     }
 
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
