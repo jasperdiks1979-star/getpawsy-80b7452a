@@ -83,3 +83,41 @@ BEGIN
     RAISE EXCEPTION 'Unverified stock changed product quantities';
   END IF;
 END $$;
+
+-- Regression: a new no_data incident after a *resolved* incident receives
+-- a fresh 3-attempt budget; unresolved exhausted records never silently reset.
+DO $$
+DECLARE row_record public.stock_sync_deferred%ROWTYPE;
+BEGIN
+  PERFORM set_config('request.jwt.claim.role','service_role',true);
+  UPDATE public.stock_sync_deferred
+     SET state='resolved', attempts=3, resolved_at=clock_timestamp(),
+         next_attempt_at=NULL
+   WHERE product_id='00000000-0000-0000-0000-000000000001';
+  UPDATE public.sync_progress
+     SET status='running',last_offset=0,error_count=0,synced_count=0
+   WHERE id='stock-sync';
+  IF public.defer_unverified_stock_sync_product(0,'00000000-0000-0000-0000-000000000001','no_data','new incident')<>1 THEN
+    RAISE EXCEPTION 'New incident did not advance scan cursor';
+  END IF;
+  SELECT * INTO row_record FROM public.stock_sync_deferred
+   WHERE product_id='00000000-0000-0000-0000-000000000001';
+  IF row_record.attempts<>1 OR row_record.state<>'pending'
+     OR row_record.next_attempt_at IS NULL OR row_record.resolved_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Resolved incident retry budget was not reset correctly';
+  END IF;
+
+  UPDATE public.stock_sync_deferred
+     SET state='exhausted',attempts=3,next_attempt_at=NULL
+   WHERE product_id='00000000-0000-0000-0000-000000000001';
+  UPDATE public.sync_progress
+     SET status='running',last_offset=0,error_count=0,synced_count=0
+   WHERE id='stock-sync';
+  PERFORM public.defer_unverified_stock_sync_product(0,'00000000-0000-0000-0000-000000000001','no_data','still unresolved');
+  SELECT * INTO row_record FROM public.stock_sync_deferred
+   WHERE product_id='00000000-0000-0000-0000-000000000001';
+  IF row_record.attempts<>3 OR row_record.state<>'exhausted'
+     OR row_record.next_attempt_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Unresolved exhausted retry budget was incorrectly reset';
+  END IF;
+END $$;

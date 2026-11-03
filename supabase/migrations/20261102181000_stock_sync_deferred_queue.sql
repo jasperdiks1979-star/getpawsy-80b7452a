@@ -67,10 +67,15 @@ BEGIN
   VALUES
     (p_product_id,t,t,t+interval '30 minutes',1,'pending',p_expected_offset,'no_data',left(coalesce(p_message,''),200),NULL)
   ON CONFLICT (product_id) DO UPDATE SET
+    -- A previously resolved incident must start a fresh retry budget.
+    -- An unresolved/exhausted incident must never silently reset its budget.
+    first_seen_at=CASE WHEN public.stock_sync_deferred.state='resolved' THEN t ELSE public.stock_sync_deferred.first_seen_at END,
     last_attempt_at=t,
-    attempts=least(3,public.stock_sync_deferred.attempts+1),
-    state=CASE WHEN public.stock_sync_deferred.attempts >= 2 THEN 'exhausted' ELSE 'pending' END,
-    next_attempt_at=CASE WHEN public.stock_sync_deferred.attempts >= 2 THEN NULL ELSE t+interval '60 minutes' END,
+    attempts=CASE WHEN public.stock_sync_deferred.state='resolved' THEN 1 ELSE least(3,public.stock_sync_deferred.attempts+1) END,
+    state=CASE WHEN public.stock_sync_deferred.state='resolved' THEN 'pending'
+               WHEN public.stock_sync_deferred.attempts >= 2 THEN 'exhausted' ELSE 'pending' END,
+    next_attempt_at=CASE WHEN public.stock_sync_deferred.state='resolved' THEN t+interval '30 minutes'
+                         WHEN public.stock_sync_deferred.attempts >= 2 THEN NULL ELSE t+interval '60 minutes' END,
     last_offset=p_expected_offset,
     reason='no_data',
     message=left(coalesce(p_message,''),200),
