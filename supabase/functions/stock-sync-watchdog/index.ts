@@ -113,6 +113,7 @@ serve(async (req) => {
     );
     return Response.json({
       claimed: true,
+      verified: true, // Explicit supplier-stock proof; deferred cursor uses verified:false.
       checkpoint_before: progress.last_offset,
       checkpoint_persisted: confirmedOffset,
       status: persisted!.status,
