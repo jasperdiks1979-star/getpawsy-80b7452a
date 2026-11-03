@@ -35,4 +35,6 @@ reject '{"claimed":true,"verified":true,"checkpoint_before":284,"checkpoint_pers
 reject '{"claimed":false,"checkpoint":"284"}'
 reject '{"claimed":false,"reason":"bogus"}'
 reject 'not-json'
+reject echo "$passes watchdog response contract scenarios passed"
+{"claimed":false,"reason":"No partial running sync"}\n{"claimed":false,"reason":"No partial running sync"}'
 echo "$passes watchdog response contract scenarios passed"
