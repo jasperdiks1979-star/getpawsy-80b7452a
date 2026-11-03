@@ -28,7 +28,7 @@ reject '{"claimed":true,"verified":false,"checkpoint_before":284,"checkpoint_per
 reject '{"claimed":true,"verified":true,"deferred":true,"checkpoint_before":284,"checkpoint_persisted":285,"status":"running"}'
 reject '{"claimed":true,"verified":false,"deferred":true,"checkpoint_before":772,"checkpoint_persisted":773,"status":"completed"}'
 reject '{"claimed":true,"verified":true,"checkpoint_before":284,"checkpoint_persisted":286,"status":"running"}'
-reject '{"claimed":true,"verified":true,"ncheckpoint_before":284,"checkpoint_persisted":284,"status":"running"}'
+reject '{"claimed":true,"verified":true,"checkpoint_before":284,"checkpoint_persisted":284,"status":"running"}'
 reject '{"claimed":true,"verified":true,"checkpoint_before":284.5,"checkpoint_persisted":285.5,"status":"running"}'
 reject '{"claimed":true,"verified":true,"checkpoint_before":-1,"checkpoint_persisted":0,"status":"running"}'
 reject '{"claimed":true,"verified":true,"checkpoint_before":284,"checkpoint_persisted":285,"status":"error"}'
