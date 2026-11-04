@@ -85,12 +85,17 @@ describe('TikTok funnel /go — UTM consistency end-to-end', () => {
   it('preserves utm_campaign=hook1 across all four funnel events and outbound URL', () => {
     renderFunnel();
 
-    // Find the primary CTA (multiple may exist; first is the above-the-fold one).
-    const links = screen.getAllByRole('link', { name: /get yours now/i });
-    const link = links[0];
+    // Identify the product CTA by destination, not mutable marketing copy.
+    // Multiple CTAs may share the destination; the first is above the fold.
+    const link = screen.getAllByRole('link').find((candidate) => {
+      const href = candidate.getAttribute('href') || '';
+      return href.startsWith('/products/automatic-cat-litter-box-self-cleaning-app-control?') &&
+        new URLSearchParams(href.split('?')[1]).get('utm_campaign') === 'hook1';
+    });
+    expect(link, 'Expected an outbound product CTA preserving campaign UTM').toBeDefined();
 
     act(() => {
-      fireEvent.click(link);
+      fireEvent.click(link!);
     });
 
     // 1. Outbound URL preserves UTMs from the landing page
