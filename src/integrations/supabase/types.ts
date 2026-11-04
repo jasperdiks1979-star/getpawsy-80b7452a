@@ -74164,6 +74164,116 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_sync_deferred: {
+        Row: {
+          attempts: number
+          first_seen_at: string
+          last_attempt_at: string
+          last_offset: number
+          message: string
+          next_attempt_at: string | null
+          product_id: string
+          reason: string
+          resolved_at: string | null
+          state: string
+        }
+        Insert: {
+          attempts?: number
+          first_seen_at?: string
+          last_attempt_at?: string
+          last_offset: number
+          message?: string
+          next_attempt_at?: string | null
+          product_id: string
+          reason: string
+          resolved_at?: string | null
+          state?: string
+        }
+        Update: {
+          attempts?: number
+          first_seen_at?: string
+          last_attempt_at?: string
+          last_offset?: number
+          message?: string
+          next_attempt_at?: string | null
+          product_id?: string
+          reason?: string
+          resolved_at?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv_first_sale_priority_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv3_mi_first_sale_plan_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "gv34_first_sale_hunter_v"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "pinterest_product_pin_coverage"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_detail"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_shop"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_product_potential"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_sync_deferred_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_pinterest_wave_opportunity"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       stock_sync_logs: {
         Row: {
           created_at: string
@@ -74203,6 +74313,33 @@ export type Database = {
           total_checked?: number
           triggered_by?: string | null
           zero_stock_count?: number
+        }
+        Relationships: []
+      }
+      stock_sync_recovery_leases: {
+        Row: {
+          attempts: number
+          checkpoint: number
+          id: string
+          last_attempt_at: string | null
+          lease_until: string
+          next_attempt_at: string
+        }
+        Insert: {
+          attempts?: number
+          checkpoint?: number
+          id: string
+          last_attempt_at?: string | null
+          lease_until?: string
+          next_attempt_at?: string
+        }
+        Update: {
+          attempts?: number
+          checkpoint?: number
+          id?: string
+          last_attempt_at?: string | null
+          lease_until?: string
+          next_attempt_at?: string
         }
         Relationships: []
       }
@@ -79556,6 +79693,10 @@ export type Database = {
           reason: string
         }[]
       }
+      claim_stalled_stock_sync_recovery: {
+        Args: { p_expected_offset: number }
+        Returns: boolean
+      }
       claim_stripe_webhook_event: {
         Args: {
           p_event_id: string
@@ -79619,6 +79760,15 @@ export type Database = {
           impressions: number
           variant: string
         }[]
+      }
+      defer_unverified_stock_sync_product: {
+        Args: {
+          p_expected_offset: number
+          p_message?: string
+          p_product_id: string
+          p_reason: string
+        }
+        Returns: number
       }
       ede_recalc_weights: { Args: never; Returns: Json }
       evaluate_module_gates: {
