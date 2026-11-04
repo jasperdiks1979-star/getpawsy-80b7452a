@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync } from "../_shared/stock-sync-auth.ts";
+import { assertStockSyncBatchOffset } from "../_shared/stock-sync-progress.ts";
+import { confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -276,12 +279,13 @@ async function getProductInventory(accessToken: string, productId: string): Prom
 
 // deno-lint-ignore no-explicit-any
 async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
-  const { data } = await supabase
+  const { data, error: readError } = await supabase
     .from('sync_progress')
     .select('*')
     .eq('id', 'stock-sync')
     .maybeSingle();
 
+  if (readError) throw new Error(`Failed to read stock sync progress: ${readError.message}`);
   if (data) return data as SyncProgress;
 
   const newProgress: Partial<SyncProgress> = {
@@ -294,16 +298,28 @@ async function getOrCreateSyncProgress(supabase: any): Promise<SyncProgress> {
     error_messages: [],
   };
 
-  await supabase.from('sync_progress').upsert(newProgress);
+  const { error: insertError } = await supabase.from('sync_progress').upsert(newProgress);
+  if (insertError) throw new Error(`Failed to initialize stock sync progress: ${insertError.message}`);
   return newProgress as SyncProgress;
 }
 
 // deno-lint-ignore no-explicit-any
-async function updateSyncProgress(supabase: any, updates: Partial<SyncProgress>): Promise<void> {
-  await supabase
-    .from('sync_progress')
+async function updateSyncProgress(
+  supabase: any,
+  updates: Partial<SyncProgress>,
+  expectedOffset?: number,
+): Promise<void> {
+  // The offset condition prevents overlapping/replayed batches from overwriting
+  // a newer checkpoint. Returning rows also catches zero-row updates.
+  let query = supabase.from('sync_progress')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', 'stock-sync');
+  if (expectedOffset !== undefined) query = query.eq('last_offset', expectedOffset);
+  const { data, error } = await query.select('id');
+  if (error) throw new Error(`Failed to persist stock sync progress: ${error.message}`);
+  if (!Array.isArray(data) || data.length !== 1) {
+    throw new Error(`Stock sync checkpoint not updated (expected offset ${expectedOffset ?? 'any'}); refusing to report success`);
+  }
 }
 
 // deno-lint-ignore no-explicit-any
@@ -314,6 +330,9 @@ async function syncBatch(
   isCronJob: boolean
 ): Promise<Record<string, unknown>> {
   const progress = await getOrCreateSyncProgress(supabase);
+  // Never process a stale/replayed or skipped continuation: doing so could
+  // corrupt synced_count and allow older batches to overwrite newer stock.
+  assertStockSyncBatchOffset(offset, progress);
 
   const { data: allProducts, error: fetchError } = await supabase
     .from('products')
@@ -377,11 +396,10 @@ async function syncBatch(
 
     // Build update based on result
     // deno-lint-ignore no-explicit-any
+    const checkedAt = new Date().toISOString();
     const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-      last_stock_sync_at: new Date().toISOString(),
-      stock_source: 'CJ',
-      supplier_warehouse: result.warehouse,
+      updated_at: checkedAt,
+      ...confirmedStockFreshnessFields(result, checkedAt),
     };
 
     if (result.confirmed && result.stock !== null) {
@@ -452,7 +470,7 @@ async function syncBatch(
     last_sync_at: new Date().toISOString(),
     status: hasMore ? 'running' : 'completed',
     completed_at: hasMore ? null : new Date().toISOString(),
-  });
+  }, offset);
 
   return {
     success: batchErrors === 0,
@@ -551,9 +569,10 @@ serve(async (req) => {
     try { body = await req.json(); } catch { /* empty body ok */ }
 
     const authHeader = req.headers.get('Authorization');
-    const isCronJob = body.source === 'cron' || authHeader === `Bearer ${supabaseServiceKey}`;
+    const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
 
     // Auth check for non-cron requests
+    let isAuthenticatedAdmin = false;
     if (!isCronJob) {
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -568,6 +587,7 @@ serve(async (req) => {
       if (!roleData) {
         return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      isAuthenticatedAdmin = true;
     }
 
     const action = body.action || 'sync-batch';
@@ -576,7 +596,6 @@ serve(async (req) => {
     if (action === 'status') {
       const progress = await getOrCreateSyncProgress(supabase);
       // Also get stock distribution
-      const { data: stats } = await supabase.rpc('', {}).maybeSingle(); // won't work, use raw query via select
       // Get stock stats from products
       const { data: products } = await supabase.from('products').select('stock, stock_sync_status').not('cj_product_id', 'is', null);
       const stockStats = {
@@ -607,8 +626,11 @@ serve(async (req) => {
       return new Response(JSON.stringify(result, null, 2), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // For cron jobs, resume or start fresh
-    if (isCronJob && offset === 0) {
+    // An authenticated admin can explicitly resume a stalled sync without resetting
+    // its saved offset. The continuation itself uses the server-side service key.
+    // This never grants cron privileges to an anonymous source=cron request.
+    const shouldContinue = shouldContinueStockSync(isCronJob, isAuthenticatedAdmin, action);
+    if (shouldContinue && offset === 0) {
       const existingProgress = await getOrCreateSyncProgress(supabase);
       if (existingProgress.status === 'running' && existingProgress.last_offset > 0) {
         offset = existingProgress.last_offset;
@@ -624,16 +646,29 @@ serve(async (req) => {
     const accessToken = await getAccessToken(supabase);
     const result = await syncBatch(supabase, accessToken, offset, isCronJob);
 
-    // For cron jobs with more to process, trigger next batch
-    if (isCronJob && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
+    // Continue only for service cron or explicitly authenticated admin resume.
+    if (shouldContinue && (result as { progress?: { hasMore: boolean } }).progress?.hasMore) {
       const nextOffset = (result as { progress?: { current: number } }).progress?.current;
       console.log(`Cron job scheduling next batch at offset ${nextOffset}`);
       const functionUrl = `${supabaseUrl}/functions/v1/sync-stock`;
-      fetch(functionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
-        body: JSON.stringify({ source: 'cron', offset: nextOffset }),
-      }).catch(err => console.error('Failed to trigger next batch:', err));
+      // One product per batch: enforce the CJ pacing across invocations.
+      // waitUntil keeps the runtime alive after the response, unlike a bare fetch.
+      const continueSync = async () => {
+        await sleep(API_DELAY_MS);
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseServiceKey}` },
+          body: JSON.stringify({ source: 'cron', offset: nextOffset }),
+        });
+        if (!response.ok) {
+          throw new Error(`Stock sync continuation HTTP ${response.status}: ${(await response.text()).slice(0, 300)}`);
+        }
+        console.log(`Stock sync continuation returned HTTP ${response.status} at offset ${nextOffset}`);
+      };
+      // @ts-ignore EdgeRuntime is supplied by the Supabase Edge runtime.
+      EdgeRuntime.waitUntil(continueSync().catch((err: unknown) => {
+        console.error(`Stock sync continuation failed at offset ${nextOffset}:`, err);
+      }));
     }
 
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
