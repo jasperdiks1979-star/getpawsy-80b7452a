@@ -43,9 +43,12 @@ function setCachedUser(token: string, user: CachedUser) {
 
 
 // Lazily-instantiated service-role client used exclusively for writing audit rows.
-let auditClient: ReturnType<typeof createClient> | null = null;
+function createAuditClient() {
+  return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+}
+let auditClient: ReturnType<typeof createAuditClient> | null = null;
 function getAuditClient() {
-  if (!auditClient) auditClient = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  if (!auditClient) auditClient = createAuditClient();
   return auditClient;
 }
 

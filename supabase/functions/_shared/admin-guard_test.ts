@@ -52,6 +52,7 @@ function router(
   routes: {
     getUser?: () => Response;
     hasRole?: () => Response;
+    roleRows?: () => Response;
   } = {},
 ): () => void {
   return stubFetch((req) => {
@@ -62,6 +63,9 @@ function router(
     }
     if (url.pathname.endsWith("/rest/v1/rpc/has_role")) {
       return routes.hasRole?.() ?? jsonResponse(200, false);
+    }
+    if (url.pathname.endsWith("/rest/v1/user_roles")) {
+      return routes.roleRows?.() ?? jsonResponse(200, []);
     }
     // Audit inserts land on /rest/v1/admin_guard_audit_log — accept silently.
     if (url.pathname.includes("/rest/v1/admin_guard_audit_log")) {
@@ -173,4 +177,15 @@ Deno.test({ name: "allows authenticated admins", ...sanitize, fn: async () => {
   } finally {
     restore();
   }
+} });
+Deno.test({ name: "fails closed when both role lookups fail", ...sanitize, fn: async () => {
+  const restore = router({
+    getUser: () => jsonResponse(200, { id: "lookup-failure-user", email: "test@example.test" }),
+    hasRole: () => jsonResponse(500, { message: "unavailable" }),
+    roleRows: () => jsonResponse(500, { message: "unavailable" }),
+  });
+  try {
+    const res = await requireInternalOrAdmin(makeRequest({ Authorization: "Bearer lookup-failure-jwt" }));
+    assertEquals(res?.status, 503);
+  } finally { restore(); }
 } });
