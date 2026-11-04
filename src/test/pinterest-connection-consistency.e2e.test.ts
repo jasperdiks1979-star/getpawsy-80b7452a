@@ -3,9 +3,8 @@ import { describe, it, expect } from "vitest";
 // E2E test: proves every admin surface reads the same Pinterest connection
 // state, and that OAuth/boards/publisher/queue are operational.
 //
-// Hits the deployed `pinterest-connection-snapshot` edge function (no auth
-// required, read-only). Skipped automatically when the env vars are missing
-// (e.g. in offline CI sandboxes).
+// Hits the protected, read-only snapshot using an authenticated admin JWT.
+// An explicitly requested E2E run fails when its admin identity is missing.
 
 const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL ??
@@ -19,15 +18,17 @@ const describeMaybe = runE2E ? describe : describe.skip;
 
 describeMaybe("Pinterest connection consistency (E2E)", () => {
   it("returns a consistent snapshot across every admin source", async () => {
+    const adminToken = process.env.PINTEREST_E2E_ADMIN_TOKEN;
+    expect(adminToken, "PINTEREST_E2E_ADMIN_TOKEN required for protected snapshot").toBeTruthy();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/pinterest-connection-snapshot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${adminToken}`,
       },
     });
-    expect(res.status, await res.clone().text()).toBe(200);
+    expect(res.status).toBe(200);
     const snap = await res.json();
 
     // 1. OAuth + account

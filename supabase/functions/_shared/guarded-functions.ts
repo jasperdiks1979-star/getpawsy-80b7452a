@@ -6,6 +6,7 @@
 // a wrong `x-internal-secret` header the same way). Add a new entry here
 // whenever you protect another function with the shared guard.
 export const GUARDED_EDGE_FUNCTIONS = [
+  "pinterest-connection-snapshot",
   "admin-refund-order",
   "order-recovery-queue",
   "aec-executive-council",

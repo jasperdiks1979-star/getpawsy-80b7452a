@@ -2,16 +2,21 @@
 // Used by the E2E consistency test to prove every admin surface (OAuth Recovery,
 // Pinterest Automation, Publisher, Queue, Commander, ACOS, Guardian) reads the
 // same row from `pinterest_connection` and the same publishing flags.
+import { requireInternalOrAdmin } from "../_shared/admin-guard.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
   "Content-Type": "application/json",
+  "Cache-Control": "no-store",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+
+  const denied = await requireInternalOrAdmin(req);
+  if (denied) return denied;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
