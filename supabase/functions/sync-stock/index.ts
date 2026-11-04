@@ -1,3 +1,4 @@
+import { runDeferredStockWorker } from "../_shared/deferred-stock-worker.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -651,6 +652,29 @@ serve(async (req) => {
 
     const action = body.action || 'sync-batch';
     let offset = body.offset ?? 0;
+
+    if (action === 'deferred-retry-once') {
+      if (!isCronJob) return new Response(JSON.stringify({ error: 'Service role required' }), { status: 403, headers: corsHeaders });
+      const result = await runDeferredStockWorker({
+        claim: async () => {
+          const { data, error } = await supabase.rpc('claim_deferred_stock_retry');
+          if (error) throw error;
+          return data;
+        },
+        observe: async (cjId) => {
+          const token = await getAccessToken(supabase);
+          return { ...await getProductInventory(token, cjId) };
+        },
+        finish: async (claim, result) => {
+          const { data, error } = await supabase.rpc('finish_deferred_stock_retry', {
+            p_id: claim.product_id, p_token: claim.token, p_cj: claim.cj_product_id, p_result: result,
+          });
+          if (error) throw error;
+          return data === true;
+        },
+      });
+      return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     if (action === 'status') {
       const progress = await getOrCreateSyncProgress(supabase);
