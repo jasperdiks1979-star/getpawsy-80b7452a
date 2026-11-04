@@ -15,7 +15,8 @@ node --experimental-strip-types --test \
   tests/stock-sync-final-status.node.test.ts \
   tests/stock-sync-watchdog-single-batch.node.test.ts \
   tests/stock-sync-deferred-recovery-proof.node.test.ts \
-  tests/stock-sync-recovery-boundaries.node.test.ts
+  tests/stock-sync-recovery-boundaries.node.test.ts \
+  tests/stock-sync-deferred-policy-boundaries.node.test.ts
 
 if command -v deno >/dev/null 2>&1; then
   deno test supabase/functions/_shared/stock-sync-recovery-proof_test.ts
