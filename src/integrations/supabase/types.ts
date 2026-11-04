@@ -73974,6 +73974,21 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_deferred_worker_gate: {
+        Row: {
+          id: boolean
+          next_call_at: string
+        }
+        Insert: {
+          id?: boolean
+          next_call_at: string
+        }
+        Update: {
+          id?: boolean
+          next_call_at?: string
+        }
+        Relationships: []
+      }
       stock_notifications: {
         Row: {
           created_at: string
@@ -74170,6 +74185,8 @@ export type Database = {
           first_seen_at: string
           last_attempt_at: string
           last_offset: number
+          lease_token: string | null
+          lease_until: string | null
           message: string
           next_attempt_at: string | null
           product_id: string
@@ -74182,6 +74199,8 @@ export type Database = {
           first_seen_at?: string
           last_attempt_at?: string
           last_offset: number
+          lease_token?: string | null
+          lease_until?: string | null
           message?: string
           next_attempt_at?: string | null
           product_id: string
@@ -74194,6 +74213,8 @@ export type Database = {
           first_seen_at?: string
           last_attempt_at?: string
           last_offset?: number
+          lease_token?: string | null
+          lease_until?: string | null
           message?: string
           next_attempt_at?: string | null
           product_id?: string
@@ -79684,6 +79705,7 @@ export type Database = {
           vo_url: string
         }[]
       }
+      claim_deferred_stock_retry: { Args: never; Returns: Json }
       claim_order_fulfillment: {
         Args: { p_order_id: string }
         Returns: {
@@ -79793,6 +79815,10 @@ export type Database = {
           p_valid: number
         }
         Returns: undefined
+      }
+      finish_deferred_stock_retry: {
+        Args: { p_cj: string; p_id: string; p_result: Json; p_token: string }
+        Returns: boolean
       }
       fse_map_event_kind: { Args: { _name: string }; Returns: string }
       fse_safe_uuid: { Args: { _txt: string }; Returns: string }
