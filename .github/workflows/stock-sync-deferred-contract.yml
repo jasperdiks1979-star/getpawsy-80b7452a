@@ -1,13 +1,20 @@
 name: Stock Sync Deferred Contract (manual approval only)
+run-name: Deferred stock contract — ${{ inputs.test_branch }}
 # Explicitly manual: do not consume GitHub Actions minutes before budget approval.
 on:
   workflow_dispatch:
+    inputs:
+      test_branch:
+        description: 'Code branch to test (not the workflow branch)'
+        required: true
+        type: string
+        default: fix/stock-sync-deferred-no-data-20261102
 
 permissions:
   contents: read
 
 concurrency:
-  group: stock-sync-deferred-contract
+  group: stock-sync-deferred-contract-${{ inputs.test_branch }}
   cancel-in-progress: true
 
 jobs:
@@ -15,7 +22,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout explicitly selected code branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.test_branch }}
+          persist-credentials: false
+      - name: Verify selected branch contains contract fixtures
+        shell: bash
+        run: |
+          echo "Testing commit: $(git rev-parse HEAD)"
+          test -f tests/stock-sync-deferred-policy.node.test.ts || { echo '::error::Deferred Node contract missing on selected branch'; exit 1; }
+          test -f tests/stock-sync-deferred-queue.sql || { echo '::error::Deferred SQL contract missing on selected branch'; exit 1; }
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -49,7 +66,17 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: postgres
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout explicitly selected code branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.test_branch }}
+          persist-credentials: false
+      - name: Verify selected branch contains contract fixtures
+        shell: bash
+        run: |
+          echo "Testing commit: $(git rev-parse HEAD)"
+          test -f tests/stock-sync-deferred-policy.node.test.ts || { echo '::error::Deferred Node contract missing on selected branch'; exit 1; }
+          test -f tests/stock-sync-deferred-queue.sql || { echo '::error::Deferred SQL contract missing on selected branch'; exit 1; }
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client
       - name: Verify service-role, exact cursor, replay and no false completion
