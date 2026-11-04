@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { CJRateLimitError, isCJRateLimited, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -9,7 +10,6 @@ const corsHeaders = {
 const CJ_API_BASE = 'https://developers.cjdropshipping.com/api2.0/v1';
 const BATCH_SIZE = 1;
 const API_DELAY_MS = 15000;
-const RATE_LIMIT_DELAY_MS = 60000;
 
 interface SyncProgress {
   id: string;
@@ -79,6 +79,8 @@ async function withRetry<T>(
 }
 
 function isRetryableError(error: Error): boolean {
+  // A 429 must preserve the current checkpoint for a later scheduled retry.
+  if (mustHaltStockBatch(error)) return false;
   const message = error.message.toLowerCase();
   return (
     message.includes('network') ||
@@ -152,6 +154,9 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         }
       );
 
+      // A rate limit is not a product-level inventory result. Stop the whole
+      // batch before writing stock or advancing the durable checkpoint.
+      if (isCJRateLimited(response.status)) throw new CJRateLimitError();
       const responseText = await response.text();
       let parsed;
       try {
@@ -160,11 +165,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
         throw new Error(`Invalid JSON: ${responseText.substring(0, 100)}`);
       }
 
-      if (response.status === 429) {
-        console.log(`Rate limited on ${productId}, waiting ${RATE_LIMIT_DELAY_MS / 1000}s...`);
-        await sleep(RATE_LIMIT_DELAY_MS);
-        throw new Error('Rate limited (429)');
-      }
+      if (isCJRateLimited(response.status, parsed?.code)) throw new CJRateLimitError();
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${parsed.message || 'Unknown'}`);
@@ -264,6 +265,9 @@ async function getProductInventory(accessToken: string, productId: string): Prom
       vid: firstVid,
     };
   } catch (err) {
+    // A CJ 429 is a batch-level backpressure signal, not a processed product.
+    // The recovery lease provides the bounded, delayed retry; do not skip it.
+    if (mustHaltStockBatch(err)) throw err;
     return {
       stock: null,
       confirmed: false,
