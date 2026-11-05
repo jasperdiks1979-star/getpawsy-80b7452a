@@ -19,7 +19,8 @@ node --experimental-strip-types --test \
   tests/stock-sync-deferred-policy-boundaries.node.test.ts
 
 if command -v deno >/dev/null 2>&1; then
-  deno test supabase/functions/_shared/stock-sync-recovery-proof_test.ts
+  deno test supabase/functions/_shared/stock-sync-*test.ts
 else
-  echo "Deno not installed: Deno proof test skipped (NOT passed)" >&2
+  echo "Deno not installed: required stock tests cannot run (NOT passed)" >&2
+  exit 1
 fi
