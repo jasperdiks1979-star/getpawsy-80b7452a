@@ -2,14 +2,12 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { CartProvider, useCart } from '@/contexts/CartContext';
 import React from 'react';
+const { lookupOptions } = vi.hoisted(() => ({ lookupOptions: vi.fn() }));
 
 // Mock supabase rpc
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    rpc: vi.fn().mockResolvedValue({
-      data: [{ slug: 'multi-variant-item', variants: [{ vid: 'v1' }, { vid: 'v2' }] }],
-      error: null
-    }),
+    rpc: lookupOptions,
   }
 }));
 
@@ -48,6 +46,12 @@ describe('Issue #4 Repro: multi-option product quick-add', () => {
 
     const { result, unmount } = renderHook(() => useCart(), { wrapper });
 
+    let confirmOptions!: () => void;
+    const options = new Promise(resolve => {
+      confirmOptions = () => resolve({ data: [{ slug: "multi-variant-item", variants: [{ vid: "v1" }, { vid: "v2" }] }], error: null });
+    });
+    lookupOptions.mockReturnValueOnce(options);
+
     await act(async () => {
       result.current.addItem({
         id: '11111111-2222-4333-8444-555555555555', // Base UUID
@@ -59,6 +63,10 @@ describe('Issue #4 Repro: multi-option product quick-add', () => {
 
     // The item is added optimistically first
     expect(result.current.items.length).toBe(1);
+
+    await act(async () => {
+      confirmOptions();
+    });
 
     // Removed by enforceVariantSafety once the option check resolves
     await waitFor(() => expect(result.current.items.length).toBe(0));

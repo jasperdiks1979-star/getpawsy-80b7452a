@@ -1,6 +1,7 @@
+import { warehouseObservation } from "../_shared/stock-sync-warehouse.ts";
 import { runDeferredStockWorker } from "../_shared/deferred-stock-worker.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
@@ -48,8 +49,7 @@ interface StockResult {
   status: 'ok' | 'discontinued' | 'no_data' | 'error';
   message: string;
   rawResponse?: unknown;
-  /** First variant id seen in CJ inventory payload (used to backfill cj_variant_id). */
-  vid?: string | null;
+
 }
 
 function sleep(ms: number): Promise<void> {
@@ -230,56 +230,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
     const responseData = jsonData.data;
     const inventoryList = responseData?.inventories || (Array.isArray(responseData) ? responseData : []);
     
-    let totalStock = 0;
-    let warehouse = 'unknown';
-    let firstVid: string | null = null;
-
-    if (inventoryList.length > 0) {
-      let usStock = 0;
-      let cnStock = 0;
-      let hasUs = false;
-
-      for (const inv of inventoryList) {
-        if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
-        if (inv.countryCode === 'US') {
-          usStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-          hasUs = true;
-        } else if (inv.countryCode === 'CN') {
-          cnStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-        }
-      }
-
-      if (hasUs) {
-        totalStock = usStock;
-        warehouse = 'US';
-      } else if (cnStock > 0) {
-        totalStock = cnStock;
-        warehouse = 'CN';
-      } else {
-        for (const inv of inventoryList) {
-          totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-        }
-        warehouse = inventoryList[0]?.countryCode || 'unknown';
-      }
-    } else {
-      // success=true but no inventory entries
-      return {
-        stock: null,
-        confirmed: false,
-        warehouse: 'unknown',
-        status: 'no_data',
-        message: 'CJ success but empty inventory list',
-      };
-    }
-
-    return {
-      stock: totalStock,
-      confirmed: true,
-      warehouse,
-      status: 'ok',
-      message: `Stock confirmed: ${totalStock} (${warehouse})`,
-      vid: firstVid,
-    };
+    return warehouseObservation(inventoryList);
   } catch (err) {
     // Do not consume a checkpoint when the supplier asks us to slow down.
     // Network failures exhausted their immediate retries; do not count them
@@ -477,10 +428,6 @@ async function syncBatch(
       }
       updateData.stock_sync_status = result.status === 'discontinued' ? 'discontinued' : 'ok';
       updateData.stock_sync_error = null;
-      // Variant repair: capture the first CJ variant id we ever see for this product.
-      if (!product.cj_variant_id && result.vid) {
-        updateData.cj_variant_id = result.vid;
-      }
       console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock=${result.stock} (${result.warehouse})`);
       batchSynced++;
     } else if (result.status === 'no_data') {
@@ -580,7 +527,7 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
   const isSuccess = rawJson?.result === true || rawJson?.success === true;
   if (rawResponse.status === 429) {
     interpreted = { stock: null, confirmed: false, warehouse: 'unknown', status: 'error', message: 'Rate limited (429)' };
-  } else if (typeof rawJson === 'object' && rawJson !== null) {
+  } else if (rawResponse.ok && typeof rawJson === 'object' && rawJson !== null) {
     if (!isSuccess) {
       const msg = rawJson.message || '';
       if (msg.includes('removed from shelves') || msg.includes('discontinued')) {
@@ -593,16 +540,7 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
     } else {
       // Parse inventories from data.inventories[] or data[] directly
       const inventoryList = rawJson.data?.inventories || (Array.isArray(rawJson.data) ? rawJson.data : []);
-      let totalStock = 0;
-      let warehouse = 'unknown';
-      for (const inv of inventoryList) {
-        if (inv.countryCode === 'US') { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); warehouse = 'US'; }
-      }
-      if (warehouse === 'unknown') {
-        for (const inv of inventoryList) { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); }
-        warehouse = inventoryList[0]?.countryCode || 'unknown';
-      }
-      interpreted = { stock: totalStock, confirmed: true, warehouse, status: 'ok', message: `Stock: ${totalStock} (${warehouse})` };
+      interpreted = warehouseObservation(inventoryList);
     }
   } else {
     interpreted = { stock: null, confirmed: false, warehouse: 'unknown', status: 'error', message: 'Invalid response' };
