@@ -26,7 +26,7 @@ await db.exec(migration); // additive migration must also be safe to reapply
 const id='00000000-0000-4000-8000-000000000001';
 await db.exec(`INSERT INTO products(id,cj_product_id,stock)VALUES('${id}','cj',42);INSERT INTO sync_progress VALUES('stock-sync','needs_review',1,1,0,1,NULL,NULL,NULL,NULL); INSERT INTO stock_sync_deferred(product_id,next_attempt_at,last_offset,reason) VALUES('${id}',now()-interval '1 hour',0,'no_data');`);
 const call=async()=> (await db.query('select claim_deferred_stock_retry() as c')).rows[0].c;
-const finish=async(c,r)=> (await db.query('select finish_deferred_stock_retry($1,$2,$3,$4) as ok',[id,c.token,'cj',JSON.stringify(r)])).rows[0].ok;
+const finish=async(c,r)=> (await db.query('select finish_deferred_stock_retry($1,$2,$3,$4::text::jsonb) as ok',[id,c.token,'cj',JSON.stringify(r)])).rows[0].ok;
 // Statement-local role setting is rolled back with the rejected statement.
 await assert.rejects(()=>db.exec("DO $$ BEGIN PERFORM set_config('request.jwt.claim.role','anon',true); PERFORM claim_deferred_stock_retry(); END $$;"),/Service role required/);
 assert.equal((await db.query("select has_function_privilege('authenticated','claim_deferred_stock_retry()','execute') as allowed")).rows[0].allowed,false);
