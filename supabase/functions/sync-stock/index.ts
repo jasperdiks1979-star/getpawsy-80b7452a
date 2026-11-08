@@ -619,7 +619,15 @@ serve(async (req) => {
     }
 
     if (action === 'status') {
-      const progress = await getOrCreateSyncProgress(supabase);
+      // Custom scheduler status checks are strictly read-only: never initialize a checkpoint.
+      const progress = isCustomStatusRequest
+        ? await (async () => {
+            const { data, error } = await supabase.from('sync_progress').select('*').eq('id', 'stock-sync').maybeSingle();
+            if (error) throw new Error(`Failed to read stock sync progress: ${error.message}`);
+            if (!data) throw new Error('Stock sync checkpoint missing; status request must not initialize it');
+            return data as SyncProgress;
+          })()
+        : await getOrCreateSyncProgress(supabase);
       // Also get stock distribution
       // Get stock stats from products
       const { data: products } = await supabase.from('products').select('stock, stock_sync_status').not('cj_product_id', 'is', null);
