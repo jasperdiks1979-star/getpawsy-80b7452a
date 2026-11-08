@@ -633,6 +633,13 @@ serve(async (req) => {
     }
 
     if (action === 'reset') {
+      // A scheduler credential must never be sufficient to reset stock progress.
+      // Only a verified admin session may perform this destructive action.
+      if (!isAuthenticatedAdmin) {
+        return new Response(JSON.stringify({ error: 'Admin access required' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       await updateSyncProgress(supabase, {
         last_offset: 0, synced_count: 0, error_count: 0,
         status: 'idle', started_at: null, completed_at: null, error_messages: [],
