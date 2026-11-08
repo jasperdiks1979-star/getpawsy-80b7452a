@@ -63,6 +63,11 @@ function router(
     if (url.pathname.endsWith("/rest/v1/rpc/has_role")) {
       return routes.hasRole?.() ?? jsonResponse(200, false);
     }
+    // A valid non-admin lookup also checks the existing table fallback.
+    // Missing this stub models a database outage (503), not a denied role (403).
+    if (url.pathname.endsWith("/rest/v1/user_roles")) {
+      return jsonResponse(200, []);
+    }
     // Audit inserts land on /rest/v1/admin_guard_audit_log — accept silently.
     if (url.pathname.includes("/rest/v1/admin_guard_audit_log")) {
       return jsonResponse(201, {});
@@ -143,7 +148,7 @@ Deno.test({ name: "rejects authenticated users that lack the admin role (403)", 
   });
   try {
     const res = await requireInternalOrAdmin(
-      makeRequest({ Authorization: "Bearer good-jwt" }),
+      makeRequest({ Authorization: "Bearer non-admin-jwt" }),
     );
     assertExists(res);
     assertEquals(res!.status, 403);
