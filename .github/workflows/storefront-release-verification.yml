@@ -1,0 +1,42 @@
+name: Storefront release verification (Pinterest independent)
+# Manual only: no GitHub Actions minutes consumed without explicit budget approval.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storefront-release-gate:
+    name: Storefront and stock-safety gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Stock recovery, deferred and checkpoint regression tests
+        run: |
+          node --experimental-strip-types --test \
+            tests/stock-sync-watchdog-crash-restart.node.test.ts \
+            tests/stock-sync-final-needs-review.node.test.ts \
+            tests/stock-sync-final-status.node.test.ts \
+            tests/stock-sync-watchdog-single-batch.node.test.ts \
+            tests/stock-sync-deferred-recovery-proof.node.test.ts \
+            tests/stock-sync-recovery-boundaries.node.test.ts \
+            tests/stock-sync-deferred-policy-boundaries.node.test.ts
+      - name: Checkout idempotency and production build
+        run: npm run build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno recovery-proof tests
+        run: deno test supabase/functions/_shared/stock-sync-recovery-proof_test.ts
+      - name: Typecheck stock-sync Edge Function
+        run: deno check supabase/functions/sync-stock/index.ts
+# Pinterest OAuth tests are intentionally not part of the storefront release gate.
+# This is not a deployment workflow. A passing run alone does not authorize publication:
+# database contract tests, browser checkout tests, secure scheduler and rollback are separate gates.

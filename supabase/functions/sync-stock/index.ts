@@ -1,8 +1,9 @@
+import { warehouseObservation } from "../_shared/stock-sync-warehouse.ts";
 import { runDeferredStockWorker } from "../_shared/deferred-stock-worker.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch, readCJStockQuantity } from "../_shared/stock-sync-rate-limit.ts";
+import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset } from "../_shared/stock-sync-auth.ts";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset, mayResetStockSyncCheckpoint, isAuthorizedStockSyncStatusRequest } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
@@ -48,8 +49,7 @@ interface StockResult {
   status: 'ok' | 'discontinued' | 'no_data' | 'error';
   message: string;
   rawResponse?: unknown;
-  /** First variant id seen in CJ inventory payload (used to backfill cj_variant_id). */
-  vid?: string | null;
+
 }
 
 function sleep(ms: number): Promise<void> {
@@ -230,56 +230,7 @@ async function getProductInventory(accessToken: string, productId: string): Prom
     const responseData = jsonData.data;
     const inventoryList = responseData?.inventories || (Array.isArray(responseData) ? responseData : []);
     
-    let totalStock = 0;
-    let warehouse = 'unknown';
-    let firstVid: string | null = null;
-
-    if (inventoryList.length > 0) {
-      let usStock = 0;
-      let cnStock = 0;
-      let hasUs = false;
-
-      for (const inv of inventoryList) {
-        if (!firstVid && (inv.vid || inv.variantId)) firstVid = String(inv.vid || inv.variantId);
-        if (inv.countryCode === 'US') {
-          usStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-          hasUs = true;
-        } else if (inv.countryCode === 'CN') {
-          cnStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-        }
-      }
-
-      if (hasUs) {
-        totalStock = usStock;
-        warehouse = 'US';
-      } else if (cnStock > 0) {
-        totalStock = cnStock;
-        warehouse = 'CN';
-      } else {
-        for (const inv of inventoryList) {
-          totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum);
-        }
-        warehouse = inventoryList[0]?.countryCode || 'unknown';
-      }
-    } else {
-      // success=true but no inventory entries
-      return {
-        stock: null,
-        confirmed: false,
-        warehouse: 'unknown',
-        status: 'no_data',
-        message: 'CJ success but empty inventory list',
-      };
-    }
-
-    return {
-      stock: totalStock,
-      confirmed: true,
-      warehouse,
-      status: 'ok',
-      message: `Stock confirmed: ${totalStock} (${warehouse})`,
-      vid: firstVid,
-    };
+    return warehouseObservation(inventoryList);
   } catch (err) {
     // Do not consume a checkpoint when the supplier asks us to slow down.
     // Network failures exhausted their immediate retries; do not count them
@@ -477,10 +428,6 @@ async function syncBatch(
       }
       updateData.stock_sync_status = result.status === 'discontinued' ? 'discontinued' : 'ok';
       updateData.stock_sync_error = null;
-      // Variant repair: capture the first CJ variant id we ever see for this product.
-      if (!product.cj_variant_id && result.vid) {
-        updateData.cj_variant_id = result.vid;
-      }
       console.log(`✓ [${offset + i + 1}/${totalProducts}] ${product.name}: stock=${result.stock} (${result.warehouse})`);
       batchSynced++;
     } else if (result.status === 'no_data') {
@@ -580,7 +527,7 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
   const isSuccess = rawJson?.result === true || rawJson?.success === true;
   if (rawResponse.status === 429) {
     interpreted = { stock: null, confirmed: false, warehouse: 'unknown', status: 'error', message: 'Rate limited (429)' };
-  } else if (typeof rawJson === 'object' && rawJson !== null) {
+  } else if (rawResponse.ok && typeof rawJson === 'object' && rawJson !== null) {
     if (!isSuccess) {
       const msg = rawJson.message || '';
       if (msg.includes('removed from shelves') || msg.includes('discontinued')) {
@@ -593,16 +540,7 @@ async function debugProduct(supabase: any, accessToken: string, productId?: stri
     } else {
       // Parse inventories from data.inventories[] or data[] directly
       const inventoryList = rawJson.data?.inventories || (Array.isArray(rawJson.data) ? rawJson.data : []);
-      let totalStock = 0;
-      let warehouse = 'unknown';
-      for (const inv of inventoryList) {
-        if (inv.countryCode === 'US') { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); warehouse = 'US'; }
-      }
-      if (warehouse === 'unknown') {
-        for (const inv of inventoryList) { totalStock += readCJStockQuantity(inv.totalInventoryNum, inv.cjInventoryNum); }
-        warehouse = inventoryList[0]?.countryCode || 'unknown';
-      }
-      interpreted = { stock: totalStock, confirmed: true, warehouse, status: 'ok', message: `Stock: ${totalStock} (${warehouse})` };
+      interpreted = warehouseObservation(inventoryList);
     }
   } else {
     interpreted = { stock: null, confirmed: false, warehouse: 'unknown', status: 'error', message: 'Invalid response' };
@@ -630,10 +568,14 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
+    const requestedAction = body.action || 'sync-batch';
+    const isCustomStatusRequest = isAuthorizedStockSyncStatusRequest(
+      req.headers.get('x-stock-sync-token'), Deno.env.get('STOCK_SYNC_CRON_SECRET'), requestedAction,
+    );
 
     // Auth check for non-cron requests
     let isAuthenticatedAdmin = false;
-    if (!isCronJob) {
+    if (!isCronJob && !isCustomStatusRequest) {
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -650,7 +592,7 @@ serve(async (req) => {
       isAuthenticatedAdmin = true;
     }
 
-    const action = body.action || 'sync-batch';
+    const action = requestedAction;
     let offset = body.offset ?? 0;
 
     if (action === 'deferred-retry-once') {
@@ -677,7 +619,15 @@ serve(async (req) => {
     }
 
     if (action === 'status') {
-      const progress = await getOrCreateSyncProgress(supabase);
+      // Custom scheduler status checks are strictly read-only: never initialize a checkpoint.
+      const progress = isCustomStatusRequest
+        ? await (async () => {
+            const { data, error } = await supabase.from('sync_progress').select('*').eq('id', 'stock-sync').maybeSingle();
+            if (error) throw new Error(`Failed to read stock sync progress: ${error.message}`);
+            if (!data) throw new Error('Stock sync checkpoint missing; status request must not initialize it');
+            return data as SyncProgress;
+          })()
+        : await getOrCreateSyncProgress(supabase);
       // Also get stock distribution
       // Get stock stats from products
       const { data: products } = await supabase.from('products').select('stock, stock_sync_status').not('cj_product_id', 'is', null);
@@ -695,6 +645,13 @@ serve(async (req) => {
     }
 
     if (action === 'reset') {
+      // A scheduler credential must never be sufficient to reset stock progress.
+      // Only a verified admin session may perform this destructive action.
+      if (!mayResetStockSyncCheckpoint(isAuthenticatedAdmin)) {
+        return new Response(JSON.stringify({ error: 'Admin access required' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       await updateSyncProgress(supabase, {
         last_offset: 0, synced_count: 0, error_count: 0,
         status: 'idle', started_at: null, completed_at: null, error_messages: [],

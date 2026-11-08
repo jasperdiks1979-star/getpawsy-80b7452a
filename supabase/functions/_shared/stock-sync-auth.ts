@@ -44,3 +44,23 @@ export function resolveWatchdogSingleBatchOffset(
   }
   return requestedOffset;
 }
+
+/** Destructive checkpoint resets are never authorized by a scheduler credential. */
+export function mayResetStockSyncCheckpoint(isAuthenticatedAdmin: boolean): boolean {
+  return isAuthenticatedAdmin === true;
+}
+
+/** Optional, narrowly scoped scheduler secret. Never grants service-role privileges.
+ * Only status checks are enabled until secure cron secret retrieval and atomic
+ * checkpoint leasing are verified in production.
+ */
+export function isAuthorizedStockSyncStatusRequest(
+  suppliedToken: string | null,
+  configuredToken: string | null | undefined,
+  action: string,
+): boolean {
+  return action === 'status' &&
+    typeof configuredToken === 'string' && configuredToken.length >= 32 &&
+    typeof suppliedToken === 'string' && suppliedToken.length === configuredToken.length &&
+    suppliedToken === configuredToken;
+}

@@ -1,4 +1,7 @@
-import { assertEquals, assertThrows } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { strictEqual as assertEquals, throws } from "node:assert";
+function assertThrows(fn: () => unknown, errorType: typeof Error, message: string) {
+  throws(fn, (error: unknown) => error instanceof errorType && error.message.includes(message));
+}
 import { assertStockProductUpdateSucceeded } from "./stock-sync-write-guard.ts";
 
 Deno.test("one persisted product row permits checkpoint advancement", () => {
