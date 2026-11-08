@@ -3,7 +3,7 @@ import { runDeferredStockWorker } from "../_shared/deferred-stock-worker.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset, mayResetStockSyncCheckpoint } from "../_shared/stock-sync-auth.ts";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset, mayResetStockSyncCheckpoint, isAuthorizedStockSyncStatusRequest } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
@@ -568,10 +568,14 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     const isCronJob = isAuthorizedStockSyncServiceRequest(authHeader, supabaseServiceKey);
+    const requestedAction = body.action || 'sync-batch';
+    const isCustomStatusRequest = isAuthorizedStockSyncStatusRequest(
+      req.headers.get('x-stock-sync-token'), Deno.env.get('STOCK_SYNC_CRON_SECRET'), requestedAction,
+    );
 
     // Auth check for non-cron requests
     let isAuthenticatedAdmin = false;
-    if (!isCronJob) {
+    if (!isCronJob && !isCustomStatusRequest) {
       if (!authHeader?.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -588,7 +592,7 @@ serve(async (req) => {
       isAuthenticatedAdmin = true;
     }
 
-    const action = body.action || 'sync-batch';
+    const action = requestedAction;
     let offset = body.offset ?? 0;
 
     if (action === 'deferred-retry-once') {
