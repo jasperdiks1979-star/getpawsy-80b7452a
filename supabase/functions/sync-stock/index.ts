@@ -3,7 +3,7 @@ import { runDeferredStockWorker } from "../_shared/deferred-stock-worker.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { CJRateLimitError, CJTransportError, CJUnverifiedInventoryError, fetchCJInventoryResponse, isCJRateLimited, isCJUnverifiedInventoryStatus, mustHaltStockBatch } from "../_shared/stock-sync-rate-limit.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset } from "../_shared/stock-sync-auth.ts";
+import { isAuthorizedStockSyncServiceRequest, shouldContinueStockSync, resolveWatchdogSingleBatchOffset, mayResetStockSyncCheckpoint } from "../_shared/stock-sync-auth.ts";
 import { assertStockSyncBatchOffset, assertStockSyncCatalogStable } from "../_shared/stock-sync-progress.ts";
 import { assertStockProductUpdateSucceeded } from "../_shared/stock-sync-write-guard.ts";
 import { assertVerifiedStockObservation, confirmedStockFreshnessFields } from "../_shared/stock-sync-freshness.ts";
@@ -635,7 +635,7 @@ serve(async (req) => {
     if (action === 'reset') {
       // A scheduler credential must never be sufficient to reset stock progress.
       // Only a verified admin session may perform this destructive action.
-      if (!isAuthenticatedAdmin) {
+      if (!mayResetStockSyncCheckpoint(isAuthenticatedAdmin)) {
         return new Response(JSON.stringify({ error: 'Admin access required' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
