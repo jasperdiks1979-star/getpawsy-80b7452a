@@ -44,3 +44,8 @@ export function resolveWatchdogSingleBatchOffset(
   }
   return requestedOffset;
 }
+
+/** Destructive checkpoint resets are never authorized by a scheduler credential. */
+export function mayResetStockSyncCheckpoint(isAuthenticatedAdmin: boolean): boolean {
+  return isAuthenticatedAdmin === true;
+}
