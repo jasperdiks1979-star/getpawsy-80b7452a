@@ -1,0 +1,12 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { validatePreview } from '../scripts/migration-preview-preflight.mjs';
+const base = { VITE_SUPABASE_URL:'https://abcdefghijklmnopqrst.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_fixture', STRIPE_MODE:'test', MIGRATION_SCHEDULES_ENABLED:'false' };
+test('accepts independent preview config without external credentials',()=>assert.deepEqual(validatePreview(base),[]));
+test('rejects original production backend',()=>assert.ok(validatePreview({...base,VITE_SUPABASE_URL:'https://nojvgfbcjgipjxpfatmm.supabase.co'}).length));
+test('rejects missing target and disabled-schedule declaration',()=>assert.ok(validatePreview({}).length>=3));
+test('rejects private keys in browser variables without echoing values',()=>{const e=validatePreview({...base,VITE_SUPABASE_SERVICE_ROLE_KEY:'sensitive-fixture'});assert.ok(e.length);assert.ok(!e.join().includes('sensitive-fixture'));});
+test('rejects live Stripe credentials even when test mode is declared',()=>assert.ok(validatePreview({...base,STRIPE_SECRET_KEY:'sk_live_fixture'}).length));
+test('rejects supplier, email and Lovable credentials',()=>{for(const name of ['CJ_API_KEY','RESEND_API_KEY','LOVABLE_API_KEY'])assert.ok(validatePreview({...base,[name]:'fixture'}).length)});
+test('rejects mismatched legacy JWT project and service role',()=>{const key=(payload)=>'x.'+Buffer.from(JSON.stringify(payload)).toString('base64url')+'.x';assert.ok(validatePreview({...base,VITE_SUPABASE_PUBLISHABLE_KEY:key({role:'anon',ref:'nojvgfbcjgipjxpfatmm'})}).length);assert.ok(validatePreview({...base,VITE_SUPABASE_PUBLISHABLE_KEY:key({role:'service_role',ref:'abcdefghijklmnopqrst'})}).length);assert.deepEqual(validatePreview({...base,VITE_SUPABASE_PUBLISHABLE_KEY:key({role:'anon',ref:'abcdefghijklmnopqrst'})}),[])});
+test('rejects credential-bearing URL and non-HTTPS target',()=>{for(const url of ['https://user:password@abcdefghijklmnopqrst.supabase.co','http://abcdefghijklmnopqrst.supabase.co','https://abcdefghijklmnopqrst.supabase.co/?token=x']) assert.ok(validatePreview({...base,VITE_SUPABASE_URL:url}).length)});

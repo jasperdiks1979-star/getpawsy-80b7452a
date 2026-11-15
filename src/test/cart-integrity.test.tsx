@@ -5,7 +5,7 @@
  * hydration, reload, delayed product resolution, or transient API failure.
  * Only conclusively invalid entries may be dropped.
  */
-import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { CartProvider, useCart, type CartItem } from '@/contexts/CartContext';
@@ -82,6 +82,12 @@ const hydrate = () => renderHook(() => useCart(), { wrapper });
 
 beforeEach(() => {
   localStorage.clear();
+});
+
+// Cart actions schedule lazy tracking imports. Keep their mocked modules alive
+// until those imports finish, so they cannot escape into the next test's teardown.
+afterEach(async () => {
+  await vi.dynamicImportSettled();
 });
 
 describe('Phase 9A — cart survives hydration/reload', () => {
